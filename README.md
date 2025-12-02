@@ -11,7 +11,7 @@ Anjali Varshney, NOMULA BHARGAVI, Ritika Kumari, Akashdeep &amp; Pushpa Kumari
      3. Ritika - Dasboard Page and Profile Page (Mockup and Actual, responsive) &amp; Integration with Backend
   ## Backend
      1. Akashdeep - APIs, Authentication - JWT/OAUth2
-     2. Pushpa - Backend Setup (), creating database and entities, (may work for Akashdeep if he is inactive)
+     2. Pushpa - Backend Setup (Java SpringBoot Application), creating database and entities, (may work for Akashdeep if he is inactive)
 
      Refer Schema for creating database entity: 
 
