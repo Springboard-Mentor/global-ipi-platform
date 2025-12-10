@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { validateEmail, validatePassword, validateName, getValidationMessage } from '../utils/validation';
+import Popup from './Popup';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -9,6 +11,7 @@ const Register = () => {
     password: '',
     confirmPassword: ''
   });
+  const [popup, setPopup] = useState({ message: '', type: '' });
 
   const handleChange = (e) => {
     setFormData({
@@ -19,8 +22,29 @@ const Register = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Register attempt:', formData);
-    // Add registration logic here
+    
+    if (!validateName(formData.name)) {
+      setPopup({ message: getValidationMessage('name', formData.name), type: 'error' });
+      return;
+    }
+    
+    if (!validateEmail(formData.email)) {
+      setPopup({ message: getValidationMessage('email', formData.email), type: 'error' });
+      return;
+    }
+    
+    if (!validatePassword(formData.password)) {
+      setPopup({ message: getValidationMessage('password', formData.password), type: 'error' });
+      return;
+    }
+    
+    if (formData.password !== formData.confirmPassword) {
+      setPopup({ message: 'Passwords do not match', type: 'error' });
+      return;
+    }
+    
+    setPopup({ message: 'Account created successfully!', type: 'success' });
+    setTimeout(() => navigate('/login'), 2000);
   };
 
   return (
@@ -141,6 +165,11 @@ const Register = () => {
           </div>
         </form>
       </div>
+      <Popup 
+        message={popup.message} 
+        type={popup.type} 
+        onClose={() => setPopup({ message: '', type: '' })} 
+      />
     </div>
   );
 };

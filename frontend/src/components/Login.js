@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { validateEmail, validatePassword, getValidationMessage } from '../utils/validation';
+import Popup from './Popup';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -7,6 +9,7 @@ const Login = () => {
     email: '',
     password: ''
   });
+  const [popup, setPopup] = useState({ message: '', type: '' });
 
   const handleChange = (e) => {
     setFormData({
@@ -17,14 +20,22 @@ const Login = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    if (!validateEmail(formData.email)) {
+      setPopup({ message: getValidationMessage('email', formData.email), type: 'error' });
+      return;
+    }
+    
+    if (!validatePassword(formData.password)) {
+      setPopup({ message: getValidationMessage('password', formData.password), type: 'error' });
+      return;
+    }
+    
     console.log('Login attempt:', formData);
-    // Add authentication logic here
+    navigate('/dashboard');
   };
 
-const handleLogin = (e) => {
-  e.preventDefault();
-  navigate('/dashboard');
-};
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -114,7 +125,6 @@ const handleLogin = (e) => {
 
             <button
               type="submit"
-              onClick={handleLogin}
               className="w-full mt-8 py-3 px-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-transparent transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
             >
               Sign In
@@ -135,6 +145,11 @@ const handleLogin = (e) => {
           </div>
         </form>
       </div>
+      <Popup 
+        message={popup.message} 
+        type={popup.type} 
+        onClose={() => setPopup({ message: '', type: '' })} 
+      />
     </div>
   );
 };
