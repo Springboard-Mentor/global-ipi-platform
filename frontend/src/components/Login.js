@@ -21,6 +21,11 @@ const Login = () => {
     // Add authentication logic here
   };
 
+const handleLogin = (e) => {
+  e.preventDefault();
+  navigate('/dashboard');
+};
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       {/* Animated Background */}
@@ -109,6 +114,7 @@ const Login = () => {
 
             <button
               type="submit"
+              onClick={handleLogin}
               className="w-full mt-8 py-3 px-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-transparent transition-all duration-300 transform hover:-translate-y-0.5 shadow-lg hover:shadow-xl"
             >
               Sign In
