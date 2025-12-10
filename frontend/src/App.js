@@ -3,12 +3,11 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import LandingPage from './components/LandingPage';
 import Login from './components/Login';
 import Register from './components/Register';
-import Dashboard from './components/Dashboard';
+import Dashboard from './components/Dashboard.jsx';
 import Profile from './components/Profile';
 
 function App() {
   return (
-    <Router>
       <div className="App">
         <Routes>
         <Route path="/" element={<LandingPage />} />
@@ -18,7 +17,6 @@ function App() {
           <Route path="/profile" element={<Profile />} />
         </Routes>
       </div>
-    </Router>
   );
 }
 
