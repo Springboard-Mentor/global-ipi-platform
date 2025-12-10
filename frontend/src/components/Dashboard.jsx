@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from 'react-router-dom';
 
 const ipLocations = [
   { label: "12.110.16.213", region: "North America", top: "65%", left: "23%" },
@@ -8,21 +9,26 @@ const ipLocations = [
 ];
 
 const Dashboard = () => {
- const [selectedRegion, setSelectedRegion] = useState(ipLocations[0].region);
-
-
+  const navigate = useNavigate();
+  const [selectedRegion, setSelectedRegion] = useState(ipLocations[0].region);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#2A1A4A] via-[#301B55] to-[#4B1F70] text-white p-6">
-      
       {/* Top Navbar */}
       <nav className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold tracking-wide">Global-IPI-Platform</h1>
+        <h1 className="text-xl font-semibold tracking-wide">
+          Global-IPI-Platform
+        </h1>
 
         <div className="flex gap-8 text-sm">
           <button className="hover:text-purple-300">Home</button>
           <button className="hover:text-purple-300">IP Activity</button>
-          <button className="hover:text-purple-300">Profile</button>
+          <button
+            className="hover:text-purple-300"
+            onClick={() => navigate("/profile")}
+          >
+            Profile
+          </button>
         </div>
 
         <div className="flex gap-4">
@@ -93,7 +99,7 @@ const Dashboard = () => {
       </div>
 
       {/* GLOBAL MAP */}
-       <div className="mt-6 bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-lg shadow-black/40">
+      <div className="mt-6 bg-white/10 backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-lg shadow-black/40">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-lg font-semibold">Global Map</h3>
