@@ -10,7 +10,18 @@ const ipLocations = [
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const [threatLevel, setThreatLevel] = useState(60); // 0–100
   const [selectedRegion, setSelectedRegion] = useState(ipLocations[0].region);
+
+  const threatLabel =
+    threatLevel < 33 ? "Low" : threatLevel < 66 ? "Medium" : "High";
+
+  const threatLabelColor =
+    threatLevel < 33
+      ? "text-green-400"
+      : threatLevel < 66
+      ? "text-yellow-300"
+      : "text-red-400";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#2A1A4A] via-[#301B55] to-[#4B1F70] text-white p-6">
@@ -62,9 +73,39 @@ const Dashboard = () => {
           </div>
 
           {/* Threat Level */}
-          <h4 className="text-md font-semibold">Threat Level</h4>
-          <div className="mt-2 w-full h-3 bg-gradient-to-r from-green-400 via-yellow-300 to-red-500 rounded-full relative">
-            <div className="absolute -top-2 left-[60%] w-3 h-6 bg-white rounded-full"></div>
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-md font-semibold">Threat Level</h4>
+              <span
+                className={`text-xs font-semibold px-2 py-1 rounded-full bg-white/10 ${threatLabelColor}`}
+              >
+                {threatLabel}
+              </span>
+            </div>
+
+            <div className="mt-2 relative w-full h-3">
+              <div className="w-full h-3 bg-gradient-to-r from-green-400 via-yellow-300 to-red-500 rounded-full relative pointer-events-none">
+                <div
+                  className="absolute -top-1 w-4 h-4 bg-white rounded-full shadow-lg shadow-black/40 border border-purple-400 transition-all"
+                  style={{ left: `calc(${threatLevel}% - 8px)` }}
+                ></div>
+              </div>
+
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={threatLevel}
+                onChange={(e) => setThreatLevel(Number(e.target.value))}
+                className="w-full accent-purple-500 cursor-pointer"
+              />
+
+              <div className="flex justify-between text-[10px] text-white/60 mt-2">
+                <span>Low</span>
+                <span>Medium</span>
+                <span>High</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
