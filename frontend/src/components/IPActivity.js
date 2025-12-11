@@ -6,6 +6,7 @@ import StatusBadge from "./dashboardComponents/StatusBadge";
 import FilterBar from "./dashboardComponents/FilterBar";
 import TableRow from "./dashboardComponents/TableRow";
 import KPIStats from "./dashboardComponents/KPIStats";
+import { logout } from "../utils/logout";
 
 const sampleData = [
   {
@@ -69,6 +70,9 @@ const IPActivity = () => {
     page * itemsPerPage
   );
 
+  // logout button
+  const [openProfileMenu, setOpenProfileMenu] = useState(false);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#2A1A4A] via-[#301B55] to-[#4B1F70] text-white p-6">
       {/* NAVBAR */}
@@ -99,8 +103,27 @@ const IPActivity = () => {
           <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
             🔔
           </div>
-          <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-            👤
+          <div className="relative">
+            <button
+              onClick={() => setOpenProfileMenu(!openProfileMenu)}
+              className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center"
+            >
+              👤
+            </button>
+            {/* Dropdown */}
+            {openProfileMenu && (
+              <div className="absolute right-0 mt-2 w-32 bg-white/10 backdrop-blur-xl border border-white/20 rounded-lg shadow-lg p-2 text-sm">
+                <button
+                  onClick={() => {
+                    logout(); // clear tokens, sessions, etc.
+                    navigate("/"); // redirect after logout
+                  }}
+                  className="w-full text-left px-2 py-1 hover:bg-white/20 rounded-md"
+                >
+                  Logout
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </nav>
@@ -108,7 +131,7 @@ const IPActivity = () => {
       {/* PAGE HEADER */}
       <h2 className="text-3xl font-bold mb-6">IP Activity</h2>
 
-       {/* KPI CARDS */}
+      {/* KPI CARDS */}
       <KPIStats data={sampleData} />
 
       {/* STATUS CHART */}

@@ -11,6 +11,7 @@ import {
   LineChart,
   Line,
 } from "recharts";
+import { logout } from "../utils/logout";
 
 const ipLocations = [
   { label: "12.110.16.213", region: "North America", top: "65%", left: "23%" },
@@ -52,6 +53,9 @@ const Dashboard = () => {
       ? "text-yellow-300"
       : "text-red-400";
 
+  // logout button
+  const [openProfileMenu, setOpenProfileMenu] = useState(false);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#2A1A4A] via-[#301B55] to-[#4B1F70] text-white p-6">
       {/* Top Navbar */}
@@ -82,8 +86,27 @@ const Dashboard = () => {
           <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
             🔔
           </div>
-          <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-            👤
+          <div className="relative">
+            <button
+              onClick={() => setOpenProfileMenu(!openProfileMenu)}
+              className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center"
+            >
+              👤
+            </button>
+            {/* Dropdown */}
+            {openProfileMenu && (
+              <div className="absolute right-0 mt-2 w-32 bg-white/10 backdrop-blur-xl border border-white/20 rounded-lg shadow-lg p-2 text-sm">
+                <button
+                  onClick={() => {
+                    logout(); // clear tokens, sessions, etc.
+                    navigate("/"); // redirect after logout
+                  }}
+                  className="w-full text-left px-2 py-1 hover:bg-white/20 rounded-md"
+                >
+                  Logout
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </nav>
