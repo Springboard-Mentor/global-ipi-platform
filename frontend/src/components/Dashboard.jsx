@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 import {
   BarChart,
   Bar,
@@ -61,8 +61,15 @@ const Dashboard = () => {
         </h1>
 
         <div className="flex gap-8 text-sm">
-          <button className="hover:text-purple-300">Home</button>
-          <button className="hover:text-purple-300"  onClick={() => navigate('/ipActivity')}>IP Activity</button>
+          <button className="hover:text-purple-300 text-purple-300">
+            Home
+          </button>
+          <button
+            className="hover:text-purple-300"
+            onClick={() => navigate("/ipActivity")}
+          >
+            IP Activity
+          </button>
           <button
             className="hover:text-purple-300"
             onClick={() => navigate("/profile")}
@@ -88,48 +95,58 @@ const Dashboard = () => {
         {/* LEFT CARD - IP Intelligence */}
         <div className="col-span-2 bg-white/10 backdrop-blur-xl rounded-xl p-6 border border-white/20">
           <h3 className="text-xl font-semibold mb-4">IP Intelligence</h3>
-            {/*  Bar Chart */}
+          {/*  Bar Chart */}
           <div className="h-52 bg-white/5 rounded-lg flex items-center justify-center">
-           <ResponsiveContainer width="100%" height="100%">
-  <BarChart data={ipIntelligenceData}>
-    <CartesianGrid stroke="rgba(255,255,255,0.15)" vertical={false} />
-    <XAxis
-      dataKey="name"
-      stroke="#ddd"
-      tick={{ fill: "#ddd", fontSize: 12 }}
-      axisLine={{ stroke: "rgba(255,255,255,0.2)" }}
-    />
-    <YAxis
-      stroke="#ddd"
-      tick={{ fill: "#ddd", fontSize: 12 }}
-      axisLine={{ stroke: "rgba(255,255,255,0.2)" }}
-    />
-    <Tooltip
-      contentStyle={{
-        background: "#2e1b47",
-        border: "1px solid rgba(255,255,255,0.2)",
-        color: "#fff",
-      }}
-    />
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={ipIntelligenceData}>
+                <CartesianGrid
+                  stroke="rgba(255,255,255,0.15)"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="name"
+                  stroke="#ddd"
+                  tick={{ fill: "#ddd", fontSize: 12 }}
+                  axisLine={{ stroke: "rgba(255,255,255,0.2)" }}
+                />
+                <YAxis
+                  stroke="#ddd"
+                  tick={{ fill: "#ddd", fontSize: 12 }}
+                  axisLine={{ stroke: "rgba(255,255,255,0.2)" }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "#2e1b47",
+                    border: "1px solid rgba(255,255,255,0.2)",
+                    color: "#fff",
+                  }}
+                />
 
-    {/* Gradient Bars */}
-    <defs>
-      <linearGradient id="barPurple" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="#b26bff" />
-        <stop offset="100%" stopColor="#8a2be2" />
-      </linearGradient>
+                {/* Gradient Bars */}
+                <defs>
+                  <linearGradient id="barPurple" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#b26bff" />
+                    <stop offset="100%" stopColor="#8a2be2" />
+                  </linearGradient>
 
-      <linearGradient id="barPink" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stopColor="#ff6ac1" />
-        <stop offset="100%" stopColor="#e84393" />
-      </linearGradient>
-    </defs>
+                  <linearGradient id="barPink" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#ff6ac1" />
+                    <stop offset="100%" stopColor="#e84393" />
+                  </linearGradient>
+                </defs>
 
-    <Bar dataKey="hp" fill="url(#barPurple)" radius={[6, 6, 0, 0]} />
-    <Bar dataKey="session" fill="url(#barPink)" radius={[6, 6, 0, 0]} />
-  </BarChart>
-</ResponsiveContainer>
-
+                <Bar
+                  dataKey="hp"
+                  fill="url(#barPurple)"
+                  radius={[6, 6, 0, 0]}
+                />
+                <Bar
+                  dataKey="session"
+                  fill="url(#barPink)"
+                  radius={[6, 6, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
@@ -140,50 +157,57 @@ const Dashboard = () => {
           {/* Line Chart */}
           <div className="h-32 bg-white/5 rounded-lg flex items-center justify-center mb-6">
             <ResponsiveContainer width="100%" height="100%">
-  <LineChart data={activeSessionsData}>
-    <CartesianGrid stroke="rgba(255,255,255,0.15)" vertical={false} />
-    <XAxis
-      dataKey="name"
-      stroke="#ddd"
-      tick={{ fill: "#ddd", fontSize: 12 }}
-      axisLine={{ stroke: "rgba(255,255,255,0.2)" }}
-    />
-    <YAxis
-      stroke="#ddd"
-      tick={{ fill: "#ddd", fontSize: 12 }}
-      axisLine={{ stroke: "rgba(255,255,255,0.2)" }}
-    />
-    <Tooltip
-      contentStyle={{
-        background: "#2e1b47",
-        border: "1px solid rgba(255,255,255,0.2)",
-        color: "#fff",
-      }}
-    />
-    
-    {/* Add glow effect */}
-    <defs>
-      <linearGradient id="lineGlow" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0%" stopColor="#d066ff" />
-        <stop offset="100%" stopColor="#9b4dff" />
-      </linearGradient>
-    </defs>
+              <LineChart data={activeSessionsData}>
+                <CartesianGrid
+                  stroke="rgba(255,255,255,0.15)"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="name"
+                  stroke="#ddd"
+                  tick={{ fill: "#ddd", fontSize: 12 }}
+                  axisLine={{ stroke: "rgba(255,255,255,0.2)" }}
+                />
+                <YAxis
+                  stroke="#ddd"
+                  tick={{ fill: "#ddd", fontSize: 12 }}
+                  axisLine={{ stroke: "rgba(255,255,255,0.2)" }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "#2e1b47",
+                    border: "1px solid rgba(255,255,255,0.2)",
+                    color: "#fff",
+                  }}
+                />
 
-    <Line
-      type="monotone"
-      dataKey="users"
-      stroke="url(#lineGlow)"
-      strokeWidth={3}
-      dot={{ r: 5, fill: "#fff", stroke: "#b26bff", strokeWidth: 2 }}
-      activeDot={{ r: 7 }}
-    />
-  </LineChart>
-</ResponsiveContainer>
+                {/* Add glow effect */}
+                <defs>
+                  <linearGradient id="lineGlow" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#d066ff" />
+                    <stop offset="100%" stopColor="#9b4dff" />
+                  </linearGradient>
+                </defs>
 
+                <Line
+                  type="monotone"
+                  dataKey="users"
+                  stroke="url(#lineGlow)"
+                  strokeWidth={3}
+                  dot={{
+                    r: 5,
+                    fill: "#fff",
+                    stroke: "#b26bff",
+                    strokeWidth: 2,
+                  }}
+                  activeDot={{ r: 7 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
 
           {/* Threat Level */}
-          <div>
+          <div className="mt-6">
             <div className="flex items-center justify-between mb-2">
               <h4 className="text-md font-semibold">Threat Level</h4>
               <span
@@ -193,28 +217,38 @@ const Dashboard = () => {
               </span>
             </div>
 
-            <div className="mt-2 relative w-full h-3">
-              <div className="w-full h-3 bg-gradient-to-r from-green-400 via-yellow-300 to-red-500 rounded-full relative pointer-events-none">
-                <div
-                  className="absolute -top-1 w-4 h-4 bg-white rounded-full shadow-lg shadow-black/40 border border-purple-400 transition-all"
-                  style={{ left: `calc(${threatLevel}% - 8px)` }}
-                ></div>
-              </div>
+            {/* Track + Custom Handle */}
+            <div className="relative w-full h-6 flex items-center">
+              {/* Track */}
+              <div className="absolute w-full h-2 bg-gradient-to-r from-green-400 via-yellow-300 to-red-500 rounded-full shadow-inner"></div>
 
+              {/* Custom Handle*/}
+              <div
+                className="absolute w-5 h-5 rounded-full bg-white border-2 border-purple-500 shadow-lg transition-all duration-150 pointer-events-none"
+                style={{
+                  left: `calc(${threatLevel}% - 10px)`,
+                }}
+              ></div>
               <input
                 type="range"
                 min={0}
                 max={100}
                 value={threatLevel}
                 onChange={(e) => setThreatLevel(Number(e.target.value))}
-                className="w-full accent-purple-500 cursor-pointer"
+                className="w-full appearance-none bg-transparent cursor-pointer h-6"
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  opacity: 0,
+                }}
               />
+            </div>
 
-              <div className="flex justify-between text-[10px] text-white/60 mt-2">
-                <span>Low</span>
-                <span>Medium</span>
-                <span>High</span>
-              </div>
+            <div className="flex justify-between text-[10px] text-white/60 mt-2">
+              <span>Low</span>
+              <span>Medium</span>
+              <span>High</span>
             </div>
           </div>
         </div>
