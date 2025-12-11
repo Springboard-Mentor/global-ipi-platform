@@ -1,7 +1,63 @@
-import React from "react";
+import React, { useState } from "react";
 import { countryCodes } from "../utils/countryCodes";
+import {
+  validateEmail,
+  validatePassword,
+  validateName,
+  validatePhone,
+  getValidationMessage,
+} from "../utils/validation";
+import Popup from "./Popup";
 
 const Profile = () => {
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    countryCode: "+91",
+    phone: "",
+    oldPassword: "",
+    newPassword: "",
+  });
+  const [popup, setPopup] = useState({ message: "", type: "" });
+
+  // Handle input change
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  //  Validation on submit
+ const handleSave = () => {
+  const { fullName, email, phone, oldPassword, newPassword } = formData;
+
+  // FULL NAME
+  if (!fullName.trim() || !validateName(fullName)) {
+    return setPopup({ message: getValidationMessage("name", fullName), type: "error" });
+  }
+
+  // EMAIL
+  if (!email.trim() || !validateEmail(email)) {
+    return setPopup({ message: getValidationMessage("email", email), type: "error" });
+  }
+
+  // PHONE
+  if (!validatePhone(phone)) {
+    return setPopup({ message: getValidationMessage("phone"), type: "error" });
+  }
+
+  // OLD PASSWORD
+  if (!oldPassword.trim() || !validatePassword(oldPassword)) {
+    return setPopup({ message: getValidationMessage("password", oldPassword), type: "error" });
+  }
+
+  // NEW PASSWORD
+  if (!newPassword.trim() || !validatePassword(newPassword)) {
+    return setPopup({ message: getValidationMessage("password", newPassword), type: "error" });
+  }
+
+  setPopup({ message: "Profile updated successfully!", type: "success" });
+};
+
+
   return (
     <div className="min-h-screen w-full flex flex-col items-center bg-gradient-to-br from-[#1a0533] via-[#3b0a68] to-[#5c0faf] p-6 text-white">
       {/* Page Title */}
@@ -30,6 +86,9 @@ const Profile = () => {
           <label className="text-sm text-gray-200">Full Name</label>
           <div className="relative">
             <input
+              name="fullName"
+              value={formData.fullName}
+              onChange={handleChange}
               type="text"
               placeholder="Full Name"
               className="w-full mt-1 bg-white/10 text-white placeholder-gray-300 
@@ -46,6 +105,9 @@ const Profile = () => {
         <div className="w-full mb-4">
           <label className="text-sm text-gray-200">Email</label>
           <input
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
             type="email"
             placeholder="Enter your@email.com"
             className="w-full mt-1 bg-white/10 text-white placeholder-gray-300 
@@ -61,6 +123,9 @@ const Profile = () => {
           <div className="relative mt-1 flex items-center gap-2">
             {/* Country Code Dropdown */}
             <select
+              name="countryCode"
+              value={formData.countryCode}
+              onChange={handleChange}
               className="w-28 bg-white/10 text-white border border-white/20 rounded-lg px-3 py-2
                  outline-none focus:border-pink-400 cursor-pointer"
               defaultValue="+91"
@@ -74,6 +139,9 @@ const Profile = () => {
 
             {/* Phone Number Input */}
             <input
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
               type="tel"
               placeholder="Enter mobile number"
               className="flex-1 bg-white/10 text-white placeholder-gray-300 
@@ -88,6 +156,9 @@ const Profile = () => {
           <label className="text-sm text-gray-200">Password</label>
           <div className="relative">
             <input
+              name="oldPassword"
+              value={formData.oldPassword}
+              onChange={handleChange}
               type="password"
               placeholder="Old Password"
               className="w-full mt-1 bg-white/10 text-white placeholder-gray-300 
@@ -101,6 +172,9 @@ const Profile = () => {
 
           <div className="relative mt-4">
             <input
+              name="newPassword"
+              value={formData.newPassword}
+              onChange={handleChange}
               type="password"
               placeholder="New Password"
               className="w-full mt-1 bg-white/10 text-white placeholder-gray-300 
@@ -115,6 +189,7 @@ const Profile = () => {
 
         {/* Save Button */}
         <button
+          onClick={handleSave}
           className="
           w-full py-3 rounded-lg text-white font-semibold
           bg-gradient-to-r from-purple-500 to-pink-500 
@@ -124,6 +199,11 @@ const Profile = () => {
           Save Changes
         </button>
       </div>
+      <Popup
+        message={popup.message}
+        type={popup.type}
+        onClose={() => setPopup({ message: "", type: "" })}
+      />
     </div>
   );
 };
