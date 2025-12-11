@@ -1,13 +1,17 @@
 package com.example.demo.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
+import java.time.Instant;
+
 @Entity
 @Table(name = "users")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class User {
@@ -25,6 +29,18 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    private String phone;
+
+    private String countryCode;
+
     @Column(nullable = false)
-    private String role = "USER";   
+    private String role;
+
+    private Instant createdAt;
+
+    @PrePersist
+    public void prePersist() {
+        if (role == null) role = "USER";
+        if (createdAt == null) createdAt = Instant.now();
+    }
 }
