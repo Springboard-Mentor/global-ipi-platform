@@ -62,7 +62,7 @@ const Dashboard = () => {
 
         <div className="flex gap-8 text-sm">
           <button className="hover:text-purple-300">Home</button>
-          <button className="hover:text-purple-300">IP Activity</button>
+          <button className="hover:text-purple-300"  onClick={() => navigate('/ipActivity')}>IP Activity</button>
           <button
             className="hover:text-purple-300"
             onClick={() => navigate("/profile")}
