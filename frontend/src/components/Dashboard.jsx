@@ -1,11 +1,40 @@
 import React, { useState } from "react";
 import { useNavigate } from 'react-router-dom';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+} from "recharts";
 
 const ipLocations = [
   { label: "12.110.16.213", region: "North America", top: "65%", left: "23%" },
   { label: "42.801.68.21", region: "Europe", top: "50%", left: "47%" },
   { label: "12.491.66.55", region: "Asia", top: "60%", left: "62%" },
   { label: "16.148.88.29", region: "Australia", top: "78%", left: "75%" },
+];
+
+// Bar chart data
+const ipIntelligenceData = [
+  { name: "Mon", hp: 35, session: 20 },
+  { name: "Tue", hp: 25, session: 30 },
+  { name: "Wed", hp: 45, session: 28 },
+  { name: "Thu", hp: 30, session: 40 },
+  { name: "Fri", hp: 50, session: 22 },
+];
+
+// Line chart data
+const activeSessionsData = [
+  { name: "10AM", users: 20 },
+  { name: "11AM", users: 35 },
+  { name: "12PM", users: 28 },
+  { name: "1PM", users: 42 },
+  { name: "2PM", users: 33 },
 ];
 
 const Dashboard = () => {
@@ -59,17 +88,98 @@ const Dashboard = () => {
         {/* LEFT CARD - IP Intelligence */}
         <div className="col-span-2 bg-white/10 backdrop-blur-xl rounded-xl p-6 border border-white/20">
           <h3 className="text-xl font-semibold mb-4">IP Intelligence</h3>
+            {/*  Bar Chart */}
           <div className="h-52 bg-white/5 rounded-lg flex items-center justify-center">
-            {/* Replace with real chart */}
-            <p className="text-white/50 text-sm">[Bar Chart Placeholder]</p>
+           <ResponsiveContainer width="100%" height="100%">
+  <BarChart data={ipIntelligenceData}>
+    <CartesianGrid stroke="rgba(255,255,255,0.15)" vertical={false} />
+    <XAxis
+      dataKey="name"
+      stroke="#ddd"
+      tick={{ fill: "#ddd", fontSize: 12 }}
+      axisLine={{ stroke: "rgba(255,255,255,0.2)" }}
+    />
+    <YAxis
+      stroke="#ddd"
+      tick={{ fill: "#ddd", fontSize: 12 }}
+      axisLine={{ stroke: "rgba(255,255,255,0.2)" }}
+    />
+    <Tooltip
+      contentStyle={{
+        background: "#2e1b47",
+        border: "1px solid rgba(255,255,255,0.2)",
+        color: "#fff",
+      }}
+    />
+
+    {/* Gradient Bars */}
+    <defs>
+      <linearGradient id="barPurple" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#b26bff" />
+        <stop offset="100%" stopColor="#8a2be2" />
+      </linearGradient>
+
+      <linearGradient id="barPink" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#ff6ac1" />
+        <stop offset="100%" stopColor="#e84393" />
+      </linearGradient>
+    </defs>
+
+    <Bar dataKey="hp" fill="url(#barPurple)" radius={[6, 6, 0, 0]} />
+    <Bar dataKey="session" fill="url(#barPink)" radius={[6, 6, 0, 0]} />
+  </BarChart>
+</ResponsiveContainer>
+
           </div>
         </div>
 
         {/* RIGHT CARD - Active Sessions */}
         <div className="bg-white/10 backdrop-blur-xl rounded-xl p-6 border border-white/20">
           <h3 className="text-xl font-semibold mb-4">Active Sessions</h3>
+
+          {/* Line Chart */}
           <div className="h-32 bg-white/5 rounded-lg flex items-center justify-center mb-6">
-            <p className="text-white/50 text-sm">[Line Chart Placeholder]</p>
+            <ResponsiveContainer width="100%" height="100%">
+  <LineChart data={activeSessionsData}>
+    <CartesianGrid stroke="rgba(255,255,255,0.15)" vertical={false} />
+    <XAxis
+      dataKey="name"
+      stroke="#ddd"
+      tick={{ fill: "#ddd", fontSize: 12 }}
+      axisLine={{ stroke: "rgba(255,255,255,0.2)" }}
+    />
+    <YAxis
+      stroke="#ddd"
+      tick={{ fill: "#ddd", fontSize: 12 }}
+      axisLine={{ stroke: "rgba(255,255,255,0.2)" }}
+    />
+    <Tooltip
+      contentStyle={{
+        background: "#2e1b47",
+        border: "1px solid rgba(255,255,255,0.2)",
+        color: "#fff",
+      }}
+    />
+    
+    {/* Add glow effect */}
+    <defs>
+      <linearGradient id="lineGlow" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0%" stopColor="#d066ff" />
+        <stop offset="100%" stopColor="#9b4dff" />
+      </linearGradient>
+    </defs>
+
+    <Line
+      type="monotone"
+      dataKey="users"
+      stroke="url(#lineGlow)"
+      strokeWidth={3}
+      dot={{ r: 5, fill: "#fff", stroke: "#b26bff", strokeWidth: 2 }}
+      activeDot={{ r: 7 }}
+    />
+  </LineChart>
+</ResponsiveContainer>
+
           </div>
 
           {/* Threat Level */}
