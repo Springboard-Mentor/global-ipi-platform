@@ -1,15 +1,53 @@
-import React, { useState } from 'react';
-import { User, Mail, Building, Briefcase, Phone, Calendar, Shield, CheckCircle, XCircle } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { User, Mail, Building, Briefcase, Phone, Calendar, Shield, CheckCircle, XCircle, Camera, Trash2 } from 'lucide-react';
 
 const ProfilePage = ({ userProfile, setUserProfile, onBack }) => {
   const [formData, setFormData] = useState(userProfile);
   const [isEditing, setIsEditing] = useState(false);
+  const fileInputRef = useRef(null);
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Check file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File size should not exceed 5MB');
+        return;
+      }
+      
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData({
+          ...formData,
+          photoURL: reader.result
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemovePhoto = () => {
+    setFormData({
+      ...formData,
+      photoURL: ''
+    });
+  };
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
   };
 
   const handleSave = () => {
@@ -53,6 +91,33 @@ const ProfilePage = ({ userProfile, setUserProfile, onBack }) => {
                   <CheckCircle size={16} className="text-white" />
                 </div>
               )}
+              {isEditing && (
+                <div className="absolute -bottom-2 left-0 right-0 flex justify-center gap-2">
+                  <button
+                    onClick={handleUploadClick}
+                    className="p-2 bg-blue-500 rounded-full shadow-lg hover:bg-blue-600 transition-colors"
+                    title="Upload photo"
+                  >
+                    <Camera size={16} className="text-white" />
+                  </button>
+                  {formData.photoURL && (
+                    <button
+                      onClick={handleRemovePhoto}
+                      className="p-2 bg-red-500 rounded-full shadow-lg hover:bg-red-600 transition-colors"
+                      title="Remove photo"
+                    >
+                      <Trash2 size={16} className="text-white" />
+                    </button>
+                  )}
+                </div>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
             </div>
             <div>
               <h1 className="text-3xl font-bold">

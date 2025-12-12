@@ -40,12 +40,20 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile }) => {
             
             <button 
               onClick={onProfileClick}
-              className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center"
+              className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center overflow-hidden"
               title={`${userProfile.firstName} ${userProfile.lastName}`}
             >
-              <span className="text-white text-sm font-medium">
-                {userProfile.firstName.charAt(0)}{userProfile.lastName.charAt(0)}
-              </span>
+              {userProfile.photoURL ? (
+                <img 
+                  src={userProfile.photoURL} 
+                  alt="Profile" 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-white text-sm font-medium">
+                  {userProfile.firstName.charAt(0)}{userProfile.lastName.charAt(0)}
+                </span>
+              )}
             </button>
           </div>
         </div>
