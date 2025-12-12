@@ -1,0 +1,39 @@
+# Maven target directory
+target/
+
+# Compiled class files
+*.class
+
+# Log files
+*.log
+
+# Spring Boot specific
+spring.log
+
+# Maven wrapper files
+!.mvn/wrapper/maven-wrapper.jar
+.mvn/wrapper/maven-wrapper.properties
+mvnw
+mvnw.cmd
+
+# IDE files
+*.iml
+.idea/
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+*.env
+
+# Backup files
+*.bak
+*.tmp
