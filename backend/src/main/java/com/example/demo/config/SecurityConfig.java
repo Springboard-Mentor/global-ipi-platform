@@ -28,18 +28,24 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
-                .cors()   // ✅ Enable CORS
-                .and()
-                .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/login", "/auth/register").permitAll()
-                        .requestMatchers("/h2-console/**").permitAll()
-                        .anyRequest().authenticated()
-                )
-                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .userDetailsService(userDetailsService);
+            .cors()
+            .and()
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth
+                // Public Endpoints
+                .requestMatchers("/auth/login", "/auth/register").permitAll()
+                .requestMatchers("/h2-console/**").permitAll()
 
-        // needed for H2-console
+                // Protected Endpoints
+                .requestMatchers("/api/users/**").authenticated()
+
+                // Any other endpoint → must be authenticated
+                .anyRequest().authenticated()
+            )
+            .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .userDetailsService(userDetailsService);
+
+        // Allow H2 console
         http.headers(headers -> headers.frameOptions(frame -> frame.disable()));
 
         // Add JWT filter
@@ -48,7 +54,7 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // ✅ CORS BEAN (Fixes all CORS issues with React 3000 → Spring Boot 8080)
+    // CORS to allow frontend communication
     @Bean
     public CorsFilter corsFilter() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -64,7 +70,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) 
+            throws Exception {
         return config.getAuthenticationManager();
     }
 
