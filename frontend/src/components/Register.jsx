@@ -44,8 +44,13 @@ function Register() {
     setError("");
 
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      navigate("/dashboard");
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      console.log("Registration successful:", userCredential.user);
+      // Longer delay to ensure Firebase auth state is properly set
+      setTimeout(() => {
+        console.log("Redirecting to dashboard...");
+        window.location.href = "http://localhost:5173";
+      }, 1000);
     } catch (err) {
       if (err.code === "auth/email-already-in-use") {
         setError("Email is already registered. Please use a different email or login.");

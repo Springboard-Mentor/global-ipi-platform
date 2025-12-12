@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User } from 'lucide-react';
+import { User, Mail, Building, Briefcase, Phone, Calendar, Shield, CheckCircle, XCircle } from 'lucide-react';
 
 const ProfilePage = ({ userProfile, setUserProfile, onBack }) => {
   const [formData, setFormData] = useState(userProfile);
@@ -36,12 +36,42 @@ const ProfilePage = ({ userProfile, setUserProfile, onBack }) => {
           </button>
 
           <div className="flex items-center gap-6">
-            <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-xl">
-              <User size={48} className="text-blue-500" />
+            <div className="relative">
+              {formData.photoURL ? (
+                <img 
+                  src={formData.photoURL} 
+                  alt="Profile" 
+                  className="w-24 h-24 rounded-full shadow-xl object-cover"
+                />
+              ) : (
+                <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-xl">
+                  <User size={48} className="text-blue-500" />
+                </div>
+              )}
+              {formData.emailVerified && (
+                <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                  <CheckCircle size={16} className="text-white" />
+                </div>
+              )}
             </div>
             <div>
-              <h1 className="text-3xl font-bold">{formData.firstName} {formData.lastName}</h1>
-              <p className="text-blue-100 text-lg mt-1">{formData.position} at {formData.company}</p>
+              <h1 className="text-3xl font-bold">
+                {formData.firstName || formData.lastName ? 
+                  `${formData.firstName} ${formData.lastName}`.trim() : 
+                  'User Profile'
+                }
+              </h1>
+              <p className="text-blue-100 text-lg mt-1">
+                {formData.position && formData.company ? 
+                  `${formData.position} at ${formData.company}` : 
+                  'IP Intelligence Platform User'
+                }
+              </p>
+              {formData.emailVerified && (
+                <p className="text-green-200 text-sm mt-2 flex items-center gap-1">
+                  <Shield size={14} /> Verified Account
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -75,22 +105,174 @@ const ProfilePage = ({ userProfile, setUserProfile, onBack }) => {
             )}
           </div>
 
-          <div className="space-y-5">
-            {['firstName', 'lastName', 'email', 'company', 'position'].map((field) => (
-              <div key={field}>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  {field.charAt(0).toUpperCase() + field.slice(1)}
-                </label>
-                <input
-                  type="text"
-                  name={field}
-                  value={formData[field]}
-                  onChange={handleChange}
-                  disabled={!isEditing}
-                  className="w-full px-5 py-3 border border-gray-200 rounded-xl"
-                />
+          <div className="grid md:grid-cols-2 gap-8">
+            
+            {/* Basic Information */}
+            <div className="space-y-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Basic Information</h3>
+              
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+                  <User className="text-blue-500" size={20} />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500">Full Name</label>
+                    {!isEditing ? (
+                      <p className="text-gray-800">
+                        {formData.firstName || formData.lastName ? 
+                          `${formData.firstName} ${formData.lastName}`.trim() : 
+                          'Not specified'
+                        }
+                      </p>
+                    ) : (
+                      <div className="flex gap-2 mt-1">
+                        <input
+                          type="text"
+                          name="firstName"
+                          value={formData.firstName}
+                          onChange={handleChange}
+                          placeholder="First Name"
+                          className="px-3 py-1 border border-gray-300 rounded"
+                        />
+                        <input
+                          type="text"
+                          name="lastName"
+                          value={formData.lastName}
+                          onChange={handleChange}
+                          placeholder="Last Name"
+                          className="px-3 py-1 border border-gray-300 rounded"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+                  <Mail className="text-blue-500" size={20} />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500">Email Address</label>
+                    <div className="flex items-center gap-2">
+                      <p className="text-gray-800">{formData.email || 'Not specified'}</p>
+                      {formData.emailVerified ? (
+                        <CheckCircle className="text-green-500" size={16} title="Verified" />
+                      ) : (
+                        <XCircle className="text-red-500" size={16} title="Not verified" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+                  <Building className="text-blue-500" size={20} />
+                  <div className="w-full">
+                    <label className="block text-sm font-medium text-gray-500">Company</label>
+                    {!isEditing ? (
+                      <p className="text-gray-800">{formData.company || 'Not specified'}</p>
+                    ) : (
+                      <input
+                        type="text"
+                        name="company"
+                        value={formData.company}
+                        onChange={handleChange}
+                        className="w-full px-3 py-1 border border-gray-300 rounded mt-1"
+                      />
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+                  <Briefcase className="text-blue-500" size={20} />
+                  <div className="w-full">
+                    <label className="block text-sm font-medium text-gray-500">Position</label>
+                    {!isEditing ? (
+                      <p className="text-gray-800">{formData.position || 'Not specified'}</p>
+                    ) : (
+                      <input
+                        type="text"
+                        name="position"
+                        value={formData.position}
+                        onChange={handleChange}
+                        className="w-full px-3 py-1 border border-gray-300 rounded mt-1"
+                      />
+                    )}
+                  </div>
+                </div>
+
+                {formData.phoneNumber && (
+                  <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+                    <Phone className="text-blue-500" size={20} />
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500">Phone Number</label>
+                      <p className="text-gray-800">{formData.phoneNumber}</p>
+                    </div>
+                  </div>
+                )}
               </div>
-            ))}
+            </div>
+
+            {/* Account Information */}
+            <div className="space-y-6">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Account Information</h3>
+              
+              <div className="space-y-4">
+                <div className="p-4 bg-gray-50 rounded-xl">
+                  <label className="block text-sm font-medium text-gray-500 mb-2">Account ID</label>
+                  <p className="text-gray-800 font-mono text-xs">{formData.uid || 'Not available'}</p>
+                </div>
+
+                <div className="p-4 bg-gray-50 rounded-xl">
+                  <label className="block text-sm font-medium text-gray-500 mb-2">Account Status</label>
+                  <div className="flex items-center gap-2">
+                    {formData.emailVerified ? (
+                      <>
+                        <CheckCircle className="text-green-500" size={20} />
+                        <span className="text-green-600 font-medium">Verified</span>
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="text-red-500" size={20} />
+                        <span className="text-red-600 font-medium">Not Verified</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {formData.creationTime && (
+                  <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+                    <Calendar className="text-blue-500" size={20} />
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500">Account Created</label>
+                      <p className="text-gray-800">
+                        {new Date(formData.creationTime).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {formData.lastSignInTime && (
+                  <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
+                    <Calendar className="text-green-500" size={20} />
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500">Last Sign In</label>
+                      <p className="text-gray-800">
+                        {new Date(formData.lastSignInTime).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
         </div>

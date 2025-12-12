@@ -1,7 +1,7 @@
 import React from 'react';
 import { Menu, X, LayoutDashboard, Search, FileText, BarChart3, Settings, LogOut } from 'lucide-react';
 
-const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem }) => {
+const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem, onLogout }) => {
   const menuItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { id: 'search', icon: Search, label: 'Search Results' },
@@ -62,7 +62,7 @@ const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem }) => {
           {bottomItems.map(item => (
             <button
               key={item.id}
-              onClick={() => setActiveItem(item.id)}
+              onClick={() => item.id === 'logout' ? onLogout() : setActiveItem(item.id)}
               className={`
                 w-full flex items-center gap-3 px-4 py-3 rounded-xl
                 ${activeItem === item.id 

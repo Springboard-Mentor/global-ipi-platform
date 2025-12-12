@@ -22,8 +22,13 @@ function Login() {
     setError("");
     
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      navigate("/dashboard");
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      console.log("Login successful:", userCredential.user);
+      // Longer delay to ensure Firebase auth state is properly set
+      setTimeout(() => {
+        console.log("Redirecting to dashboard...");
+        window.location.href = "http://localhost:5173";
+      }, 1000);
     } catch (err) {
       setError("Invalid email or password. Please try again.");
     } finally {
@@ -38,7 +43,11 @@ function Login() {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       console.log("Google user:", result.user);
-      navigate("/dashboard");
+      // Longer delay to ensure Firebase auth state is properly set
+      setTimeout(() => {
+        console.log("Redirecting to dashboard...");
+        window.location.href = "http://localhost:5173";
+      }, 1000);
     } catch (err) {
       setError("Google login failed. Please try again.");
       console.error("Google login error:", err.message);

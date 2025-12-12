@@ -4,12 +4,30 @@ import Filters from '../components/Filters';
 import OverviewGrid from '../components/OverviewGrid';
 
 const Dashboard = ({ userProfile }) => {
+  const getTimeGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 18) return 'Good Afternoon';
+    return 'Good Evening';
+  };
+
   return (
     <div className="space-y-8">
 
       <div className="bg-white/90 rounded-2xl p-8 shadow-lg">
         <p className="text-sm text-gray-500 mb-1">Welcome back,</p>
-        <h1 className="text-4xl font-bold">Good Morning, {userProfile.firstName}.</h1>
+        <h1 className="text-4xl font-bold">
+          {getTimeGreeting()}, {userProfile.firstName || 'User'}.
+        </h1>
+        <p className="text-gray-600 mt-2">
+          {userProfile.email || 'user@example.com'} • {userProfile.company || 'IP Intelligence Platform'}
+        </p>
+        {userProfile.emailVerified && (
+          <div className="flex items-center gap-2 mt-3">
+            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            <span className="text-sm text-green-600 font-medium">Verified Account</span>
+          </div>
+        )}
       </div>
 
       <div className="relative">
