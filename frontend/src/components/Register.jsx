@@ -19,23 +19,52 @@ function Register() {
     return re.test(email);
   };
 
+  const validatePassword = (password) => {
+    const minLength = password.length >= 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumbers = /\d/.test(password);
+    const hasNonalphas = /\W/.test(password);
+    
+    return {
+      isValid: minLength && hasUpperCase && hasLowerCase && hasNumbers,
+      errors: {
+        minLength,
+        hasUpperCase,
+        hasLowerCase,
+        hasNumbers,
+        hasNonalphas
+      }
+    };
+  };
+
   const handleRegister = async () => {
-    if (!email || !password || !confirmPassword) {
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+    const trimmedConfirmPassword = confirmPassword.trim();
+
+    if (!trimmedEmail || !trimmedPassword || !trimmedConfirmPassword) {
       setError("All fields are required");
       return;
     }
 
-    if (!validateEmail(email)) {
+    if (!validateEmail(trimmedEmail)) {
       setError("Please enter a valid email address");
       return;
     }
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters");
+    const passwordValidation = validatePassword(trimmedPassword);
+    if (!passwordValidation.isValid) {
+      let errorMsg = "Password must contain:";
+      if (!passwordValidation.errors.minLength) errorMsg += " at least 8 characters,";
+      if (!passwordValidation.errors.hasUpperCase) errorMsg += " one uppercase letter,";
+      if (!passwordValidation.errors.hasLowerCase) errorMsg += " one lowercase letter,";
+      if (!passwordValidation.errors.hasNumbers) errorMsg += " one number,";
+      setError(errorMsg.slice(0, -1)); // Remove trailing comma
       return;
     }
 
-    if (password !== confirmPassword) {
+    if (trimmedPassword !== trimmedConfirmPassword) {
       setError("Passwords do not match");
       return;
     }
@@ -44,7 +73,7 @@ function Register() {
     setError("");
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, trimmedEmail, trimmedPassword);
       console.log("Registration successful:", userCredential.user);
       // Longer delay to ensure Firebase auth state is properly set
       setTimeout(() => {
@@ -113,7 +142,7 @@ function Register() {
           <input
             type={showPassword ? "text" : "password"}
             className="form-input with-icon"
-            placeholder="Create a password"
+            placeholder="Create a password (min 8 chars, upper/lower/number)"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             onKeyPress={handleKeyPress}
@@ -129,6 +158,22 @@ function Register() {
             </button>
           )}
         </div>
+        {password.length > 0 && (
+          <div style={{ fontSize: '12px', marginTop: '5px', color: '#666' }}>
+            <div style={{ color: password.length >= 8 ? 'green' : 'red' }}>
+              ✓ At least 8 characters {password.length >= 8 ? '✅' : '❌'}
+            </div>
+            <div style={{ color: /[A-Z]/.test(password) ? 'green' : 'red' }}>
+              ✓ One uppercase letter {/[A-Z]/.test(password) ? '✅' : '❌'}
+            </div>
+            <div style={{ color: /[a-z]/.test(password) ? 'green' : 'red' }}>
+              ✓ One lowercase letter {/[a-z]/.test(password) ? '✅' : '❌'}
+            </div>
+            <div style={{ color: /\d/.test(password) ? 'green' : 'red' }}>
+              ✓ One number {/\d/.test(password) ? '✅' : '❌'}
+            </div>
+          </div>
+        )}
       </div>
       
       <div className="form-group">

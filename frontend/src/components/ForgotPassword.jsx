@@ -71,12 +71,14 @@ function ForgotPassword() {
   };
 
   const handleReset = async () => {
-    if (!email) {
+    const trimmedEmail = email.trim();
+
+    if (!trimmedEmail) {
       setError("Please enter your email address");
       return;
     }
 
-    if (!validateEmail(email)) {
+    if (!validateEmail(trimmedEmail)) {
       setError("Please enter a valid email address");
       return;
     }
@@ -87,7 +89,7 @@ function ForgotPassword() {
 
     try {
       // First check if email exists
-      const emailExists = await checkIfEmailExists(email);
+      const emailExists = await checkIfEmailExists(trimmedEmail);
       
       if (!emailExists) {
         const errorMsg = "This email is not registered. Please check your email or create a new account.";
@@ -98,7 +100,7 @@ function ForgotPassword() {
       }
 
       // Send password reset email
-      await sendPasswordResetEmail(auth, email);
+      await sendPasswordResetEmail(auth, trimmedEmail);
       setMessage("Password reset email sent successfully! Please check your inbox and spam folder.");
       showToast("Reset link sent to your email!", "success");
       setEmail("");
