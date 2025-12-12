@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { countryCodes } from "../utils/countryCodes";
 import {
@@ -12,6 +12,7 @@ import Popup from "./Popup";
 
 const Profile = () => {
   const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -20,314 +21,280 @@ const Profile = () => {
     oldPassword: "",
     newPassword: "",
   });
+
+  const [profilePic, setProfilePic] = useState("https://i.pravatar.cc/300");
+  const [loading, setLoading] = useState(true);
   const [popup, setPopup] = useState({ message: "", type: "" });
+
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
 
-  // Handle input change
+  const token = localStorage.getItem("token");
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  // ---------------- LOAD PROFILE ----------------
+  const loadProfile = async () => {
+    try {
+      const response = await fetch("http://localhost:8081/api/users/me", {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.status === 401 || response.status === 403) {
+        setPopup({ message: "Unauthorized! Please login again.", type: "error" });
+        navigate("/login");
+        return;
+      }
+
+      const data = await response.json();
+
+      setFormData((prev) => ({
+        ...prev,
+        fullName: data.name,
+        email: data.email,
+        phone: data.phone,
+        countryCode: data.countryCode,
+      }));
+    } catch (error) {
+      setPopup({ message: "Unable to load profile", type: "error" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ---------------- IMAGE UPLOAD ----------------
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) setProfilePic(URL.createObjectURL(file));
+  };
+
+  // ---------------- INPUT CHANGE ----------------
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  //  Validation on submit
-  const handleSave = () => {
-    const { fullName, email, phone, oldPassword, newPassword } = formData;
+  // ---------------- SAVE PROFILE ----------------
+  const handleSave = async () => {
+    const { fullName, email, phone, countryCode, oldPassword, newPassword } =
+      formData;
 
-    // FULL NAME
-    if (!fullName.trim() || !validateName(fullName)) {
-      return setPopup({
-        message: getValidationMessage("name", fullName),
-        type: "error",
-      });
+    // VALIDATIONS
+    if (!validateName(fullName))
+      return setPopup({ message: getValidationMessage("name", fullName), type: "error" });
+
+    if (!validateEmail(email))
+      return setPopup({ message: getValidationMessage("email", email), type: "error" });
+
+    if (!validatePhone(phone))
+      return setPopup({ message: getValidationMessage("phone"), type: "error" });
+
+    // ------------ UPDATE PROFILE API -----------
+    try {
+      const res = await fetch(
+        "http://localhost:8081/api/users/update-profile",
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            name: fullName,
+            email,
+            phone,
+            countryCode,
+          }),
+        }
+      );
+
+      if (!res.ok) throw new Error("Profile update failed");
+
+    } catch (err) {
+      return setPopup({ message: "Profile update failed", type: "error" });
     }
 
-    // EMAIL
-    if (!email.trim() || !validateEmail(email)) {
-      return setPopup({
-        message: getValidationMessage("email", email),
-        type: "error",
-      });
-    }
+    // ------------ CHANGE PASSWORD -----------
+    if (oldPassword.trim() || newPassword.trim()) {
 
-    // PHONE
-    if (!validatePhone(phone)) {
-      return setPopup({
-        message: getValidationMessage("phone"),
-        type: "error",
-      });
-    }
+      // New rule → old and new password must be different
+      if (oldPassword === newPassword) {
+        return setPopup({
+          message: "New password must be different from old password",
+          type: "error",
+        });
+      }
 
-    // OLD PASSWORD
-    if (!oldPassword.trim() || !validatePassword(oldPassword)) {
-      return setPopup({
-        message: getValidationMessage("password", oldPassword),
-        type: "error",
-      });
-    }
+      if (!validatePassword(oldPassword))
+        return setPopup({
+          message: getValidationMessage("password", oldPassword),
+          type: "error",
+        });
 
-    // NEW PASSWORD
-    if (!newPassword.trim() || !validatePassword(newPassword)) {
-      return setPopup({
-        message: getValidationMessage("password", newPassword),
-        type: "error",
-      });
+      if (!validatePassword(newPassword))
+        return setPopup({
+          message: getValidationMessage("password", newPassword),
+          type: "error",
+        });
+
+      try {
+        const pwdRes = await fetch(
+          "http://localhost:8081/api/users/change-password",
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ oldPassword, newPassword }),
+          }
+        );
+
+        if (!pwdRes.ok) throw new Error("Password update failed");
+
+      } catch (err) {
+        return setPopup({
+          message: "Password update failed",
+          type: "error",
+        });
+      }
     }
 
     setPopup({ message: "Profile updated successfully!", type: "success" });
   };
 
+  if (loading) {
+    return (
+      <div className="text-white text-center mt-20 text-xl">
+        Loading profile...
+      </div>
+    );
+  }
+
+  // ---------------- UI ----------------
   return (
-    <div className="min-h-screen w-full flex flex-col items-center bg-gradient-to-br from-[#1a0533] via-[#3b0a68] to-[#5c0faf] p-6 text-white">
-      {/* Page Title */}
+    <div className="min-h-screen w-full flex flex-col items-center 
+      bg-gradient-to-br from-[#1a0533] via-[#3b0a68] to-[#5c0faf] p-6 text-white">
+
       <h1 className="text-3xl font-semibold mt-10 mb-6">Profile</h1>
+
       <button
         onClick={() => navigate(-1)}
-        className="absolute left-6 top-6 flex items-center gap-2 
-             px-4 py-2 rounded-xl 
-             bg-white/10 backdrop-blur-md 
-             border border-white/20
-             text-white font-medium 
-             hover:bg-white/20 hover:scale-105 active:scale-95
-             transition duration-200"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth={2}
-          stroke="white"
-          className="w-5 h-5"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M15.75 19.5L8.25 12l7.5-7.5"
-          />
-        </svg>
+        className="absolute left-6 top-6 px-4 py-2 bg-white/10 
+          border border-white/20 rounded-lg hover:bg-white/20">
         Back
       </button>
 
-      {/* Glassmorphism Card */}
-      <div
-        className="
-        w-full max-w-lg 
-        bg-white/10 backdrop-blur-xl 
-        rounded-2xl shadow-xl 
-        p-8 flex flex-col items-center
-      "
-      >
-        {/* Avatar */}
-        <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-white/20 mb-6">
-          <img
-            src="https://i.pravatar.cc/300"
-            alt="profile"
-            className="w-full h-full object-cover"
+      <div className="w-full max-w-lg bg-white/10 backdrop-blur-xl rounded-2xl p-8">
+
+        {/* Profile Picture */}
+        <div className="flex flex-col items-center mb-6">
+          <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-white/20">
+            <img src={profilePic} alt="profile" className="w-full h-full object-cover" />
+          </div>
+
+          <label htmlFor="profilePicUpload"
+            className="mt-3 cursor-pointer px-4 py-2 bg-white/20 rounded-lg">
+            Upload Photo
+          </label>
+
+          <input
+            id="profilePicUpload"
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            className="hidden"
           />
         </div>
 
         {/* Full Name */}
-        <div className="w-full mb-4">
-          <label className="text-sm text-gray-200">Full Name</label>
-          <div className="relative">
-            <input
-              name="fullName"
-              value={formData.fullName}
-              onChange={handleChange}
-              type="text"
-              placeholder="Full Name"
-              className="w-full mt-1 bg-white/10 text-white placeholder-gray-300 
-                border border-white/20 rounded-lg px-4 py-2 outline-none
-                focus:border-pink-400"
-            />
-          </div>
-        </div>
+        <label>Full Name</label>
+        <input
+          name="fullName"
+          value={formData.fullName}
+          onChange={handleChange}
+          className="w-full mt-1 bg-white/10 border border-white/20 rounded-lg px-4 py-2"
+        />
 
         {/* Email */}
-        <div className="w-full mb-4">
-          <label className="text-sm text-gray-200">Email</label>
-          <input
-            name="email"
-            value={formData.email}
+        <label className="mt-4 block">Email</label>
+        <input
+          name="email"
+          value={formData.email}
+          onChange={handleChange}
+          className="w-full mt-1 bg-white/10 border border-white/20 rounded-lg px-4 py-2"
+        />
+
+        {/* Phone */}
+        <label className="mt-4 block">Mobile Number</label>
+        <div className="flex gap-2">
+          <select
+            name="countryCode"
+            value={formData.countryCode}
             onChange={handleChange}
-            type="email"
-            placeholder="Enter your@email.com"
-            className="w-full mt-1 bg-white/10 text-white placeholder-gray-300 
-              border border-white/20 rounded-lg px-4 py-2 outline-none
-              focus:border-pink-400"
+            className="w-28 bg-white/10 border border-white/20 rounded-lg px-3 py-2"
+          >
+            {countryCodes.map((c) => (
+              <option key={c.code} value={c.code} className="text-black">
+                {c.code} {c.name}
+              </option>
+            ))}
+          </select>
+
+          <input
+            name="phone"
+            value={formData.phone}
+            onChange={handleChange}
+            className="flex-1 bg-white/10 border border-white/20 rounded-lg px-4 py-2"
           />
         </div>
 
-        {/* Mobile Number */}
-        <div className="w-full mb-4">
-          <label className="text-sm text-gray-200">Mobile Number</label>
-
-          <div className="relative mt-1 flex items-center gap-2">
-            {/* Country Code Dropdown */}
-            <select
-              name="countryCode"
-              value={formData.countryCode}
-              onChange={handleChange}
-              className="w-28 bg-white/10 text-white border border-white/20 rounded-lg px-3 py-2
-                 outline-none focus:border-pink-400 cursor-pointer"
-              defaultValue="+91"
-            >
-              {countryCodes.map((c) => (
-                <option key={c.code} value={c.code} className="text-black">
-                  ({c.code}) {c.name}
-                </option>
-              ))}
-            </select>
-
-            {/* Phone Number Input */}
-            <input
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              type="tel"
-              placeholder="Enter mobile number"
-              className="flex-1 bg-white/10 text-white placeholder-gray-300 
-                 border border-white/20 rounded-lg px-4 py-2 outline-none 
-                 focus:border-pink-400"
-            />
-          </div>
+        {/* Old Password */}
+        <label className="mt-4 block">Old Password</label>
+        <div className="relative">
+          <input
+            name="oldPassword"
+            type={showOldPassword ? "text" : "password"}
+            value={formData.oldPassword}
+            onChange={handleChange}
+            className="w-full mt-1 bg-white/10 border border-white/20 rounded-lg px-4 py-2"
+          />
+          <span
+            onClick={() => setShowOldPassword(!showOldPassword)}
+            className="absolute right-3 top-3 cursor-pointer text-gray-300"
+          >
+            👁
+          </span>
         </div>
 
-        {/* Password */}
-        <div className="w-full mb-4">
-          <label className="text-sm text-gray-200">Password</label>
-          <div className="relative">
-            <input
-              name="oldPassword"
-              value={formData.oldPassword}
-              onChange={handleChange}
-              type={showOldPassword ? "text" : "password"}
-              placeholder="Old Password"
-              className="w-full mt-1 bg-white/10 text-white placeholder-gray-300 
-                border border-white/20 rounded-lg px-4 py-2 outline-none
-                focus:border-pink-400"
-            />
-            {/* Eye Icon */}
-            <span
-              onClick={() => setShowOldPassword(!showOldPassword)}
-              className="absolute right-3 top-3 cursor-pointer text-gray-300"
-            >
-              {showOldPassword ? (
-                // Eye Open
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth="1.8"
-                  stroke="white"
-                  className="w-5 h-5"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M2.036 12.322c.944-4.06 4.33-7.322 9.964-7.322 
-             5.632 0 9.017 3.262 9.964 7.322 
-             -.947 4.06-4.332 7.322-9.964 7.322 
-             -5.634 0-9.02-3.262-9.964-7.322z"
-                  />
-                  <circle cx="12" cy="12" r="3" />
-                </svg>
-              ) : (
-                // Eye Closed
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth="1.8"
-                  stroke="white"
-                  className="w-5 h-5"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M3 3l18 18M10.477 10.49A3 3 0 0113.5 13.5m3.35 
-             -.858A7.5 7.5 0 006.514 6.513m12.338 
-             5.858c-.944 4.06-4.33 7.322-9.964 
-             7.322A10.5 10.5 0 013 12.322 
-             c.317-1.364.964-2.618 1.88-3.68"
-                  />
-                </svg>
-              )}
-            </span>
-          </div>
-
-          <div className="relative mt-4">
-            <input
-              name="newPassword"
-              value={formData.newPassword}
-              onChange={handleChange}
-              type={showNewPassword ? "text" : "password"}
-              placeholder="New Password"
-              className="w-full mt-1 bg-white/10 text-white placeholder-gray-300 
-                border border-white/20 rounded-lg px-4 py-2 outline-none
-                focus:border-pink-400"
-            />
-            {/* Eye Icon */}
-            <span
-              onClick={() => setShowNewPassword(!showNewPassword)}
-              className="absolute right-3 top-3 cursor-pointer text-gray-300"
-            >
-              {showNewPassword ? (
-                // Eye Open SVG
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth="1.8"
-                  stroke="white"
-                  className="w-5 h-5"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M2.036 12.322c.944-4.06 4.33-7.322 9.964-7.322 
-             5.632 0 9.017 3.262 9.964 7.322 
-             -.947 4.06-4.332 7.322-9.964 7.322 
-             -5.634 0-9.02-3.262-9.964-7.322z"
-                  />
-                  <circle cx="12" cy="12" r="3" />
-                </svg>
-              ) : (
-                // Eye Closed SVG
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth="1.8"
-                  stroke="white"
-                  className="w-5 h-5"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M3 3l18 18M10.477 10.49A3 3 0 0113.5 13.5m3.35 
-             -.858A7.5 7.5 0 006.514 6.513m12.338 
-             5.858c-.944 4.06-4.33 7.322-9.964 
-             7.322A10.5 10.5 0 013 12.322 
-             c.317-1.364.964-2.618 1.88-3.68"
-                  />
-                </svg>
-              )}
-            </span>
-          </div>
+        {/* New Password */}
+        <label className="mt-4 block">New Password</label>
+        <div className="relative">
+          <input
+            name="newPassword"
+            type={showNewPassword ? "text" : "password"}
+            value={formData.newPassword}
+            onChange={handleChange}
+            className="w-full mt-1 bg-white/10 border border-white/20 rounded-lg px-4 py-2"
+          />
+          <span
+            onClick={() => setShowNewPassword(!showNewPassword)}
+            className="absolute right-3 top-3 cursor-pointer text-gray-300"
+          >
+            👁
+          </span>
         </div>
 
-        {/* Save Button */}
         <button
           onClick={handleSave}
-          className="
-          w-full py-3 rounded-lg text-white font-semibold
-          bg-gradient-to-r from-purple-500 to-pink-500 
-          hover:opacity-90 transition
-        "
-        >
+          className="w-full mt-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 
+          rounded-lg font-semibold hover:opacity-90">
           Save Changes
         </button>
       </div>
+
       <Popup
         message={popup.message}
         type={popup.type}
