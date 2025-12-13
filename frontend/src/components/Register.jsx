@@ -1,11 +1,15 @@
 import { useState } from "react";
-import { auth, googleProvider } from "../firebase";
+import { auth, googleProvider, db } from "../firebase";
 import { createUserWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useNavigate, Link } from "react-router-dom";
 import "../App.css";
 
 function Register() {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -14,9 +18,20 @@ function Register() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  const validateName = (name) => {
+    const trimmedName = name.trim();
+    return trimmedName.length >= 2 && /^[a-zA-Z\s'-]+$/.test(trimmedName);
+  };
+
   const validateEmail = (email) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(email);
+  };
+
+  const validatePhoneNumber = (phone) => {
+    // Accepts formats: +1234567890, (123) 456-7890, 123-456-7890, 1234567890
+    const re = /^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$/;
+    return phone.trim().length >= 10 && re.test(phone.trim());
   };
 
   const validatePassword = (password) => {
@@ -39,17 +54,35 @@ function Register() {
   };
 
   const handleRegister = async () => {
+    const trimmedFirstName = firstName.trim();
+    const trimmedLastName = lastName.trim();
     const trimmedEmail = email.trim();
+    const trimmedPhone = phoneNumber.trim();
     const trimmedPassword = password.trim();
     const trimmedConfirmPassword = confirmPassword.trim();
 
-    if (!trimmedEmail || !trimmedPassword || !trimmedConfirmPassword) {
+    if (!trimmedFirstName || !trimmedLastName || !trimmedEmail || !trimmedPhone || !trimmedPassword || !trimmedConfirmPassword) {
       setError("All fields are required");
+      return;
+    }
+
+    if (!validateName(trimmedFirstName)) {
+      setError("Please enter a valid first name (at least 2 characters, letters only)");
+      return;
+    }
+
+    if (!validateName(trimmedLastName)) {
+      setError("Please enter a valid last name (at least 2 characters, letters only)");
       return;
     }
 
     if (!validateEmail(trimmedEmail)) {
       setError("Please enter a valid email address");
+      return;
+    }
+
+    if (!validatePhoneNumber(trimmedPhone)) {
+      setError("Please enter a valid phone number (at least 10 digits)");
       return;
     }
 
@@ -75,7 +108,27 @@ function Register() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, trimmedEmail, trimmedPassword);
       console.log("Registration successful:", userCredential.user);
-      // Longer delay to ensure Firebase auth state is properly set
+      
+      // Save user data to Firestore
+      await setDoc(doc(db, "users", userCredential.user.uid), {
+        firstName: trimmedFirstName,
+        lastName: trimmedLastName,
+        email: trimmedEmail,
+        phoneNumber: trimmedPhone,
+        uid: userCredential.user.uid,
+        authProvider: "email",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      
+      console.log("User data saved to Firestore");
+      
+      // Get ID token and save to localStorage for dashboard
+      const idToken = await userCredential.user.getIdToken();
+      localStorage.setItem('firebaseAuthToken', idToken);
+      console.log("Auth token saved to localStorage");
+      
+      // Redirect to dashboard
       setTimeout(() => {
         console.log("Redirecting to dashboard...");
         window.location.href = "http://localhost:5173";
@@ -100,7 +153,38 @@ function Register() {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       console.log("Google user:", result.user);
-      navigate("/dashboard");
+      
+      // Extract name from displayName
+      const displayName = result.user.displayName || "";
+      const nameParts = displayName.split(" ");
+      const firstName = nameParts[0] || "";
+      const lastName = nameParts.slice(1).join(" ") || "";
+      
+      // Save or update user data to Firestore
+      await setDoc(doc(db, "users", result.user.uid), {
+        firstName: firstName,
+        lastName: lastName,
+        email: result.user.email,
+        phoneNumber: result.user.phoneNumber || "",
+        photoURL: result.user.photoURL || "",
+        uid: result.user.uid,
+        authProvider: "google",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      }, { merge: true }); // merge: true will update existing data or create new
+      
+      console.log("Google user data saved to Firestore");
+      
+      // Get ID token and save to localStorage for dashboard
+      const idToken = await result.user.getIdToken();
+      localStorage.setItem('firebaseAuthToken', idToken);
+      console.log("Auth token saved to localStorage");
+      
+      // Redirect to dashboard
+      setTimeout(() => {
+        console.log("Redirecting to dashboard...");
+        window.location.href = "http://localhost:5173";
+      }, 1000);
     } catch (err) {
       setError("Google registration failed. Please try again.");
       console.error("Google registration error:", err.message);
@@ -123,17 +207,82 @@ function Register() {
       
       <div className="form-group">
         <div className="input-wrapper">
+          <span className="input-icon">👤</span>
+          <input
+            type="text"
+            className="form-input with-icon"
+            placeholder="First Name"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            onKeyPress={handleKeyPress}
+            autoComplete="given-name"
+          />
+        </div>
+        {firstName.length > 0 && !validateName(firstName) && (
+          <div style={{ fontSize: '12px', marginTop: '5px', color: 'red' }}>
+            Name must be at least 2 characters and contain only letters
+          </div>
+        )}
+      </div>
+      
+      <div className="form-group">
+        <div className="input-wrapper">
+          <span className="input-icon">👥</span>
+          <input
+            type="text"
+            className="form-input with-icon"
+            placeholder="Last Name"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            onKeyPress={handleKeyPress}
+            autoComplete="family-name"
+          />
+        </div>
+        {lastName.length > 0 && !validateName(lastName) && (
+          <div style={{ fontSize: '12px', marginTop: '5px', color: 'red' }}>
+            Name must be at least 2 characters and contain only letters
+          </div>
+        )}
+      </div>
+      
+      <div className="form-group">
+        <div className="input-wrapper">
           <span className="input-icon">📧</span>
           <input
             type="email"
             className="form-input with-icon"
-            placeholder="Enter your email"
+            placeholder="Email Address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             onKeyPress={handleKeyPress}
             autoComplete="email"
           />
         </div>
+        {email.length > 0 && !validateEmail(email) && (
+          <div style={{ fontSize: '12px', marginTop: '5px', color: 'red' }}>
+            Please enter a valid email address
+          </div>
+        )}
+      </div>
+      
+      <div className="form-group">
+        <div className="input-wrapper">
+          <span className="input-icon">📱</span>
+          <input
+            type="tel"
+            className="form-input with-icon"
+            placeholder="Phone Number"
+            value={phoneNumber}
+            onChange={(e) => setPhoneNumber(e.target.value)}
+            onKeyPress={handleKeyPress}
+            autoComplete="tel"
+          />
+        </div>
+        {phoneNumber.length > 0 && !validatePhoneNumber(phoneNumber) && (
+          <div style={{ fontSize: '12px', marginTop: '5px', color: 'red' }}>
+            Please enter a valid phone number (at least 10 digits)
+          </div>
+        )}
       </div>
       
       <div className="form-group">

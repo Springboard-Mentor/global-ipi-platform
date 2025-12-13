@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
-import { auth, googleProvider } from "../firebase";
+import { auth, googleProvider, db } from "../firebase";
+import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { useNavigate, Link } from "react-router-dom";
 import "../App.css";
 
@@ -42,7 +43,24 @@ function Login() {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, trimmedEmail, trimmedPassword);
       console.log("Login successful:", userCredential.user);
-      // Longer delay to ensure Firebase auth state is properly set
+      
+      // Update last login time in Firestore
+      const userRef = doc(db, "users", userCredential.user.uid);
+      const userDoc = await getDoc(userRef);
+      
+      if (userDoc.exists()) {
+        await setDoc(userRef, {
+          lastLogin: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+      }
+      
+      // Get ID token and save to localStorage for dashboard
+      const idToken = await userCredential.user.getIdToken();
+      localStorage.setItem('firebaseAuthToken', idToken);
+      console.log("Auth token saved to localStorage");
+      
+      // Redirect to dashboard
       setTimeout(() => {
         console.log("Redirecting to dashboard...");
         window.location.href = "http://localhost:5173";
@@ -61,7 +79,47 @@ function Login() {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       console.log("Google user:", result.user);
-      // Longer delay to ensure Firebase auth state is properly set
+      
+      // Extract name from displayName
+      const displayName = result.user.displayName || "";
+      const nameParts = displayName.split(" ");
+      const firstName = nameParts[0] || "";
+      const lastName = nameParts.slice(1).join(" ") || "";
+      
+      // Check if user exists in Firestore
+      const userRef = doc(db, "users", result.user.uid);
+      const userDoc = await getDoc(userRef);
+      
+      if (userDoc.exists()) {
+        // Update existing user
+        await setDoc(userRef, {
+          lastLogin: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+      } else {
+        // Create new user document
+        await setDoc(userRef, {
+          firstName: firstName,
+          lastName: lastName,
+          email: result.user.email,
+          phoneNumber: result.user.phoneNumber || "",
+          photoURL: result.user.photoURL || "",
+          uid: result.user.uid,
+          authProvider: "google",
+          createdAt: serverTimestamp(),
+          lastLogin: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+      }
+      
+      console.log("Google user data saved to Firestore");
+      
+      // Get ID token and save to localStorage for dashboard
+      const idToken = await result.user.getIdToken();
+      localStorage.setItem('firebaseAuthToken', idToken);
+      console.log("Auth token saved to localStorage");
+      
+      // Redirect to dashboard
       setTimeout(() => {
         console.log("Redirecting to dashboard...");
         window.location.href = "http://localhost:5173";
