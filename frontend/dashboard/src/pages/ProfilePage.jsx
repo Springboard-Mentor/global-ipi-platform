@@ -18,8 +18,11 @@ const uploadPhotoToStorage = async (file, uid) => {
   console.log('User ID:', uid);
   
   try {
-    const storageRef = ref(storage, `users/${uid}/profile.jpg`);
-    console.log('Storage path:', `users/${uid}/profile.jpg`);
+    // Get file extension dynamically
+    const fileExtension = file.name.split('.').pop().toLowerCase();
+    const fileName = `profile.${fileExtension}`;
+    const storageRef = ref(storage, `users/${uid}/${fileName}`);
+    console.log('Storage path:', `users/${uid}/${fileName}`);
     
     const snapshot = await uploadBytes(storageRef, file);
     console.log('✅ File uploaded successfully:', snapshot);
@@ -42,16 +45,24 @@ const deleteOldPhotoFromStorage = async (uid) => {
     // Only attempt to delete if a UID exists
     if (!uid) return;
     try {
-        const storageRef = ref(storage, `users/${uid}/profile.jpg`);
-        // Note: You might need a check to see if the file exists before trying to delete it
-        await deleteObject(storageRef);
-        console.log("Old profile photo deleted from storage.");
-    } catch (error) {
-        // Log the error but don't stop the save process, 
-        // as the file might not exist in storage (e.g., initial save)
-        if (error.code !== 'storage/object-not-found') {
-             console.error('Error deleting old profile photo:', error);
+        // Try to delete common image formats
+        const commonExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+        
+        for (const ext of commonExtensions) {
+            try {
+                const storageRef = ref(storage, `users/${uid}/profile.${ext}`);
+                await deleteObject(storageRef);
+                console.log(`Old profile photo deleted: profile.${ext}`);
+                break; // If successful, stop trying other formats
+            } catch (error) {
+                if (error.code !== 'storage/object-not-found') {
+                    console.error(`Error deleting profile.${ext}:`, error);
+                }
+                // Continue to next extension if file not found
+            }
         }
+    } catch (error) {
+        console.error('Error in deleteOldPhotoFromStorage:', error);
     }
 };
 
@@ -61,59 +72,89 @@ const ProfilePage = ({ userProfile, setUserProfile, onBack }) => {
   console.log('userProfile prop:', userProfile);
   console.log('auth.currentUser:', auth.currentUser);
   
-  // DEVELOPMENT MODE: Use test UID if no real UID found
-  const TEST_UID = "JBKwcX248aeStcb15EnK8M8jwSW2"; // Your actual UID from Firestore
+  // Get current authenticated user UID only
+  const currentUID = auth.currentUser?.uid || userProfile?.uid;
   
   // Use a temporary state for the file object/blob for storage upload, not the Base64 string
   const [formData, setFormData] = useState({
-    ...userProfile,
-    uid: userProfile?.uid || TEST_UID // Always ensure UID exists
+    firstName: '',
+    lastName: '',
+    email: '',
+    company: '',
+    position: '',
+    phoneNumber: '',
+    photoURL: '',
+    uid: '',
+    emailVerified: false,
+    authProvider: '',
+    creationTime: '',
+    lastSignInTime: ''
   });
   const [newFile, setNewFile] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
   const fileInputRef = useRef(null);
   
-  // Check if we have a valid UID
-  const hasValidUID = !!(auth.currentUser?.uid || userProfile?.uid || formData?.uid || TEST_UID);
+  // Check if we have a valid authenticated user
+  const hasValidUID = !!(currentUID);
 
   // Fetch and sync data when component mounts or userProfile changes
   useEffect(() => {
     const loadProfileData = async () => {
       console.log('ProfilePage - Loading profile data...');
-      const uid = auth.currentUser?.uid || userProfile?.uid || TEST_UID;
       
-      if (!uid) {
-        console.log('⚠️ No UID available');
+      if (!currentUID) {
+        console.log('⚠️ No UID available - user must be authenticated');
+        setError('Please log in to view your profile.');
+        setIsLoading(false);
         return;
       }
 
       try {
-        // Fetch fresh data from Firestore
-        const userDocRef = doc(db, 'users', uid);
+        console.log('📂 Fetching from Firestore for UID:', currentUID);
+        const userDocRef = doc(db, 'users', currentUID);
         const userDocSnap = await getDoc(userDocRef);
         
         if (userDocSnap.exists()) {
           const firestoreData = userDocSnap.data();
-          console.log('✅ Profile data loaded from Firestore:', firestoreData);
+          console.log('✅ Firestore data retrieved successfully!');
+          console.log('📊 Data fields:', Object.keys(firestoreData));
+          console.log('👤 Name:', firestoreData.firstName, firestoreData.lastName);
+          console.log('📧 Email:', firestoreData.email);
+          console.log('📱 Phone:', firestoreData.phoneNumber);
+          console.log('📷 Photo URL from Firestore:', firestoreData.photoURL);
+          console.log('📷 Photo URL TYPE:', typeof firestoreData.photoURL);
+          console.log('📷 Photo URL LENGTH:', firestoreData.photoURL?.length);
+          console.log('📷 Raw Firestore data:', JSON.stringify(firestoreData, null, 2));
           
-          // Merge Firestore data with auth metadata
           const completeData = {
             ...firestoreData,
-            uid: uid,
-            email: firestoreData.email || auth.currentUser?.email || userProfile?.email || '',
-            emailVerified: firestoreData.emailVerified !== undefined ? firestoreData.emailVerified : (auth.currentUser?.emailVerified || userProfile?.emailVerified || false),
+            uid: currentUID,
+            email: firestoreData.email || auth.currentUser?.email || '',
+            emailVerified: firestoreData.emailVerified ?? auth.currentUser?.emailVerified ?? false,
             phoneNumber: firestoreData.phoneNumber || '',
-            creationTime: auth.currentUser?.metadata?.creationTime || userProfile?.creationTime || '',
-            lastSignInTime: auth.currentUser?.metadata?.lastSignInTime || userProfile?.lastSignInTime || '',
-            authProvider: firestoreData.authProvider || userProfile?.authProvider || '',
+            photoURL: firestoreData.photoURL || auth.currentUser?.photoURL || '',
+            creationTime: auth.currentUser?.metadata?.creationTime || '',
+            lastSignInTime: auth.currentUser?.metadata?.lastSignInTime || '',
+            authProvider: firestoreData.authProvider || 'email'
           };
           
-          console.log('📊 Complete profile data:', completeData);
-          console.log('📞 Phone Number:', completeData.phoneNumber);
-          console.log('✉️ Email Verified:', completeData.emailVerified);
+          // Special handling for Google profile photos - ensure they have size parameters
+          if (completeData.photoURL && completeData.photoURL.includes('googleusercontent.com')) {
+            // Add size parameter if missing
+            if (!completeData.photoURL.includes('=s') && !completeData.photoURL.includes('?sz=')) {
+              completeData.photoURL = completeData.photoURL + '=s200-c';
+            }
+            console.log('📸 Enhanced Google photo URL:', completeData.photoURL);
+          }
           
+          console.log('🎉 Setting profile data with', Object.keys(completeData).length, 'fields');
+          console.log('📷 Final photoURL:', completeData.photoURL);
+          console.log('📷 Final photoURL length:', completeData.photoURL?.length);
           setFormData(completeData);
+          setError(''); // Clear any errors
           
           // Update parent state immediately for Dashboard sync
           if (setUserProfile) {
@@ -121,40 +162,72 @@ const ProfilePage = ({ userProfile, setUserProfile, onBack }) => {
             setUserProfile(completeData);
           }
         } else {
-          // Use userProfile prop as fallback
-          console.log('⚠️ No Firestore data, using userProfile prop');
-          const fallbackData = {
-            ...userProfile,
-            uid: uid
-          };
-          setFormData(fallbackData);
+          console.log('⚠️ No Firestore data found for current user');
           
-          // Update parent state for Dashboard sync
-          if (setUserProfile) {
-            console.log('📤 Syncing fallback profile data to Dashboard');
-            setUserProfile(fallbackData);
+          // Use auth.currentUser data as fallback if available
+          if (auth.currentUser) {
+            const fallbackData = {
+              uid: currentUID,
+              firstName: auth.currentUser.displayName?.split(' ')[0] || '',
+              lastName: auth.currentUser.displayName?.split(' ').slice(1).join(' ') || '',
+              email: auth.currentUser.email || '',
+              photoURL: auth.currentUser.photoURL || '',
+              emailVerified: auth.currentUser.emailVerified || false,
+              authProvider: 'google',
+              creationTime: auth.currentUser.metadata?.creationTime || '',
+              lastSignInTime: auth.currentUser.metadata?.lastSignInTime || '',
+              company: '',
+              position: '',
+              phoneNumber: ''
+            };
+            
+            console.log('📷 Using fallback data with photoURL:', fallbackData.photoURL);
+            setFormData(fallbackData);
+            
+            // Update parent state for Dashboard sync
+            if (setUserProfile) {
+              console.log('📤 Syncing fallback profile data to Dashboard');
+              setUserProfile(fallbackData);
+            }
+          } else {
+            setError('Profile data not found. Please contact support.');
           }
         }
       } catch (error) {
         console.error('❌ Error loading profile:', error);
-        // Fallback to userProfile prop
-        const errorFallbackData = {
-          ...userProfile,
-          uid: uid
-        };
-        setFormData(errorFallbackData);
+        setError('Failed to load profile: ' + error.message);
         
-        // Update parent state even for error fallback
-        if (setUserProfile) {
-          console.log('📤 Syncing error fallback data to Dashboard');
-          setUserProfile(errorFallbackData);
+        // Basic fallback from auth if available
+        if (auth.currentUser) {
+          const errorFallbackData = {
+            uid: currentUID,
+            firstName: auth.currentUser.displayName?.split(' ')[0] || '',
+            lastName: auth.currentUser.displayName?.split(' ').slice(1).join(' ') || '',
+            email: auth.currentUser.email || '',
+            photoURL: auth.currentUser.photoURL || '',
+            emailVerified: auth.currentUser.emailVerified || false,
+            company: '',
+            position: '',
+            phoneNumber: '',
+            authProvider: 'google',
+            creationTime: auth.currentUser.metadata?.creationTime || '',
+            lastSignInTime: auth.currentUser.metadata?.lastSignInTime || ''
+          };
+          setFormData(errorFallbackData);
+          
+          if (setUserProfile) {
+            console.log('📤 Syncing error fallback data to Dashboard');
+            setUserProfile(errorFallbackData);
+          }
         }
+      } finally {
+        console.log('✔️ ProfilePage data fetch completed, setting isLoading to false');
+        setIsLoading(false);
       }
     };
 
     loadProfileData();
-    setNewFile(null);
-  }, [userProfile?.uid, auth.currentUser?.uid]);
+  }, [currentUID]); // Re-run when authenticated user changes
 
   const handleChange = (e) => {
     const value = e.target.value;
@@ -167,6 +240,8 @@ const ProfilePage = ({ userProfile, setUserProfile, onBack }) => {
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
+      console.log('📁 File selected:', file.name, file.type, file.size);
+      
       // Check file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         alert('File size should not exceed 5MB');
@@ -179,22 +254,34 @@ const ProfilePage = ({ userProfile, setUserProfile, onBack }) => {
         return;
       }
 
+      // Validate user is authenticated before allowing upload
+      if (!currentUID) {
+        alert('Please log in to upload a profile picture');
+        return;
+      }
+
       // 1. Store the actual File object for Firebase Storage upload later
       setNewFile(file); 
 
-      // 2. Use FileReader only for local preview
+      // 2. Use FileReader for immediate local preview
       const reader = new FileReader();
       reader.onloadend = () => {
+        console.log('📷 Preview generated for file:', file.name);
         setFormData(prevData => ({
           ...prevData,
           photoURL: reader.result // Base64 for instant UI preview only
         }));
+      };
+      reader.onerror = () => {
+        console.error('❌ Error reading file for preview');
+        alert('Error reading file. Please try again.');
       };
       reader.readAsDataURL(file);
     }
   };
 
   const handleRemovePhoto = () => {
+    console.log('🗑️ Removing photo...');
     setNewFile(null); // Clear the new file pending upload
     setFormData({
       ...formData,
@@ -203,6 +290,10 @@ const ProfilePage = ({ userProfile, setUserProfile, onBack }) => {
   };
 
   const handleUploadClick = () => {
+    if (!currentUID) {
+      alert('Please log in to upload a profile picture');
+      return;
+    }
     fileInputRef.current?.click();
   };
 
@@ -224,32 +315,52 @@ const ProfilePage = ({ userProfile, setUserProfile, onBack }) => {
     let photoUrlToSave = formData.photoURL;
 
     try {
-      // Get UID - priority: currentUser > userProfile > formData > TEST_UID
-      let userId = auth.currentUser?.uid || userProfile?.uid || formData?.uid || TEST_UID;
+      // Use only the current authenticated user's UID - no fallbacks
+      const userId = currentUID;
       
-      console.log('🔑 Using UID:', userId);
-      console.log('Source: ', auth.currentUser?.uid ? 'auth.currentUser' : 
-                             userProfile?.uid ? 'userProfile' : 
-                             formData?.uid ? 'formData' : 'TEST_UID');
+      if (!userId) {
+        console.error('❌ No valid user ID found');
+        alert('Please log in to save your profile.');
+        setIsSaving(false);
+        return;
+      }
+
+      console.log('🔑 Using authenticated user UID:', userId);
 
       // 1. Handle Photo Upload to Firebase Storage
       if (newFile) {
         console.log('📸 New file detected, starting upload...');
-        console.log('newFile object:', newFile);
+        console.log('File details:', {
+          name: newFile.name,
+          size: newFile.size,
+          type: newFile.type
+        });
+        
         try {
+          // Clear any previous Base64 preview before upload
+          setFormData(prev => ({ ...prev, photoURL: '' }));
+          
           photoUrlToSave = await uploadPhotoToStorage(newFile, userId);
           console.log('✅ Photo uploaded successfully! URL:', photoUrlToSave);
+          
+          // Update formData with new URL immediately
+          setFormData(prev => ({ ...prev, photoURL: photoUrlToSave }));
+          
         } catch (uploadError) {
           console.error('❌ Photo upload failed:', uploadError);
           alert('Failed to upload photo: ' + uploadError.message);
           setIsSaving(false);
           return; // Stop the save process if photo upload fails
         }
-      } else if (photoUrlToSave === '' && userProfile.photoURL) {
-          console.log('🗑️ Removing old photo from storage...');
-          await deleteOldPhotoFromStorage(userId);
+      } else if (formData.photoURL === '' && !newFile) {
+        // User wants to remove the photo completely
+        console.log('🗑️ User removing photo completely...');
+        await deleteOldPhotoFromStorage(userId);
+        photoUrlToSave = ''; // Ensure empty string is saved
       } else {
-        console.log('ℹ️ No new photo to upload');
+        console.log('ℹ️ No photo changes - using existing photoURL');
+        // Keep the existing photoURL from formData
+        photoUrlToSave = formData.photoURL;
       }
       
       // 2. Save updated data (including the new public photoURL) to Firestore
@@ -298,28 +409,34 @@ const ProfilePage = ({ userProfile, setUserProfile, onBack }) => {
         console.log('📞 Phone Number after save:', finalProfileData.phoneNumber);
         console.log('✉️ Email Verified after save:', finalProfileData.emailVerified);
 
-        console.log('Final profile data to update:', finalProfileData);
-        
-        // 5. Update both local and parent state
+        // 5. Update both local and parent state with fresh data
         setFormData(finalProfileData);
-        setUserProfile(finalProfileData); // This updates Dashboard too
         
-        alert('✅ Profile saved successfully!');
+        if (setUserProfile) {
+          console.log('📤 Final Dashboard sync after save completion');
+          setUserProfile(finalProfileData);
+        }
+        
+        console.log('✅ Profile saved successfully!');
+        alert('Profile saved successfully!');
         setIsEditing(false);
-        setNewFile(null);
+        setNewFile(null); // Clear the file after successful save
       } else {
-        // Fallback if fetch fails
-        const finalProfileData = {
+        console.log('⚠️ Could not fetch fresh data after save, using local data');
+        // Fallback if fetch fails - use local data
+        const fallbackProfileData = {
           ...formData,
-          ...updateData,
-          uid: userId,
           photoURL: photoUrlToSave || '',
+          updatedAt: new Date().toISOString()
         };
         
-        setFormData(finalProfileData);
-        setUserProfile(finalProfileData);
+        setFormData(fallbackProfileData);
         
-        alert('✅ Profile saved successfully!');
+        if (setUserProfile) {
+          setUserProfile(fallbackProfileData);
+        }
+        
+        alert('Profile saved successfully!');
         setIsEditing(false);
         setNewFile(null);
       }
@@ -355,6 +472,37 @@ const ProfilePage = ({ userProfile, setUserProfile, onBack }) => {
 
   return (
     <div className="max-w-3xl mx-auto">
+      {/* Loading State */}
+      {isLoading && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center">
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent mr-3"></div>
+            <p className="text-blue-800">Loading your profile...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Authentication Check */}
+      {!hasValidUID && !isLoading && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <h3 className="text-red-800 font-semibold">Authentication Required</h3>
+          <p className="text-red-600">Please log in to view and edit your profile.</p>
+          <button
+            onClick={() => window.location.href = "http://localhost:3000"}
+            className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            Go to Login
+          </button>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <h3 className="text-red-800 font-semibold">Error</h3>
+          <p className="text-red-600">{error}</p>
+        </div>
+      )}
 
       <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
         
@@ -443,8 +591,19 @@ const ProfilePage = ({ userProfile, setUserProfile, onBack }) => {
 
             {!isEditing ? (
               <button
-                onClick={() => setIsEditing(true)}
-                className="px-6 py-3 bg-blue-500 text-white rounded-xl"
+                onClick={() => {
+                  if (!currentUID) {
+                    alert('Please log in to edit your profile');
+                    return;
+                  }
+                  setIsEditing(true);
+                }}
+                className={`px-6 py-3 rounded-xl ${
+                  currentUID 
+                    ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+                disabled={!currentUID}
               >
                 Edit Profile
               </button>
@@ -692,3 +851,4 @@ const ProfilePage = ({ userProfile, setUserProfile, onBack }) => {
 };
 
 export default ProfilePage;
+

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signOut, signInWithCustomToken, getIdToken } from 'firebase/auth';
 import { auth, db } from './firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import Sidebar from './components/Sidebar';
@@ -9,6 +9,20 @@ import ProfilePage from './pages/ProfilePage';
 import IPAssetPanel from './components/IPAssetPanel';
 
 const App = () => {
+  // Check URL parameters for auth data
+  const checkURLParams = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const authToken = urlParams.get('token');
+    const userId = urlParams.get('uid');
+    const userEmail = urlParams.get('email');
+    
+    if (authToken && userId && userEmail) {
+      console.log('🔗 Found auth parameters in URL');
+      return { token: authToken, uid: userId, email: userEmail };
+    }
+    return null;
+  };
+  
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeItem, setActiveItem] = useState('dashboard');
   const [currentPage, setCurrentPage] = useState('dashboard');
@@ -46,8 +60,8 @@ const App = () => {
     };
   });
 
-  // DEVELOPMENT MODE: Use test UID if no real authentication
-  const isDevelopmentMode = true;
+  // Dynamic authentication - using real user authentication
+  const isDevelopmentMode = false; // Set to false in production
   const TEST_UID = "JBKwcX248aeStcb15EnK8M8jwSW2";
 
   // Save userProfile to localStorage whenever it changes
@@ -65,21 +79,67 @@ const App = () => {
   // Monitor authentication state
   useEffect(() => {
     console.log('🔄 Setting up auth listener...');
+    console.log('🔍 Auth persistence:', auth.config?.authDomain);
+    
+    // Check URL parameters first for direct authentication
+    const urlAuthData = checkURLParams();
+    if (urlAuthData) {
+      console.log('🔗 Found auth data in URL, authenticating...');
+      const authUser = { uid: urlAuthData.uid, email: urlAuthData.email };
+      setUser(authUser);
+      
+      // Also set a basic userProfile immediately to pass auth check
+      setUserProfile(prev => ({
+        ...prev,
+        uid: urlAuthData.uid,
+        email: urlAuthData.email
+      }));
+      
+      fetchUserDataWithUID(urlAuthData.uid, authUser);
+      setLoading(false);
+      // Clean URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return;
+    }
+    
+    // Check localStorage for existing auth state first
+    const savedProfile = localStorage.getItem('userProfile');
+    if (savedProfile) {
+      try {
+        const profile = JSON.parse(savedProfile);
+        if (profile.uid) {
+          console.log('💾 Found saved user profile in localStorage:', profile.email);
+          setUserProfile(profile);
+        }
+      } catch (error) {
+        console.error('❌ Error parsing saved profile:', error);
+      }
+    }
     
     // Give MORE time for Firebase to restore auth state from other app
     const timer = setTimeout(() => {
       if (!auth.currentUser) {
-        console.log('⏰ Timeout: No user found after 5 seconds');
+        console.log('⏰ Timeout: No authenticated user found after 8 seconds');
+        console.log('👤 Auth currentUser:', auth.currentUser);
+        console.log('💾 LocalStorage profile:', savedProfile ? 'exists' : 'none');
         
-        // In development mode, fetch data with TEST_UID
-        if (isDevelopmentMode) {
-          console.log('🔧 Development mode: Fetching data with TEST_UID');
-          fetchUserDataWithUID(TEST_UID);
+        // If we have a saved profile, try to use it
+        if (savedProfile) {
+          console.log('🔧 Using saved profile from localStorage');
+          const profile = JSON.parse(savedProfile);
+          if (profile.uid && profile.email) {
+            console.log('✅ Valid profile found, continuing with saved data');
+            setUser({ uid: profile.uid, email: profile.email });
+            setUserProfile(profile);
+            setLoading(false);
+            return;
+          }
         }
         
+        console.log('👤 User must log in to access dashboard');
         setLoading(false);
       }
-    }, 5000);
+    }, 8000); // Increased timeout for auth state restoration
     
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       clearTimeout(timer); // Clear timeout if auth state changes
@@ -87,12 +147,31 @@ const App = () => {
       console.log("Current User Object:", currentUser);
       console.log("User UID:", currentUser?.uid);
       console.log("User Email:", currentUser?.email);
+      console.log('User Display Name:', currentUser?.displayName);
+      console.log('User Email Verified:', currentUser?.emailVerified);
+      
       setUser(currentUser);
       setLoading(false);
       
       if (currentUser) {
+        console.log('✅ User authenticated, fetching profile data...');
         // Fetch user data from Firestore with real user
         fetchUserDataWithUID(currentUser.uid, currentUser);
+      } else {
+        console.log('❌ No authenticated user found');
+        // Check if we have a saved profile to use
+        const savedProfile = localStorage.getItem('userProfile');
+        if (savedProfile) {
+          try {
+            const profile = JSON.parse(savedProfile);
+            if (profile.uid) {
+              console.log('💾 Using saved profile for user:', profile.email);
+              setUserProfile(profile);
+            }
+          } catch (error) {
+            console.error('❌ Error parsing saved profile:', error);
+          }
+        }
       }
     });
 
@@ -257,8 +336,8 @@ const App = () => {
     );
   }
 
-  // Check if authentication is required (already declared at top)
-  if (!user && !loading && !isDevelopmentMode) {
+  // Check if authentication is required - allow if user exists OR we have valid profile data
+  if (!user && !userProfile.uid && !loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-gradient-to-br from-blue-400 via-purple-400 to-purple-500">
         <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md">

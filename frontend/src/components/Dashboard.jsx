@@ -62,7 +62,7 @@ function Dashboard() {
 
   return (
     <div className="dashboard-container">
-      <h2 className="dashboard-title">Welcome to Dashboard</h2>
+      <h2 className="dashboard-title">Welcome.....</h2>
       
       {user && (
         <>
@@ -79,6 +79,54 @@ function Dashboard() {
             <p style={{ color: '#666', textAlign: 'center', marginBottom: '1rem' }}>
               You have successfully logged in..
             </p>
+          </div>
+          
+          <div style={{ marginBottom: '1rem', textAlign: 'center' }}>
+            <button
+              onClick={async () => {
+                try {
+                  const userProfile = {
+                    uid: user.uid,
+                    email: user.email,
+                    firstName: user.displayName?.split(' ')[0] || 'User',
+                    lastName: user.displayName?.split(' ').slice(1).join(' ') || '',
+                    emailVerified: user.emailVerified,
+                    creationTime: user.metadata?.creationTime,
+                    lastSignInTime: user.metadata?.lastSignInTime,
+                    authProvider: 'email'
+                  };
+                  
+                  localStorage.setItem('userProfile', JSON.stringify(userProfile));
+                  
+                  const idToken = await user.getIdToken();
+                  
+                  const dashboardURL = new URL('http://localhost:5173/');
+                  dashboardURL.searchParams.set('token', idToken);
+                  dashboardURL.searchParams.set('uid', user.uid);
+                  dashboardURL.searchParams.set('email', user.email);
+                  
+                  window.open(dashboardURL.toString(), '_blank');
+                  console.log('✅ Opened advanced dashboard');
+                } catch (error) {
+                  console.error('❌ Error:', error);
+                  alert('Error opening dashboard. Please try again.');
+                }
+              }}
+              style={{
+                background: 'linear-gradient(45deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+                border: 'none',
+                padding: '12px 24px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                marginBottom: '10px',
+                boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)'
+              }}
+            >
+              🚀Continue To the Dashboard
+            </button>
           </div>
           
           <button

@@ -63,7 +63,7 @@ function Login() {
       // Redirect to dashboard
       setTimeout(() => {
         console.log("Redirecting to dashboard...");
-        window.location.href = "http://localhost:5173";
+        navigate("/dashboard");
       }, 1000);
     } catch (err) {
       setError("Invalid email or password. Please try again.");
@@ -122,7 +122,7 @@ function Login() {
       // Redirect to dashboard
       setTimeout(() => {
         console.log("Redirecting to dashboard...");
-        window.location.href = "http://localhost:5173";
+        navigate("/dashboard");
       }, 1000);
     } catch (err) {
       setError("Google login failed. Please try again.");
