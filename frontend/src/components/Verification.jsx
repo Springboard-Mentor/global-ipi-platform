@@ -4,7 +4,7 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import "../App.css";
 
-function Dashboard() {
+function Verification() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -39,6 +39,37 @@ function Dashboard() {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const handleContinueToDashboard = async () => {
+    try {
+      const userProfile = {
+        uid: user.uid,
+        email: user.email,
+        firstName: user.displayName?.split(' ')[0] || 'User',
+        lastName: user.displayName?.split(' ').slice(1).join(' ') || '',
+        emailVerified: user.emailVerified,
+        creationTime: user.metadata?.creationTime,
+        lastSignInTime: user.metadata?.lastSignInTime,
+        authProvider: 'email'
+      };
+      
+      localStorage.setItem('userProfile', JSON.stringify(userProfile));
+      
+      const idToken = await user.getIdToken();
+      
+      // Navigate to the dashboard URL in the same window
+      const dashboardURL = new URL('http://localhost:5173/');
+      dashboardURL.searchParams.set('token', idToken);
+      dashboardURL.searchParams.set('uid', user.uid);
+      dashboardURL.searchParams.set('email', user.email);
+      
+      window.location.href = dashboardURL.toString();
+      console.log('✅ Navigating to advanced dashboard');
+    } catch (error) {
+      console.error('❌ Error:', error);
+      alert('Error opening dashboard. Please try again.');
+    }
   };
 
   if (loading) {
@@ -110,35 +141,7 @@ function Dashboard() {
             
             <div style={{ marginBottom: '1rem' }}>
               <button
-                onClick={async () => {
-                  try {
-                    const userProfile = {
-                      uid: user.uid,
-                      email: user.email,
-                      firstName: user.displayName?.split(' ')[0] || 'User',
-                      lastName: user.displayName?.split(' ').slice(1).join(' ') || '',
-                      emailVerified: user.emailVerified,
-                      creationTime: user.metadata?.creationTime,
-                      lastSignInTime: user.metadata?.lastSignInTime,
-                      authProvider: 'email'
-                    };
-                    
-                    localStorage.setItem('userProfile', JSON.stringify(userProfile));
-                    
-                    const idToken = await user.getIdToken();
-                    
-                    const dashboardURL = new URL('http://localhost:5173/');
-                    dashboardURL.searchParams.set('token', idToken);
-                    dashboardURL.searchParams.set('uid', user.uid);
-                    dashboardURL.searchParams.set('email', user.email);
-                    
-                    window.open(dashboardURL.toString(), '_blank');
-                    console.log('✅ Opened advanced dashboard');
-                  } catch (error) {
-                    console.error('❌ Error:', error);
-                    alert('Error opening dashboard. Please try again.');
-                  }
-                }}
+                onClick={handleContinueToDashboard}
                 style={{
                   background: 'linear-gradient(45deg, #28a745 0%, #20c997 100%)',
                   color: 'white',
@@ -188,4 +191,4 @@ function Dashboard() {
   );
 }
 
-export default Dashboard;
+export default Verification;

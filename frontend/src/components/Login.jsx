@@ -55,15 +55,15 @@ function Login() {
         }, { merge: true });
       }
       
-      // Get ID token and save to localStorage for dashboard
+      // Get ID token and save to localStorage for verification
       const idToken = await userCredential.user.getIdToken();
       localStorage.setItem('firebaseAuthToken', idToken);
       console.log("Auth token saved to localStorage");
       
-      // Redirect to dashboard
+      // Redirect to verification
       setTimeout(() => {
-        console.log("Redirecting to dashboard...");
-        navigate("/dashboard");
+        console.log("Redirecting to verification...");
+        navigate("/verification");
       }, 1000);
     } catch (err) {
       setError("Invalid email or password. Please try again.");
@@ -114,15 +114,15 @@ function Login() {
       
       console.log("Google user data saved to Firestore");
       
-      // Get ID token and save to localStorage for dashboard
+      // Get ID token and save to localStorage for verification
       const idToken = await result.user.getIdToken();
       localStorage.setItem('firebaseAuthToken', idToken);
       console.log("Auth token saved to localStorage");
       
-      // Redirect to dashboard
+      // Redirect to verification
       setTimeout(() => {
-        console.log("Redirecting to dashboard...");
-        navigate("/dashboard");
+        console.log("Redirecting to verification...");
+        navigate("/verification");
       }, 1000);
     } catch (err) {
       setError("Google login failed. Please try again.");
