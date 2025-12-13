@@ -2,11 +2,11 @@ import React from 'react';
 import { TrendingUp, FileCheck, AlertCircle } from 'lucide-react';
 import OverviewCard from './OverviewCard';
 
-const OverviewGrid = () => {
+const OverviewGrid = ({ dashboardData }) => {
   const cards = [
     {
       title: 'Active Subscriptions',
-      value: '12',
+      value: dashboardData.loading ? '...' : String(dashboardData.activeSubscriptions),
       subtitle: 'Monitoring 3 new sectors',
       icon: TrendingUp,
       iconBg: 'bg-blue-100',
@@ -14,7 +14,7 @@ const OverviewGrid = () => {
     },
     {
       title: 'Recent Filings',
-      value: '45',
+      value: dashboardData.loading ? '...' : String(dashboardData.recentFilings),
       subtitle: 'Last 24 hours: 5 new',
       icon: FileCheck,
       iconBg: 'bg-green-100',
@@ -22,7 +22,7 @@ const OverviewGrid = () => {
     },
     {
       title: 'Open Alerts',
-      value: '3',
+      value: dashboardData.loading ? '...' : String(dashboardData.openAlerts),
       subtitle: 'Critical actions required',
       icon: AlertCircle,
       iconBg: 'bg-red-100',

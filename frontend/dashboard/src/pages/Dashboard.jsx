@@ -1,9 +1,60 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, TrendingUp } from 'lucide-react';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 import Filters from '../components/Filters';
 import OverviewGrid from '../components/OverviewGrid';
 
 const Dashboard = ({ userProfile }) => {
+  const [dashboardData, setDashboardData] = useState({
+    portfolioValue: '$0',
+    portfolioGrowth: '0%',
+    activeSubscriptions: 0,
+    recentFilings: 0,
+    openAlerts: 0,
+    loading: true
+  });
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      if (!userProfile.uid) return;
+      
+      try {
+        console.log('📊 Fetching dashboard data for UID:', userProfile.uid);
+        const dashboardDocRef = doc(db, 'dashboardData', userProfile.uid);
+        const dashboardDocSnap = await getDoc(dashboardDocRef);
+        
+        if (dashboardDocSnap.exists()) {
+          const data = dashboardDocSnap.data();
+          console.log('✅ Dashboard data loaded:', data);
+          setDashboardData({
+            portfolioValue: data.portfolioValue || '$0',
+            portfolioGrowth: data.portfolioGrowth || '0%',
+            activeSubscriptions: data.activeSubscriptions || 0,
+            recentFilings: data.recentFilings || 0,
+            openAlerts: data.openAlerts || 0,
+            loading: false
+          });
+        } else {
+          console.log('⚠️ No dashboard data found, using defaults');
+          setDashboardData({
+            portfolioValue: '$1.2M',
+            portfolioGrowth: 'Up 7.5% this quarter',
+            activeSubscriptions: 12,
+            recentFilings: 45,
+            openAlerts: 3,
+            loading: false
+          });
+        }
+      } catch (error) {
+        console.error('❌ Error fetching dashboard data:', error);
+        setDashboardData(prev => ({ ...prev, loading: false }));
+      }
+    };
+
+    fetchDashboardData();
+  }, [userProfile.uid]);
+
   const getTimeGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good Morning';
@@ -49,7 +100,7 @@ const Dashboard = ({ userProfile }) => {
 
       <div>
         <h2 className="text-lg font-bold mb-4">Overview</h2>
-        <OverviewGrid />
+        <OverviewGrid dashboardData={dashboardData} />
       </div>
 
       <div className="bg-white/90 p-6 rounded-2xl shadow-lg">
@@ -60,9 +111,17 @@ const Dashboard = ({ userProfile }) => {
           </div>
         </div>
         <div className="mb-2">
-          <span className="text-4xl font-bold">$1.2M</span>
+          {dashboardData.loading ? (
+            <div className="h-10 w-32 bg-gray-200 animate-pulse rounded"></div>
+          ) : (
+            <span className="text-4xl font-bold">{dashboardData.portfolioValue}</span>
+          )}
         </div>
-        <p className="text-sm text-green-600 font-medium">Up 7.5% this quarter</p>
+        {dashboardData.loading ? (
+          <div className="h-5 w-40 bg-gray-200 animate-pulse rounded"></div>
+        ) : (
+          <p className="text-sm text-green-600 font-medium">{dashboardData.portfolioGrowth}</p>
+        )}
       </div>
 
     </div>

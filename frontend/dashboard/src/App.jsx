@@ -15,26 +15,52 @@ const App = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const [userProfile, setUserProfile] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    company: '',
-    position: '',
-    uid: '',
-    photoURL: '',
-    phoneNumber: '',
-    emailVerified: false,
-    creationTime: '',
-    lastSignInTime: '',
-    authProvider: '',
-    createdAt: null,
-    updatedAt: null
+  // Initialize userProfile from localStorage if available
+  const [userProfile, setUserProfile] = useState(() => {
+    try {
+      const savedProfile = localStorage.getItem('userProfile');
+      if (savedProfile) {
+        console.log('✅ Loaded user profile from localStorage');
+        return JSON.parse(savedProfile);
+      }
+    } catch (error) {
+      console.error('❌ Error loading profile from localStorage:', error);
+    }
+    
+    // Return default values if nothing in localStorage
+    return {
+      firstName: '',
+      lastName: '',
+      email: '',
+      company: '',
+      position: '',
+      uid: '',
+      photoURL: '',
+      phoneNumber: '',
+      emailVerified: false,
+      creationTime: '',
+      lastSignInTime: '',
+      authProvider: '',
+      createdAt: null,
+      updatedAt: null
+    };
   });
 
   // DEVELOPMENT MODE: Use test UID if no real authentication
   const isDevelopmentMode = true;
   const TEST_UID = "qLrmSMxqHeP42Rjxtmrxq77j2Ef2";
+
+  // Save userProfile to localStorage whenever it changes
+  useEffect(() => {
+    if (userProfile.uid) {
+      try {
+        localStorage.setItem('userProfile', JSON.stringify(userProfile));
+        console.log('💾 Saved user profile to localStorage');
+      } catch (error) {
+        console.error('❌ Error saving profile to localStorage:', error);
+      }
+    }
+  }, [userProfile]);
 
   // Monitor authentication state
   useEffect(() => {
@@ -191,6 +217,10 @@ const App = () => {
         createdAt: null,
         updatedAt: null
       });
+      
+      // Clear localStorage
+      localStorage.removeItem('userProfile');
+      console.log('🗑️ Cleared user profile from localStorage');
       
       // Show success message and redirect
       alert("Successfully logged out! Redirecting to login page...");
