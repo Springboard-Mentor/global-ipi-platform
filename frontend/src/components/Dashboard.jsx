@@ -62,79 +62,126 @@ function Dashboard() {
 
   return (
     <div className="dashboard-container">
-      <h2 className="dashboard-title">Welcome.....</h2>
+      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+        <h2 className="dashboard-title" style={{ fontSize: '1.8rem', marginBottom: '0.5rem' }}>
+          🔐 Identity Verification in Progress
+        </h2>
+        <p style={{ fontSize: '1.1rem', color: '#555', marginBottom: '1rem' }}>
+          Please confirm your account details
+        </p>
+        
+      </div>
       
       {user && (
         <>
-          <div className="user-info">
-            <h3 style={{ marginBottom: '1rem', color: '#333' }}>Account Information</h3>
-            <p><strong>Email:</strong> {user.email}</p>
-            <p><strong>User ID:</strong> {user.uid.substring(0, 8)}...</p>
-            <p><strong>Account Created:</strong> {formatDate(user.metadata?.creationTime)}</p>
-            <p><strong>Last Sign In:</strong> {formatDate(user.metadata?.lastSignInTime)}</p>
-            <p><strong>Email Verified:</strong> {user.emailVerified ? "Yes" : "No"}</p>
+          <div className="user-info" style={{ marginBottom: '2rem' }}>
+            <h3 style={{ marginBottom: '1rem', color: '#333', fontSize: '1.2rem' }}>
+              ✅ Account Verification Details
+            </h3>
+            <div style={{ textAlign: 'left' }}>
+              <p style={{ marginBottom: '0.8rem' }}>
+                <strong>Registered Email:</strong><br />
+                <span style={{ color: '#007bff' }}>{user.email}</span>
+              </p>
+              <p style={{ marginBottom: '0.8rem' }}>
+                <strong>User Identification Code:</strong><br />
+                <span style={{ color: '#007bff', fontFamily: 'monospace' }}>{user.uid.substring(0, 8)}...</span>
+              </p>
+              <p style={{ marginBottom: '0.8rem' }}>
+                <strong>Account Created On:</strong><br />
+                <span style={{ color: '#007bff' }}>{formatDate(user.metadata?.creationTime)}</span>
+              </p>
+              <p style={{ marginBottom: '0.8rem' }}>
+                <strong>Last Login Activity:</strong><br />
+                <span style={{ color: '#007bff' }}>{formatDate(user.metadata?.lastSignInTime)}</span>
+              </p>
+              <p style={{ marginBottom: '0.8rem' }}>
+                <strong>Email Verification Status:</strong><br />
+                <span style={{ color: user.emailVerified ? '#28a745' : '#dc3545' }}>
+                  {user.emailVerified ? "✔ Verified" : "❌ Not Verified"}
+                </span>
+              </p>
+            </div>
           </div>
+        
           
-          <div style={{ marginBottom: '1rem' }}>
-            <p style={{ color: '#666', textAlign: 'center', marginBottom: '1rem' }}>
-              You have successfully logged in..
-            </p>
+          <div style={{ textAlign: 'center' }}>
+            
+            
+            <div style={{ marginBottom: '1rem' }}>
+              <button
+                onClick={async () => {
+                  try {
+                    const userProfile = {
+                      uid: user.uid,
+                      email: user.email,
+                      firstName: user.displayName?.split(' ')[0] || 'User',
+                      lastName: user.displayName?.split(' ').slice(1).join(' ') || '',
+                      emailVerified: user.emailVerified,
+                      creationTime: user.metadata?.creationTime,
+                      lastSignInTime: user.metadata?.lastSignInTime,
+                      authProvider: 'email'
+                    };
+                    
+                    localStorage.setItem('userProfile', JSON.stringify(userProfile));
+                    
+                    const idToken = await user.getIdToken();
+                    
+                    const dashboardURL = new URL('http://localhost:5173/');
+                    dashboardURL.searchParams.set('token', idToken);
+                    dashboardURL.searchParams.set('uid', user.uid);
+                    dashboardURL.searchParams.set('email', user.email);
+                    
+                    window.open(dashboardURL.toString(), '_blank');
+                    console.log('✅ Opened advanced dashboard');
+                  } catch (error) {
+                    console.error('❌ Error:', error);
+                    alert('Error opening dashboard. Please try again.');
+                  }
+                }}
+                style={{
+                  background: 'linear-gradient(45deg, #28a745 0%, #20c997 100%)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '15px 30px',
+                  borderRadius: '10px',
+                  cursor: 'pointer',
+                  fontSize: '1rem',
+                  fontWeight: 'bold',
+                  marginBottom: '15px',
+                  boxShadow: '0 4px 15px rgba(40, 167, 69, 0.3)',
+                  width: '100%',
+                  maxWidth: '300px'
+                }}
+              >
+                🚀 Yes, This Is My Account<br />
+                <small style={{ fontSize: '0.85rem', opacity: '0.9' }}>➡️ Continue to Dashboard</small>
+              </button>
+            </div>
+            
+            <div>
+              <button
+                className="btn-logout"
+                onClick={handleLogout}
+                style={{
+                  background: 'linear-gradient(45deg, #dc3545 0%, #fd7e7e 100%)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '15px 30px',
+                  borderRadius: '10px',
+                  cursor: 'pointer',
+                  fontSize: '1rem',
+                  fontWeight: 'bold',
+                  boxShadow: '0 4px 15px rgba(220, 53, 69, 0.3)',
+                  width: '100%',
+                  maxWidth: '300px'
+                }}
+              >
+                🚪 No, This Is Not Me<br />
+                <small style={{ fontSize: '0.85rem', opacity: '0.9' }}>➡️ Sign Out</small>
+              </button>
+            </div>
           </div>
-          
-          <div style={{ marginBottom: '1rem', textAlign: 'center' }}>
-            <button
-              onClick={async () => {
-                try {
-                  const userProfile = {
-                    uid: user.uid,
-                    email: user.email,
-                    firstName: user.displayName?.split(' ')[0] || 'User',
-                    lastName: user.displayName?.split(' ').slice(1).join(' ') || '',
-                    emailVerified: user.emailVerified,
-                    creationTime: user.metadata?.creationTime,
-                    lastSignInTime: user.metadata?.lastSignInTime,
-                    authProvider: 'email'
-                  };
-                  
-                  localStorage.setItem('userProfile', JSON.stringify(userProfile));
-                  
-                  const idToken = await user.getIdToken();
-                  
-                  const dashboardURL = new URL('http://localhost:5173/');
-                  dashboardURL.searchParams.set('token', idToken);
-                  dashboardURL.searchParams.set('uid', user.uid);
-                  dashboardURL.searchParams.set('email', user.email);
-                  
-                  window.open(dashboardURL.toString(), '_blank');
-                  console.log('✅ Opened advanced dashboard');
-                } catch (error) {
-                  console.error('❌ Error:', error);
-                  alert('Error opening dashboard. Please try again.');
-                }
-              }}
-              style={{
-                background: 'linear-gradient(45deg, #667eea 0%, #764ba2 100%)',
-                color: 'white',
-                border: 'none',
-                padding: '12px 24px',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                fontSize: '16px',
-                fontWeight: 'bold',
-                marginBottom: '10px',
-                boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)'
-              }}
-            >
-              🚀Continue To the Dashboard
-            </button>
-          </div>
-          
-          <button
-            className="btn-logout"
-            onClick={handleLogout}
-          >
-            🚪 Sign Out
-          </button>
         </>
       )}
     </div>
