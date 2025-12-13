@@ -48,7 +48,7 @@ const App = () => {
 
   // DEVELOPMENT MODE: Use test UID if no real authentication
   const isDevelopmentMode = true;
-  const TEST_UID = "qLrmSMxqHeP42Rjxtmrxq77j2Ef2";
+  const TEST_UID = "JBKwcX248aeStcb15EnK8M8jwSW2";
 
   // Save userProfile to localStorage whenever it changes
   useEffect(() => {

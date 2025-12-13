@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, TrendingUp } from 'lucide-react';
+import { Search, TrendingUp, CheckCircle } from 'lucide-react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import Filters from '../components/Filters';
@@ -53,7 +53,7 @@ const Dashboard = ({ userProfile }) => {
     };
 
     fetchDashboardData();
-  }, [userProfile.uid]);
+  }, [userProfile.uid, userProfile.updatedAt]);  // Also listen to updatedAt changes
 
   const getTimeGreeting = () => {
     const hour = new Date().getHours();
@@ -68,14 +68,14 @@ const Dashboard = ({ userProfile }) => {
       <div className="bg-white/90 rounded-2xl p-8 shadow-lg">
         <p className="text-sm text-gray-500 mb-1">Welcome back,</p>
         <h1 className="text-4xl font-bold">
-          {getTimeGreeting()}, {userProfile.firstName || 'User'}.
+          {getTimeGreeting()}, {userProfile?.firstName || 'User'}.
         </h1>
         <p className="text-gray-600 mt-2">
-          {userProfile.email || 'user@example.com'} • {userProfile.company || 'IP Intelligence Platform'}
+          {userProfile?.email || 'user@example.com'} • {userProfile?.company || 'IP Intelligence Platform'}
         </p>
-        {userProfile.emailVerified && (
+        {userProfile?.emailVerified && (
           <div className="flex items-center gap-2 mt-3">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            <CheckCircle size={16} className="text-green-500" />
             <span className="text-sm text-green-600 font-medium">Verified Account</span>
           </div>
         )}

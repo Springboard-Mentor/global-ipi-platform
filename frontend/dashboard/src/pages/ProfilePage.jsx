@@ -62,7 +62,7 @@ const ProfilePage = ({ userProfile, setUserProfile, onBack }) => {
   console.log('auth.currentUser:', auth.currentUser);
   
   // DEVELOPMENT MODE: Use test UID if no real UID found
-  const TEST_UID = "qLrmSMxqHeP42Rjxtmrxq77j2Ef2"; // Your actual UID from Firestore
+  const TEST_UID = "JBKwcX248aeStcb15EnK8M8jwSW2"; // Your actual UID from Firestore
   
   // Use a temporary state for the file object/blob for storage upload, not the Base64 string
   const [formData, setFormData] = useState({
@@ -114,21 +114,41 @@ const ProfilePage = ({ userProfile, setUserProfile, onBack }) => {
           console.log('✉️ Email Verified:', completeData.emailVerified);
           
           setFormData(completeData);
+          
+          // Update parent state immediately for Dashboard sync
+          if (setUserProfile) {
+            console.log('📤 Syncing loaded profile data to Dashboard');
+            setUserProfile(completeData);
+          }
         } else {
           // Use userProfile prop as fallback
           console.log('⚠️ No Firestore data, using userProfile prop');
-          setFormData({
+          const fallbackData = {
             ...userProfile,
             uid: uid
-          });
+          };
+          setFormData(fallbackData);
+          
+          // Update parent state for Dashboard sync
+          if (setUserProfile) {
+            console.log('📤 Syncing fallback profile data to Dashboard');
+            setUserProfile(fallbackData);
+          }
         }
       } catch (error) {
         console.error('❌ Error loading profile:', error);
         // Fallback to userProfile prop
-        setFormData({
+        const errorFallbackData = {
           ...userProfile,
           uid: uid
-        });
+        };
+        setFormData(errorFallbackData);
+        
+        // Update parent state even for error fallback
+        if (setUserProfile) {
+          console.log('📤 Syncing error fallback data to Dashboard');
+          setUserProfile(errorFallbackData);
+        }
       }
     };
 
