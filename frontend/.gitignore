@@ -20,6 +20,9 @@
 .env.production.local
 src/firebase.js
 .env.example
+.firebase.js
+frontend/src/firebase.js
+frontend/dashboard/src/firebase.js
 
 
 
