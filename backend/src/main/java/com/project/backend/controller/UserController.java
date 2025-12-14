@@ -1,32 +1,35 @@
 package com.project.backend.controller;
 
 import com.project.backend.entity.User;
-import com.project.backend.repository.UserRepository;
+import com.project.backend.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = "*") // Allows your frontend to talk to this backend
+@CrossOrigin(origins = "*") // Crucial for React connection
 public class UserController {
 
     @Autowired
-    private UserRepository userRepository;
+    private UserService userService;
 
-    // 1. REGISTER USER (POST Request)
-    // Frontend sends JSON data -> Controller accepts it -> Saves to Database
-    @PostMapping("/register")
-    public User registerUser(@RequestBody User newUser) {
-        System.out.println("New registration for: " + newUser.getUsername());
-        return userRepository.save(newUser);
+    @GetMapping
+    public ResponseEntity<List<User>> getAllUsers() {
+        return ResponseEntity.ok(userService.getAllUsers());
     }
 
-    // 2. GET ALL USERS (GET Request)
-    // Useful for you to check if data is saved without opening pgAdmin
-    @GetMapping
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
+    @PostMapping("/register")
+    public ResponseEntity<?> registerUser(@RequestBody User newUser) {
+        try {
+            // Fixes your error: Uses getName() instead of getUsername()
+            System.out.println("New registration for: " + newUser.getName());
+            
+            User savedUser = userService.createUser(newUser);
+            return ResponseEntity.ok(savedUser);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }

@@ -1,316 +1,218 @@
-# React Beginner Guide
+# Global IP Intelligence Platform - Frontend
 
-Welcome to this beginner's guide to React! This guide will walk you through the fundamentals of React and introduce you to essential dependencies and concepts like Tailwind CSS, security best practices, React Router, Axios, React DOM, and state management. By the end, you'll have a solid foundation to build your own React applications.
+A React-based Intellectual Property Intelligence Platform powered by Google Gemini AI.
 
-## Table of Contents
-1. [What is React?](#what-is-react)
-2. [Setting Up a React Project](#setting-up-a-react-project)
-3. [Components and JSX](#components-and-jsx)
-4. [Props and State](#props-and-state)
-5. [State Management](#state-management)
-6. [React Router for Navigation](#react-router-for-navigation)
-7. [Styling with Tailwind CSS](#styling-with-tailwind-css)
-8. [Making API Calls with Axios](#making-api-calls-with-axios)
-9. [React DOM](#react-dom)
-10. [Security Best Practices](#security-best-practices)
-11. [Conclusion](#conclusion)
+![Status](https://img.shields.io/badge/Frontend-100%25%20Complete-brightgreen)
+![React](https://img.shields.io/badge/React-18.2.0-blue)
+![Vite](https://img.shields.io/badge/Vite-4.4.5-purple)
+![Tailwind](https://img.shields.io/badge/Tailwind-3.3.3-cyan)
 
-## What is React?
+---
 
-React is a popular JavaScript library for building user interfaces, particularly web applications. Developed by Facebook, React allows you to create reusable UI components that update efficiently when data changes. It's component-based, declarative, and focuses on building interactive UIs.
+## 👥 Frontend Team Members
 
-Key features:
-- **Component-based**: Break down your UI into reusable pieces
-- **Virtual DOM**: Efficiently updates only what's changed
-- **One-way data flow**: Makes debugging easier
-- **JSX**: Write HTML-like syntax in JavaScript
+- **SARVATHA R** - Project Setup & Login Page
+- **Abhay Tripathi** - Register Page
+- **Aarthi** - Dashboard, Profile & Patents Pages
 
-## Setting Up a React Project
+---
 
-To get started with React, you'll need Node.js installed. Then, use Create React App:
+## ✨ Features
 
-```bash
-npx create-react-app my-app
-cd my-app
-npm start
-```
+- **IP Dashboard**: Monitor active patents, trademarks, and infringement risks
+- **AI Assistant**: Legal intelligence assistant using Gemini 2.5 Flash for patent analysis and drafting
+- **Patent Management**: Search, filter, and track patent portfolio
+- **User Profile**: Manage user credentials and bio
+- **Responsive Design**: Built with Tailwind CSS and Lucide React icons
 
-This creates a new React project with all necessary dependencies.
+---
 
-## Components and JSX
+## 🛠️ Tech Stack
 
-Components are the building blocks of React applications. There are two types: functional and class components (though functional components with hooks are now preferred).
+| Technology | Version | Purpose |
+|-----------|---------|---------|
+| React | 18.2.0 | UI Library |
+| Vite | 4.4.5 | Build Tool |
+| Tailwind CSS | 3.3.3 | Styling |
+| Lucide React | 0.263.1 | Icons |
+| React Router | Latest | Navigation |
+| Axios | Latest | API Calls |
 
-### Functional Component Example
+---
 
-```jsx
-function Welcome(props) {
-  return <h1>Hello, {props.name}!</h1>;
-}
-```
+## 📋 Prerequisites
 
-JSX allows you to write HTML-like syntax in JavaScript. It's compiled to `React.createElement()` calls.
+- **Node.js** (v18 or higher)
+- **npm** or **yarn**
 
-## Props and State
+---
 
-### Props
-Props (properties) are how you pass data from parent to child components. They're read-only.
+## 🚀 Installation
 
-```jsx
-function Greeting(props) {
-  return <h1>Hello, {props.name}!</h1>;
-}
-
-// Usage
-<Greeting name="World" />
-```
-
-### State
-State is mutable data that belongs to a component. Use the `useState` hook to manage state in functional components.
-
-```jsx
-import { useState } from 'react';
-
-function Counter() {
-  const [count, setCount] = useState(0);
-
-  return (
-    <div>
-      <p>You clicked {count} times</p>
-      <button onClick={() => setCount(count + 1)}>
-        Click me
-      </button>
-    </div>
-  );
-}
-```
-
-## State Management
-
-For simple state, `useState` is sufficient. For more complex applications, consider:
-
-### useReducer for Complex State Logic
-
-```jsx
-import { useReducer } from 'react';
-
-const initialState = { count: 0 };
-
-function reducer(state, action) {
-  switch (action.type) {
-    case 'increment':
-      return { count: state.count + 1 };
-    case 'decrement':
-      return { count: state.count - 1 };
-    default:
-      throw new Error();
-  }
-}
-
-function Counter() {
-  const [state, dispatch] = useReducer(reducer, initialState);
-
-  return (
-    <>
-      Count: {state.count}
-      <button onClick={() => dispatch({ type: 'increment' })}>+</button>
-      <button onClick={() => dispatch({ type: 'decrement' })}>-</button>
-    </>
-  );
-}
-```
-
-### Context API for Global State
-
-```jsx
-import { createContext, useContext, useState } from 'react';
-
-const ThemeContext = createContext();
-
-function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState('light');
-
-  return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  );
-}
-
-function ThemedButton() {
-  const { theme, setTheme } = useContext(ThemeContext);
-
-  return (
-    <button
-      style={{ background: theme === 'dark' ? '#333' : '#FFF' }}
-      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-    >
-      Toggle Theme
-    </button>
-  );
-}
-```
-
-For larger applications, consider Redux or Zustand.
-
-## React Router for Navigation
-
-React Router enables navigation between different components in your app.
-
-First, install it:
+### 1️⃣ Clone the repository
 
 ```bash
-npm install react-router-dom
+git clone https://github.com/Springboard-Mentor/global-ipi-platform.git
+cd global-ipi-platform/frontend
 ```
 
-### Basic Usage
-
-```jsx
-import { BrowserRouter as Router, Route, Switch, Link } from 'react-router-dom';
-
-function App() {
-  return (
-    <Router>
-      <nav>
-        <Link to="/">Home</Link>
-        <Link to="/about">About</Link>
-      </nav>
-
-      <Switch>
-        <Route exact path="/">
-          <Home />
-        </Route>
-        <Route path="/about">
-          <About />
-        </Route>
-      </Switch>
-    </Router>
-  );
-}
-```
-
-## Styling with Tailwind CSS
-
-Tailwind CSS is a utility-first CSS framework that provides low-level utility classes.
-
-Install Tailwind:
+### 2️⃣ Install dependencies
 
 ```bash
-npm install -D tailwindcss
-npx tailwindcss init
+npm install
 ```
 
-Configure `tailwind.config.js`:
+### 3️⃣ Configure Environment Variables
 
-```js
-module.exports = {
-  content: ["./src/**/*.{js,jsx,ts,tsx}"],
-  theme: {
-    extend: {},
-  },
-  plugins: [],
-}
+Create a `.env` file in the root directory:
+
+```env
+API_KEY=your_actual_google_api_key_here
 ```
 
-Add to your CSS:
-
-```css
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-```
-
-Usage in components:
-
-```jsx
-function Card({ title, content }) {
-  return (
-    <div className="max-w-sm rounded overflow-hidden shadow-lg">
-      <div className="px-6 py-4">
-        <div className="font-bold text-xl mb-2">{title}</div>
-        <p className="text-gray-700 text-base">{content}</p>
-      </div>
-    </div>
-  );
-}
-```
-
-## Making API Calls with Axios
-
-Axios is a promise-based HTTP client for making API requests.
-
-Install Axios:
+### 4️⃣ Start the development server
 
 ```bash
-npm install axios
+npm run dev
 ```
 
-### Basic Usage
+Open your browser at `http://localhost:5173`
 
-```jsx
-import axios from 'axios';
-import { useState, useEffect } from 'react';
+---
 
-function Users() {
-  const [users, setUsers] = useState([]);
+## 📁 Project Structure
 
-  useEffect(() => {
-    axios.get('https://jsonplaceholder.typicode.com/users')
-      .then(response => setUsers(response.data))
-      .catch(error => console.error(error));
-  }, []);
-
-  return (
-    <ul>
-      {users.map(user => <li key={user.id}>{user.name}</li>)}
-    </ul>
-  );
-}
+```
+frontend/
+├── src/
+│   ├── api/
+│   │   └── client.js              # API client configuration
+│   │
+│   ├── components/
+│   │   ├── AuthLayout.jsx         # Auth pages wrapper
+│   │   ├── DashboardHome.jsx      # Main dashboard
+│   │   ├── DashboardLayout.jsx    # Dashboard layout
+│   │   ├── LandingPage.jsx        # Home page
+│   │   ├── LoginPage.jsx          # Login form
+│   │   ├── PatentsPage.jsx        # Patent management
+│   │   ├── ProfilePage.jsx        # User profile
+│   │   └── RegisterPage.jsx       # Registration form
+│   │
+│   ├── services/
+│   │   └── ai.js                  # API service layer
+│   │
+│   ├── App.jsx                    # Main app with routing
+│   └── index.jsx                  # Entry point
+│
+├── .env                           # Environment variables
+├── .gitignore                     # Git ignore rules
+├── index.html                     # HTML template
+├── package.json                   # Dependencies
+├── tailwind.config.js             # Tailwind config
+└── vite.config.js                 # Vite config
 ```
 
-## React DOM
+---
 
-React DOM is the package that provides DOM-specific methods for React. It's used to render React components to the DOM.
+## 🎯 Milestone 1 - Team Contributions
 
-```jsx
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App';
+### SARVATHA R
+- ✅ Project initialization (React 18 + Vite + Tailwind CSS)
+- ✅ LoginPage component with responsive design
+- ✅ Login mockup and actual implementation
+- ✅ Form validation and authentication UI/UX
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App />);
+### Abhay Tripathi
+- ✅ RegisterPage component with responsive design
+- ✅ Registration mockup and actual implementation
+- ✅ Password strength indicator
+- ✅ Form validation and user type selection
+
+### Aarthi
+- ✅ DashboardHome & ProfilePage (mockup and actual)
+- ✅ PatentsPage with search and filter
+- ✅ Backend integration setup (API services)
+- ✅ Mock data implementation
+
+### Shared Components
+- ✅ DashboardLayout, AuthLayout, LandingPage
+- ✅ App routing and documentation
+
+---
+
+## ✅ Features Implemented
+
+- ✅ Authentication system (Login/Register)
+- ✅ Dashboard with stats and analytics
+- ✅ Patent portfolio management
+- ✅ User profile management
+- ✅ Responsive design (mobile/tablet/desktop)
+- ✅ Backend integration ready
+
+---
+
+## 🌐 Available Routes
+
+| Route | Component | Description |
+|-------|-----------|-------------|
+| `/` | LandingPage | Home page with features |
+| `/login` | LoginPage | User authentication |
+| `/register` | RegisterPage | New user registration |
+| `/dashboard` | DashboardHome | Main dashboard view |
+| `/patents` | PatentsPage | Patent management |
+| `/profile` | ProfilePage | User profile editor |
+
+---
+
+## 🔐 Security Note
+
+This project uses an API Key. **Never commit your `.env` file to GitHub.** The `.gitignore` file included in this repository prevents this by default.
+
+---
+
+## 📡 API Integration Status
+
+**Current Mode:** Mock Data
+
+All API calls in `src/services/ai.js` are currently mocked for development. To connect to the real backend:
+
+1. Update `.env` with backend URL
+2. Uncomment real API calls in `services/ai.js`
+3. Comment out mock implementations
+
+---
+
+## 🚀 Build for Production
+
+```bash
+npm run build
+npm run preview
 ```
 
-React DOM handles the rendering and updating of your React components in the browser.
+---
 
-## Security Best Practices
+## 📊 Development Status
 
-When building React applications, keep these security considerations in mind:
+**Frontend:** ✅ 100% Complete  
+**Ready for Backend Integration:** ✅ Yes  
+**Last Updated:** December 10, 2025
 
-1. **Avoid Direct DOM Manipulation**: Use React's declarative approach instead of `document.getElementById()`.
+---
 
-2. **Sanitize User Input**: Never directly insert user input into JSX. Use libraries like DOMPurify for HTML content.
+## 📚 Resources
 
-3. **Use HTTPS**: Always serve your app over HTTPS in production.
+- [React Documentation](https://react.dev/)
+- [Vite Guide](https://vitejs.dev/guide/)
+- [Tailwind CSS Documentation](https://tailwindcss.com/)
+- [React Router](https://reactrouter.com/)
 
-4. **Environment Variables**: Store sensitive data in environment variables, not in your code.
+---
 
-5. **Content Security Policy (CSP)**: Implement CSP headers to prevent XSS attacks.
+## 🤝 Contributing
 
-6. **Dependency Updates**: Regularly update your dependencies to patch security vulnerabilities.
+Ensure all commits follow proper conventions and include co-author attribution for collaborative work.
 
-7. **Authentication**: Implement proper authentication and authorization. Use libraries like JWT for token management.
+---
 
-8. **Input Validation**: Validate all user inputs on both client and server sides.
-
-## Conclusion
-
-You've now covered the basics of React and several important dependencies and concepts. React is a powerful library that, when combined with tools like Tailwind CSS, React Router, and Axios, allows you to build sophisticated web applications.
-
-Remember:
-- Practice by building small projects
-- Read the official React documentation
-- Join React communities for support
-- Keep learning about new features and best practices
-
-Happy coding!
+**Status:** Frontend 100% Complete  
+**Tech Stack:** React 18, Vite, Tailwind CSS, Lucide React
