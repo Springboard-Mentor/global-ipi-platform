@@ -9,6 +9,8 @@ import IPActivity from './components/IPActivity.js';
 import HelpCenter from './components/HelpCenter';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
+import Settings from './components/Settings';
+import Feedback from './components/Feedback';
 
 function App() {
   return (
@@ -23,6 +25,8 @@ function App() {
           <Route path="/help" element={<HelpCenter />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/feedback" element={<Feedback />} />
         </Routes>
       </div>
   );
