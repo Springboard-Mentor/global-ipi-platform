@@ -4,8 +4,8 @@ import com.project.backend.entity.User;
 import com.project.backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.security.crypto.password.PasswordEncoder; // 👈 NEW: Used for setting a secure placeholder password
-import org.springframework.transaction.annotation.Transactional; // 👈 NEW: Good practice for save/create methods
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,7 +17,7 @@ public class UserService {
     private UserRepository userRepository;
 
     @Autowired
-    private PasswordEncoder passwordEncoder; // 👈 NEW: Inject PasswordEncoder
+    private PasswordEncoder passwordEncoder;
 
     public List<User> getAllUsers() {
         return userRepository.findAll();
@@ -56,7 +56,9 @@ public class UserService {
         // 🚨 IMPORTANT: Since the password is not provided, we must set a strong, unique placeholder.
         // The passwordEncoder hashes the Firebase UID, making it secure and unique.
         newUser.setPassword(passwordEncoder.encode(firebaseUid)); 
-        newUser.setUserType("USER"); // Default role/type
+        
+        // 🔧 FIXED: Changed from "USER" to "Individual" to match your existing system
+        newUser.setUserType("Individual"); // Default role/type for Google sign-ups
         
         return userRepository.save(newUser);
     }

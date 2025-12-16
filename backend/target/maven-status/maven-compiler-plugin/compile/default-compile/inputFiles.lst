@@ -8,6 +8,7 @@ C:\Users\ABHAY TRIPATHI\OneDrive\Desktop\final project setup  infosys\backend\sr
 C:\Users\ABHAY TRIPATHI\OneDrive\Desktop\final project setup  infosys\backend\src\main\java\com\project\backend\repository\UserRepository.java
 C:\Users\ABHAY TRIPATHI\OneDrive\Desktop\final project setup  infosys\backend\src\main\java\com\project\backend\entity\Role.java
 C:\Users\ABHAY TRIPATHI\OneDrive\Desktop\final project setup  infosys\backend\src\main\java\com\project\backend\dto\RegisterRequest.java
+C:\Users\ABHAY TRIPATHI\OneDrive\Desktop\final project setup  infosys\backend\src\main\java\com\project\backend\config\FirebaseConfig.java
 C:\Users\ABHAY TRIPATHI\OneDrive\Desktop\final project setup  infosys\backend\src\main\java\com\project\backend\service\UserService.java
 C:\Users\ABHAY TRIPATHI\OneDrive\Desktop\final project setup  infosys\backend\src\main\java\com\project\backend\util\JwtUtil.java
 C:\Users\ABHAY TRIPATHI\OneDrive\Desktop\final project setup  infosys\backend\src\main\java\com\project\backend\controller\UserController.java

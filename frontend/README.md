@@ -1,218 +1,323 @@
-# Global IP Intelligence Platform - Frontend
+# Global IP Intelligence Platform – Frontend
 
-A React-based Intellectual Property Intelligence Platform powered by Google Gemini AI.
+A **production-ready React frontend application** for the **Global IP Intelligence Platform**, built using **React 18 + Vite**, integrated with **Firebase Authentication (Google OAuth)**, a **JWT-secured Spring Boot backend**, and **AI-powered patent analysis**.
 
-![Status](https://img.shields.io/badge/Frontend-100%25%20Complete-brightgreen)
-![React](https://img.shields.io/badge/React-18.2.0-blue)
-![Vite](https://img.shields.io/badge/Vite-4.4.5-purple)
-![Tailwind](https://img.shields.io/badge/Tailwind-3.3.3-cyan)
+This frontend handles **UI, routing, authentication initiation, and API communication**.
+All **authentication validation, authorization, and security enforcement** are handled by the backend.
+
+---
+
+## 📌 Project Information
+
+* **Project Name:** Global IP Intelligence Platform
+* **Module:** Frontend
+* **Framework:** React 18
+* **Build Tool:** Vite
+* **Styling:** Tailwind CSS
+* **Authentication:** Firebase (Google OAuth)
+* **Authorization:** JWT (Backend generated)
+* **Backend:** Spring Boot (Port `5001`)
+* **AI Integration:** Gemini (via backend/service layer)
+* **Last Updated:** December 16, 2025
+* **Project Type:** Academic – Infosys Springboard
+* **Status:** ✅ Complete & Stable
 
 ---
 
 ## 👥 Frontend Team Members
 
-- **SARVATHA R** - Project Setup & Login Page
-- **Abhay Tripathi** - Register Page
-- **Aarthi** - Dashboard, Profile & Patents Pages
+| Name               | Responsibility                                   |
+| ------------------ | ------------------------------------------------ |
+| **Abhay Tripathi** | Frontend–Backend Auth Flow, Firebase Integration |
+| **Sarvatha R**     | UI Pages & Layout Structure                      |
+| **Aarthi**         | Dashboard, Profile & Patent UI                   |
 
 ---
 
-## ✨ Features
+## 🎯 Purpose of Frontend
 
-- **IP Dashboard**: Monitor active patents, trademarks, and infringement risks
-- **AI Assistant**: Legal intelligence assistant using Gemini 2.5 Flash for patent analysis and drafting
-- **Patent Management**: Search, filter, and track patent portfolio
-- **User Profile**: Manage user credentials and bio
-- **Responsive Design**: Built with Tailwind CSS and Lucide React icons
+The frontend is responsible for:
+
+* Rendering responsive UI
+* Handling Google OAuth via Firebase
+* Managing JWT lifecycle on client
+* Calling secured backend APIs
+* Displaying patent data & AI insights
+* Protecting routes from unauthorized access
+
+⚠️ **Security Rule:**
+Frontend never decides user validity — backend always verifies JWT.
 
 ---
 
-## 🛠️ Tech Stack
+## ✨ Key Features
 
-| Technology | Version | Purpose |
-|-----------|---------|---------|
-| React | 18.2.0 | UI Library |
-| Vite | 4.4.5 | Build Tool |
-| Tailwind CSS | 3.3.3 | Styling |
-| Lucide React | 0.263.1 | Icons |
-| React Router | Latest | Navigation |
-| Axios | Latest | API Calls |
+### 🔐 Authentication
+
+* Email/Password login
+* Google Sign-In (Firebase)
+* Backend-verified JWT tokens
+* Auto logout on token expiry
+
+### 📊 Dashboard
+
+* User-specific dashboard
+* Protected layout
+
+### 📁 Patent Module
+
+* Patent listing
+* New filing UI
+* AI-based analysis page
+
+### 👤 Profile & Settings
+
+* View & update profile
+* User settings management
+
+### 🤖 AI Analysis
+
+* Patent insights & summaries
+* Gemini-powered analysis (via service)
+
+### 📱 Responsive Design
+
+* Mobile-first UI
+* Tailwind CSS based
+
+---
+
+## 🧠 High-Level Architecture
+
+```
+React UI
+   ↓
+Axios Client (JWT Interceptor)
+   ↓
+Spring Boot REST APIs
+   ↓
+PostgreSQL / Firebase
+   ↓
+Gemini AI
+```
+
+---
+
+## 🛠️ Technology Stack
+
+| Layer      | Technology      |
+| ---------- | --------------- |
+| UI         | React 18        |
+| Build Tool | Vite            |
+| Styling    | Tailwind CSS    |
+| Routing    | React Router    |
+| API Client | Axios           |
+| Auth       | Firebase JS SDK |
+| Tokens     | JWT             |
+| AI         | Gemini          |
 
 ---
 
 ## 📋 Prerequisites
 
-- **Node.js** (v18 or higher)
-- **npm** or **yarn**
+* Node.js ≥ 18
+* npm or yarn
+* Backend running on `http://localhost:5001`
+* Firebase project with Google Sign-In enabled
 
 ---
 
-## 🚀 Installation
-
-### 1️⃣ Clone the repository
-
-```bash
-git clone https://github.com/Springboard-Mentor/global-ipi-platform.git
-cd global-ipi-platform/frontend
-```
-
-### 2️⃣ Install dependencies
-
-```bash
-npm install
-```
-
-### 3️⃣ Configure Environment Variables
-
-Create a `.env` file in the root directory:
-
-```env
-API_KEY=your_actual_google_api_key_here
-```
-
-### 4️⃣ Start the development server
-
-```bash
-npm run dev
-```
-
-Open your browser at `http://localhost:5173`
-
----
-
-## 📁 Project Structure
+## 📁 COMPLETE FRONTEND FOLDER STRUCTURE (ACTUAL)
 
 ```
 frontend/
+│
+├── .vscode/                     # VS Code workspace settings
+│
+├── node_modules/                # Installed dependencies (auto-generated)
+│
 ├── src/
-│   ├── api/
-│   │   └── client.js              # API client configuration
 │   │
-│   ├── components/
-│   │   ├── AuthLayout.jsx         # Auth pages wrapper
-│   │   ├── DashboardHome.jsx      # Main dashboard
-│   │   ├── DashboardLayout.jsx    # Dashboard layout
-│   │   ├── LandingPage.jsx        # Home page
-│   │   ├── LoginPage.jsx          # Login form
-│   │   ├── PatentsPage.jsx        # Patent management
-│   │   ├── ProfilePage.jsx        # User profile
-│   │   └── RegisterPage.jsx       # Registration form
+│   ├── api/
+│   │   └── client.js            # Axios instance + JWT interceptor
+│   │
+│   ├── components/              # Application pages & layouts
+│   │   ├── AnalysisPage.jsx     # AI-based patent analysis UI
+│   │   ├── AuthLayout.jsx       # Public auth layout
+│   │   ├── DashboardHome.jsx    # Dashboard landing page
+│   │   ├── DashboardLayout.jsx  # Protected dashboard layout
+│   │   ├── LandingPage.jsx      # Public landing page
+│   │   ├── LoginPage.jsx        # Login & Google OAuth UI
+│   │   ├── NewFilingPage.jsx    # New patent filing UI
+│   │   ├── PatentsPage.jsx      # Patent listing & tracking
+│   │   ├── ProfilePage.jsx      # User profile page
+│   │   └── SettingsPage.jsx     # User settings
 │   │
 │   ├── services/
-│   │   └── ai.js                  # API service layer
+│   │   └── ai.js                # Gemini AI service integration
 │   │
-│   ├── App.jsx                    # Main app with routing
-│   └── index.jsx                  # Entry point
+│   ├── App.jsx                  # Route definitions & layouts
+│   ├── firebase.js              # Firebase initialization
+│   ├── index.jsx                # React entry point
+│   └── index.css                # Global styles (Tailwind)
 │
-├── .env                           # Environment variables
-├── .gitignore                     # Git ignore rules
-├── index.html                     # HTML template
-├── package.json                   # Dependencies
-├── tailwind.config.js             # Tailwind config
-└── vite.config.js                 # Vite config
+├── .env                         # Environment variables (ignored)
+├── .gitignore                   # Git ignore rules
+├── currentstatus.md             # Internal development notes
+├── index.html                   # Root HTML template
+├── metadata.json                # Project metadata
+├── package.json                 # Scripts & dependencies
+├── package-lock.json            # Dependency lock
+├── postcss.config.js            # PostCSS config
+├── tailwind.config.js           # Tailwind config
+├── tsconfig.json                # Future TypeScript support
+└── README.md                    # Frontend documentation
 ```
 
 ---
 
-## 🎯 Milestone 1 - Team Contributions
+## ⚙️ Environment Configuration
 
-### SARVATHA R
-- ✅ Project initialization (React 18 + Vite + Tailwind CSS)
-- ✅ LoginPage component with responsive design
-- ✅ Login mockup and actual implementation
-- ✅ Form validation and authentication UI/UX
+Create a `.env` file in `frontend/`:
 
-### Abhay Tripathi
-- ✅ RegisterPage component with responsive design
-- ✅ Registration mockup and actual implementation
-- ✅ Password strength indicator
-- ✅ Form validation and user type selection
+```env
+VITE_API_BASE_URL=http://localhost:5001
 
-### Aarthi
-- ✅ DashboardHome & ProfilePage (mockup and actual)
-- ✅ PatentsPage with search and filter
-- ✅ Backend integration setup (API services)
-- ✅ Mock data implementation
+VITE_FIREBASE_API_KEY=xxxx
+VITE_FIREBASE_AUTH_DOMAIN=xxxx.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=xxxx
+VITE_FIREBASE_STORAGE_BUCKET=xxxx.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=xxxx
+VITE_FIREBASE_APP_ID=1:xxx:web:xxx
+```
 
-### Shared Components
-- ✅ DashboardLayout, AuthLayout, LandingPage
-- ✅ App routing and documentation
+⚠️ **Never commit `.env`**
 
 ---
 
-## ✅ Features Implemented
+## 🔐 Authentication Flow
 
-- ✅ Authentication system (Login/Register)
-- ✅ Dashboard with stats and analytics
-- ✅ Patent portfolio management
-- ✅ User profile management
-- ✅ Responsive design (mobile/tablet/desktop)
-- ✅ Backend integration ready
+### Google Login
 
----
-
-## 🌐 Available Routes
-
-| Route | Component | Description |
-|-------|-----------|-------------|
-| `/` | LandingPage | Home page with features |
-| `/login` | LoginPage | User authentication |
-| `/register` | RegisterPage | New user registration |
-| `/dashboard` | DashboardHome | Main dashboard view |
-| `/patents` | PatentsPage | Patent management |
-| `/profile` | ProfilePage | User profile editor |
+```
+User clicks Google Login
+↓
+Firebase signInWithPopup()
+↓
+Firebase ID Token generated
+↓
+POST /api/auth/firebase-login
+↓
+Backend verifies token
+↓
+Backend returns JWT
+↓
+JWT stored in localStorage
+```
 
 ---
 
-## 🔐 Security Note
+## 🔒 JWT Handling
 
-This project uses an API Key. **Never commit your `.env` file to GitHub.** The `.gitignore` file included in this repository prevents this by default.
+* Stored in `localStorage`
+* Auto-attached via Axios interceptor (`client.js`)
+* Removed on:
 
----
-
-## 📡 API Integration Status
-
-**Current Mode:** Mock Data
-
-All API calls in `src/services/ai.js` are currently mocked for development. To connect to the real backend:
-
-1. Update `.env` with backend URL
-2. Uncomment real API calls in `services/ai.js`
-3. Comment out mock implementations
+  * Logout
+  * 401 Unauthorized response
 
 ---
 
-## 🚀 Build for Production
+## 🛡️ Route Protection
+
+Protected pages:
+
+* Dashboard
+* Patents
+* Profile
+* Analysis
+
+Handled using:
+
+* `DashboardLayout.jsx`
+* JWT presence check
+* Backend validation per request
+
+---
+
+## 🔗 Backend API Mapping
+
+| Feature | Endpoint                 |
+| ------- | ------------------------ |
+| Auth    | `/api/auth/**`           |
+| Users   | `/api/users/**`          |
+| Patents | `/api/patents/**`        |
+| Profile | `/api/profile/**`        |
+| Swagger | `/swagger-ui/index.html` |
+
+---
+
+## 🚀 Running the Application
+
+```bash
+npm install
+npm run dev
+```
+
+Open browser:
+
+```
+http://localhost:5173
+```
+
+---
+
+## 📦 Production Build
 
 ```bash
 npm run build
 npm run preview
 ```
 
----
+Build output:
 
-## 📊 Development Status
+```
+dist/
+```
 
-**Frontend:** ✅ 100% Complete  
-**Ready for Backend Integration:** ✅ Yes  
-**Last Updated:** December 10, 2025
+Deployable on:
 
----
-
-## 📚 Resources
-
-- [React Documentation](https://react.dev/)
-- [Vite Guide](https://vitejs.dev/guide/)
-- [Tailwind CSS Documentation](https://tailwindcss.com/)
-- [React Router](https://reactrouter.com/)
+* Vercel
+* Netlify
+* Nginx
+* AWS S3
 
 ---
 
-## 🤝 Contributing
+## 🔐 Security Best Practices
 
-Ensure all commits follow proper conventions and include co-author attribution for collaborative work.
+* No secrets in code
+* JWT validated server-side
+* Firebase used only for OAuth
+* CORS restricted
+* HTTPS required in production
 
 ---
 
-**Status:** Frontend 100% Complete  
-**Tech Stack:** React 18, Vite, Tailwind CSS, Lucide React
+## 🏁 Final Status
+
+| Module           | Status |
+| ---------------- | ------ |
+| UI Pages         | ✅      |
+| Auth             | ✅      |
+| Firebase         | ✅      |
+| Backend Sync     | ✅      |
+| AI Integration   | ✅      |
+| Production Ready | ✅      |
+
+---
+
+**Last Updated:** December 16, 2025
+**Version:** 1.0.0
+**License:** Academic – Infosys Springboard
+**Status:** ✅ COMPLETE
