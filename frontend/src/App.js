@@ -6,6 +6,9 @@ import Register from './components/Register';
 import Dashboard from './components/Dashboard.jsx';
 import Profile from './components/Profile';
 import IPActivity from './components/IPActivity.js';
+import HelpCenter from './components/HelpCenter';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import TermsOfService from './components/TermsOfService';
 
 function App() {
   return (
@@ -17,6 +20,9 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/ipActivity" element={<IPActivity />} />
+          <Route path="/help" element={<HelpCenter />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
         </Routes>
       </div>
   );
