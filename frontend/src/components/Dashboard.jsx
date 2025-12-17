@@ -81,6 +81,12 @@ const Dashboard = () => {
           </button>
           <button
             className="hover:text-purple-300"
+            onClick={() => navigate("/ip-search")}
+          >
+            IP Search
+          </button>
+          <button
+            className="hover:text-purple-300"
             onClick={() => navigate("/ipActivity")}
           >
             IP Activity

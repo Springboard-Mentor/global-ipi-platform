@@ -11,6 +11,8 @@ import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
 import Settings from './components/Settings';
 import Feedback from './components/Feedback';
+import IPSearch from './components/IPSearch';
+import SearchResults from './components/SearchResults';
 
 function App() {
   return (
@@ -27,6 +29,8 @@ function App() {
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/feedback" element={<Feedback />} />
+          <Route path="/ip-search" element={<IPSearch />} />
+          <Route path="/search-results" element={<SearchResults />} />
         </Routes>
       </div>
   );
