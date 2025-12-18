@@ -295,7 +295,8 @@ const SearchResults = () => {
                     <p className="text-gray-400 text-sm line-clamp-2">{result.abstract}</p>
                     
                     <div className="mt-4 flex gap-2">
-                      <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors">
+                      <button className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors"
+                       onClick={() => navigate(`/ip/${result.id}`)}>
                         View Details
                       </button>
                       <button className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm transition-colors">

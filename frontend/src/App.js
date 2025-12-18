@@ -13,6 +13,7 @@ import Settings from "./components/dashboardComponents/Settings";
 import Feedback from "./components/landingPageComponents/Feedback";
 import IPSearch from "./components/IPSearch";
 import SearchResults from "./components/dashboardComponents/ipSearchComponents/SearchResults.js";
+import IPDetails from "./components/dashboardComponents/ipSearchComponents/IPDetails.jsx";
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
         <Route path="/feedback" element={<Feedback />} />
         <Route path="/ip-search" element={<IPSearch />} />
         <Route path="/search-results" element={<SearchResults />} />
+        <Route path="/ip/:id" element={<IPDetails />} />
       </Routes>
     </div>
   );
