@@ -6,6 +6,7 @@ import Sidebar from './components/Sidebar';
 import HeaderBar from './components/HeaderBar';
 import Dashboard from './pages/Dashboard';
 import ProfilePage from './pages/ProfilePage';
+import SearchResultsPage from './pages/SearchResultsPage';
 import IPAssetPanel from './components/IPAssetPanel';
 
 const App = () => {
@@ -26,6 +27,7 @@ const App = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeItem, setActiveItem] = useState('dashboard');
   const [currentPage, setCurrentPage] = useState('dashboard');
+  const [searchQuery, setSearchQuery] = useState('');
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -384,26 +386,26 @@ const App = () => {
         onLogout={handleLogout}
       />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : ''}`}>
 
         <HeaderBar
           onMenuClick={() => setSidebarOpen(true)}
           onProfileClick={() => setCurrentPage('profile')}
           userProfile={userProfile}
+          onSearch={(query) => {
+            setSearchQuery(query);
+            setCurrentPage('search');
+            setActiveItem('search');
+          }}
+          currentPage={currentPage}
+          sidebarOpen={sidebarOpen}
         />
 
-        <div className="flex-1 overflow-auto">
-          <div className="p-6 lg:p-8 max-w-7xl mx-auto">
+        <div className="flex-1 overflow-auto" onClick={() => sidebarOpen && setSidebarOpen(false)}>
+          <div className="p-4 lg:p-6 w-full">
 
             {currentPage === 'dashboard' ? (
-              <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                <div className="xl:col-span-2">
-                  <Dashboard userProfile={userProfile} />
-                </div>
-                <div className="xl:col-span-1">
-                  <IPAssetPanel />
-                </div>
-              </div>
+              <Dashboard userProfile={userProfile} />
             ) : currentPage === 'profile' ? (
               <ProfilePage
                 userProfile={userProfile}
@@ -414,10 +416,11 @@ const App = () => {
                 }}
               />
             ) : currentPage === 'search' ? (
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <h2 className="text-2xl font-bold text-gray-800 mb-4">Search Results</h2>
-                <p className="text-gray-600">Search functionality coming soon...</p>
-              </div>
+              <SearchResultsPage query={searchQuery} onBack={() => {
+                setCurrentPage('dashboard');
+                setActiveItem('dashboard');
+                setSearchQuery('');
+              }} />
             ) : currentPage === 'filing' ? (
               <div className="bg-white rounded-xl shadow-lg p-6">
                 <h2 className="text-2xl font-bold text-gray-800 mb-4">Filing Tracker</h2>

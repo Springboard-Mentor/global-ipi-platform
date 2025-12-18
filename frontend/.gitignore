@@ -23,6 +23,9 @@ src/firebase.js
 .firebase.js
 frontend/src/firebase.js
 frontend/dashboard/src/firebase.js
+# Ignore backend completely
+backend/
+
 
 
 
