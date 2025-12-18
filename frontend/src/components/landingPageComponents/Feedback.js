@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { db } from '../../firebase/config';
+import { collection, addDoc, Timestamp } from 'firebase/firestore';
 
 const Feedback = () => {
   const navigate = useNavigate();
@@ -11,12 +13,31 @@ const Feedback = () => {
     email: ''
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle feedback submission
-    console.log('Feedback submitted:', feedback);
-    alert('Thank you for your feedback! We appreciate your input.');
-    navigate('/dashboard');
+    
+    try {
+      await addDoc(collection(db, 'feedbacks'), {
+        email: feedback.email,
+        message: feedback.message,
+        rating: feedback.rating,
+        subject: feedback.subject,
+        createdAt: Timestamp.now()
+      });
+      
+      alert('Thank you for your feedback! We appreciate your input.');
+      setFeedback({
+        type: 'general',
+        rating: 5,
+        subject: '',
+        message: '',
+        email: ''
+      });
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Error submitting feedback:', error);
+      alert('Sorry, there was an error submitting your feedback. Please try again.');
+    }
   };
 
   const handleChange = (field, value) => {

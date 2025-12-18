@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { db } from '../firebase/config';
+import { collection, addDoc, Timestamp } from 'firebase/firestore';
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -358,38 +360,7 @@ const LandingPage = () => {
             
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
               <h3 className="text-2xl font-bold text-white mb-6">Send us a Message</h3>
-              <form className="space-y-6">
-                <div>
-                  <label className="text-white text-sm mb-2 block">Name</label>
-                  <input
-                    type="text"
-                    className="w-full p-3 bg-white/10 text-white border border-white/30 rounded-xl focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
-                    placeholder="Your name"
-                  />
-                </div>
-                <div>
-                  <label className="text-white text-sm mb-2 block">Email</label>
-                  <input
-                    type="email"
-                    className="w-full p-3 bg-white/10 text-white border border-white/30 rounded-xl focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
-                    placeholder="Your email"
-                  />
-                </div>
-                <div>
-                  <label className="text-white text-sm mb-2 block">Message</label>
-                  <textarea
-                    rows={4}
-                    className="w-full p-3 bg-white/10 text-white border border-white/30 rounded-xl focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
-                    placeholder="Your message"
-                  ></textarea>
-                </div>
-                <button
-                  type="submit"
-                  className="w-full py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 shadow-lg"
-                >
-                  Send Message
-                </button>
-              </form>
+              <ContactForm />
             </div>
           </div>
         </div>
@@ -454,6 +425,82 @@ const LandingPage = () => {
         </div>
       </footer>
     </div>
+  );
+};
+
+const ContactForm = () => {
+  const [contactData, setContactData] = useState({
+    name: '',
+    email: '',
+    message: ''
+  });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!contactData.name || !contactData.email || !contactData.message) {
+      alert('Please fill in all fields.');
+      return;
+    }
+    
+    try {
+      await addDoc(collection(db, 'contacts'), {
+        name: contactData.name,
+        email: contactData.email,
+        message: contactData.message,
+        createdAt: Timestamp.now()
+      });
+      
+      alert('Thank you for your message! We will get back to you soon.');
+      setContactData({ name: '', email: '', message: '' });
+    } catch (error) {
+      console.error('Error sending message:', error);
+      alert('Sorry, there was an error sending your message. Please try again.');
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div>
+        <label className="text-white text-sm mb-2 block">Name</label>
+        <input
+          type="text"
+          value={contactData.name}
+          onChange={(e) => setContactData(prev => ({ ...prev, name: e.target.value }))}
+          className="w-full p-3 bg-white/10 text-white border border-white/30 rounded-xl focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+          placeholder="Your name"
+          required
+        />
+      </div>
+      <div>
+        <label className="text-white text-sm mb-2 block">Email</label>
+        <input
+          type="email"
+          value={contactData.email}
+          onChange={(e) => setContactData(prev => ({ ...prev, email: e.target.value }))}
+          className="w-full p-3 bg-white/10 text-white border border-white/30 rounded-xl focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+          placeholder="Your email"
+          required
+        />
+      </div>
+      <div>
+        <label className="text-white text-sm mb-2 block">Message</label>
+        <textarea
+          rows={4}
+          value={contactData.message}
+          onChange={(e) => setContactData(prev => ({ ...prev, message: e.target.value }))}
+          className="w-full p-3 bg-white/10 text-white border border-white/30 rounded-xl focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
+          placeholder="Your message"
+          required
+        ></textarea>
+      </div>
+      <button
+        type="submit"
+        className="w-full py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-300 shadow-lg"
+      >
+        Send Message
+      </button>
+    </form>
   );
 };
 
