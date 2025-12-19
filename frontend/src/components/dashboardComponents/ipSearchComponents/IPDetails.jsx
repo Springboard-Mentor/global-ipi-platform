@@ -1,29 +1,28 @@
-import React from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 
 const IPDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // Mock Data 
-  const ip = {
-    title: "Decentralized Autonomous Organization for Patent Management",
-    owner: "FutureTech Innovations Inc.",
-    authority: "USPTO",
-    coverage: "Global / USA",
-    duration: "20 Years (Expires 2042-03-15)",
-    description:
-      "Decentralized Autonomous Organization for Patent Management implements community-driven and automated systems that enhance decentralized patent filing and lifecycle management.",
-    timeline: [
-      { date: "2022-03-15", label: "Application Filed", color: "bg-blue-400" },
-      {
-        date: "2022-09-20",
-        label: "Examination Commenced",
-        color: "bg-purple-400",
-      },
-      { date: "2024-05-25", label: "Patent Granted", color: "bg-pink-500" },
-    ],
-  };
+  const ip = location.state?.ip;
+
+  if (!ip) {
+    return (
+      <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center">
+        <div>
+          <p className="mb-4">No IP data available.</p>
+          <button
+            onClick={() => navigate("/ip-search")}
+            className="px-4 py-2 bg-blue-600 rounded-lg"
+          >
+            Go Back to Search
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 px-6 py-8">
@@ -54,72 +53,71 @@ const IPDetails = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-gray-300">
           <div>
-            <span className="text-white">Owner:</span> {ip.owner}
+            <span className="text-white">Owner:</span> {ip.assignee}
           </div>
           <div>
             <span className="text-white">Issuing Authority:</span>{" "}
-            {ip.authority}
+            {ip.jurisdiction}
           </div>
           <div>
-            <span className="text-white">Area of Coverage:</span> {ip.coverage}
+            <span className="text-white">IP Number:</span> {ip.number}
           </div>
           <div>
-            <span className="text-white">Duration:</span> {ip.duration}
+            <span className="text-white">Status:</span> {ip.status}
           </div>
         </div>
 
         <p className="mt-4 text-gray-400 text-sm">
-          <span className="text-white">Description:</span> {ip.description}
+          <span className="text-white">Abstract:</span> {ip.abstract}
         </p>
-      </div>
 
-      {/* Bottom Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Timeline */}
-        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
-          <h3 className="text-white font-semibold mb-4">
-            Legal Status Timeline
-          </h3>
-          <div className="space-y-6">
-            {ip.timeline.map((item, index) => (
-              <div key={index} className="flex items-start gap-4">
-                <div className={`w-3 h-3 rounded-full mt-1 ${item.color}`} />
-                <div>
-                  <p className="text-white text-sm">{item.label}</p>
-                  <p className="text-gray-400 text-xs">{item.date}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <p className="mt-2 text-gray-400 text-sm">
+          <span className="text-white">Filed Date:</span> {ip.date}
+        </p>
 
-        {/* Document Viewer */}
-        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 flex flex-col items-center justify-center">
-          <svg
-            className="w-12 h-12 text-gray-300 mb-2"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={1.5}
-            viewBox="0 0 24 24"
-          >
-            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-            <path d="M14 2v6h6" />
-          </svg>
-          <p className="text-gray-300 text-sm">Patent Document</p>
-          <button className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-            Download PDF
-          </button>
-        </div>
-
-        {/* Citation Trend */}
-        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
-          <h3 className="text-white font-semibold mb-4">Citation Trend</h3>
-
-          {/* Simple visual placeholder */}
-          <div className="h-32 bg-gradient-to-r from-purple-500/40 via-pink-500/40 to-blue-500/40 rounded-xl" />
-          <p className="text-gray-400 text-xs mt-2">
-            Citation growth over time (visual analytics)
+        {ip.inventor && (
+          <p className="mt-2 text-gray-400 text-sm">
+            <span className="text-white">Inventor:</span> {ip.inventor}
           </p>
+        )}
+
+        {/* Bottom Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Timeline */}
+          <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+            <h3 className="text-white font-semibold mb-4">
+              Legal Status Timeline
+            </h3>
+          </div>
+
+          {/* Document Viewer */}
+          <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 flex flex-col items-center justify-center">
+            <svg
+              className="w-12 h-12 text-gray-300 mb-2"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.5}
+              viewBox="0 0 24 24"
+            >
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+              <path d="M14 2v6h6" />
+            </svg>
+            <p className="text-gray-300 text-sm">Patent Document</p>
+            <button className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+              Download PDF
+            </button>
+          </div>
+
+          {/* Citation Trend */}
+          <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6">
+            <h3 className="text-white font-semibold mb-4">Citation Trend</h3>
+
+            {/* Simple visual placeholder */}
+            <div className="h-32 bg-gradient-to-r from-purple-500/40 via-pink-500/40 to-blue-500/40 rounded-xl" />
+            <p className="text-gray-400 text-xs mt-2">
+              Citation growth over time (visual analytics)
+            </p>
+          </div>
         </div>
       </div>
     </div>
