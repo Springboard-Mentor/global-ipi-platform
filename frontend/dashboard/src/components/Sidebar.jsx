@@ -13,7 +13,7 @@ import {
 const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem, onLogout }) => {
   const menuItems = [
     { id: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
-    { id: "search", icon: Search, label: "Search Results" },
+    { id: "search", icon: Search, label: "Search" },
     { id: "filing", icon: FileText, label: "Filing Tracker" },
     { id: "legal", icon: BarChart3, label: "Legal Status" },
   ];
