@@ -28,6 +28,9 @@ const App = () => {
   const [activeItem, setActiveItem] = useState('dashboard');
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchMode, setSearchMode] = useState(() => {
+    return localStorage.getItem('searchMode') || 'api';
+  });
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -405,7 +408,14 @@ const App = () => {
           <div className="p-4 lg:p-6 w-full">
 
             {currentPage === 'dashboard' ? (
-              <Dashboard userProfile={userProfile} />
+              <Dashboard 
+                userProfile={userProfile} 
+                searchMode={searchMode}
+                setSearchMode={(mode) => {
+                  setSearchMode(mode);
+                  localStorage.setItem('searchMode', mode);
+                }}
+              />
             ) : currentPage === 'profile' ? (
               <ProfilePage
                 userProfile={userProfile}
@@ -416,11 +426,19 @@ const App = () => {
                 }}
               />
             ) : currentPage === 'search' ? (
-              <SearchResultsPage query={searchQuery} onBack={() => {
-                setCurrentPage('dashboard');
-                setActiveItem('dashboard');
-                setSearchQuery('');
-              }} />
+              <SearchResultsPage 
+                query={searchQuery} 
+                searchMode={searchMode}
+                setSearchMode={(mode) => {
+                  setSearchMode(mode);
+                  localStorage.setItem('searchMode', mode);
+                }}
+                onBack={() => {
+                  setCurrentPage('dashboard');
+                  setActiveItem('dashboard');
+                  setSearchQuery('');
+                }} 
+              />
             ) : currentPage === 'filing' ? (
               <div className="bg-white rounded-xl shadow-lg p-6">
                 <h2 className="text-2xl font-bold text-gray-800 mb-4">Filing Tracker</h2>
