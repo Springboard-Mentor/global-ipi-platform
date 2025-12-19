@@ -204,7 +204,7 @@ const IPDetails = () => {
       {/* Bottom Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Timeline */}
-        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 max-h-[600px] overflow-y-auto">
+        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 max-h-[600px] overflow-y-auto hide-scrollbar">
           <h3 className="text-white font-semibold mb-6">
             Legal Status Timeline
           </h3>
