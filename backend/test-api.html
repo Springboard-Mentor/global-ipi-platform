@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Viewer - Patent & User Data</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .btn-patents {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .btn-users {
+            background: #2196F3;
+            color: white;
+        }
+        
+        .btn-refresh {
+            background: #FF9800;
+            color: white;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .stat-card h3 {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .stat-card .value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .data-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .data-section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+        
+        tr:hover {
+            background: #f5f5f5;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 18px;
+            color: #666;
+        }
+        
+        .error {
+            background: #f44336;
+            color: white;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        
+        .success {
+            background: #4CAF50;
+            color: white;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+        
+        .connection-status {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        
+        .connected {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .disconnected {
+            background: #f44336;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Database Viewer
+            <span id="connectionStatus" class="connection-status disconnected">Checking...</span>
+        </h1>
+        
+        <div class="controls">
+            <div class="button-group">
+                <button class="btn-patents" onclick="loadPatents()">📄 Load Patents</button>
+                <button class="btn-users" onclick="loadUsers()">👥 Load Users</button>
+                <button class="btn-refresh" onclick="refreshAll()">🔄 Refresh All</button>
+            </div>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <h3>Total Patents</h3>
+                <div class="value" id="patentCount">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>Total Users</h3>
+                <div class="value" id="userCount">-</div>
+            </div>
+            <div class="stat-card">
+                <h3>Database</h3>
+                <div class="value" style="font-size: 20px;">my_project_db</div>
+            </div>
+        </div>
+        
+        <div id="message"></div>
+        
+        <div class="data-section" id="patentsSection" style="display: none;">
+            <h2>📄 Patents Data</h2>
+            <div id="patentsData"></div>
+        </div>
+        
+        <div class="data-section" id="usersSection" style="display: none;">
+            <h2>👥 Users Data</h2>
+            <div id="usersData"></div>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = 'http://localhost:8080/api';
+        
+        async function checkConnection() {
+            try {
+                const response = await fetch(`${API_BASE}/patents`);
+                if (response.ok) {
+                    document.getElementById('connectionStatus').className = 'connection-status connected';
+                    document.getElementById('connectionStatus').textContent = '✓ Connected';
+                    return true;
+                } else {
+                    throw new Error('API not responding');
+                }
+            } catch (error) {
+                document.getElementById('connectionStatus').className = 'connection-status disconnected';
+                document.getElementById('connectionStatus').textContent = '✗ Disconnected';
+                showMessage('Backend server is not running. Please start it first.', 'error');
+                return false;
+            }
+        }
+        
+        async function loadPatents() {
+            try {
+                showMessage('Loading patents...', 'loading');
+                const response = await fetch(`${API_BASE}/patents`);
+                const patents = await response.json();
+                
+                document.getElementById('patentCount').textContent = patents.length;
+                
+                if (patents.length === 0) {
+                    document.getElementById('patentsData').innerHTML = '<p class="loading">No patents found in database</p>';
+                    showMessage('No patents found. The database is empty.', 'error');
+                } else {
+                    let html = `
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Title</th>
+                                    <th>Assignee</th>
+                                    <th>Status</th>
+                                    <th>Filing Date</th>
+                                    <th>Source</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    
+                    patents.forEach(patent => {
+                        html += `
+                            <tr>
+                                <td>${patent.id || 'N/A'}</td>
+                                <td>${patent.title || 'N/A'}</td>
+                                <td>${patent.assignee || 'N/A'}</td>
+                                <td>${patent.status || 'N/A'}</td>
+                                <td>${patent.filingDate || 'N/A'}</td>
+                                <td>${patent.apiSource || 'N/A'}</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    html += '</tbody></table>';
+                    document.getElementById('patentsData').innerHTML = html;
+                    showMessage(`Successfully loaded ${patents.length} patents from database`, 'success');
+                }
+                
+                document.getElementById('patentsSection').style.display = 'block';
+            } catch (error) {
+                showMessage('Error loading patents: ' + error.message, 'error');
+                console.error('Error:', error);
+            }
+        }
+        
+        async function loadUsers() {
+            try {
+                showMessage('Loading users...', 'loading');
+                const response = await fetch(`${API_BASE}/users`);
+                const users = await response.json();
+                
+                document.getElementById('userCount').textContent = users.length;
+                
+                if (users.length === 0) {
+                    document.getElementById('usersData').innerHTML = '<p class="loading">No users found in database</p>';
+                    showMessage('No users found. The database is empty.', 'error');
+                } else {
+                    let html = `
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Email</th>
+                                    <th>First Name</th>
+                                    <th>Last Name</th>
+                                    <th>Organization</th>
+                                    <th>Verified</th>
+                                    <th>Active</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    
+                    users.forEach(user => {
+                        html += `
+                            <tr>
+                                <td>${user.id}</td>
+                                <td>${user.email}</td>
+                                <td>${user.firstName || 'N/A'}</td>
+                                <td>${user.lastName || 'N/A'}</td>
+                                <td>${user.organization || 'N/A'}</td>
+                                <td>${user.isVerified ? '✓' : '✗'}</td>
+                                <td>${user.isActive ? '✓' : '✗'}</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    html += '</tbody></table>';
+                    document.getElementById('usersData').innerHTML = html;
+                    showMessage(`Successfully loaded ${users.length} users from database`, 'success');
+                }
+                
+                document.getElementById('usersSection').style.display = 'block';
+            } catch (error) {
+                showMessage('Error loading users: ' + error.message, 'error');
+                console.error('Error:', error);
+            }
+        }
+        
+        async function refreshAll() {
+            await checkConnection();
+            await loadPatents();
+            await loadUsers();
+        }
+        
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.className = type;
+            messageDiv.textContent = text;
+            messageDiv.style.display = 'block';
+            
+            if (type !== 'loading') {
+                setTimeout(() => {
+                    messageDiv.style.display = 'none';
+                }, 5000);
+            }
+        }
+        
+        // Check connection on page load
+        window.onload = async function() {
+            const connected = await checkConnection();
+            if (connected) {
+                refreshAll();
+            }
+        };
+    </script>
+</body>
+</html>

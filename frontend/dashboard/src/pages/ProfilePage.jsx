@@ -20,21 +20,42 @@ const uploadPhotoToStorage = async (file, uid) => {
   try {
     // Get file extension dynamically
     const fileExtension = file.name.split('.').pop().toLowerCase();
-    const fileName = `profile.${fileExtension}`;
+    const fileName = `profile_${Date.now()}.${fileExtension}`;
     const storageRef = ref(storage, `users/${uid}/${fileName}`);
     console.log('Storage path:', `users/${uid}/${fileName}`);
     
-    const snapshot = await uploadBytes(storageRef, file);
+    // Add metadata
+    const metadata = {
+      contentType: file.type,
+      customMetadata: {
+        uploadedBy: uid,
+        uploadedAt: new Date().toISOString()
+      }
+    };
+    
+    console.log('Uploading file with metadata...');
+    const snapshot = await uploadBytes(storageRef, file, metadata);
     console.log('✅ File uploaded successfully:', snapshot);
     
     const downloadURL = await getDownloadURL(snapshot.ref);
     console.log('✅ Download URL obtained:', downloadURL);
+    console.log('✅ Download URL length:', downloadURL.length);
     
     return downloadURL;
   } catch (error) {
     console.error('❌ Error in uploadPhotoToStorage:', error);
     console.error('Error code:', error.code);
     console.error('Error message:', error.message);
+    
+    // Provide user-friendly error messages
+    if (error.code === 'storage/unauthorized') {
+      throw new Error('Permission denied. Please check Firebase Storage rules.');
+    } else if (error.code === 'storage/canceled') {
+      throw new Error('Upload was cancelled.');
+    } else if (error.code === 'storage/unknown') {
+      throw new Error('An unknown error occurred during upload.');
+    }
+    
     throw error; // Re-throw to handle in calling function
   }
 };
@@ -337,18 +358,24 @@ const ProfilePage = ({ userProfile, setUserProfile, onBack }) => {
         });
         
         try {
-          // Clear any previous Base64 preview before upload
-          setFormData(prev => ({ ...prev, photoURL: '' }));
+          // Show uploading indicator
+          alert('Uploading photo...');
           
           photoUrlToSave = await uploadPhotoToStorage(newFile, userId);
           console.log('✅ Photo uploaded successfully! URL:', photoUrlToSave);
+          console.log('✅ URL Type:', typeof photoUrlToSave);
+          console.log('✅ URL Length:', photoUrlToSave?.length);
+          
+          if (!photoUrlToSave || photoUrlToSave.length === 0) {
+            throw new Error('Upload succeeded but no URL was returned');
+          }
           
           // Update formData with new URL immediately
           setFormData(prev => ({ ...prev, photoURL: photoUrlToSave }));
           
         } catch (uploadError) {
           console.error('❌ Photo upload failed:', uploadError);
-          alert('Failed to upload photo: ' + uploadError.message);
+          alert('Failed to upload photo: ' + uploadError.message + '\n\nPlease check:\n1. Firebase Storage rules allow uploads\n2. Internet connection is stable\n3. File is a valid image');
           setIsSaving(false);
           return; // Stop the save process if photo upload fails
         }
@@ -360,12 +387,18 @@ const ProfilePage = ({ userProfile, setUserProfile, onBack }) => {
       } else {
         console.log('ℹ️ No photo changes - using existing photoURL');
         // Keep the existing photoURL from formData
-        photoUrlToSave = formData.photoURL;
+        photoUrlToSave = formData.photoURL || '';
+      }
+      
+      // Ensure we don't save Base64 strings to Firestore
+      if (photoUrlToSave && photoUrlToSave.startsWith('data:')) {
+        console.warn('⚠️ Detected Base64 string instead of storage URL, clearing...');
+        photoUrlToSave = ''; // Don't save Base64 to Firestore
       }
       
       // 2. Save updated data (including the new public photoURL) to Firestore
       const userRef = doc(db, 'users', userId);
-      console.log('Updating Firestore document...');
+      console.log('💾 Updating Firestore document...');
       
       const updateData = {
         firstName: formData.firstName.trim(),
@@ -376,22 +409,27 @@ const ProfilePage = ({ userProfile, setUserProfile, onBack }) => {
         phoneNumber: formData.phoneNumber || '',
         emailVerified: auth.currentUser?.emailVerified || formData.emailVerified || false,
         authProvider: formData.authProvider || 'google',
-        photoURL: photoUrlToSave || '',
+        photoURL: photoUrlToSave,
         updatedAt: serverTimestamp()
       };
 
-      console.log('Updating Firestore with data:', updateData);
+      console.log('💾 Firestore update data:', {
+        ...updateData,
+        photoURL: photoUrlToSave ? `${photoUrlToSave.substring(0, 50)}...` : '(empty)'
+      });
       
       await updateDoc(userRef, updateData);
       
       console.log('✅ Profile updated successfully in Firestore!');
       
-      // 3. Fetch fresh data from Firestore after save
+      // 3. Fetch fresh data from Firestore after save to confirm
+      console.log('🔄 Fetching fresh data from Firestore...');
       const updatedDocSnap = await getDoc(userRef);
       
       if (updatedDocSnap.exists()) {
         const freshData = updatedDocSnap.data();
-        console.log('✅ Fresh data fetched after save:', freshData);
+        console.log('✅ Fresh data fetched after save');
+        console.log('📷 PhotoURL from Firestore:', freshData.photoURL);
         
         // 4. Prepare complete profile data with auth metadata
         const finalProfileData = {
@@ -400,25 +438,27 @@ const ProfilePage = ({ userProfile, setUserProfile, onBack }) => {
           email: freshData.email || auth.currentUser?.email || formData.email || '',
           emailVerified: freshData.emailVerified !== undefined ? freshData.emailVerified : (auth.currentUser?.emailVerified || formData.emailVerified || false),
           phoneNumber: freshData.phoneNumber || '',
+          photoURL: freshData.photoURL || '',
           creationTime: auth.currentUser?.metadata?.creationTime || formData.creationTime || '',
           lastSignInTime: auth.currentUser?.metadata?.lastSignInTime || formData.lastSignInTime || '',
           authProvider: freshData.authProvider || formData.authProvider || '',
         };
         
-        console.log('📊 Final profile data after save:', finalProfileData);
-        console.log('📞 Phone Number after save:', finalProfileData.phoneNumber);
-        console.log('✉️ Email Verified after save:', finalProfileData.emailVerified);
+        console.log('📊 Final profile data after save:', {
+          ...finalProfileData,
+          photoURL: finalProfileData.photoURL ? `${finalProfileData.photoURL.substring(0, 50)}...` : '(empty)'
+        });
 
         // 5. Update both local and parent state with fresh data
         setFormData(finalProfileData);
         
         if (setUserProfile) {
-          console.log('📤 Final Dashboard sync after save completion');
+          console.log('📤 Syncing to Dashboard...');
           setUserProfile(finalProfileData);
         }
         
         console.log('✅ Profile saved successfully!');
-        alert('Profile saved successfully!');
+        alert('Profile saved successfully!' + (newFile ? '\n\nYour profile photo has been uploaded.' : ''));
         setIsEditing(false);
         setNewFile(null); // Clear the file after successful save
       } else {
@@ -445,6 +485,7 @@ const ProfilePage = ({ userProfile, setUserProfile, onBack }) => {
       console.error('❌ Error updating profile:', error);
       console.error('Error code:', error.code);
       console.error('Error message:', error.message);
+      console.error('Full error:', JSON.stringify(error, null, 2));
       
       let errorMessage = 'Failed to update profile: ';
       

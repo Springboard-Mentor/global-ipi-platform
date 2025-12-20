@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { TrendingUp, CheckCircle } from "lucide-react";
+import { TrendingUp, CheckCircle, Database, Globe } from "lucide-react";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 
@@ -22,7 +22,7 @@ import Filters from "../components/Filters";
 import OverviewGrid from "../components/OverviewGrid";
 import IPAssetPanel from "../components/IPAssetPanel";
 
-const Dashboard = ({ userProfile }) => {
+const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
   const [dashboardData, setDashboardData] = useState({
     portfolioValue: "$0",
     portfolioGrowth: "0%",
@@ -128,6 +128,40 @@ const Dashboard = ({ userProfile }) => {
               </span>
             </div>
           )}
+
+          {/* Search Mode Toggle */}
+          <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
+            <p className="text-sm font-medium text-gray-700 mb-2">Search Mode</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setSearchMode('api')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                  searchMode === 'api'
+                    ? 'bg-blue-500 text-white shadow-md'
+                    : 'bg-white text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <Globe size={16} />
+                <span className="font-medium">API Search</span>
+              </button>
+              <button
+                onClick={() => setSearchMode('local')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                  searchMode === 'local'
+                    ? 'bg-purple-500 text-white shadow-md'
+                    : 'bg-white text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <Database size={16} />
+                <span className="font-medium">Local Database</span>
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              {searchMode === 'api' 
+                ? 'Searching from external patent database API' 
+                : `Searching from local database (${JSON.parse(localStorage.getItem('patentDatabase') || '[]').length} patents stored)`}
+            </p>
+          </div>
         </div>
 
         {/* Filters + Overview */}
