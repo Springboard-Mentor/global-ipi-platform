@@ -1,9 +1,12 @@
+# Application Properties Template
+# Copy this file to application.properties and fill in your actual values
+
 server.port=8080
 
 # Database Configuration
 spring.datasource.url=jdbc:postgresql://localhost:5432/my_project_db
 spring.datasource.username=postgres
-spring.datasource.password=Postgres@123
+spring.datasource.password=YOUR_DB_PASSWORD_HERE
 spring.datasource.driver-class-name=org.postgresql.Driver
 
 # JPA/Hibernate Configuration
@@ -13,6 +16,5 @@ spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.format_sql=true
 
 # SerpAPI Configuration
-serpapi.key=911c64677374efe91d47afc2a41d11c9c175d3140dd130b31ce7bb56010ed8e0
+serpapi.key=YOUR_SERPAPI_KEY_HERE
 serpapi.base.url=https://serpapi.com/search.json
-

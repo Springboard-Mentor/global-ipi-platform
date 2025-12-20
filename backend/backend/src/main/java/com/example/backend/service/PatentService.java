@@ -3,6 +3,7 @@ package com.example.backend.service;
 import com.example.backend.model.Patent;
 import com.example.backend.model.SearchRequest;
 import com.example.backend.repository.PatentRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import com.google.gson.JsonObject;
@@ -23,6 +24,12 @@ public class PatentService {
 
     private final RestTemplate restTemplate;
     private final PatentRepository patentRepository;
+    
+    @Value("${serpapi.key}")
+    private String serpApiKey;
+    
+    @Value("${serpapi.base.url}")
+    private String serpApiBaseUrl;
 
     public PatentService(PatentRepository patentRepository) {
         this.restTemplate = new RestTemplate();
@@ -48,10 +55,10 @@ public class PatentService {
         // If not found in database, try external API
         try {
             // Use google_patents engine with q parameter for keyword search
-            String url = "https://serpapi.com/search.json?engine=google_patents&q=" 
+            String url = serpApiBaseUrl + "?engine=google_patents&q=" 
                 + URLEncoder.encode(request.getQuery(), StandardCharsets.UTF_8.toString()) 
-                + "&api_key=911c64677374efe91d47afc2a41d11c9c175d3140dd130b31ce7bb56010ed8e0";
-            logger.info("Calling SerpAPI with URL: {}", url);
+                + "&api_key=" + serpApiKey;
+            logger.info("Calling SerpAPI with URL: {}", url.replaceAll("api_key=[^&]*", "api_key=***HIDDEN***"));
             String response = restTemplate.getForObject(url, String.class);
             logger.info("API Response received");
 
@@ -173,9 +180,9 @@ public class PatentService {
         
         // If not found, try API
         try {
-            String url = "https://serpapi.com/search.json?engine=google_patents_details&patent_id=" 
-                + patentId + "&api_key=911c64677374efe91d47afc2a41d11c9c175d3140dd130b31ce7bb56010ed8e0";
-            logger.info("Fetching patent details for: {}", patentId);
+            String url = serpApiBaseUrl + "?engine=google_patents_details&patent_id=" 
+                + patentId + "&api_key=" + serpApiKey;
+            logger.info("Fetching patent details for: {} (API key hidden)", patentId);
             String response = restTemplate.getForObject(url, String.class);
 
             JsonObject json = JsonParser.parseString(response).getAsJsonObject();
