@@ -9,6 +9,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/patents")
+@CrossOrigin(origins = "*")
 public class PatentController {
 
     private final PatentService patentService;
@@ -17,8 +18,13 @@ public class PatentController {
         this.patentService = patentService;
     }
 
+    @GetMapping
+    public ResponseEntity<List<Patent>> getAllPatents() {
+        List<Patent> allPatents = patentService.getAllPatents();
+        return ResponseEntity.ok(allPatents);
+    }
+
     @PostMapping("/search")
-    @CrossOrigin(origins = "*")
     public ResponseEntity<List<Patent>> searchPatents(@RequestBody SearchRequest request) {
         // request.query should be the patent_id, e.g., "patent/US11734097B1/en"
         List<Patent> results = patentService.quickSearch(request);
@@ -26,7 +32,6 @@ public class PatentController {
     }
 
     @GetMapping("/{patentId}")
-    @CrossOrigin(origins = "*")
     public ResponseEntity<Patent> getPatent(@PathVariable String patentId) {
         Patent patent = patentService.getPatentById(patentId);
         if (patent != null) {
