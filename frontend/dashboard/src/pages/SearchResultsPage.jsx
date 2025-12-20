@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, History, Filter, Globe, Database } from 'lucide-react';
+import { ArrowLeft, History, Filter, Globe, Database, Share2, Copy, Download } from 'lucide-react';
 
 const SearchResultsPage = ({ query, onBack, searchMode = 'api', setSearchMode }) => {
   const [results, setResults] = useState([]);
@@ -15,8 +15,76 @@ const SearchResultsPage = ({ query, onBack, searchMode = 'api', setSearchMode })
   const [filters, setFilters] = useState({
     filingDateFrom: '',
     filingDateTo: '',
-    searchText: ''
+    searchText: '',
+    assignee: '',
+    inventor: '',
+    status: '',
+    jurisdiction: ''
   });
+  const [expandedPatentId, setExpandedPatentId] = useState(null);
+  const [copySuccess, setCopySuccess] = useState(false);
+
+  const handleShareWhatsApp = (patent) => {
+    const text = `Patent: ${patent.title || 'N/A'}\n` +
+      `ID: ${patent.id || patent.ipRightIdentifier || 'N/A'}\n` +
+      `Assignee: ${patent.assignee || 'N/A'}\n` +
+      `Inventor: ${patent.inventor || 'N/A'}\n` +
+      `Filing Date: ${patent.filingDate || 'N/A'}\n` +
+      `Status: ${patent.status || 'N/A'}`;
+    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
+  };
+
+  const handleCopyToClipboard = async (patent) => {
+    const text = `Patent Details\n\n` +
+      `Title: ${patent.title || 'N/A'}\n` +
+      `ID: ${patent.id || patent.ipRightIdentifier || 'N/A'}\n` +
+      `Asset Number: ${patent.assetNumber || 'N/A'}\n` +
+      `Assignee: ${patent.assignee || 'N/A'}\n` +
+      `Inventor: ${patent.inventor || 'N/A'}\n` +
+      `Jurisdiction: ${patent.jurisdiction || 'N/A'}\n` +
+      `Filing Date: ${patent.filingDate || 'N/A'}\n` +
+      `Status: ${patent.status || 'N/A'}\n` +
+      `Abstract: ${patent.abstractText || 'N/A'}\n` +
+      `Classification: ${patent.classInfo || 'N/A'}\n` +
+      `Additional Details: ${patent.details || 'N/A'}`;
+    
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  const handleDownloadPatent = (patent) => {
+    const content = `PATENT DETAILS\n\n` +
+      `Title: ${patent.title || 'N/A'}\n` +
+      `ID: ${patent.id || patent.ipRightIdentifier || 'N/A'}\n` +
+      `Asset Number: ${patent.assetNumber || 'N/A'}\n` +
+      `Type: ${patent.type || 'N/A'}\n` +
+      `Assignee: ${patent.assignee || 'N/A'}\n` +
+      `Inventor: ${patent.inventor || 'N/A'}\n` +
+      `Jurisdiction: ${patent.jurisdiction || 'N/A'}\n` +
+      `Filing Date: ${patent.filingDate || 'N/A'}\n` +
+      `Status: ${patent.status || 'N/A'}\n\n` +
+      `ABSTRACT:\n${patent.abstractText || 'N/A'}\n\n` +
+      `CLASSIFICATION:\n${patent.classInfo || 'N/A'}\n\n` +
+      `ADDITIONAL DETAILS:\n${patent.details || 'N/A'}\n\n` +
+      `Source: ${patent.apiSource || 'N/A'}\n` +
+      `Last Updated: ${patent.lastUpdated ? new Date(patent.lastUpdated).toLocaleString() : 'N/A'}`;
+    
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `patent_${patent.id || patent.ipRightIdentifier || 'document'}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
 
   useEffect(() => {
     // Load separate counters from localStorage
@@ -65,6 +133,38 @@ const SearchResultsPage = ({ query, onBack, searchMode = 'api', setSearchMode })
       );
     }
 
+    // Filter by assignee
+    if (filters.assignee) {
+      const assigneeLower = filters.assignee.toLowerCase();
+      filtered = filtered.filter(patent => 
+        patent.assignee && patent.assignee.toLowerCase().includes(assigneeLower)
+      );
+    }
+
+    // Filter by inventor
+    if (filters.inventor) {
+      const inventorLower = filters.inventor.toLowerCase();
+      filtered = filtered.filter(patent => 
+        patent.inventor && patent.inventor.toLowerCase().includes(inventorLower)
+      );
+    }
+
+    // Filter by status
+    if (filters.status) {
+      const statusLower = filters.status.toLowerCase();
+      filtered = filtered.filter(patent => 
+        patent.status && patent.status.toLowerCase().includes(statusLower)
+      );
+    }
+
+    // Filter by jurisdiction
+    if (filters.jurisdiction) {
+      const jurisdictionLower = filters.jurisdiction.toLowerCase();
+      filtered = filtered.filter(patent => 
+        patent.jurisdiction && patent.jurisdiction.toLowerCase().includes(jurisdictionLower)
+      );
+    }
+
     // Filter by filing date from
     if (filters.filingDateFrom) {
       filtered = filtered.filter(patent => 
@@ -86,7 +186,11 @@ const SearchResultsPage = ({ query, onBack, searchMode = 'api', setSearchMode })
     setFilters({
       filingDateFrom: '',
       filingDateTo: '',
-      searchText: ''
+      searchText: '',
+      assignee: '',
+      inventor: '',
+      status: '',
+      jurisdiction: ''
     });
   };
 
@@ -184,34 +288,32 @@ const SearchResultsPage = ({ query, onBack, searchMode = 'api', setSearchMode })
     }
   };
 
-  const handleViewDetails = async (ipRightIdentifier) => {
+  const handleViewDetails = async (patent) => {
+    const patentId = patent.ipRightIdentifier || patent.id;
+    
+    // Toggle: if already expanded, collapse it
+    if (expandedPatentId === patentId) {
+      setExpandedPatentId(null);
+      setSelectedPatent(null);
+      return;
+    }
+
+    setExpandedPatentId(patentId);
     setDetailsLoading(true);
     try {
-      const response = await fetch(`http://localhost:8080/api/patents/${ipRightIdentifier}`);
+      const response = await fetch(`http://localhost:8080/api/patents/${patentId}`);
       if (response.ok) {
-        const patent = await response.json();
-        setSelectedPatent(patent);
+        const fullPatent = await response.json();
+        setSelectedPatent(fullPatent);
       } else {
-        // Fallback to mock data
-        console.warn('API failed, using mock data for details');
-        const mockPatent = {
-          ipRightIdentifier: ipRightIdentifier,
-          title: `Detailed Patent: ${ipRightIdentifier}`,
-          abstractText: `This is detailed patent information for: ${ipRightIdentifier}. Additional details would be fetched from the API.`,
-          filingDate: '2023-01-01'
-        };
-        setSelectedPatent(mockPatent);
+        // Fallback: use the patent data we already have
+        console.warn('API failed, using existing patent data');
+        setSelectedPatent(patent);
       }
     } catch (error) {
       console.error('Error fetching patent details:', error);
-      // Fallback to mock data
-      const mockPatent = {
-        ipRightIdentifier: ipRightIdentifier,
-        title: `Detailed Patent: ${ipRightIdentifier}`,
-        abstractText: `This is detailed patent information for: ${ipRightIdentifier}. Additional details would be fetched from the API.`,
-        filingDate: '2023-01-01'
-      };
-      setSelectedPatent(mockPatent);
+      // Fallback: use the patent data we already have
+      setSelectedPatent(patent);
     } finally {
       setDetailsLoading(false);
     }
@@ -311,6 +413,50 @@ const SearchResultsPage = ({ query, onBack, searchMode = 'api', setSearchMode })
               />
             </div>
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Assignee</label>
+              <input
+                type="text"
+                value={filters.assignee}
+                onChange={(e) => setFilters({...filters, assignee: e.target.value})}
+                placeholder="e.g., PowerTech Industries"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Inventor</label>
+              <input
+                type="text"
+                value={filters.inventor}
+                onChange={(e) => setFilters({...filters, inventor: e.target.value})}
+                placeholder="e.g., Emily Zhang"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <select
+                value={filters.status}
+                onChange={(e) => setFilters({...filters, status: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">All Statuses</option>
+                <option value="Active">Active</option>
+                <option value="Pending">Pending</option>
+                <option value="Expired">Expired</option>
+                <option value="Abandoned">Abandoned</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Jurisdiction</label>
+              <input
+                type="text"
+                value={filters.jurisdiction}
+                onChange={(e) => setFilters({...filters, jurisdiction: e.target.value})}
+                placeholder="e.g., United States"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Filing Date From</label>
               <input
                 type="date"
@@ -387,17 +533,22 @@ const SearchResultsPage = ({ query, onBack, searchMode = 'api', setSearchMode })
       <div>
         {filteredResults.length > 0 ? (
           <div className="grid gap-4">
-            {filteredResults.map((patent, index) => (
-              <div key={patent.id || patent.ipRightIdentifier || index} className="bg-white border border-gray-300 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex justify-between items-start mb-4">
-                  <h2 className="text-xl font-semibold text-gray-800">{patent.title || 'No Title'}</h2>
-                  <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">
-                    {patent.type || 'Patent'}
-                  </span>
-                </div>
-                
-                {/* Main Info Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 bg-gray-50 p-4 rounded-lg">
+            {filteredResults.map((patent, index) => {
+              const patentId = patent.id || patent.ipRightIdentifier || index;
+              const isExpanded = expandedPatentId === patentId;
+              
+              return (
+                <div key={patentId} className="bg-white border border-gray-300 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                  <div className="p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <h2 className="text-xl font-semibold text-gray-800">{patent.title || 'No Title'}</h2>
+                      <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">
+                        {patent.type || 'Patent'}
+                      </span>
+                    </div>
+                    
+                    {/* Main Info Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 bg-gray-50 p-4 rounded-lg">
                   {patent.id && (
                     <div className="text-sm">
                       <span className="font-semibold text-gray-700">ID:</span>{' '}
@@ -452,48 +603,16 @@ const SearchResultsPage = ({ query, onBack, searchMode = 'api', setSearchMode })
                   )}
                 </div>
 
-                {/* Abstract */}
-                {patent.abstractText && (
-                  <div className="mb-4">
-                    <p className="text-sm font-semibold text-gray-700 mb-1">Abstract:</p>
-                    <p className="text-sm text-gray-700 line-clamp-3 bg-white p-3 rounded border border-gray-200">
-                      {patent.abstractText}
-                    </p>
-                  </div>
-                )}
-
-                {/* Additional Info */}
-                {patent.classInfo && patent.classInfo !== 'N/A' && (
-                  <div className="mb-4">
-                    <p className="text-sm font-semibold text-gray-700 mb-1">Classification (CPC):</p>
-                    <p className="text-xs text-gray-600 bg-white p-2 rounded border border-gray-200">
-                      {patent.classInfo}
-                    </p>
-                  </div>
-                )}
-
-                {/* Patent Details - Publication dates, etc */}
-                {patent.details && patent.details !== 'N/A' && (
-                  <div className="mb-4">
-                    <p className="text-sm font-semibold text-gray-700 mb-1">Additional Information:</p>
-                    <div className="text-xs text-gray-600 bg-blue-50 p-3 rounded border border-blue-200">
-                      {patent.details.split(';').map((detail, idx) => (
-                        detail.trim() && (
-                          <div key={idx} className="mb-1">
-                            {detail.trim()}
-                          </div>
-                        )
-                      ))}
-                    </div>
-                  </div>
-                )}
-
                 <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
                   <button 
-                    onClick={() => handleViewDetails(patent.ipRightIdentifier || patent.id)}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+                    onClick={() => handleViewDetails(patent)}
+                    className={`px-4 py-2 rounded-lg transition-colors font-medium ${
+                      isExpanded 
+                        ? 'bg-gray-500 text-white hover:bg-gray-600' 
+                        : 'bg-blue-500 text-white hover:bg-blue-600'
+                    }`}
                   >
-                    View Full Details
+                    {isExpanded ? 'Hide Full Details' : 'View Full Details'}
                   </button>
                   {patent.lastUpdated && (
                     <span className="text-xs text-gray-400">
@@ -502,115 +621,163 @@ const SearchResultsPage = ({ query, onBack, searchMode = 'api', setSearchMode })
                   )}
                 </div>
               </div>
-            ))}
+
+              {/* Expanded Details Section - Shows inline below this patent */}
+              {isExpanded && selectedPatent && (
+                <div className="border-t-2 border-blue-300 bg-gradient-to-b from-blue-50 to-white p-6">
+                  {detailsLoading ? (
+                    <div className="text-center py-4">
+                      <p className="text-gray-600">Loading complete details...</p>
+                    </div>
+                  ) : (
+                    <>
+                      <h3 className="text-xl font-bold mb-4 text-blue-900 flex items-center gap-2">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Complete Patent Details
+                      </h3>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        {selectedPatent.id && (
+                          <div className="bg-white p-3 rounded-lg shadow-sm">
+                            <p className="text-xs font-semibold text-gray-500 mb-1">ID</p>
+                            <p className="text-sm text-gray-800 font-medium">{selectedPatent.id}</p>
+                          </div>
+                        )}
+                        {selectedPatent.type && (
+                          <div className="bg-white p-3 rounded-lg shadow-sm">
+                            <p className="text-xs font-semibold text-gray-500 mb-1">Type</p>
+                            <p className="text-sm text-gray-800 font-medium">{selectedPatent.type}</p>
+                          </div>
+                        )}
+                        {selectedPatent.assetNumber && (
+                          <div className="bg-white p-3 rounded-lg shadow-sm">
+                            <p className="text-xs font-semibold text-gray-500 mb-1">Asset Number</p>
+                            <p className="text-sm text-gray-800 font-medium">{selectedPatent.assetNumber}</p>
+                          </div>
+                        )}
+                        {selectedPatent.assignee && (
+                          <div className="bg-white p-3 rounded-lg shadow-sm">
+                            <p className="text-xs font-semibold text-gray-500 mb-1">Assignee</p>
+                            <p className="text-sm text-gray-800 font-medium">{selectedPatent.assignee}</p>
+                          </div>
+                        )}
+                        {selectedPatent.inventor && (
+                          <div className="bg-white p-3 rounded-lg shadow-sm">
+                            <p className="text-xs font-semibold text-gray-500 mb-1">Inventor</p>
+                            <p className="text-sm text-gray-800 font-medium">{selectedPatent.inventor}</p>
+                          </div>
+                        )}
+                        {selectedPatent.jurisdiction && (
+                          <div className="bg-white p-3 rounded-lg shadow-sm">
+                            <p className="text-xs font-semibold text-gray-500 mb-1">Jurisdiction</p>
+                            <p className="text-sm text-gray-800 font-medium">{selectedPatent.jurisdiction}</p>
+                          </div>
+                        )}
+                        {selectedPatent.filingDate && (
+                          <div className="bg-white p-3 rounded-lg shadow-sm">
+                            <p className="text-xs font-semibold text-gray-500 mb-1">Filing Date</p>
+                            <p className="text-sm text-gray-800 font-medium">{selectedPatent.filingDate}</p>
+                          </div>
+                        )}
+                        {selectedPatent.status && (
+                          <div className="bg-white p-3 rounded-lg shadow-sm">
+                            <p className="text-xs font-semibold text-gray-500 mb-1">Status</p>
+                            <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
+                              selectedPatent.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {selectedPatent.status}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {selectedPatent.title && (
+                        <div className="mb-4 bg-blue-50 p-4 rounded-lg border border-blue-200">
+                          <p className="text-xs font-semibold text-blue-900 mb-2">Title</p>
+                          <p className="text-sm text-gray-800 font-medium leading-relaxed">{selectedPatent.title}</p>
+                        </div>
+                      )}
+
+                      {selectedPatent.abstractText && (
+                        <div className="mb-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                          <p className="text-xs font-semibold text-gray-700 mb-2">Abstract</p>
+                          <p className="text-sm text-gray-700 leading-relaxed">{selectedPatent.abstractText}</p>
+                        </div>
+                      )}
+
+                      {selectedPatent.classInfo && selectedPatent.classInfo !== 'N/A' && (
+                        <div className="mb-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                          <p className="text-xs font-semibold text-gray-700 mb-2">Classification (CPC)</p>
+                          <p className="text-sm text-gray-700">{selectedPatent.classInfo}</p>
+                        </div>
+                      )}
+
+                      {selectedPatent.details && selectedPatent.details !== 'N/A' && (
+                        <div className="mb-4 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                          <p className="text-xs font-semibold text-gray-700 mb-2">Additional Information</p>
+                          <div className="text-sm text-gray-700 leading-relaxed">
+                            {selectedPatent.details.split(';').map((detail, idx) => (
+                              detail.trim() && (
+                                <div key={idx} className="mb-1">
+                                  {detail.trim()}
+                                </div>
+                              )
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Action Buttons */}
+                      <div className="mb-4 flex gap-3 flex-wrap">
+                        <button
+                          onClick={() => handleShareWhatsApp(selectedPatent)}
+                          className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium"
+                        >
+                          <Share2 size={16} />
+                          Share on WhatsApp
+                        </button>
+                        <button
+                          onClick={() => handleCopyToClipboard(selectedPatent)}
+                          className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+                        >
+                          <Copy size={16} />
+                          {copySuccess ? 'Copied!' : 'Copy to Clipboard'}
+                        </button>
+                        <button
+                          onClick={() => handleDownloadPatent(selectedPatent)}
+                          className="flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors font-medium"
+                        >
+                          <Download size={16} />
+                          Download Patent
+                        </button>
+                      </div>
+
+                      <div className="flex justify-between items-center pt-4 border-t border-blue-200">
+                        {selectedPatent.apiSource && (
+                          <span className="text-xs text-gray-500 bg-white px-3 py-1 rounded-full">
+                            Source: {selectedPatent.apiSource}
+                          </span>
+                        )}
+                        {selectedPatent.lastUpdated && (
+                          <span className="text-xs text-gray-500 bg-white px-3 py-1 rounded-full">
+                            Last Updated: {new Date(selectedPatent.lastUpdated).toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+              );
+            })}
           </div>
         ) : (
           !loading && query && <p className="text-center text-gray-500 py-8">No results found for "{query}"</p>
         )}
       </div>
-      {selectedPatent && (
-        <div className="mt-6 bg-white border-2 border-blue-300 rounded-lg p-6 shadow-lg">
-          <h2 className="text-2xl font-bold mb-6 text-blue-900 border-b pb-3">Complete Patent Details</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {selectedPatent.id && (
-              <div className="bg-gray-50 p-3 rounded">
-                <p className="text-xs font-semibold text-gray-500 mb-1">ID</p>
-                <p className="text-sm text-gray-800">{selectedPatent.id}</p>
-              </div>
-            )}
-            {selectedPatent.type && (
-              <div className="bg-gray-50 p-3 rounded">
-                <p className="text-xs font-semibold text-gray-500 mb-1">Type</p>
-                <p className="text-sm text-gray-800">{selectedPatent.type}</p>
-              </div>
-            )}
-            {selectedPatent.assetNumber && (
-              <div className="bg-gray-50 p-3 rounded">
-                <p className="text-xs font-semibold text-gray-500 mb-1">Asset Number</p>
-                <p className="text-sm text-gray-800">{selectedPatent.assetNumber}</p>
-              </div>
-            )}
-            {selectedPatent.assignee && (
-              <div className="bg-gray-50 p-3 rounded">
-                <p className="text-xs font-semibold text-gray-500 mb-1">Assignee</p>
-                <p className="text-sm text-gray-800">{selectedPatent.assignee}</p>
-              </div>
-            )}
-            {selectedPatent.inventor && (
-              <div className="bg-gray-50 p-3 rounded">
-                <p className="text-xs font-semibold text-gray-500 mb-1">Inventor</p>
-                <p className="text-sm text-gray-800">{selectedPatent.inventor}</p>
-              </div>
-            )}
-            {selectedPatent.jurisdiction && (
-              <div className="bg-gray-50 p-3 rounded">
-                <p className="text-xs font-semibold text-gray-500 mb-1">Jurisdiction</p>
-                <p className="text-sm text-gray-800">{selectedPatent.jurisdiction}</p>
-              </div>
-            )}
-            {selectedPatent.filingDate && (
-              <div className="bg-gray-50 p-3 rounded">
-                <p className="text-xs font-semibold text-gray-500 mb-1">Filing Date</p>
-                <p className="text-sm text-gray-800">{selectedPatent.filingDate}</p>
-              </div>
-            )}
-            {selectedPatent.status && (
-              <div className="bg-gray-50 p-3 rounded">
-                <p className="text-xs font-semibold text-gray-500 mb-1">Status</p>
-                <p className="text-sm text-gray-800">{selectedPatent.status}</p>
-              </div>
-            )}
-          </div>
-
-          {selectedPatent.title && (
-            <div className="mt-4 bg-blue-50 p-4 rounded">
-              <p className="text-xs font-semibold text-blue-900 mb-2">Title</p>
-              <p className="text-sm text-gray-800 font-medium">{selectedPatent.title}</p>
-            </div>
-          )}
-
-          {selectedPatent.abstractText && (
-            <div className="mt-4 bg-gray-50 p-4 rounded">
-              <p className="text-xs font-semibold text-gray-700 mb-2">Abstract</p>
-              <p className="text-sm text-gray-700 leading-relaxed">{selectedPatent.abstractText}</p>
-            </div>
-          )}
-
-          {selectedPatent.classInfo && (
-            <div className="mt-4 bg-gray-50 p-4 rounded">
-              <p className="text-xs font-semibold text-gray-700 mb-2">Classification</p>
-              <p className="text-sm text-gray-700">{selectedPatent.classInfo}</p>
-            </div>
-          )}
-
-          {selectedPatent.details && (
-            <div className="mt-4 bg-gray-50 p-4 rounded">
-              <p className="text-xs font-semibold text-gray-700 mb-2">Additional Details</p>
-              <p className="text-sm text-gray-700">{selectedPatent.details}</p>
-            </div>
-          )}
-
-          <div className="mt-6 flex justify-between items-center pt-4 border-t">
-            {selectedPatent.apiSource && (
-              <span className="text-xs text-gray-500">Source: {selectedPatent.apiSource}</span>
-            )}
-            {selectedPatent.lastUpdated && (
-              <span className="text-xs text-gray-500">
-                Last Updated: {new Date(selectedPatent.lastUpdated).toLocaleString()}
-              </span>
-            )}
-          </div>
-
-          <button 
-            onClick={() => setSelectedPatent(null)}
-            className="mt-6 w-full px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium transition-colors"
-          >
-            Close Details
-          </button>
-        </div>
-      )}
-      {detailsLoading && <p>Loading details...</p>}
     </div>
   );
 };
