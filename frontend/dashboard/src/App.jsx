@@ -519,7 +519,7 @@ const App = () => {
           {/* Enhanced Footer with Quick Links */}
           <footer className="bg-gradient-to-br from-gray-50 to-gray-100 border-t border-gray-200 py-8 px-6 mt-8">
             <div className="max-w-7xl mx-auto">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-6 text-center">
                 {/* About Section */}
                 <div>
                   <h3 className="font-bold text-gray-800 mb-3">Global IP Platform</h3>
@@ -602,16 +602,6 @@ const App = () => {
                         Email Support
                       </a>
                     </li>
-                    <li>
-                      <a
-                        href="https://github.com"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
-                      >
-                        Documentation
-                      </a>
-                    </li>
                   </ul>
                 </div>
 
@@ -659,8 +649,8 @@ const App = () => {
 
               {/* Bottom Bar */}
               <div className="pt-6 border-t border-gray-300">
-                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                  <p className="text-sm text-gray-600 text-center md:text-left">
+                <div className="flex flex-col md:flex-row justify-center items-center gap-4">
+                  <p className="text-sm text-gray-600 text-center">
                     © {new Date().getFullYear()} Global IP Intelligence Platform. All rights reserved.
                   </p>
                   <div className="flex gap-4">
