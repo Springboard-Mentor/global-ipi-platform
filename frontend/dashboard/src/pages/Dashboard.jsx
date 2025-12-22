@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { TrendingUp, CheckCircle, Database, Globe } from "lucide-react";
+import { TrendingUp, CheckCircle, Database, Globe, Crown, Zap, Calendar, Info } from "lucide-react";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 
@@ -105,13 +105,24 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
     return "Good Evening";
   };
 
+  const calculateDaysRemaining = (endDate) => {
+    if (!endDate) return null;
+    
+    const end = endDate instanceof Date ? endDate : endDate.toDate();
+    const now = new Date();
+    const diffTime = end - now;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays > 0 ? diffDays : 0;
+  };
+
   /* ======================= UI ======================= */
   return (
-    <div className="w-full grid grid-cols-1 xl:grid-cols-4 gap-4 p-4 overflow-hidden">
-      {/* LEFT SECTION */}
-      <div className="xl:col-span-3 space-y-4">
+    <div className="w-full min-h-screen grid grid-cols-1 xl:grid-cols-5 gap-1.5 p-1.5">
+      {/* LEFT SECTION - Takes more space */}
+      <div className="xl:col-span-4 space-y-1.5">
         {/* Welcome Card */}
-        <div className="bg-white rounded-2xl p-6 shadow overflow-hidden">
+        <div className="bg-white rounded-xl p-5 shadow-sm">
           <p className="text-sm text-gray-500">Welcome back,</p>
           <h1 className="text-3xl font-bold">
             {getTimeGreeting()}, {userProfile?.firstName || "User"}.
@@ -130,29 +141,29 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
           )}
 
           {/* Search Mode Toggle */}
-          <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
-            <p className="text-sm font-medium text-gray-700 mb-2">Search Mode</p>
-            <div className="flex gap-3">
+          <div className="mt-3 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
+            <p className="text-xs font-medium text-gray-700 mb-2">Search Mode</p>
+            <div className="flex gap-2">
               <button
                 onClick={() => setSearchMode('api')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm ${
                   searchMode === 'api'
                     ? 'bg-blue-500 text-white shadow-md'
                     : 'bg-white text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                <Globe size={16} />
+                <Globe size={14} />
                 <span className="font-medium">API Search</span>
               </button>
               <button
                 onClick={() => setSearchMode('local')}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm ${
                   searchMode === 'local'
                     ? 'bg-purple-500 text-white shadow-md'
                     : 'bg-white text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                <Database size={16} />
+                <Database size={14} />
                 <span className="font-medium">Local Database</span>
               </button>
             </div>
@@ -165,14 +176,14 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
         </div>
 
         {/* Filters + Overview */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="bg-white rounded-2xl p-4 shadow overflow-hidden">
-            <h2 className="font-bold mb-2">Quick Filters</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-1.5">
+          <div className="bg-white rounded-xl p-4 shadow-sm">
+            <h2 className="font-bold mb-2 text-sm">Quick Filters</h2>
             <Filters />
           </div>
 
-          <div className="bg-white rounded-2xl p-4 shadow overflow-hidden">
-            <h2 className="font-bold mb-2">Overview</h2>
+          <div className="bg-white rounded-xl p-4 shadow-sm">
+            <h2 className="font-bold mb-2 text-sm">Overview</h2>
             <OverviewGrid dashboardData={dashboardData} />
           </div>
         </div>
@@ -181,12 +192,12 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
       </div>
 
       {/* RIGHT SECTION */}
-      <div className="xl:col-span-1 space-y-4">
+      <div className="xl:col-span-1 space-y-1.5">
         {/* Portfolio Card */}
-        <div className="bg-white rounded-2xl p-4 shadow overflow-hidden">
+        <div className="bg-white rounded-xl p-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-gray-600">Portfolio Value</h3>
-            <div className="p-2 bg-blue-50 rounded-xl">
+            <h3 className="font-semibold text-gray-600 text-sm">Portfolio Value</h3>
+            <div className="p-2 bg-blue-50 rounded-lg">
               <TrendingUp size={16} className="text-blue-600" />
             </div>
           </div>
@@ -200,7 +211,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
         </div>
 
         {/* Asset Distribution */}
-        <div className="bg-white rounded-2xl p-4 shadow overflow-hidden">
+        <div className="bg-white rounded-xl p-4 shadow-sm">
           <h3 className="font-bold mb-3">Asset Distribution</h3>
           <div className="h-[220px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -219,10 +230,10 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
       </div>
 
       {/* FULL WIDTH CHARTS SECTION */}
-      <div className="xl:col-span-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="bg-white rounded-2xl p-4 shadow overflow-hidden">
-          <h3 className="font-bold mb-3">Portfolio Growth</h3>
-          <div className="h-[260px]">
+      <div className="xl:col-span-5 grid grid-cols-1 lg:grid-cols-3 gap-1.5">
+        <div className="bg-white rounded-xl p-4 shadow-sm">
+          <h3 className="font-bold mb-3 text-sm">Portfolio Growth</h3>
+          <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={portfolioGrowthData}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -235,9 +246,9 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-4 shadow overflow-hidden">
-          <h3 className="font-bold mb-3">Monthly Filings</h3>
-          <div className="h-[260px]">
+        <div className="bg-white rounded-xl p-4 shadow-sm">
+          <h3 className="font-bold mb-3 text-sm">Monthly Filings</h3>
+          <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={filingsData}>
                 <CartesianGrid strokeDasharray="3 3" />

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Menu,
   X,
@@ -8,9 +8,15 @@ import {
   BarChart3,
   Settings,
   LogOut,
+  Crown,
+  Sparkles,
+  MessageSquare,
+  Mail,
 } from "lucide-react";
+import UpgradeModal from "./UpgradeModal";
 
-const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem, onLogout }) => {
+const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem, onLogout, userProfile }) => {
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const menuItems = [
     { id: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { id: "search", icon: Search, label: "Search" },
@@ -19,6 +25,8 @@ const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem, onLogout }) => {
   ];
 
   const bottomItems = [
+    { id: "contact", icon: Mail, label: "Contact Us" },
+    { id: "feedback", icon: MessageSquare, label: "Feedback" },
     { id: "settings", icon: Settings, label: "Settings" },
     { id: "logout", icon: LogOut, label: "Log Out" },
   ];
@@ -80,6 +88,19 @@ const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem, onLogout }) => {
               </button>
             );
           })}
+
+          {/* Upgrade to Pro Button */}
+          {userProfile?.subscriptionType !== "pro" && userProfile?.subscriptionType !== "enterprise" && (
+            <button
+              onClick={() => setShowUpgradeModal(true)}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg hover:shadow-xl hover:scale-105 mt-4 relative overflow-hidden group"
+            >
+              <Crown size={20} className="animate-pulse" />
+              <span className="font-bold">Upgrade to Pro</span>
+              <Sparkles size={16} className="ml-auto" />
+              <div className="absolute inset-0 bg-white/20 transform translate-x-full group-hover:translate-x-0 transition-transform duration-500" />
+            </button>
+          )}
         </nav>
 
         {/* Bottom Menu */}
@@ -110,6 +131,13 @@ const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem, onLogout }) => {
           })}
         </div>
       </div>
+
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        userProfile={userProfile}
+      />
     </>
   );
 };

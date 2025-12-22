@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, Search, Bell } from 'lucide-react';
+import { Menu, Search, Bell, Crown, Zap, Calendar } from 'lucide-react';
 
 const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, currentPage, sidebarOpen }) => {
   const [query, setQuery] = useState('');
@@ -47,6 +47,40 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
         </form>
 
         <div className="flex items-center gap-3 ml-4">
+          {/* Subscription Badges */}
+          {userProfile?.subscriptionType === 'pro' || userProfile?.subscriptionType === 'enterprise' ? (
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-md">
+                <Crown size={16} className="animate-pulse" />
+                <span className="text-xs font-bold uppercase hidden sm:inline">
+                  {userProfile?.subscriptionType}
+                </span>
+              </div>
+              
+              {userProfile?.subscriptionEndDate && (() => {
+                const end = userProfile.subscriptionEndDate instanceof Date ? userProfile.subscriptionEndDate : userProfile.subscriptionEndDate.toDate();
+                const now = new Date();
+                const diffTime = end - now;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                const daysLeft = diffDays > 0 ? diffDays : 0;
+                
+                return (
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-md">
+                    <Calendar size={16} />
+                    <span className="text-xs font-bold hidden sm:inline">
+                      {daysLeft} days
+                    </span>
+                  </div>
+                );
+              })()}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-br from-gray-400 to-gray-600 text-white shadow-md">
+              <Zap size={16} />
+              <span className="text-xs font-bold uppercase hidden sm:inline">BASIC</span>
+            </div>
+          )}
+
           <button className="p-2.5 hover:bg-gradient-to-br hover:from-blue-50 hover:to-purple-50 rounded-xl relative">
             <Bell size={20} className="text-gray-600" />
             <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>

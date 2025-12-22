@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged, signOut, signInWithCustomToken, getIdToken } from 'firebase/auth';
 import { auth, db } from './firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import Sidebar from './components/Sidebar';
 import HeaderBar from './components/HeaderBar';
 import Dashboard from './pages/Dashboard';
 import ProfilePage from './pages/ProfilePage';
 import SearchResultsPage from './pages/SearchResultsPage';
 import IPAssetPanel from './components/IPAssetPanel';
+import ContactForm from './components/ContactForm';
+import FeedbackForm from './components/FeedbackForm';
 
 const App = () => {
   // Check URL parameters for auth data
@@ -186,6 +188,34 @@ const App = () => {
     };
   }, []);
 
+  // Real-time subscription listener
+  useEffect(() => {
+    if (!userProfile?.uid) return;
+
+    console.log('📡 Setting up real-time subscription listener for:', userProfile.uid);
+    
+    const userRef = doc(db, 'users', userProfile.uid);
+    const unsubscribe = onSnapshot(userRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        console.log('🔄 Subscription updated:', data.subscriptionType);
+        
+        setUserProfile(prev => ({
+          ...prev,
+          subscriptionType: data.subscriptionType || 'basic',
+          subscriptionPrice: data.subscriptionPrice || 0,
+          subscriptionStartDate: data.subscriptionStartDate,
+          subscriptionEndDate: data.subscriptionEndDate,
+          subscriptionUpdatedAt: data.subscriptionUpdatedAt,
+        }));
+      }
+    }, (error) => {
+      console.error('❌ Error listening to subscription updates:', error);
+    });
+
+    return () => unsubscribe();
+  }, [userProfile?.uid]);
+
   // Fetch user data from Firestore - works with or without authenticated user
   const fetchUserDataWithUID = async (uid, authenticatedUser = null) => {
     try {
@@ -211,7 +241,12 @@ const App = () => {
           lastSignInTime: authenticatedUser?.metadata?.lastSignInTime || '',
           authProvider: firestoreData.authProvider || '',
           createdAt: firestoreData.createdAt,
-          updatedAt: firestoreData.updatedAt
+          updatedAt: firestoreData.updatedAt,
+          subscriptionType: firestoreData.subscriptionType || 'basic',
+          subscriptionPrice: firestoreData.subscriptionPrice || 0,
+          subscriptionStartDate: firestoreData.subscriptionStartDate,
+          subscriptionEndDate: firestoreData.subscriptionEndDate,
+          subscriptionUpdatedAt: firestoreData.subscriptionUpdatedAt,
         };
         
         console.log('📝 Setting profile data:', profileData);
@@ -387,6 +422,7 @@ const App = () => {
           setSidebarOpen(false);
         }}
         onLogout={handleLogout}
+        userProfile={userProfile}
       />
 
       <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : ''}`}>
@@ -449,6 +485,19 @@ const App = () => {
                 <h2 className="text-2xl font-bold text-gray-800 mb-4">Legal Status</h2>
                 <p className="text-gray-600">Legal status functionality coming soon...</p>
               </div>
+            ) : currentPage === 'contact' ? (
+              <ContactForm onClose={() => {
+                setCurrentPage('dashboard');
+                setActiveItem('dashboard');
+              }} />
+            ) : currentPage === 'feedback' ? (
+              <FeedbackForm 
+                userProfile={userProfile}
+                onClose={() => {
+                  setCurrentPage('dashboard');
+                  setActiveItem('dashboard');
+                }} 
+              />
             ) : currentPage === 'settings' ? (
               <div className="bg-white rounded-xl shadow-lg p-6">
                 <h2 className="text-2xl font-bold text-gray-800 mb-4">Settings</h2>
@@ -467,10 +516,167 @@ const App = () => {
 
           </div>
 
-          <footer className="bg-white/80 backdrop-blur-md border-t border-white/20 py-4 px-6 mt-8">
-            <p className="text-center text-sm text-gray-600">
-              © 2025 Global IP Intelligence Platform. All rights reserved.
-            </p>
+          {/* Enhanced Footer with Quick Links */}
+          <footer className="bg-gradient-to-br from-gray-50 to-gray-100 border-t border-gray-200 py-8 px-6 mt-8">
+            <div className="max-w-7xl mx-auto">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-6">
+                {/* About Section */}
+                <div>
+                  <h3 className="font-bold text-gray-800 mb-3">Global IP Platform</h3>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    Advanced intellectual property management and analytics platform for modern businesses.
+                  </p>
+                </div>
+
+                {/* Quick Links */}
+                <div>
+                  <h3 className="font-bold text-gray-800 mb-3">Quick Links</h3>
+                  <ul className="space-y-2">
+                    <li>
+                      <button
+                        onClick={() => {
+                          setCurrentPage('dashboard');
+                          setActiveItem('dashboard');
+                        }}
+                        className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                      >
+                        Dashboard
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        onClick={() => {
+                          setCurrentPage('search');
+                          setActiveItem('search');
+                        }}
+                        className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                      >
+                        Search Patents
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        onClick={() => {
+                          setCurrentPage('profile');
+                          setActiveItem('profile');
+                        }}
+                        className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                      >
+                        My Profile
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Support */}
+                <div>
+                  <h3 className="font-bold text-gray-800 mb-3">Support</h3>
+                  <ul className="space-y-2">
+                    <li>
+                      <button
+                        onClick={() => {
+                          setCurrentPage('contact');
+                          setActiveItem('contact');
+                        }}
+                        className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                      >
+                        Contact Support
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        onClick={() => {
+                          setCurrentPage('feedback');
+                          setActiveItem('feedback');
+                        }}
+                        className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                      >
+                        Send Feedback
+                      </button>
+                    </li>
+                    <li>
+                      <a
+                        href="mailto:vikaskumaryadav068@gmail.com"
+                        className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                      >
+                        Email Support
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        href="https://github.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                      >
+                        Documentation
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+
+                {/* Developer Info */}
+                <div>
+                  <h3 className="font-bold text-gray-800 mb-3">Developer</h3>
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-700">
+                      <strong>Vikas Yadav</strong>
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Full Stack Developer
+                    </p>
+                    <a
+                      href="mailto:vikaskumaryadav068@gmail.com"
+                      className="text-sm text-blue-600 hover:text-blue-800 hover:underline block"
+                    >
+                      vikaskumaryadav068@gmail.com
+                    </a>
+                    <div className="flex gap-3 mt-3">
+                      <a
+                        href="https://github.com/Vikasyadav068"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-gray-600 hover:text-gray-800"
+                      >
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                        </svg>
+                      </a>
+                      <a
+                        href="https://www.linkedin.com/in/vikas-kumar-2b695a276/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-gray-600 hover:text-gray-800"
+                      >
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                        </svg>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Bar */}
+              <div className="pt-6 border-t border-gray-300">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                  <p className="text-sm text-gray-600 text-center md:text-left">
+                    © {new Date().getFullYear()} Global IP Intelligence Platform. All rights reserved.
+                  </p>
+                  <div className="flex gap-4">
+                    <a href="#" className="text-sm text-gray-600 hover:text-gray-800 hover:underline">
+                      Privacy Policy
+                    </a>
+                    <a href="#" className="text-sm text-gray-600 hover:text-gray-800 hover:underline">
+                      Terms of Service
+                    </a>
+                    <a href="#" className="text-sm text-gray-600 hover:text-gray-800 hover:underline">
+                      Cookie Policy
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
           </footer>
 
         </div>
