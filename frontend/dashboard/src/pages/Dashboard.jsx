@@ -177,38 +177,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
           </div>
         </div>
 
-        {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="bg-white rounded-2xl p-4 shadow overflow-hidden">
-            <h3 className="font-bold mb-3">Portfolio Growth</h3>
-            <div className="h-[260px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={portfolioGrowthData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Line dataKey="value" stroke="#6366f1" strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
 
-          <div className="bg-white rounded-2xl p-4 shadow overflow-hidden">
-            <h3 className="font-bold mb-3">Monthly Filings</h3>
-            <div className="h-[260px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={filingsData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="filings" fill="#22c55e" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* RIGHT SECTION */}
@@ -243,6 +212,40 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
                 </Pie>
                 <Tooltip />
               </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+      </div>
+
+      {/* FULL WIDTH CHARTS SECTION */}
+      <div className="xl:col-span-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="bg-white rounded-2xl p-4 shadow overflow-hidden">
+          <h3 className="font-bold mb-3">Portfolio Growth</h3>
+          <div className="h-[260px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={portfolioGrowthData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip />
+                <Line dataKey="value" stroke="#6366f1" strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-4 shadow overflow-hidden">
+          <h3 className="font-bold mb-3">Monthly Filings</h3>
+          <div className="h-[260px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={filingsData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="filings" fill="#22c55e" />
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
