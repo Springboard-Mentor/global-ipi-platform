@@ -1,0 +1,24 @@
+package com.example.demo.ip.controller;
+
+import com.example.demo.ip.dto.IPSearchRequest;
+import com.example.demo.ip.dto.IPSearchResultDTO;
+import com.example.demo.ip.service.IPSearchService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/ip")
+@RequiredArgsConstructor
+public class IPSearchController {
+
+    private final IPSearchService ipSearchService;
+
+    @PostMapping("/search")
+    public List<IPSearchResultDTO> search(
+            @RequestBody IPSearchRequest request) {
+
+        return ipSearchService.search(request);
+    }
+}
