@@ -108,12 +108,27 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
   const calculateDaysRemaining = (endDate) => {
     if (!endDate) return null;
     
-    const end = endDate instanceof Date ? endDate : endDate.toDate();
-    const now = new Date();
-    const diffTime = end - now;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    return diffDays > 0 ? diffDays : 0;
+    try {
+      let end;
+      if (endDate instanceof Date) {
+        end = endDate;
+      } else if (endDate?.toDate) {
+        end = endDate.toDate();
+      } else if (typeof endDate === 'string') {
+        end = new Date(endDate);
+      } else {
+        return null;
+      }
+      
+      const now = new Date();
+      const diffTime = end - now;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      return diffDays > 0 ? diffDays : 0;
+    } catch (error) {
+      console.error('Error calculating days remaining:', error);
+      return null;
+    }
   };
 
   /* ======================= UI ======================= */

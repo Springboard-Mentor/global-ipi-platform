@@ -58,20 +58,35 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
               </div>
               
               {userProfile?.subscriptionEndDate && (() => {
-                const end = userProfile.subscriptionEndDate instanceof Date ? userProfile.subscriptionEndDate : userProfile.subscriptionEndDate.toDate();
-                const now = new Date();
-                const diffTime = end - now;
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                const daysLeft = diffDays > 0 ? diffDays : 0;
-                
-                return (
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-md">
-                    <Calendar size={16} />
-                    <span className="text-xs font-bold hidden sm:inline">
-                      {daysLeft} days
-                    </span>
-                  </div>
-                );
+                try {
+                  let end;
+                  if (userProfile.subscriptionEndDate instanceof Date) {
+                    end = userProfile.subscriptionEndDate;
+                  } else if (userProfile.subscriptionEndDate?.toDate) {
+                    end = userProfile.subscriptionEndDate.toDate();
+                  } else if (typeof userProfile.subscriptionEndDate === 'string') {
+                    end = new Date(userProfile.subscriptionEndDate);
+                  } else {
+                    return null;
+                  }
+                  
+                  const now = new Date();
+                  const diffTime = end - now;
+                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                  const daysLeft = diffDays > 0 ? diffDays : 0;
+                  
+                  return (
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-md">
+                      <Calendar size={16} />
+                      <span className="text-xs font-bold hidden sm:inline">
+                        {daysLeft} days
+                      </span>
+                    </div>
+                  );
+                } catch (error) {
+                  console.error('Error calculating days remaining:', error);
+                  return null;
+                }
               })()}
             </div>
           ) : (
