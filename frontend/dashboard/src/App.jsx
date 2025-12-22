@@ -517,12 +517,46 @@ const App = () => {
           </div>
 
           {/* Enhanced Footer with Quick Links */}
-          <footer className="bg-gradient-to-br from-gray-50 to-gray-100 border-t border-gray-200 py-8 px-6 mt-8">
-            <div className="max-w-7xl mx-auto">
+          <footer className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border-t border-indigo-200 py-12 px-6 mt-8 relative overflow-hidden">
+            {/* Decorative Patent Icons Background */}
+            <div className="absolute inset-0 opacity-5">
+              <svg className="absolute top-4 left-10 w-16 h-16 text-indigo-600 transform rotate-12" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6zm2-3h8v-2H8v2zm0-4h8v-2H8v2z"/>
+              </svg>
+              <svg className="absolute top-20 right-20 w-20 h-20 text-purple-600 transform -rotate-12" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M9 11.75c-.69 0-1.25.56-1.25 1.25s.56 1.25 1.25 1.25 1.25-.56 1.25-1.25-.56-1.25-1.25-1.25zm6 0c-.69 0-1.25.56-1.25 1.25s.56 1.25 1.25 1.25 1.25-.56 1.25-1.25-.56-1.25-1.25-1.25zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8 0-.29.02-.58.05-.86 2.36-1.05 4.23-2.98 5.21-5.37C11.07 8.33 14.05 10 17.42 10c.78 0 1.53-.09 2.25-.26.21.71.33 1.47.33 2.26 0 4.41-3.59 8-8 8z"/>
+              </svg>
+              <svg className="absolute bottom-10 left-1/4 w-14 h-14 text-blue-600 transform rotate-45" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
+              <svg className="absolute bottom-4 right-10 w-12 h-12 text-indigo-600 transform -rotate-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM6 20V4h7v5h5v11H6zm2-3h8v-2H8v2zm0-4h8v-2H8v2z"/>
+              </svg>
+            </div>
+
+            <div className="max-w-7xl mx-auto relative z-10">
+              {/* Patent Innovation Badge */}
+              <div className="flex justify-center mb-8">
+                <div className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-2 rounded-full shadow-lg">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                  </svg>
+                  <span className="font-semibold text-sm">Protecting Innovation Worldwide</span>
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
+                  </svg>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-6 text-center">
                 {/* About Section */}
                 <div>
-                  <h3 className="font-bold text-gray-800 mb-3">Global IP Platform</h3>
+                  <h3 className="font-bold text-gray-800 mb-3 flex items-center justify-center gap-2">
+                    <svg className="w-5 h-5 text-indigo-600" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    Global IP Platform
+                  </h3>
                   <p className="text-sm text-gray-600 leading-relaxed">
                     Advanced intellectual property management and analytics platform for modern businesses.
                   </p>
@@ -530,7 +564,12 @@ const App = () => {
 
                 {/* Quick Links */}
                 <div>
-                  <h3 className="font-bold text-gray-800 mb-3">Quick Links</h3>
+                  <h3 className="font-bold text-gray-800 mb-3 flex items-center justify-center gap-2">
+                    <svg className="w-5 h-5 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
+                    </svg>
+                    Quick Links
+                  </h3>
                   <ul className="space-y-2">
                     <li>
                       <button
@@ -570,7 +609,12 @@ const App = () => {
 
                 {/* Support */}
                 <div>
-                  <h3 className="font-bold text-gray-800 mb-3">Support</h3>
+                  <h3 className="font-bold text-gray-800 mb-3 flex items-center justify-center gap-2">
+                    <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z"/>
+                    </svg>
+                    Support
+                  </h3>
                   <ul className="space-y-2">
                     <li>
                       <button
@@ -607,7 +651,12 @@ const App = () => {
 
                 {/* Developer Info */}
                 <div>
-                  <h3 className="font-bold text-gray-800 mb-3">Developer</h3>
+                  <h3 className="font-bold text-gray-800 mb-3 flex items-center justify-center gap-2">
+                    <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/>
+                    </svg>
+                    Developer
+                  </h3>
                   <div className="space-y-2">
                     <p className="text-sm text-gray-700">
                       <strong>Vikas Yadav</strong>
@@ -621,14 +670,15 @@ const App = () => {
                     >
                       vikaskumaryadav068@gmail.com
                     </a>
-                    <div className="flex gap-3 mt-3">
+                    <div className="flex gap-3 justify-center mt-2">
                       <a
                         href="https://github.com/Vikasyadav068"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-gray-600 hover:text-gray-800"
+                        className="text-gray-600 hover:text-gray-900 transition-all hover:scale-110 bg-white p-2 rounded-lg shadow-md hover:shadow-lg"
+                        title="GitHub Profile"
                       >
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
                         </svg>
                       </a>
@@ -636,9 +686,10 @@ const App = () => {
                         href="https://www.linkedin.com/in/vikas-kumar-2b695a276/"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-gray-600 hover:text-gray-800"
+                        className="text-gray-600 hover:text-blue-700 transition-all hover:scale-110 bg-white p-2 rounded-lg shadow-md hover:shadow-lg"
+                        title="LinkedIn Profile"
                       >
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
                         </svg>
                       </a>
@@ -648,9 +699,12 @@ const App = () => {
               </div>
 
               {/* Bottom Bar */}
-              <div className="pt-6 border-t border-gray-300">
+              <div className="pt-8 border-t border-indigo-200 mt-8">
                 <div className="flex flex-col md:flex-row justify-center items-center gap-4">
-                  <p className="text-sm text-gray-600 text-center">
+                  <p className="text-sm text-gray-600 text-center flex items-center gap-2">
+                    <svg className="w-4 h-4 text-indigo-600" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
+                    </svg>
                     © {new Date().getFullYear()} Global IP Intelligence Platform. All rights reserved.
                   </p>
                   <div className="flex gap-4">
