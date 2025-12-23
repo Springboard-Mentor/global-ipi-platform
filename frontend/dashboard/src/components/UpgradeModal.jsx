@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X, Check, Zap, Crown } from "lucide-react";
 import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebase";
@@ -6,6 +6,20 @@ import { db } from "../firebase";
 const UpgradeModal = ({ isOpen, onClose, userProfile }) => {
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [processing, setProcessing] = useState(false);
+  const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+
+  // Load Razorpay script
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => setRazorpayLoaded(true);
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
 
   const plans = [
     {
@@ -70,6 +84,60 @@ const UpgradeModal = ({ isOpen, onClose, userProfile }) => {
       return;
     }
 
+    // Free plan - no payment needed
+    if (plan.priceAmount === 0) {
+      await updateSubscription(plan);
+      return;
+    }
+
+    // Paid plans - initiate Razorpay payment
+    if (!razorpayLoaded) {
+      alert("Payment gateway is loading. Please try again.");
+      return;
+    }
+
+    setProcessing(true);
+    setSelectedPlan(plan.id);
+
+    try {
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: plan.priceAmount * 100, // Razorpay accepts amount in paise
+        currency: "INR",
+        name: "Global IP Intelligence Platform",
+        description: `${plan.name} Plan - Monthly Subscription`,
+        image: "/logo.png", // Add your logo here
+        handler: async function (response) {
+          // Payment successful
+          console.log("Payment successful:", response);
+          await updateSubscription(plan, response);
+        },
+        prefill: {
+          name: userProfile?.displayName || "",
+          email: userProfile?.email || "",
+        },
+        theme: {
+          color: "#3B82F6",
+        },
+        modal: {
+          ondismiss: function() {
+            setProcessing(false);
+            setSelectedPlan(null);
+          }
+        }
+      };
+
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+    } catch (error) {
+      console.error("Error initiating payment:", error);
+      alert("Failed to initiate payment. Please try again.");
+      setProcessing(false);
+      setSelectedPlan(null);
+    }
+  };
+
+  const updateSubscription = async (plan, paymentResponse = null) => {
     setProcessing(true);
     setSelectedPlan(plan.id);
 
@@ -79,15 +147,30 @@ const UpgradeModal = ({ isOpen, onClose, userProfile }) => {
       const endDate = new Date(currentDate);
       endDate.setDate(currentDate.getDate() + 30);
 
-      // Update user's subscription in Firestore
-      const userRef = doc(db, "users", userProfile.uid);
-      await updateDoc(userRef, {
+      // Prepare update data
+      const updateData = {
         subscriptionType: plan.id,
         subscriptionPrice: plan.priceAmount,
         subscriptionStartDate: serverTimestamp(),
         subscriptionEndDate: endDate,
         subscriptionUpdatedAt: serverTimestamp(),
-      });
+      };
+
+      // Add payment details if payment was made
+      if (paymentResponse) {
+        updateData.lastPayment = {
+          razorpayPaymentId: paymentResponse.razorpay_payment_id,
+          razorpayOrderId: paymentResponse.razorpay_order_id || null,
+          razorpaySignature: paymentResponse.razorpay_signature || null,
+          amount: plan.priceAmount,
+          currency: "INR",
+          timestamp: serverTimestamp(),
+        };
+      }
+
+      // Update user's subscription in Firestore
+      const userRef = doc(db, "users", userProfile.uid);
+      await updateDoc(userRef, updateData);
 
       // Show success message
       alert(`Successfully upgraded to ${plan.name} plan! 🎉\nYour subscription is valid for 30 days.`);
@@ -95,10 +178,11 @@ const UpgradeModal = ({ isOpen, onClose, userProfile }) => {
       // Close modal after short delay
       setTimeout(() => {
         onClose();
+        window.location.reload(); // Reload to reflect new subscription
       }, 1000);
     } catch (error) {
-      console.error("Error upgrading subscription:", error);
-      alert("Failed to upgrade. Please try again.");
+      console.error("Error updating subscription:", error);
+      alert("Payment successful but failed to update subscription. Please contact support.");
     } finally {
       setProcessing(false);
       setSelectedPlan(null);
