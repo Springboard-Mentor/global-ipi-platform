@@ -9,22 +9,22 @@ import PatentsPage from './components/PatentsPage.jsx';
 import NewFilingPage from './components/NewFilingPage.jsx';
 import AnalysisPage from './components/AnalysisPage.jsx';
 import SettingsPage from './components/SettingsPage.jsx';
+import SearchResultsPage from './components/SearchResultsPage.jsx'; 
+import PatentDetailsPage from './components/PatentDetailsPage.jsx'; // <--- IMPORT THIS
 import { authAPI } from './services/ai.js';
-
-// --- Placeholder Components (Removed the need for these by importing the actual components) ---
-// Note: Keeping the AnalysisPage and SettingsPage imports above assumes you have saved 
-// the rich code I provided for those pages in their respective files.
 
 const App = () => {
   const [currentPage, setCurrentPage] = useState('landing');
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [searchKeyword, setSearchKeyword] = useState('');
+  
+  // New State for Details Page
+  const [selectedPatent, setSelectedPatent] = useState(null);
 
-  // Check for existing session on mount
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem('token');
-      
       if (token) {
         try {
           const userData = await authAPI.getCurrentUser();
@@ -33,136 +33,103 @@ const App = () => {
              setCurrentPage('dashboard');
           }
         } catch (error) {
-          console.error('Auth check failed:', error);
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          setUser(null);
-          setCurrentPage('landing');
+          console.error('Session expired:', error);
+          handleLogout();
         }
       }
       setLoading(false);
     };
-
     checkAuth();
   }, []); 
 
   const handleLogin = async (userData) => {
-    if (!userData) {
-      try {
-        userData = await authAPI.getCurrentUser();
-      } catch (error) {
-        console.error("Could not fetch user data on login", error);
-        return;
-      }
-    }
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
     setCurrentPage('dashboard');
   };
 
-  const handleLogout = async () => {
-    try {
-      await authAPI.logout();
-    } catch (error) {
-      console.error('Logout failed:', error);
-    } finally {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      setUser(null);
-      setCurrentPage('landing');
-    }
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    setCurrentPage('landing');
   };
 
-  // ✅ FINAL FIX: Ensures 'bio' is correctly maintained in the frontend state
-  // This is vital since the backend does not store 'bio' but the frontend needs it.
+  const handleNavigate = (page, keyword = '') => {
+    if (keyword) setSearchKeyword(keyword);
+    setCurrentPage(page);
+  };
+
+  // --- NEW HANDLER FOR VIEW DETAILS ---
+  const handleViewPatent = (patent) => {
+    setSelectedPatent(patent);
+    setCurrentPage('patent-details');
+  };
+
   const handleUpdateUser = (updates) => {
     if (user) {
-      const updatedUser = { 
-          ...user, 
-          ...updates 
-      };
-      
-      // If the backend didn't send 'bio' back, we must keep the old 'bio' or use the new one from 'updates'.
-      const finalUser = {
-          ...updatedUser,
-          bio: updates.bio !== undefined ? updates.bio : updatedUser.bio
-      };
-
-      setUser(finalUser);
-      localStorage.setItem('user', JSON.stringify(finalUser));
+      const updatedUser = { ...user, ...updates };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-      </div>
-    );
-  }
-
-  // Router logic
   const renderPage = () => {
+    const protectedPages = ['dashboard', 'profile', 'patents', 'new-filing', 'analysis', 'settings', 'search', 'patent-details'];
+    
+    if (protectedPages.includes(currentPage) && !user) {
+      return <LoginPage onLogin={handleLogin} onNavigate={handleNavigate} />;
+    }
+
     switch (currentPage) {
-      case 'landing':
-        return <LandingPage onNavigate={setCurrentPage} />;
+      case 'landing': return <LandingPage onNavigate={handleNavigate} />;
+      case 'login': return <LoginPage onLogin={handleLogin} onNavigate={handleNavigate} />;
+      case 'register': return <RegisterPage onLogin={handleLogin} onNavigate={handleNavigate} />;
       
-      case 'login':
-        return <LoginPage onLogin={handleLogin} onNavigate={setCurrentPage} />;
-      
-      case 'register':
-        return <RegisterPage onLogin={handleLogin} onNavigate={setCurrentPage} />;
-      
-      // --- PROTECTED ROUTES ---
-      case 'dashboard':
-      case 'profile':
-      case 'patents':
-      case 'new-filing':
-      case 'analysis':
-      case 'settings':
-        
-        if (!user) {
-          return <LoginPage onLogin={handleLogin} onNavigate={setCurrentPage} />;
-        }
-        
+      default:
         return (
           <DashboardLayout 
             user={user} 
             onLogout={handleLogout} 
             currentPage={currentPage}
-            onNavigate={setCurrentPage}
+            onNavigate={handleNavigate}
           >
-            {/* Dashboard Overview */}
-            {currentPage === 'dashboard' && <DashboardHome onNavigate={setCurrentPage} />}
-            
-            {/* Profile Page */}
-            {currentPage === 'profile' && <ProfilePage user={user} onUpdateUser={handleUpdateUser} />}
-            
-            {/* Patents List */}
-            {currentPage === 'patents' && <PatentsPage />}
-            
-            {/* New Filing Form */}
+            {currentPage === 'dashboard'  && <DashboardHome onNavigate={handleNavigate} />}
+            {currentPage === 'profile'    && <ProfilePage user={user} onUpdateUser={handleUpdateUser} />}
+            {currentPage === 'patents'    && <PatentsPage />}
             {currentPage === 'new-filing' && <NewFilingPage />}
+            {currentPage === 'analysis'   && <AnalysisPage />} 
+            {currentPage === 'settings'   && <SettingsPage />} 
+            
+            {/* Pass the View Handler to Search Page */}
+            {currentPage === 'search'     && (
+              <SearchResultsPage 
+                initialKeyword={searchKeyword} 
+                onViewPatent={handleViewPatent} 
+              />
+            )}
 
-            {/* IP Analysis Page */}
-            {currentPage === 'analysis' && <AnalysisPage />} 
-
-            {/* Settings Page */}
-            {currentPage === 'settings' && <SettingsPage />} 
-
+            {/* Render Details Page */}
+            {currentPage === 'patent-details' && (
+              <PatentDetailsPage 
+                patent={selectedPatent} 
+                onBack={() => setCurrentPage('search')} 
+              />
+            )}
           </DashboardLayout>
         );
-      
-      default:
-        return <LandingPage onNavigate={setCurrentPage} />;
     }
   };
 
-  return (
-    <div className="min-h-screen font-sans text-slate-900">
-      {renderPage()}
-    </div>
-  );
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  return <div className="min-h-screen font-sans text-slate-900 bg-white">{renderPage()}</div>;
 };
 
 export default App;

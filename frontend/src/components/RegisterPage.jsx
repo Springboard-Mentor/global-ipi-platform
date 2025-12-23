@@ -6,6 +6,8 @@ import {
 // Firebase Imports
 import { auth, googleProvider } from '../firebase';
 import { signInWithPopup, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+// API Import (This fixes the URL issues)
+import { authAPI } from '../api/ai';
 
 // --- Modal Component ---
 const Modal = ({ title, content, onClose }) => (
@@ -61,14 +63,6 @@ const TermsContent = (
         <h4 className="text-slate-900 font-bold text-lg mb-2">3. User Accounts</h4>
         <p>You must create an account to use the Service. You are responsible for maintaining the confidentiality of your account credentials and for all activities under your account.</p>
     </section>
-    <section>
-        <h4 className="text-slate-900 font-bold text-lg mb-2">4. Acceptable Use</h4>
-        <p>You agree not to misuse the Service, including attempting to access it through automated means, interfering with its operation, or using it for unlawful purposes.</p>
-    </section>
-    <section>
-        <h4 className="text-slate-900 font-bold text-lg mb-2">5. Intellectual Property Rights</h4>
-        <p>All content, features, and functionality are owned by us and protected by copyright, trademark, and other laws.</p>
-    </section>
   </div >
 );
 
@@ -87,35 +81,20 @@ const PrivacyContent = (
         <h4 className="text-slate-900 font-bold text-lg mb-2">2. How We Use Information</h4>
         <p>We use the information we collect to operate, maintain, and improve our services, communicate with you, and comply with legal obligations.</p>
     </section>
-    <section>
-        <h4 className="text-slate-900 font-bold text-lg mb-2">3. Data Security</h4>
-        <p>We implement appropriate security measures to protect your information from unauthorized access, alteration, or destruction.</p>
-    </section>
-    <section>
-        <h4 className="text-slate-900 font-bold text-lg mb-2">4. Third-Party Services</h4>
-        <p>We may use third-party services like Firebase for authentication. These services have their own privacy policies.</p>
-    </section>
   </div >
 );
 
 // --- Auth Layout Component ---
 const AuthLayout = ({ title, subtitle, children }) => (
   <div className="min-h-screen flex relative overflow-hidden bg-slate-900">
-    
-    {/* Animated Background Elements */}
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-       {/* Deep gradient base */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-[#0f172a] to-indigo-950"></div>
-      
-      {/* Orbs */}
       <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[100px] animate-pulse"></div>
       <div className="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] bg-purple-500/10 rounded-full blur-[120px] animate-pulse" style={{animationDelay: '1000ms'}}></div>
-      
-      {/* Grid Pattern Overlay */}
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_100%)]"></div>
     </div>
 
-    {/* Left Side - Information Panel */}
+    {/* Left Side */}
     <div className="hidden lg:flex lg:w-1/2 relative z-10 flex-col justify-center px-12 xl:px-24 text-white h-screen sticky top-0">
       <div className="space-y-8 max-w-xl">
         <div className="flex items-center gap-3 mb-8">
@@ -127,7 +106,6 @@ const AuthLayout = ({ title, subtitle, children }) => (
             <p className="text-indigo-200/70 text-sm font-medium">Secure Your Innovation</p>
           </div>
         </div>
-
         <div>
           <h2 className="text-5xl font-bold mb-6 leading-[1.1] bg-gradient-to-r from-white via-indigo-100 to-indigo-200 bg-clip-text text-transparent">
             {title}
@@ -136,7 +114,6 @@ const AuthLayout = ({ title, subtitle, children }) => (
             {subtitle}
           </p>
         </div>
-
         <div className="space-y-4 pt-4">
           {[
             { icon: Shield, title: "Enterprise-Grade Security", desc: "Bank-level AES-256 encryption and SOC 2 Type II compliance.", color: "indigo" },
@@ -154,47 +131,22 @@ const AuthLayout = ({ title, subtitle, children }) => (
             </div>
           ))}
         </div>
-
-        <div className="pt-8 border-t border-white/10 flex justify-between items-center text-center px-4">
-          {[
-            { val: "500K+", label: "Patents" },
-            { val: "12K+", label: "Users" },
-            { val: "150+", label: "Countries" }
-          ].map((stat, idx) => (
-            <div key={idx}>
-              <div className="text-3xl font-bold text-white mb-0.5">{stat.val}</div>
-              <div className="text-xs uppercase tracking-wider font-semibold text-indigo-300/60">{stat.label}</div>
-            </div>
-          ))}
-        </div>
       </div>
     </div>
 
-    {/* Right Side - Form Container */}
+    {/* Right Side */}
     <div className="w-full lg:w-1/2 flex items-center justify-center px-4 sm:px-6 py-12 relative z-10 overflow-y-auto">
       <div className="w-full max-w-[480px]">
         <div className="bg-white/90 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl p-8 sm:p-10 border border-white/50 relative overflow-hidden">
-          
-          {/* Decorative top sheen */}
           <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 opacity-80"></div>
 
-          {/* Mobile Logo */}
           <div className="lg:hidden flex flex-col items-center justify-center gap-3 mb-8 pb-6 border-b border-slate-100">
             <div className="p-3 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-200">
               <Globe className="w-8 h-8 text-white" />
             </div>
             <span className="text-xl font-bold text-slate-900 tracking-tight">Global IP Intelligence</span>
           </div>
-
           {children}
-        </div>
-
-        {/* Trust Indicators */}
-        <div className="mt-8 text-center">
-          <p className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900/40 backdrop-blur-md border border-white/10 text-xs font-medium text-indigo-100/80">
-            <Shield className="w-3.5 h-3.5" />
-            <span>256-bit SSL Encrypted & Secure Connection</span>
-          </p>
         </div>
       </div>
     </div>
@@ -220,7 +172,6 @@ const RegisterPage = ({ onNavigate, onLogin }) => {
   const [touchedFields, setTouchedFields] = useState({});
   const [activeModal, setActiveModal] = useState(null);
 
-  // --- Password Strength Calculator ---
   const calculatePasswordStrength = (password) => {
     let strength = 0;
     if (password.length >= 8) strength += 25;
@@ -234,7 +185,6 @@ const RegisterPage = ({ onNavigate, onLogin }) => {
   const getPasswordStrengthLabel = (s) => s === 0 ? '' : s < 40 ? 'Weak' : s < 70 ? 'Medium' : 'Strong';
   const getPasswordStrengthColor = (s) => s < 40 ? 'bg-red-500' : s < 70 ? 'bg-amber-400' : 'bg-emerald-500';
 
-  // --- Event Handlers ---
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (field === 'password') setPasswordStrength(calculatePasswordStrength(value));
@@ -243,7 +193,6 @@ const RegisterPage = ({ onNavigate, onLogin }) => {
 
   const handleBlur = (field) => setTouchedFields(prev => ({ ...prev, [field]: true }));
 
-  // --- Validation ---
   const validateForm = () => {
     const newErrors = {};
     if (!formData.fullname.trim()) newErrors.fullname = 'Full Name is required';
@@ -257,20 +206,13 @@ const RegisterPage = ({ onNavigate, onLogin }) => {
     return newErrors;
   };
 
-  // --- Form Submit Handler (Email & Password - FIXED) ---
+  // --- SUBMIT HANDLER (Uses authAPI) ---
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // 1. Validate Form
     const newErrors = validateForm();
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      setTouchedFields({
-        fullname: true,
-        email: true,
-        password: true,
-        confirmPassword: true
-      });
+      setTouchedFields({ fullname: true, email: true, password: true, confirmPassword: true });
       return;
     }
 
@@ -279,48 +221,24 @@ const RegisterPage = ({ onNavigate, onLogin }) => {
 
     try {
       console.log('🔵 Creating User in Firebase...');
-      
-      // 2. Create User in Firebase
       const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
       const user = userCredential.user;
       
-      // 3. Set Display Name
-      await updateProfile(user, {
-        displayName: formData.fullname
-      });
-
-      // ⚠️ IMPORTANT FIX: Reload user to ensure displayName is attached
+      await updateProfile(user, { displayName: formData.fullname });
       await user.reload();
+      
       console.log('✅ Firebase User Created:', user.email);
-
-      // 4. Get Token (FORCE REFRESH = true)
-      // This ensures the new displayName is included in the token sent to backend
       const idToken = await user.getIdToken(true);
 
-      // 5. Send to Backend
-      const response = await fetch('http://localhost:5001/api/auth/firebase-login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ idToken })
-      });
-
-      if (!response.ok) {
-        throw new Error('Backend registration failed');
-      }
-
-      const data = await response.json();
+      // --- USE CENTRALIZED API HERE ---
+      console.log('🔵 Sending to Backend via authAPI...');
+      const data = await authAPI.firebaseLogin(idToken);
       console.log('✅ Backend Registration Success:', data);
 
-      // 6. Save Data & Redirect
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
 
-      // Update parent component state if needed
       if (onLogin) onLogin(data.user);
-
-      // Redirect
       if (onNavigate) {
         onNavigate('dashboard');
       } else {
@@ -329,67 +247,39 @@ const RegisterPage = ({ onNavigate, onLogin }) => {
 
     } catch (error) {
       console.error('❌ Registration Error:', error);
-      
-      // Handle Firebase specific error codes
       let errorMessage = "Registration failed. Please try again.";
-      if (error.code === 'auth/email-already-in-use') {
-        errorMessage = "This email is already registered. Please login instead.";
-      } else if (error.code === 'auth/weak-password') {
-        errorMessage = "Password is too weak. Please use a stronger password.";
-      } else if (error.code === 'auth/invalid-email') {
-        errorMessage = "Invalid email format.";
+      if (error.code === 'auth/email-already-in-use') errorMessage = "This email is already registered. Please login instead.";
+      else if (error.code === 'auth/weak-password') errorMessage = "Password is too weak.";
+      else if (error.response && error.response.data && error.response.data.message) {
+         // Handle Backend errors (e.g. 400 Bad Request)
+         errorMessage = error.response.data.message;
       }
-      
       setErrors({ submit: errorMessage });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // --- Google Registration Handler ---
+  // --- GOOGLE REGISTER (Uses authAPI) ---
   const handleGoogleRegister = async () => {
     setIsLoading(true);
     setErrors({});
     
     try {
       console.log('🔵 Starting Google Sign-In...');
-      // 1. Sign in with Google Pop-up
       const result = await signInWithPopup(auth, googleProvider);
-      
-      // 2. Get the Firebase ID token
       const idToken = await result.user.getIdToken();
       console.log('✅ Firebase Sign-In Success');
       
-      // 3. Send token to Backend
-      console.log('🔵 Sending token to backend...');
-      const response = await fetch('http://localhost:5001/api/auth/firebase-login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ idToken })
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Backend authentication failed');
-      }
-      
-      const data = await response.json();
+      // --- USE CENTRALIZED API HERE ---
+      console.log('🔵 Sending to Backend via authAPI...');
+      const data = await authAPI.firebaseLogin(idToken);
       console.log('✅ Backend Response:', data);
       
-      // 4. Store JWT token and User Data
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       
-      // 5. Update Parent State
-      if (onLogin) {
-        onLogin(data.user);
-      }
-      
-      console.log('✅ Authentication Complete!');
-      
-      // 6. Redirect to dashboard
+      if (onLogin) onLogin(data.user);
       if (onNavigate) {
         onNavigate('dashboard');
       } else {
@@ -398,9 +288,7 @@ const RegisterPage = ({ onNavigate, onLogin }) => {
       
     } catch (error) {
       console.error('❌ Google Sign-Up Error:', error);
-      setErrors({ 
-        submit: error.message || 'Google sign-up failed. Please try again.' 
-      });
+      setErrors({ submit: error.message || 'Google sign-up failed. Please try again.' });
     } finally {
       setIsLoading(false);
     }
@@ -408,47 +296,24 @@ const RegisterPage = ({ onNavigate, onLogin }) => {
 
   return (
     <>
-      {/* Modals */}
-      {activeModal === 'terms' && (
-        <Modal title="Terms of Service" content={TermsContent} onClose={() => setActiveModal(null)} />
-      )}
-      {activeModal === 'privacy' && (
-        <Modal title="Privacy Policy" content={PrivacyContent} onClose={() => setActiveModal(null)} />
-      )}
+      {activeModal === 'terms' && <Modal title="Terms of Service" content={TermsContent} onClose={() => setActiveModal(null)} />}
+      {activeModal === 'privacy' && <Modal title="Privacy Policy" content={PrivacyContent} onClose={() => setActiveModal(null)} />}
 
-      <AuthLayout 
-        title="Join the Future of IP Management" 
-        subtitle="Protect, monitor, and analyze your patents across 150+ countries with AI-powered intelligence."
-      >
+      <AuthLayout title="Join the Future of IP Management" subtitle="Protect, monitor, and analyze your patents across 150+ countries with AI-powered intelligence.">
         <div className="mb-6 text-center">
           <h2 className="text-3xl font-bold text-slate-900 mb-2">Create Account</h2>
           <p className="text-slate-500">Join 12,000+ innovators protecting their IP</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          
           {/* Full Name */}
           <div>
             <label htmlFor="fullname" className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">Full Name</label>
             <div className="relative group">
               <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-              <input 
-                id="fullname"
-                type="text" 
-                value={formData.fullname} 
-                onChange={(e) => handleChange('fullname', e.target.value)} 
-                onBlur={() => handleBlur('fullname')} 
-                className={`block w-full pl-12 pr-4 py-3.5 rounded-xl bg-slate-50 border-2 ${
-                  touchedFields.fullname && errors.fullname ? 'border-red-500 bg-red-50' : 'border-transparent hover:border-slate-200 focus:border-indigo-500 focus:bg-white'
-                } transition-all outline-none font-medium text-slate-900 placeholder:text-slate-400`} 
-                placeholder="Alex Johnson" 
-              />
+              <input id="fullname" type="text" value={formData.fullname} onChange={(e) => handleChange('fullname', e.target.value)} onBlur={() => handleBlur('fullname')} className={`block w-full pl-12 pr-4 py-3.5 rounded-xl bg-slate-50 border-2 ${touchedFields.fullname && errors.fullname ? 'border-red-500 bg-red-50' : 'border-transparent hover:border-slate-200 focus:border-indigo-500 focus:bg-white'} transition-all outline-none font-medium text-slate-900 placeholder:text-slate-400`} placeholder="Alex Johnson" />
             </div>
-            {touchedFields.fullname && errors.fullname && (
-              <p className="mt-2 text-xs font-medium text-red-500 flex items-center gap-1.5 animate-in slide-in-from-top-1">
-                <XCircle className="w-3.5 h-3.5" />{errors.fullname}
-              </p>
-            )}
+            {touchedFields.fullname && errors.fullname && <p className="mt-2 text-xs font-medium text-red-500 flex items-center gap-1.5"><XCircle className="w-3.5 h-3.5" />{errors.fullname}</p>}
           </div>
 
           {/* Email */}
@@ -456,46 +321,22 @@ const RegisterPage = ({ onNavigate, onLogin }) => {
             <label htmlFor="email" className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">Work Email</label>
             <div className="relative group">
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-              <input 
-                id="email"
-                type="email" 
-                value={formData.email} 
-                onChange={(e) => handleChange('email', e.target.value)} 
-                onBlur={() => handleBlur('email')} 
-                className={`block w-full pl-12 pr-4 py-3.5 rounded-xl bg-slate-50 border-2 ${
-                  touchedFields.email && errors.email ? 'border-red-500 bg-red-50' : 'border-transparent hover:border-slate-200 focus:border-indigo-500 focus:bg-white'
-                } transition-all outline-none font-medium text-slate-900 placeholder:text-slate-400`} 
-                placeholder="alex@company.com" 
-              />
+              <input id="email" type="email" value={formData.email} onChange={(e) => handleChange('email', e.target.value)} onBlur={() => handleBlur('email')} className={`block w-full pl-12 pr-4 py-3.5 rounded-xl bg-slate-50 border-2 ${touchedFields.email && errors.email ? 'border-red-500 bg-red-50' : 'border-transparent hover:border-slate-200 focus:border-indigo-500 focus:bg-white'} transition-all outline-none font-medium text-slate-900 placeholder:text-slate-400`} placeholder="alex@company.com" />
             </div>
-            {touchedFields.email && errors.email && (
-              <p className="mt-2 text-xs font-medium text-red-500 flex items-center gap-1.5 animate-in slide-in-from-top-1">
-                <XCircle className="w-3.5 h-3.5" />{errors.email}
-              </p>
-            )}
+            {touchedFields.email && errors.email && <p className="mt-2 text-xs font-medium text-red-500 flex items-center gap-1.5"><XCircle className="w-3.5 h-3.5" />{errors.email}</p>}
           </div>
 
-          {/* User Type */}
+          {/* Organization Type */}
           <div>
             <label htmlFor="userType" className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">Organization Type</label>
             <div className="relative group">
               <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors pointer-events-none" />
-              <select 
-                id="userType"
-                value={formData.userType} 
-                onChange={(e) => handleChange('userType', e.target.value)} 
-                className="block w-full pl-12 pr-10 py-3.5 rounded-xl bg-slate-50 border-2 border-transparent hover:border-slate-200 focus:border-indigo-500 focus:bg-white transition-all appearance-none outline-none cursor-pointer font-medium text-slate-700"
-              >
+              <select id="userType" value={formData.userType} onChange={(e) => handleChange('userType', e.target.value)} className="block w-full pl-12 pr-10 py-3.5 rounded-xl bg-slate-50 border-2 border-transparent hover:border-slate-200 focus:border-indigo-500 focus:bg-white transition-all appearance-none outline-none cursor-pointer font-medium text-slate-700">
                 <option value="Individual">Individual Inventor</option>
                 <option value="Law Firm">Law Firm</option>
                 <option value="Corporation">Corporation</option>
                 <option value="Research Institution">Research Institution</option>
               </select>
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
             </div>
           </div>
 
@@ -504,55 +345,25 @@ const RegisterPage = ({ onNavigate, onLogin }) => {
             <label htmlFor="password" className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">Password</label>
             <div className="relative group">
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-              <input 
-                id="password"
-                type={showPassword ? 'text' : 'password'} 
-                value={formData.password} 
-                onChange={(e) => handleChange('password', e.target.value)} 
-                onBlur={() => handleBlur('password')} 
-                className={`block w-full pl-12 pr-12 py-3.5 rounded-xl bg-slate-50 border-2 ${
-                  touchedFields.password && errors.password ? 'border-red-500 bg-red-50' : 'border-transparent hover:border-slate-200 focus:border-indigo-500 focus:bg-white'
-                } transition-all outline-none font-medium text-slate-900 placeholder:text-slate-400`} 
-                placeholder="Create password" 
-              />
-              <button 
-                type="button" 
-                onClick={() => setShowPassword(!showPassword)} 
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-              >
+              <input id="password" type={showPassword ? 'text' : 'password'} value={formData.password} onChange={(e) => handleChange('password', e.target.value)} onBlur={() => handleBlur('password')} className={`block w-full pl-12 pr-12 py-3.5 rounded-xl bg-slate-50 border-2 ${touchedFields.password && errors.password ? 'border-red-500 bg-red-50' : 'border-transparent hover:border-slate-200 focus:border-indigo-500 focus:bg-white'} transition-all outline-none font-medium text-slate-900 placeholder:text-slate-400`} placeholder="Create password" />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
-            
-            {/* Strength Meter */}
             {formData.password && (
               <div className="mt-3 px-1">
                 <div className="flex gap-1 h-1.5 mb-1.5">
                   {[1, 2, 3, 4].map((step) => (
-                    <div 
-                      key={step}
-                      className={`h-full flex-1 rounded-full transition-all duration-500 ${
-                        passwordStrength >= step * 25 ? getPasswordStrengthColor(passwordStrength) : 'bg-slate-200'
-                      }`} 
-                    />
+                    <div key={step} className={`h-full flex-1 rounded-full transition-all duration-500 ${passwordStrength >= step * 25 ? getPasswordStrengthColor(passwordStrength) : 'bg-slate-200'}`} />
                   ))}
                 </div>
                 <p className="text-xs text-slate-500 flex justify-between items-center font-medium">
                   <span>Must contain number & symbol</span>
-                  <span className={`${
-                    passwordStrength < 40 ? 'text-red-500' : passwordStrength < 70 ? 'text-amber-500' : 'text-emerald-600'
-                  }`}>
-                    {getPasswordStrengthLabel(passwordStrength)}
-                  </span>
+                  <span className={`${passwordStrength < 40 ? 'text-red-500' : passwordStrength < 70 ? 'text-amber-500' : 'text-emerald-600'}`}>{getPasswordStrengthLabel(passwordStrength)}</span>
                 </p>
               </div>
             )}
-            
-            {touchedFields.password && errors.password && (
-              <p className="mt-2 text-xs font-medium text-red-500 flex items-center gap-1.5 animate-in slide-in-from-top-1">
-                <XCircle className="w-3.5 h-3.5" />{errors.password}
-              </p>
-            )}
+            {touchedFields.password && errors.password && <p className="mt-2 text-xs font-medium text-red-500 flex items-center gap-1.5"><XCircle className="w-3.5 h-3.5" />{errors.password}</p>}
           </div>
 
           {/* Confirm Password */}
@@ -560,135 +371,51 @@ const RegisterPage = ({ onNavigate, onLogin }) => {
             <label htmlFor="confirmPassword" className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">Confirm Password</label>
             <div className="relative group">
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-              <input 
-                id="confirmPassword"
-                type={showConfirmPassword ? 'text' : 'password'} 
-                value={formData.confirmPassword} 
-                onChange={(e) => handleChange('confirmPassword', e.target.value)} 
-                onBlur={() => handleBlur('confirmPassword')} 
-                className={`block w-full pl-12 pr-12 py-3.5 rounded-xl bg-slate-50 border-2 ${
-                  touchedFields.confirmPassword && errors.confirmPassword ? 'border-red-500 bg-red-50' : 'border-transparent hover:border-slate-200 focus:border-indigo-500 focus:bg-white'
-                } transition-all outline-none font-medium text-slate-900 placeholder:text-slate-400`} 
-                placeholder="Confirm password" 
-              />
-              <button 
-                type="button" 
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)} 
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-              >
+              <input id="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} value={formData.confirmPassword} onChange={(e) => handleChange('confirmPassword', e.target.value)} onBlur={() => handleBlur('confirmPassword')} className={`block w-full pl-12 pr-12 py-3.5 rounded-xl bg-slate-50 border-2 ${touchedFields.confirmPassword && errors.confirmPassword ? 'border-red-500 bg-red-50' : 'border-transparent hover:border-slate-200 focus:border-indigo-500 focus:bg-white'} transition-all outline-none font-medium text-slate-900 placeholder:text-slate-400`} placeholder="Confirm password" />
+              <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
                 {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
-            {touchedFields.confirmPassword && errors.confirmPassword && (
-              <p className="mt-2 text-xs font-medium text-red-500 flex items-center gap-1.5 animate-in slide-in-from-top-1">
-                <XCircle className="w-3.5 h-3.5" />{errors.confirmPassword}
-              </p>
-            )}
+            {touchedFields.confirmPassword && errors.confirmPassword && <p className="mt-2 text-xs font-medium text-red-500 flex items-center gap-1.5"><XCircle className="w-3.5 h-3.5" />{errors.confirmPassword}</p>}
           </div>
 
-          {/* Terms Checkbox */}
+          {/* Terms */}
           <div className="pt-2">
             <label className="flex items-start gap-3 cursor-pointer group">
               <div className="relative flex items-center justify-center mt-0.5">
-                <input 
-                  type="checkbox" 
-                  checked={formData.agreeToTerms} 
-                  onChange={(e) => handleChange('agreeToTerms', e.target.checked)} 
-                  className="peer w-5 h-5 rounded-md border-2 border-slate-300 bg-slate-50 checked:bg-indigo-600 checked:border-indigo-600 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 transition-all cursor-pointer appearance-none"
-                />
-                <svg className="absolute w-3 h-3 text-white pointer-events-none hidden peer-checked:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                </svg>
+                <input type="checkbox" checked={formData.agreeToTerms} onChange={(e) => handleChange('agreeToTerms', e.target.checked)} className="peer w-5 h-5 rounded-md border-2 border-slate-300 bg-slate-50 checked:bg-indigo-600 checked:border-indigo-600 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 transition-all cursor-pointer appearance-none" />
+                <svg className="absolute w-3 h-3 text-white pointer-events-none hidden peer-checked:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
               </div>
               <span className="text-sm text-slate-600 leading-relaxed">
-                I agree to the{' '}
-                <button 
-                  type="button" 
-                  onClick={() => setActiveModal('terms')}
-                  className="text-indigo-600 hover:text-indigo-700 font-semibold hover:underline"
-                >
-                  Terms of Service
-                </button>
-                {' '}and{' '}
-                <button 
-                  type="button" 
-                  onClick={() => setActiveModal('privacy')}
-                  className="text-indigo-600 hover:text-indigo-700 font-semibold hover:underline"
-                >
-                  Privacy Policy
-                </button>
+                I agree to the{' '} <button type="button" onClick={() => setActiveModal('terms')} className="text-indigo-600 hover:text-indigo-700 font-semibold hover:underline">Terms of Service</button> {' '}and{' '} <button type="button" onClick={() => setActiveModal('privacy')} className="text-indigo-600 hover:text-indigo-700 font-semibold hover:underline">Privacy Policy</button>
               </span>
             </label>
-            {errors.agreeToTerms && (
-              <p className="mt-2 text-xs font-medium text-red-500 flex items-center gap-1.5 animate-in slide-in-from-top-1 ml-8">
-                <XCircle className="w-3.5 h-3.5" />{errors.agreeToTerms}
-              </p>
-            )}
+            {errors.agreeToTerms && <p className="mt-2 text-xs font-medium text-red-500 flex items-center gap-1.5 ml-8"><XCircle className="w-3.5 h-3.5" />{errors.agreeToTerms}</p>}
           </div>
 
-          {/* Submit Error */}
           {errors.submit && (
             <div className="p-4 bg-red-50 border-2 border-red-200 rounded-xl">
               <p className="text-sm font-medium text-red-700 flex items-center gap-2">
-                <XCircle className="w-4 h-4 flex-shrink-0" />
-                {errors.submit}
+                <XCircle className="w-4 h-4 flex-shrink-0" />{errors.submit}
               </p>
             </div>
           )}
 
-          {/* Submit Button */}
-          <button 
-            type="submit" 
-            disabled={isLoading}
-            className="w-full py-4 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group"
-          >
-            {isLoading ? (
-              <>
-                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                Creating Account...
-              </>
-            ) : (
-              <>
-                Create Account
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </>
-            )}
+          <button type="submit" disabled={isLoading} className="w-full py-4 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group">
+            {isLoading ? "Creating Account..." : <>Create Account <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" /></>}
           </button>
-
-          {/* Sign In Link */}
+          
           <div className="text-center pt-4 border-t border-slate-100">
-            <p className="text-sm text-slate-600">
-              Already have an account?{' '}
-              <button 
-                type="button" 
-                onClick={() => onNavigate('login')} 
-                className="text-indigo-600 hover:text-indigo-700 font-semibold hover:underline"
-              >
-                Log in
-              </button>
-            </p>
+            <p className="text-sm text-slate-600">Already have an account?{' '} <button type="button" onClick={() => onNavigate('login')} className="text-indigo-600 hover:text-indigo-700 font-semibold hover:underline">Log in</button></p>
           </div>
         </form>
 
         <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white/50 backdrop-blur-sm text-slate-500 font-medium">Or sign up with</span>
-            </div>
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200"></div></div>
+            <div className="relative flex justify-center text-sm"><span className="px-4 bg-white/50 backdrop-blur-sm text-slate-500 font-medium">Or sign up with</span></div>
         </div>
 
-        {/* --- GOOGLE BUTTON --- */}
-        <button
-          type="button"
-          onClick={handleGoogleRegister}
-          disabled={isLoading}
-          className="w-full flex items-center justify-center gap-3 px-4 py-3.5 border-2 border-slate-200 rounded-xl bg-white font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 focus:ring-4 focus:ring-slate-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-        >
+        <button type="button" onClick={handleGoogleRegister} disabled={isLoading} className="w-full flex items-center justify-center gap-3 px-4 py-3.5 border-2 border-slate-200 rounded-xl bg-white font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 focus:ring-4 focus:ring-slate-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
           <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
           {isLoading ? 'Signing up...' : 'Sign up with Google'}
         </button>
