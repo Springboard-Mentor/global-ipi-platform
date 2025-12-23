@@ -36,6 +36,7 @@ const App = () => {
   });
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [notifications, setNotifications] = useState([]);
 
   // Initialize userProfile from localStorage if available
   const [userProfile, setUserProfile] = useState(() => {
@@ -361,6 +362,20 @@ const App = () => {
     }
   };
 
+  // Add notification
+  const addNotification = (notification) => {
+    const newNotification = {
+      ...notification,
+      timestamp: new Date().toLocaleString()
+    };
+    setNotifications(prev => [newNotification, ...prev]);
+  };
+
+  // Dismiss notification
+  const dismissNotification = (index) => {
+    setNotifications(prev => prev.filter((_, i) => i !== index));
+  };
+
   // Show loading screen while checking authentication
   if (loading) {
     return (
@@ -439,6 +454,8 @@ const App = () => {
           }}
           currentPage={currentPage}
           sidebarOpen={sidebarOpen}
+          notifications={notifications}
+          onDismissNotification={dismissNotification}
         />
 
         <div className="flex-1 overflow-auto" onClick={() => sidebarOpen && setSidebarOpen(false)}>

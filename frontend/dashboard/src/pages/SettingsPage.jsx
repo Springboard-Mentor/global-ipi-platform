@@ -28,6 +28,7 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
     language: 'en',
     timezone: 'Asia/Kolkata'
   });
+  const [isSaving, setIsSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -124,6 +125,7 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
 
   // Preferences Handler
   const handleSavePreferences = async () => {
+    setIsSaving(true);
     try {
       const userRef = doc(db, 'users', currentUID);
       await updateDoc(userRef, {
@@ -141,6 +143,15 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
       alert('Preferences saved!');
     } catch (error) {
       alert('Error saving preferences: ' + error.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle Enter key press
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSavePreferences();
     }
   };
 
@@ -449,7 +460,7 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
           App Preferences
         </h3>
         
-        <div className="space-y-4">
+        <div className="space-y-4" onKeyPress={handleKeyPress}>
           {/* Theme */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Theme</label>
@@ -496,20 +507,26 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
               onChange={(e) => setPreferences({...preferences, timezone: e.target.value})}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
-              <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
-              <option value="America/New_York">America/New York (EST)</option>
-              <option value="Europe/London">Europe/London (GMT)</option>
-              <option value="Asia/Dubai">Asia/Dubai (GST)</option>
+              <option value="Asia/Kolkata">Asia/Kolkata (IST - Indian Standard Time)</option>
+              <option value="Asia/Dubai">Asia/Dubai (GST - Gulf Standard Time)</option>
+              <option value="America/New_York">America/New York (EST - Eastern Time)</option>
+              <option value="Europe/London">Europe/London (GMT - Greenwich Mean Time)</option>
+              <option value="Asia/Tokyo">Asia/Tokyo (JST - Japan Standard Time)</option>
+              <option value="Australia/Sydney">Australia/Sydney (AEST - Australian Eastern Time)</option>
             </select>
           </div>
         </div>
         
-        <button
-          onClick={handleSavePreferences}
-          className="mt-6 px-6 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition"
-        >
-          Save Preferences
-        </button>
+        <div className="mt-6 flex items-center gap-4">
+          <button
+            onClick={handleSavePreferences}
+            disabled={isSaving}
+            className="px-6 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSaving ? 'Saving...' : 'Save Preferences'}
+          </button>
+          <p className="text-sm text-gray-500">Press Enter to save</p>
+        </div>
       </div>
     </div>
   );

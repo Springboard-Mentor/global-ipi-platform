@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import UpgradeModal from "./UpgradeModal";
 
-const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem, onLogout, userProfile }) => {
+const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem, onLogout, userProfile, onAddNotification }) => {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const menuItems = [
     { id: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -137,6 +137,7 @@ const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem, onLogout, userPro
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
         userProfile={userProfile}
+        onAddNotification={onAddNotification}
       />
     </>
   );

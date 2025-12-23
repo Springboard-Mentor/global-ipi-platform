@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, Search, Bell, Crown, Zap, Calendar, Clock } from 'lucide-react';
+import { Menu, Search, Bell, Crown, Zap, Calendar, Clock, X, Shield } from 'lucide-react';
 
-const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, currentPage, sidebarOpen }) => {
+const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, currentPage, sidebarOpen, notifications = [], onDismissNotification }) => {
   const [query, setQuery] = useState('');
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
+  const [showNotifications, setShowNotifications] = useState(false);
 
   useEffect(() => {
     if (currentPage === 'dashboard') {
@@ -112,27 +113,40 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
   const subscriptionDetails = getSubscriptionDetails();
   
   return (
-    <div className="bg-white/80 backdrop-blur-md border-b border-white/20 px-3 sm:px-6 py-3 sm:py-4 shadow-sm">
-      <div className="flex items-center justify-between gap-2">
+    <div className="bg-gradient-to-r from-teal-600 via-blue-600 to-indigo-700 border-b border-teal-500/30 px-3 sm:px-6 py-3 sm:py-4 shadow-lg">
+      <div className="flex items-center gap-3">
 
         <button 
           onClick={onMenuClick}
-          className={`p-2 hover:bg-gradient-to-br hover:from-blue-50 hover:to-purple-50 rounded-xl ${sidebarOpen ? 'invisible' : ''}`}
+          className={`p-2 hover:bg-white/20 rounded-xl transition ${sidebarOpen ? 'invisible' : ''}`}
         >
-          <Menu size={24} className="text-gray-700" />
+          <Menu size={24} className="text-white" />
         </button>
 
-        {/* Subscription Badge with Hover Details - Left Side */}
+        {/* App Logo and Branding */}
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
+          <Shield className="text-yellow-300" size={20} />
+          <span className="text-white font-bold text-sm sm:text-base hidden sm:inline whitespace-nowrap">
+            Global IP Platform
+          </span>
+          <span className="text-white font-bold text-xs sm:hidden">
+            GIP
+          </span>
+        </div>
+
+        {/* Subscription Badge with Hover Details */}
         {subscriptionDetails ? (
           <div className="relative group">
-            <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-md cursor-pointer">
-              <Crown size={14} className="animate-pulse" />
-              <span className="text-xs font-bold uppercase hidden sm:inline">
-                {subscriptionDetails.type}
-              </span>
-              <span className="text-xs font-bold">
-                • {subscriptionDetails.daysLeft}d
-              </span>
+            <div className="flex items-center gap-2 px-4 sm:px-5 py-2 rounded-xl bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 text-white shadow-lg cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 min-w-[140px] sm:min-w-[180px]">
+              <Crown size={18} className="animate-pulse" />
+              <div className="flex flex-col">
+                <span className="text-xs font-bold uppercase leading-tight">
+                  {subscriptionDetails.type}
+                </span>
+                <span className="text-xs font-semibold opacity-90">
+                  {subscriptionDetails.daysLeft} days left
+                </span>
+              </div>
             </div>
 
             {/* Hover Tooltip - Subscription Details */}
@@ -191,37 +205,37 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
             </div>
           </div>
         ) : (
-          <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-lg bg-gradient-to-br from-gray-400 to-gray-600 text-white shadow-md">
-            <Zap size={14} />
-            <span className="text-xs font-bold uppercase hidden sm:inline">BASIC</span>
+          <div className="flex items-center gap-2 px-4 sm:px-5 py-2 rounded-xl bg-gradient-to-r from-gray-400 to-gray-600 text-white shadow-lg min-w-[120px] sm:min-w-[150px]">
+            <Zap size={16} />
+            <span className="text-xs font-bold uppercase">BASIC</span>
           </div>
         )}
 
         {/* Date and Time Display - Responsive */}
-        <div className="hidden lg:flex flex-col items-start ml-4 mr-4">
-          <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-            <Calendar size={16} className="text-blue-500" />
+        <div className="hidden lg:flex flex-col items-start bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-white/20">
+          <div className="flex items-center gap-2 text-sm font-medium text-white">
+            <Calendar size={16} className="text-yellow-300" />
             <span>{date}</span>
           </div>
-          <div className="flex items-center gap-2 text-xs text-gray-500">
-            <Clock size={14} className="text-purple-500" />
+          <div className="flex items-center gap-2 text-xs text-white/90">
+            <Clock size={14} className="text-yellow-300" />
             <span>{time}</span>
           </div>
         </div>
         
-        <form onSubmit={handleSearch} className="flex-1 max-w-md">
+        <form onSubmit={handleSearch} className="flex-1 max-w-2xl mx-auto">
           <div className="relative">
-            <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-teal-600" size={18} />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search patents..."
-              className="w-full pl-10 sm:pl-12 pr-16 sm:pr-20 py-2 sm:py-2.5 text-sm bg-white border border-gray-200 rounded-xl"
+              className="w-full pl-10 sm:pl-12 pr-16 sm:pr-20 py-2 sm:py-2.5 text-sm bg-white/95 backdrop-blur-sm border border-white/30 rounded-xl focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 shadow-md"
             />
             <button
               type="submit"
-              className="absolute right-2 top-1/2 -translate-y-1/2 px-2 sm:px-3 py-1 bg-blue-500 text-white text-xs sm:text-sm rounded-lg hover:bg-blue-600"
+              className="absolute right-2 top-1/2 -translate-y-1/2 px-2 sm:px-3 py-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs sm:text-sm rounded-lg hover:shadow-lg transition font-semibold"
             >
               Search
             </button>
@@ -230,33 +244,101 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
 
         <div className="flex items-center gap-2 sm:gap-3 ml-2 sm:ml-4">
           {/* Date/Time Mobile View */}
-          <div className="lg:hidden flex flex-col items-end">
-            <div className="flex items-center gap-1 text-xs font-medium text-gray-700">
-              <Calendar size={12} />
+          <div className="lg:hidden flex flex-col items-end bg-white/10 px-2 py-1 rounded-lg">
+            <div className="flex items-center gap-1 text-xs font-medium text-white">
+              <Calendar size={12} className="text-yellow-300" />
               <span className="hidden sm:inline">{date.split(',')[0]}</span>
             </div>
-            <div className="flex items-center gap-1 text-xs text-gray-500">
-              <Clock size={12} />
+            <div className="flex items-center gap-1 text-xs text-white/90">
+              <Clock size={12} className="text-yellow-300" />
               <span>{time}</span>
             </div>
           </div>
 
-          <button className="p-2 sm:p-2.5 hover:bg-gradient-to-br hover:from-blue-50 hover:to-purple-50 rounded-xl relative">
-            <Bell size={18} className="text-gray-600" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"></span>
-          </button>
+          <div className="relative">
+            <button 
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="p-2 sm:p-2.5 hover:bg-white/20 rounded-xl relative transition"
+            >
+              <Bell size={18} className="text-white" />
+              {notifications.length > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-yellow-400 rounded-full animate-pulse shadow-lg"></span>
+              )}
+            </button>
+
+            {/* Notification Dropdown */}
+            {showNotifications && (
+              <div className="absolute right-0 top-full mt-2 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 max-h-96 overflow-y-auto">
+                <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-3 rounded-t-xl">
+                  <h3 className="font-bold">Notifications</h3>
+                </div>
+                
+                {notifications.length === 0 ? (
+                  <div className="p-6 text-center text-gray-500">
+                    <Bell size={32} className="mx-auto mb-2 opacity-50" />
+                    <p>No notifications</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-gray-100">
+                    {notifications.map((notification, index) => (
+                      <div key={index} className="p-4 hover:bg-gray-50 transition">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Crown className="text-purple-600" size={16} />
+                              <h4 className="font-semibold text-gray-800">{notification.title}</h4>
+                            </div>
+                            <p className="text-sm text-gray-600 mb-2">{notification.message}</p>
+                            {notification.details && (
+                              <div className="bg-blue-50 rounded-lg p-3 text-xs space-y-1">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Plan:</span>
+                                  <span className="font-semibold text-gray-800">{notification.details.plan}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Amount:</span>
+                                  <span className="font-semibold text-green-600">₹{notification.details.amount}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Valid Until:</span>
+                                  <span className="font-semibold text-gray-800">{notification.details.validUntil}</span>
+                                </div>
+                                {notification.details.paymentId && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Payment ID:</span>
+                                    <span className="font-mono text-gray-700">{notification.details.paymentId.substring(0, 20)}...</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            <p className="text-xs text-gray-400 mt-2">{notification.timestamp}</p>
+                          </div>
+                          <button
+                            onClick={() => onDismissNotification?.(index)}
+                            className="p-1 hover:bg-gray-200 rounded-full"
+                          >
+                            <X size={14} className="text-gray-500" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="text-right hidden md:block">
-              <div className="text-sm font-medium text-gray-700">
+              <div className="text-sm font-bold text-white drop-shadow-md">
                 {userProfile.firstName} {userProfile.lastName}
               </div>
-              <div className="text-xs text-gray-500">{userProfile.email}</div>
+              <div className="text-xs text-white/90 drop-shadow-sm">{userProfile.email}</div>
             </div>
             
             <button 
               onClick={onProfileClick}
-              className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center overflow-hidden"
+              className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center overflow-hidden shadow-lg ring-2 ring-white/30 hover:ring-white/50 transition"
               title={`${userProfile.firstName} ${userProfile.lastName}`}
             >
               {userProfile.photoURL ? (
@@ -266,7 +348,7 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <span className="text-white text-xs sm:text-sm font-medium">
+                <span className="text-white text-xs sm:text-sm font-bold drop-shadow-md">
                   {userProfile.firstName.charAt(0)}{userProfile.lastName.charAt(0)}
                 </span>
               )}

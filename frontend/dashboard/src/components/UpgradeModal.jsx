@@ -3,7 +3,7 @@ import { X, Check, Zap, Crown } from "lucide-react";
 import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebase";
 
-const UpgradeModal = ({ isOpen, onClose, userProfile }) => {
+const UpgradeModal = ({ isOpen, onClose, userProfile, onAddNotification }) => {
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
@@ -171,6 +171,20 @@ const UpgradeModal = ({ isOpen, onClose, userProfile }) => {
       // Update user's subscription in Firestore
       const userRef = doc(db, "users", userProfile.uid);
       await updateDoc(userRef, updateData);
+
+      // Create notification for subscription purchase
+      if (onAddNotification) {
+        onAddNotification({
+          title: 'Subscription Upgraded Successfully!',
+          message: `You've successfully upgraded to the ${plan.name} plan.`,
+          details: {
+            plan: plan.name,
+            amount: plan.priceAmount,
+            validUntil: endDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+            paymentId: paymentResponse?.razorpay_payment_id || 'N/A'
+          }
+        });
+      }
 
       // Show success message
       alert(`Successfully upgraded to ${plan.name} plan! 🎉\nYour subscription is valid for 30 days.`);
