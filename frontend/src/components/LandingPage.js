@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase/config';
-import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -448,7 +448,7 @@ const ContactForm = () => {
         name: contactData.name,
         email: contactData.email,
         message: contactData.message,
-        createdAt: Timestamp.now()
+        createdAt: serverTimestamp()
       });
       
       alert('Thank you for your message! We will get back to you soon.');
