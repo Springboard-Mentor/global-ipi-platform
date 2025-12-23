@@ -19,8 +19,18 @@ public class IPAsset {
     private String ownerName;
     private String inventorName;
     private LocalDate filingDate;
+    private LocalDate publicationDate;
+
 
     // getters & setters
+
+    public LocalDate getPublicationDate() {
+        return publicationDate;
+    }
+
+    public void setPublicationDate(LocalDate publicationDate) {
+        this.publicationDate = publicationDate;
+    }
 
     public Long getId() {
         return id;

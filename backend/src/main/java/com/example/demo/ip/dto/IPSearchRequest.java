@@ -6,5 +6,6 @@ import lombok.Data;
 public class IPSearchRequest {
     private String query; // search keyword
     private String type; // PATENT or TRADEMARK
+    private String source;  // LOCAL or EXTERNAL
 
 }

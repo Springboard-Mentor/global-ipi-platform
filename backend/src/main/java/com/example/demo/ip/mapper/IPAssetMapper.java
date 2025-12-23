@@ -11,7 +11,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class IPAssetMapper {
 
+    // =========================
     // ENTITY → DTO (CRUD)
+    // =========================
 
     public IPAssetDTO toDto(IPAsset entity) {
         if (entity == null)
@@ -27,10 +29,13 @@ public class IPAssetMapper {
         dto.setOwnerName(entity.getOwnerName());
         dto.setInventorName(entity.getInventorName());
         dto.setFilingDate(entity.getFilingDate());
+        dto.setPublicationDate(entity.getPublicationDate()); // ✅ ADDED HERE
         return dto;
     }
 
+    // =========================
     // DTO → ENTITY (CRUD)
+    // =========================
 
     public IPAsset toEntity(IPAssetDTO dto) {
         if (dto == null)
@@ -44,11 +49,24 @@ public class IPAssetMapper {
         entity.setAssetType(dto.getAssetType());
         entity.setOwnerName(dto.getOwnerName());
         entity.setInventorName(dto.getInventorName());
-        entity.setFilingDate(dto.getFilingDate());
+
+        // ✅ CORRECT PLACE: filingDate (LocalDate)
+        if (dto.getFilingDate() != null) {
+            entity.setFilingDate(dto.getFilingDate());
+        }
+
+        // ✅ CORRECT PLACE: publicationDate (LocalDate)
+        if (dto.getPublicationDate() != null) {
+            entity.setPublicationDate(dto.getPublicationDate());
+        }
+
         return entity;
     }
 
+    // =========================
     // SEARCH DTO → ENTITY
+    // (External / Cached data)
+    // =========================
 
     public IPAsset toEntity(IPSearchResultDTO dto) {
         if (dto == null)
@@ -62,13 +80,24 @@ public class IPAssetMapper {
         entity.setAssetType(dto.getAssetType());
         entity.setOwnerName(dto.getOwnerName());
         entity.setInventorName(dto.getInventorName());
+
+        // ✅ ADDED HERE: filingDate from String
         if (dto.getFilingDate() != null && !dto.getFilingDate().isBlank()) {
             entity.setFilingDate(LocalDate.parse(dto.getFilingDate()));
         }
+
+        // ✅ ADDED HERE: publicationDate from String
+        if (dto.getPublicationDate() != null && !dto.getPublicationDate().isBlank()) {
+            entity.setPublicationDate(LocalDate.parse(dto.getPublicationDate()));
+        }
+
         return entity;
     }
 
+    // =========================
     // UPDATE EXISTING ENTITY
+    // =========================
+
     public void updateFromDto(IPAssetDTO dto, IPAsset entity) {
         if (dto == null || entity == null)
             return;
@@ -80,6 +109,14 @@ public class IPAssetMapper {
         entity.setAssetType(dto.getAssetType());
         entity.setOwnerName(dto.getOwnerName());
         entity.setInventorName(dto.getInventorName());
-        entity.setFilingDate(dto.getFilingDate());
+
+        // ✅ SAFE UPDATE
+        if (dto.getFilingDate() != null) {
+            entity.setFilingDate(dto.getFilingDate());
+        }
+
+        if (dto.getPublicationDate() != null) {
+            entity.setPublicationDate(dto.getPublicationDate());
+        }
     }
 }

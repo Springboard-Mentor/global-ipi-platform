@@ -22,10 +22,33 @@ public class JwtFilter extends OncePerRequestFilter {
     private final CustomUserDetailsService userDetailsService;
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+
+        return path.startsWith("/auth")
+                || path.equals("/api/ip/search")
+                || path.startsWith("/h2-console")
+                || "OPTIONS".equalsIgnoreCase(request.getMethod());
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain)
             throws ServletException, IOException {
+
+
+        String path = request.getRequestURI();
+
+        // ✅ SKIP JWT FOR PUBLIC ENDPOINTS
+        if (path.startsWith("/auth")
+                || path.equals("/api/ip/search")
+                || path.startsWith("/h2-console")
+                || "OPTIONS".equalsIgnoreCase(request.getMethod())) {
+
+            filterChain.doFilter(request, response);
+            return; // 🔥 CRITICAL
+        }
 
         String header = request.getHeader("Authorization");
         String token = null;
@@ -34,12 +57,14 @@ public class JwtFilter extends OncePerRequestFilter {
         try {
             if (header != null && header.startsWith("Bearer ")) {
                 token = header.substring(7);
-                email = jwtUtil.extractUsername(token);   // username = email
+                email = jwtUtil.extractUsername(token);
             }
 
-            if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            if (email != null &&
+                SecurityContextHolder.getContext().getAuthentication() == null) {
 
-                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+                UserDetails userDetails =
+                        userDetailsService.loadUserByUsername(email);
 
                 if (jwtUtil.validateToken(token, userDetails)) {
 
@@ -50,7 +75,8 @@ public class JwtFilter extends OncePerRequestFilter {
                                     userDetails.getAuthorities()
                             );
 
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                    SecurityContextHolder.getContext()
+                            .setAuthentication(authToken);
                 }
             }
 
