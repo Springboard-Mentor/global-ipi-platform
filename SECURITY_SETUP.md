@@ -1,115 +1,219 @@
-# 🔐 API Keys Security Guide
+# 🔐 Security Setup Guide - Global IP Intelligence Platform
 
-## ✅ Security Changes Implemented
+## ⚠️ IMPORTANT: Protecting Sensitive Information
 
-Your API keys are now **secure** and will NOT be committed to Git!
+This project uses environment variables to protect sensitive information like API keys, database passwords, and Firebase configuration. **Never commit actual API keys or passwords to Git.**
 
-### What Was Changed:
+## 📋 Setup Instructions
 
-1. **Removed hardcoded API key** from `PatentService.java`
-2. **Created environment configuration** in `application.properties`
-3. **Added `.gitignore`** to exclude sensitive files
-4. **Created template file** for team sharing
+### 1. Backend Configuration (Spring Boot)
 
----
+**File**: `backend/backend/src/main/resources/application-secrets.properties`
 
-## 📂 File Structure
-
-```
-backend/backend/src/main/resources/
-├── application.properties          ← Contains real API keys (IGNORED by Git)
-└── application.properties.template ← Safe template to commit to Git
-```
-
----
-
-## 🔧 How It Works Now
-
-### Before (Insecure):
-```java
-String url = "https://serpapi.com/search.json?api_key=911c64677374efe91d47afc2a41d11c9c175d3140dd130b31ce7bb56010ed8e0";
-```
-
-### After (Secure):
-```java
-@Value("${serpapi.key}")
-private String serpApiKey;
-
-String url = serpApiBaseUrl + "?engine=google_patents&q=" + query + "&api_key=" + serpApiKey;
-```
-
----
-
-## 🛡️ What's Protected in .gitignore
-
-- ✅ `**/application.properties` - Your actual API keys
-- ✅ `.env` files - Environment variables
-- ✅ `node_modules/` - Dependencies
-- ✅ `target/` - Build outputs
-- ✅ Database files
-- ✅ IDE config files
-
----
-
-## 👥 For Team Members
-
-When someone clones your repo:
-
-1. Copy the template:
+1. Copy the template file:
    ```bash
-   cd backend/backend/src/main/resources/
-   cp application.properties.template application.properties
+   cd backend/backend/src/main/resources
+   cp application-secrets.properties.template application-secrets.properties
    ```
 
-2. Edit `application.properties` and add their API keys:
+2. Edit `application-secrets.properties` and replace placeholders with actual values:
    ```properties
-   serpapi.key=THEIR_API_KEY_HERE
-   spring.datasource.password=THEIR_DB_PASSWORD
+   # Database password
+   db.password=YOUR_ACTUAL_DATABASE_PASSWORD
+
+   # SerpAPI key (get from https://serpapi.com/)
+   serpapi.key=YOUR_ACTUAL_SERPAPI_KEY
+
+   # Email configuration for notifications
+   mail.username=YOUR_EMAIL@gmail.com
+   mail.password=YOUR_EMAIL_APP_PASSWORD
+
+   # Admin email for system notifications
+   admin.email=YOUR_ADMIN_EMAIL@gmail.com
    ```
 
-3. Never commit `application.properties` (it's already in .gitignore)
+### 2. Frontend Dashboard Configuration (Vite)
 
----
+**File**: `frontend/dashboard/.env`
 
-## ⚠️ IMPORTANT: Next Steps
-
-### If you've already committed the API key to Git:
-
-Your API key is already in Git history and might be public! You should:
-
-1. **Regenerate your SerpAPI key**:
-   - Go to https://serpapi.com/
-   - Login → Account → API Key → Regenerate
-
-2. **Update application.properties** with new key
-
-3. **Remove from Git history** (optional but recommended):
+1. Copy the template file:
    ```bash
-   # Remove the file from Git history
-   git filter-branch --force --index-filter \
-     "git rm --cached --ignore-unmatch backend/backend/src/main/resources/application.properties" \
-     --prune-empty --tag-name-filter cat -- --all
-   
-   # Force push to remote
+   cd frontend/dashboard
+   cp .env.template .env
+   ```
+
+2. Edit `.env` and add your Firebase configuration (uses `VITE_` prefix):
+   ```env
+   VITE_FIREBASE_API_KEY=your_api_key_here
+   VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+   VITE_FIREBASE_PROJECT_ID=your_project_id
+   VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+   VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+   VITE_FIREBASE_APP_ID=your_app_id
+   ```
+
+### 3. Frontend Login/Signup Configuration (Create React App)
+
+**File**: `frontend/.env`
+
+1. Copy the template file:
+   ```bash
+   cd frontend
+   cp .env.template .env
+   ```
+
+2. Edit `.env` and add your Firebase configuration (uses `REACT_APP_` prefix):
+   ```env
+   REACT_APP_FIREBASE_API_KEY=your_api_key_here
+   REACT_APP_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+   REACT_APP_FIREBASE_PROJECT_ID=your_project_id
+   REACT_APP_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+   REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+   REACT_APP_FIREBASE_APP_ID=your_app_id
+   ```
+
+## 🔑 Where to Get Your Keys
+
+### Firebase Configuration
+1. Go to [Firebase Console](https://console.firebase.google.com/)
+2. Select your project (or create new one)
+3. Click ⚙️ (Settings) → Project settings
+4. Scroll down to "Your apps" section
+5. Copy the configuration values
+
+### SerpAPI Key
+1. Sign up at [SerpAPI](https://serpapi.com/)
+2. Go to Dashboard → API Key
+3. Copy your API key
+
+### PostgreSQL Database
+- Use your local PostgreSQL password
+- Default: `Postgres@123` (change for production!)
+
+### Gmail App Password (for email notifications)
+1. Enable 2-Factor Authentication on your Gmail account
+2. Go to [App Passwords](https://myaccount.google.com/apppasswords)
+3. Create a new app password
+4. Use this password in `mail.password`
+
+
+## 🚀 After Configuration
+
+### Restart Servers to Load Environment Variables
+
+**Backend:**
+```bash
+cd backend/backend
+# Stop if running (Ctrl+C), then:
+./mvnw spring-boot:run
+```
+
+**Dashboard:**
+```bash
+cd frontend/dashboard
+# Stop if running (Ctrl+C), then:
+npm run dev
+```
+
+**Login/Signup:**
+```bash
+cd frontend
+# Stop if running (Ctrl+C), then:
+npm start
+```
+
+## ✅ Verify Configuration
+
+### Check Backend:
+```bash
+# Backend should start without errors on http://localhost:8080
+curl http://localhost:8080/api/patents/search?query=test
+```
+
+### Check Frontend:
+- Dashboard: http://localhost:5173/
+- Login: http://localhost:3000/
+- Open browser console and verify no Firebase errors
+
+## 🔒 Security Best Practices
+
+### ✅ DO:
+- Keep `.env` and `application-secrets.properties` files **out of Git**
+- Use different API keys for development and production
+- Share only `.template` files with team members
+- Rotate keys periodically
+- Use strong database passwords
+
+### ❌ DON'T:
+- Commit `.env` or `application-secrets.properties` to Git
+- Share API keys in Slack, email, or screenshots
+- Use production keys in development
+- Hardcode secrets in source code
+- Push secrets to public repositories
+
+## 🆘 What If Secrets Are Accidentally Committed?
+
+### If you committed secrets to Git:
+
+1. **Immediately rotate all exposed keys:**
+   - Firebase: Regenerate API keys in Firebase Console
+   - SerpAPI: Generate new API key
+   - Database: Change password
+   - Email: Generate new app password
+
+2. **Remove from Git history:**
+   ```bash
+   # Remove file from Git history (use with caution!)
+   git filter-branch --index-filter "git rm -rf --cached --ignore-unmatch path/to/secret/file" HEAD
+   ```
+
+3. **Force push (if you have permission):**
+   ```bash
    git push origin --force --all
    ```
 
+4. **Notify your team** to pull fresh code and update their keys
+
+## 📚 Environment Variable Naming Conventions
+
+### Backend (Spring Boot)
+- Uses `${variable.name}` syntax in `application.properties`
+- Actual values in `application-secrets.properties`
+- Example: `spring.datasource.password=${db.password}`
+
+### Dashboard (Vite)
+- Uses `VITE_` prefix (required by Vite)
+- Access in code: `import.meta.env.VITE_VARIABLE_NAME`
+- Example: `import.meta.env.VITE_FIREBASE_API_KEY`
+
+### Login/Signup (Create React App)
+- Uses `REACT_APP_` prefix (required by CRA)
+- Access in code: `process.env.REACT_APP_VARIABLE_NAME`
+- Example: `process.env.REACT_APP_FIREBASE_API_KEY`
+
+## 📞 Need Help?
+
+If you encounter issues:
+1. Verify all `.env` files are created from templates
+2. Check that environment variable names match exactly
+3. Restart development servers after changing `.env` files
+4. Check browser console for Firebase errors
+5. Verify backend logs for database connection errors
+
+## 🎯 Quick Checklist for New Team Members
+
+- [ ] Copy `backend/backend/src/main/resources/application-secrets.properties.template` to `application-secrets.properties`
+- [ ] Copy `frontend/dashboard/.env.template` to `.env`
+- [ ] Copy `frontend/.env.template` to `.env`
+- [ ] Fill in all actual values (Firebase, SerpAPI, Database, Email)
+- [ ] Verify `.gitignore` excludes `.env` and `application-secrets.properties`
+- [ ] Restart all servers
+- [ ] Test login, search, and database connectivity
+- [ ] **Never commit `.env` or `application-secrets.properties` files!**
+
 ---
 
-## ✅ Verification
-
-Run these commands to verify your security:
-
-```bash
-# Check what will be committed
-git status
-
-# application.properties should NOT appear in the list
-# application.properties.template SHOULD be there
-
-# If application.properties shows up, run:
-git rm --cached backend/backend/src/main/resources/application.properties
-```
+**Remember**: Security is everyone's responsibility! 🔐
 
 ---
 

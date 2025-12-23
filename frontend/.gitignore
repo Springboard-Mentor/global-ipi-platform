@@ -11,6 +11,15 @@
 # production
 /build
 
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# Firebase Config
+src/firebase.js
+!src/firebase.js.template
+
 # misc
 .DS_Store
 .env
