@@ -10,7 +10,7 @@ import NewFilingPage from './components/NewFilingPage.jsx';
 import AnalysisPage from './components/AnalysisPage.jsx';
 import SettingsPage from './components/SettingsPage.jsx';
 import SearchResultsPage from './components/SearchResultsPage.jsx'; 
-import PatentDetailsPage from './components/PatentDetailsPage.jsx'; // <--- IMPORT THIS
+import PatentDetailsPage from './components/PatentDetailsPage.jsx'; 
 import { authAPI } from './services/ai.js';
 
 const App = () => {
@@ -30,7 +30,7 @@ const App = () => {
           const userData = await authAPI.getCurrentUser();
           setUser(userData);
           if (['landing', 'login', 'register'].includes(currentPage)) {
-             setCurrentPage('dashboard');
+            setCurrentPage('dashboard');
           }
         } catch (error) {
           console.error('Session expired:', error);
@@ -40,7 +40,7 @@ const App = () => {
       setLoading(false);
     };
     checkAuth();
-  }, []); 
+  }, []);
 
   const handleLogin = async (userData) => {
     setUser(userData);
@@ -66,11 +66,22 @@ const App = () => {
     setCurrentPage('patent-details');
   };
 
+  // --- MERGED USER UPDATE HANDLER (Keeps Team's 'bio' logic) ---
   const handleUpdateUser = (updates) => {
     if (user) {
-      const updatedUser = { ...user, ...updates };
-      setUser(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      const updatedUser = {
+        ...user,
+        ...updates,
+      };
+
+      // Preserve bio if it exists in updates, otherwise keep existing
+      const finalUser = {
+        ...updatedUser,
+        bio: updates.bio !== undefined ? updates.bio : updatedUser.bio,
+      };
+
+      setUser(finalUser);
+      localStorage.setItem('user', JSON.stringify(finalUser));
     }
   };
 
@@ -88,9 +99,9 @@ const App = () => {
       
       default:
         return (
-          <DashboardLayout 
-            user={user} 
-            onLogout={handleLogout} 
+          <DashboardLayout
+            user={user}
+            onLogout={handleLogout}
             currentPage={currentPage}
             onNavigate={handleNavigate}
           >
@@ -101,7 +112,7 @@ const App = () => {
             {currentPage === 'analysis'   && <AnalysisPage />} 
             {currentPage === 'settings'   && <SettingsPage />} 
             
-            {/* Pass the View Handler to Search Page */}
+            {/* Search Results Page (Your Task) */}
             {currentPage === 'search'     && (
               <SearchResultsPage 
                 initialKeyword={searchKeyword} 
@@ -109,7 +120,7 @@ const App = () => {
               />
             )}
 
-            {/* Render Details Page */}
+            {/* Patent Details Page (Your Task) */}
             {currentPage === 'patent-details' && (
               <PatentDetailsPage 
                 patent={selectedPatent} 

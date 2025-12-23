@@ -1,7 +1,7 @@
-// components/PatentsPage.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { Search, Filter, Download, Plus, FileText, Calendar, MapPin, Tag } from 'lucide-react';
 import { patentsAPI } from '../services/ai.js'; // Assumed to have getPatents()
+
 
 const PatentsPage = () => {
     const [patents, setPatents] = useState([]);
@@ -10,32 +10,38 @@ const PatentsPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
 
+
     // --- Data Fetching ---
+
 
     useEffect(() => {
         fetchPatents();
     }, []);
+
 
     const fetchPatents = async () => {
         try {
             setLoading(true);
             setError(null);
             // Assuming the backend returns an array of patent objects
-            const data = await patentsAPI.getPatents(); 
+            const data = await patentsAPI.getPatents();
             setPatents(data || []); // Initialize with empty array if null
         } catch (err) {
             console.error('Error fetching patents:', err);
             // Using error.message to show the API error defined in ai.js
-            setError(err.message || 'Failed to load patents. Check API service definition.'); 
+            setError(err.message || 'Failed to load patents. Check API service definition.');
         } finally {
             setLoading(false);
         }
     };
 
+
     // --- Filtering Logic (Moved to useMemo for performance) ---
+
 
     const filteredPatents = useMemo(() => {
         let filtered = patents;
+
 
         // 1. Filter by search term
         if (searchTerm) {
@@ -47,15 +53,19 @@ const PatentsPage = () => {
             );
         }
 
+
         // 2. Filter by status
         if (statusFilter !== 'All') {
             filtered = filtered.filter(patent => patent.status === statusFilter);
         }
 
+
         return filtered;
     }, [searchTerm, statusFilter, patents]);
 
+
     // --- Helper Functions ---
+
 
     const getStatusColor = (status) => {
         const colors = {
@@ -67,12 +77,15 @@ const PatentsPage = () => {
         return colors[status] || 'bg-gray-100 text-gray-800';
     };
 
+
     const uniqueStatuses = useMemo(() => {
         return ['All', ...new Set(patents.map(p => p.status).filter(Boolean))];
     }, [patents]);
 
 
+
     // --- Render Component ---
+
 
     if (loading) {
         return (
@@ -82,11 +95,13 @@ const PatentsPage = () => {
         );
     }
 
+
     // The rest of the component JSX
+
 
     return (
         <div className="space-y-6">
-            
+           
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
@@ -99,12 +114,14 @@ const PatentsPage = () => {
                 </button>
             </div>
 
+
             {/* Error Message */}
             {error && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                     <p className="text-red-700">{error}</p>
                 </div>
             )}
+
 
             {/* Filters and Search */}
             <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-6">
@@ -121,6 +138,7 @@ const PatentsPage = () => {
                         />
                     </div>
 
+
                     {/* Status Filter */}
                     <div className="sm:w-48">
                         <select
@@ -134,6 +152,7 @@ const PatentsPage = () => {
                         </select>
                     </div>
 
+
                     {/* Export Button */}
                     <button className="px-4 py-2.5 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition text-sm font-medium flex items-center gap-2">
                         <Download className="h-4 w-4" />
@@ -141,6 +160,7 @@ const PatentsPage = () => {
                     </button>
                 </div>
             </div>
+
 
             {/* Patents List */}
             <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
@@ -161,7 +181,7 @@ const PatentsPage = () => {
                             >
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="flex-1 min-w-0">
-                                        
+                                       
                                         {/* Patent Number & Status */}
                                         <div className="flex items-center gap-3 mb-2">
                                             <span className="text-sm font-mono font-semibold text-indigo-600">
@@ -172,10 +192,12 @@ const PatentsPage = () => {
                                             </span>
                                         </div>
 
+
                                         {/* Title */}
                                         <h3 className="text-lg font-semibold text-slate-900 mb-2">
                                             {patent.title || 'Untitled Invention'}
                                         </h3>
+
 
                                         {/* Meta Information */}
                                         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-slate-600">
@@ -193,6 +215,7 @@ const PatentsPage = () => {
                                             </div>
                                         </div>
                                     </div>
+
 
                                     {/* Actions */}
                                     <div className="flex items-center gap-2 flex-shrink-0">
@@ -215,6 +238,7 @@ const PatentsPage = () => {
                 )}
             </div>
 
+
             {/* Summary */}
             <div className="bg-slate-50 rounded-xl p-6 border border-slate-200">
                 <div className="flex items-center justify-between text-sm">
@@ -222,7 +246,7 @@ const PatentsPage = () => {
                         Showing {filteredPatents.length} of {patents.length} patents
                     </span>
                     <span className="text-slate-600">
-                        {patents.filter(p => p.status === 'Granted').length} Granted • 
+                        {patents.filter(p => p.status === 'Granted').length} Granted •
                         {' '}{patents.filter(p => p.status === 'Pending').length} Pending
                     </span>
                 </div>
@@ -231,4 +255,5 @@ const PatentsPage = () => {
     );
 };
 
-export default PatentsPage;
+
+export default PatentsPage; 
