@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Star, Send, CheckCircle2, MessageSquare, X } from "lucide-react";
-import emailjs from "@emailjs/browser";
 
 const FeedbackForm = ({ onClose, userProfile }) => {
   const [ratings, setRatings] = useState({
@@ -39,42 +38,49 @@ const FeedbackForm = ({ onClose, userProfile }) => {
     setSending(true);
 
     try {
-      // EmailJS configuration
-      const serviceId = "service_9h3j8kl"; // Replace with your EmailJS service ID
-      const templateId = "template_feedback"; // Replace with your EmailJS template ID
-      const publicKey = "YOUR_PUBLIC_KEY"; // Replace with your EmailJS public key
-
-      const avgRating = Object.values(ratings).reduce((a, b) => a + b, 0) / 5;
-
-      const templateParams = {
-        user_name: userProfile?.firstName + " " + userProfile?.lastName || "Anonymous",
-        user_email: userProfile?.email || "Not provided",
-        user_id: userProfile?.uid || "N/A",
-        ui_rating: ratings.userInterface,
-        performance_rating: ratings.performance,
-        features_rating: ratings.features,
-        support_rating: ratings.support,
-        overall_rating: ratings.overallExperience,
-        average_rating: avgRating.toFixed(2),
-        feedback_message: feedback || "No additional feedback provided",
-        to_email: "vikaskumaryadav068@gmail.com",
+      // Prepare feedback data for backend
+      const feedbackData = {
+        userName: userProfile?.firstName && userProfile?.lastName 
+          ? `${userProfile.firstName} ${userProfile.lastName}` 
+          : "Anonymous",
+        userEmail: userProfile?.email || "",
+        userId: userProfile?.uid || "",
+        userInterfaceRating: ratings.userInterface,
+        performanceRating: ratings.performance,
+        featuresRating: ratings.features,
+        supportRating: ratings.support,
+        overallRating: ratings.overallExperience,
+        feedbackMessage: feedback || "No additional feedback provided",
       };
 
-      await emailjs.send(serviceId, templateId, templateParams, publicKey);
-      
-      setSuccess(true);
-      setTimeout(() => {
-        setSuccess(false);
-        setRatings({
-          userInterface: 0,
-          performance: 0,
-          features: 0,
-          support: 0,
-          overallExperience: 0,
-        });
-        setFeedback("");
-        if (onClose) onClose();
-      }, 2000);
+      // Call backend API
+      const response = await fetch("http://localhost:8080/api/feedback/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(feedbackData),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setSuccess(true);
+        setTimeout(() => {
+          setSuccess(false);
+          setRatings({
+            userInterface: 0,
+            performance: 0,
+            features: 0,
+            support: 0,
+            overallExperience: 0,
+          });
+          setFeedback("");
+          if (onClose) onClose();
+        }, 2000);
+      } else {
+        alert(data.message || "Failed to send feedback. Please try again.");
+      }
     } catch (error) {
       console.error("Error sending feedback:", error);
       alert("Failed to send feedback. Please try again later.");

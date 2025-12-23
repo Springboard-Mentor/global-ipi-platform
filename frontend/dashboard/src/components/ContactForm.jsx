@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Mail, Phone, User, MessageSquare, Send, CheckCircle2, X } from "lucide-react";
-import emailjs from "@emailjs/browser";
 
 const ContactForm = ({ onClose }) => {
   const [formData, setFormData] = useState({
@@ -22,31 +21,29 @@ const ContactForm = ({ onClose }) => {
     setSending(true);
 
     try {
-      // EmailJS configuration
-      // You need to replace these with your actual EmailJS credentials
-      const serviceId = "service_9h3j8kl"; // Replace with your EmailJS service ID
-      const templateId = "template_contact"; // Replace with your EmailJS template ID
-      const publicKey = "YOUR_PUBLIC_KEY"; // Replace with your EmailJS public key
+      // Call backend API
+      const response = await fetch("http://localhost:8080/api/contact/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
 
-      const templateParams = {
-        from_name: formData.name,
-        from_email: formData.email,
-        phone: formData.phone,
-        subject: formData.subject,
-        message: formData.message,
-        to_email: "vikaskumaryadav068@gmail.com",
-      };
+      const data = await response.json();
 
-      await emailjs.send(serviceId, templateId, templateParams, publicKey);
-      
-      setSuccess(true);
-      setTimeout(() => {
-        setSuccess(false);
-        setFormData({ name: "", email: "", phone: "", subject: "", message: "" });
-        if (onClose) onClose();
-      }, 2000);
+      if (data.success) {
+        setSuccess(true);
+        setTimeout(() => {
+          setSuccess(false);
+          setFormData({ name: "", email: "", phone: "", subject: "", message: "" });
+          if (onClose) onClose();
+        }, 2000);
+      } else {
+        alert(data.message || "Failed to send message. Please try again.");
+      }
     } catch (error) {
-      console.error("Error sending email:", error);
+      console.error("Error sending contact form:", error);
       alert("Failed to send message. Please try again or email directly to vikaskumaryadav068@gmail.com");
     } finally {
       setSending(false);

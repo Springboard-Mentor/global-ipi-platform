@@ -36,6 +36,7 @@ mvnw
 mvnw.cmd
 
 # Sensitive configuration files
+**/application-secrets.properties
 **/application.properties
 !**/application.properties.template
 
@@ -52,3 +53,10 @@ mvnw.cmd
 *.tmp
 *.temp
 .cache/
+
+# API Keys and Secrets
+**/*-secrets.*
+**/secrets.*
+**/*.secret
+.credentials/
+
