@@ -6,6 +6,7 @@ import Sidebar from './components/Sidebar';
 import HeaderBar from './components/HeaderBar';
 import Dashboard from './pages/Dashboard';
 import ProfilePage from './pages/ProfilePage';
+import SettingsPage from './pages/SettingsPage';
 import SearchResultsPage from './pages/SearchResultsPage';
 import IPAssetPanel from './components/IPAssetPanel';
 import ContactForm from './components/ContactForm';
@@ -499,10 +500,14 @@ const App = () => {
                 }} 
               />
             ) : currentPage === 'settings' ? (
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <h2 className="text-2xl font-bold text-gray-800 mb-4">Settings</h2>
-                <p className="text-gray-600">Settings functionality coming soon...</p>
-              </div>
+              <SettingsPage 
+                userProfile={userProfile}
+                setUserProfile={setUserProfile}
+                onBack={() => {
+                  setCurrentPage('dashboard');
+                  setActiveItem('dashboard');
+                }} 
+              />
             ) : (
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
                 <div className="xl:col-span-2">

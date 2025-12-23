@@ -1,0 +1,689 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Lock, Key, Activity, LogOut, Bell, Palette, Globe, FileText, 
+  HelpCircle, Trash, CreditCard, Download, Moon, Sun, Settings, Clock, 
+  AlertCircle, Calendar, Crown, Shield, User
+} from 'lucide-react';
+import { db, auth } from '../firebase';
+import { doc, updateDoc, serverTimestamp, getDoc, deleteDoc } from 'firebase/firestore';
+import { ref, deleteObject } from 'firebase/storage';
+import { updatePassword, reauthenticateWithCredential, EmailAuthProvider, signOut } from 'firebase/auth';
+import { storage } from '../firebase';
+
+const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
+  const [activeTab, setActiveTab] = useState('security');
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [notificationSettings, setNotificationSettings] = useState({
+    emailNotifications: true,
+    paymentAlerts: true,
+    searchAlerts: false,
+    systemAnnouncements: true
+  });
+  const [preferences, setPreferences] = useState({
+    theme: 'light',
+    language: 'en',
+    timezone: 'Asia/Kolkata'
+  });
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const currentUID = auth.currentUser?.uid || userProfile?.uid;
+
+  // Load settings from Firestore
+  useEffect(() => {
+    const loadSettings = async () => {
+      if (!currentUID) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const userDocRef = doc(db, 'users', currentUID);
+        const userDocSnap = await getDoc(userDocRef);
+        
+        if (userDocSnap.exists()) {
+          const data = userDocSnap.data();
+          
+          if (data.notificationSettings) {
+            setNotificationSettings(data.notificationSettings);
+          }
+          
+          if (data.preferences) {
+            setPreferences(data.preferences);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading settings:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadSettings();
+  }, [currentUID]);
+
+  // Security Settings Handlers
+  const handleChangePassword = async () => {
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      alert('New passwords do not match!');
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      alert('Password must be at least 6 characters long');
+      return;
+    }
+
+    try {
+      const user = auth.currentUser;
+      const credential = EmailAuthProvider.credential(user.email, passwordData.currentPassword);
+      
+      await reauthenticateWithCredential(user, credential);
+      await updatePassword(user, passwordData.newPassword);
+      
+      alert('Password changed successfully!');
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (error) {
+      console.error('Error changing password:', error);
+      if (error.code === 'auth/wrong-password') {
+        alert('Current password is incorrect');
+      } else {
+        alert('Error: ' + error.message);
+      }
+    }
+  };
+
+  const handleLogoutAllDevices = async () => {
+    if (!confirm('This will log you out from all devices. Continue?')) return;
+    
+    try {
+      await signOut(auth);
+      window.location.href = '/';
+    } catch (error) {
+      alert('Error: ' + error.message);
+    }
+  };
+
+  // Notification Settings Handler
+  const handleSaveNotifications = async () => {
+    try {
+      const userRef = doc(db, 'users', currentUID);
+      await updateDoc(userRef, {
+        notificationSettings: notificationSettings,
+        updatedAt: serverTimestamp()
+      });
+      alert('Notification settings saved!');
+    } catch (error) {
+      alert('Error saving settings: ' + error.message);
+    }
+  };
+
+  // Preferences Handler
+  const handleSavePreferences = async () => {
+    try {
+      const userRef = doc(db, 'users', currentUID);
+      await updateDoc(userRef, {
+        preferences: preferences,
+        updatedAt: serverTimestamp()
+      });
+      
+      // Apply theme
+      if (preferences.theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+      
+      alert('Preferences saved!');
+    } catch (error) {
+      alert('Error saving preferences: ' + error.message);
+    }
+  };
+
+  // Account Management
+  const handleDeactivateAccount = async () => {
+    if (!confirm('Are you sure you want to deactivate your account? You can reactivate it by logging in again.')) return;
+    
+    try {
+      const userRef = doc(db, 'users', currentUID);
+      await updateDoc(userRef, {
+        accountStatus: 'deactivated',
+        deactivatedAt: serverTimestamp()
+      });
+      await signOut(auth);
+      window.location.href = '/';
+    } catch (error) {
+      alert('Error: ' + error.message);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!showDeleteConfirm) {
+      setShowDeleteConfirm(true);
+      return;
+    }
+
+    try {
+      // Delete user data from Firestore
+      await deleteDoc(doc(db, 'users', currentUID));
+      
+      // Delete user's photos from Storage
+      try {
+        const photoRef = ref(storage, `users/${currentUID}/profile.jpg`);
+        await deleteObject(photoRef);
+      } catch (e) {
+        console.log('No photos to delete');
+      }
+      
+      // Delete auth account
+      await auth.currentUser.delete();
+      
+      alert('Account deleted successfully');
+      window.location.href = '/';
+    } catch (error) {
+      alert('Error: ' + error.message);
+    }
+  };
+
+  const tabs = [
+    { id: 'security', label: 'Security', icon: Shield },
+    { id: 'subscription', label: 'Subscription', icon: CreditCard },
+    { id: 'notifications', label: 'Notifications', icon: Bell },
+    { id: 'preferences', label: 'Preferences', icon: Settings },
+    { id: 'legal', label: 'Legal & Support', icon: FileText },
+    { id: 'account', label: 'Account Management', icon: AlertCircle }
+  ];
+
+  // Render Security Tab Content
+  const renderSecurityTab = () => (
+    <div className="space-y-6">
+      {/* Change Password */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <Lock className="text-blue-500" size={24} />
+          <h3 className="text-lg font-semibold text-gray-800">Change Password</h3>
+        </div>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
+            <input
+              type="password"
+              value={passwordData.currentPassword}
+              onChange={(e) => setPasswordData({...passwordData, currentPassword: e.target.value})}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter current password"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+            <input
+              type="password"
+              value={passwordData.newPassword}
+              onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter new password (min 6 characters)"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
+            <input
+              type="password"
+              value={passwordData.confirmPassword}
+              onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              placeholder="Confirm new password"
+            />
+          </div>
+          
+          <button
+            onClick={handleChangePassword}
+            className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+          >
+            Change Password
+          </button>
+        </div>
+      </div>
+
+      {/* Login Activity */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <Activity className="text-green-500" size={24} />
+          <h3 className="text-lg font-semibold text-gray-800">Login Activity</h3>
+        </div>
+        
+        <div className="space-y-3">
+          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div>
+              <p className="font-medium text-gray-800">Last Login</p>
+              <p className="text-sm text-gray-500">
+                {userProfile?.lastSignInTime ? new Date(userProfile.lastSignInTime).toLocaleString() : 'N/A'}
+              </p>
+            </div>
+            <Clock className="text-gray-400" size={20} />
+          </div>
+          
+          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div>
+              <p className="font-medium text-gray-800">Account Created</p>
+              <p className="text-sm text-gray-500">
+                {userProfile?.creationTime ? new Date(userProfile.creationTime).toLocaleString() : 'N/A'}
+              </p>
+            </div>
+            <Calendar className="text-gray-400" size={20} />
+          </div>
+        </div>
+      </div>
+
+      {/* Logout All Devices */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <LogOut className="text-red-500" size={24} />
+          <h3 className="text-lg font-semibold text-gray-800">Session Management</h3>
+        </div>
+        
+        <p className="text-gray-600 mb-4">Log out from all devices where you're currently signed in.</p>
+        <button
+          onClick={handleLogoutAllDevices}
+          className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+        >
+          Logout from All Devices
+        </button>
+      </div>
+    </div>
+  );
+
+  // Render Subscription Tab Content
+  const renderSubscriptionTab = () => {
+    const subscriptionType = userProfile?.subscriptionType || 'basic';
+    const subscriptionPrice = userProfile?.subscriptionPrice || 0;
+    const endDate = userProfile?.subscriptionEndDate ? 
+      (userProfile.subscriptionEndDate.toDate ? userProfile.subscriptionEndDate.toDate() : new Date(userProfile.subscriptionEndDate)) : 
+      null;
+    const daysLeft = endDate ? Math.ceil((endDate - new Date()) / (1000 * 60 * 60 * 24)) : 0;
+
+    return (
+      <div className="space-y-6">
+        {/* Current Plan */}
+        <div className="bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <Crown size={32} />
+              <div>
+                <h3 className="text-2xl font-bold capitalize">{subscriptionType} Plan</h3>
+                <p className="text-blue-100">Currently Active</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-3xl font-bold">₹{subscriptionPrice}</p>
+              <p className="text-blue-100">/month</p>
+            </div>
+          </div>
+          
+          {endDate && (
+            <div className="bg-white/20 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-blue-100">Next Billing Date</p>
+                  <p className="font-semibold">{endDate.toLocaleDateString()}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-blue-100">Days Remaining</p>
+                  <p className="font-bold text-2xl">{daysLeft}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Payment History */}
+        <div className="bg-white border border-gray-200 rounded-xl p-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <CreditCard className="text-green-500" size={24} />
+            Payment History
+          </h3>
+          
+          {userProfile?.lastPayment ? (
+            <div className="space-y-3">
+              <div className="flex justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div>
+                  <p className="font-medium text-gray-800">Last Payment</p>
+                  <p className="text-sm text-gray-500">
+                    ₹{userProfile.lastPayment.amount} {userProfile.lastPayment.currency}
+                  </p>
+                </div>
+                <span className="px-3 py-1 bg-green-500 text-white text-sm rounded-full h-fit">Success</span>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-500">Payment ID</p>
+                  <p className="font-mono text-xs text-gray-800 break-all">{userProfile.lastPayment.razorpayPaymentId}</p>
+                </div>
+                
+                {userProfile.lastPayment.razorpayOrderId && (
+                  <div>
+                    <p className="text-gray-500">Order ID</p>
+                    <p className="font-mono text-xs text-gray-800 break-all">{userProfile.lastPayment.razorpayOrderId}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <p className="text-gray-500">No payment history available</p>
+          )}
+        </div>
+
+        {/* Upgrade/Cancel Options */}
+        <div className="bg-white border border-gray-200 rounded-xl p-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Manage Subscription</h3>
+          <div className="space-y-3">
+            <button className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:shadow-lg transition">
+              Upgrade Plan
+            </button>
+            <button className="w-full px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+              Cancel Subscription
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render Notifications Tab Content
+  const renderNotificationsTab = () => (
+    <div className="space-y-6">
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          <Bell className="text-blue-500" size={24} />
+          Notification Preferences
+        </h3>
+        
+        <div className="space-y-4">
+          {[
+            { key: 'emailNotifications', label: 'Email Notifications', desc: 'Receive updates via email' },
+            { key: 'paymentAlerts', label: 'Payment Alerts', desc: 'Get notified about payments and billing' },
+            { key: 'searchAlerts', label: 'Search Alerts', desc: 'Alerts for new search results' },
+            { key: 'systemAnnouncements', label: 'System Announcements', desc: 'Important platform updates' }
+          ].map(({ key, label, desc }) => (
+            <div key={key} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div>
+                <p className="font-medium text-gray-800">{label}</p>
+                <p className="text-sm text-gray-500">{desc}</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={notificationSettings[key]}
+                  onChange={(e) => setNotificationSettings({...notificationSettings, [key]: e.target.checked})}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+          ))}
+        </div>
+        
+        <button
+          onClick={handleSaveNotifications}
+          className="mt-6 px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+        >
+          Save Notification Settings
+        </button>
+      </div>
+    </div>
+  );
+
+  // Render Preferences Tab Content
+  const renderPreferencesTab = () => (
+    <div className="space-y-6">
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          <Palette className="text-purple-500" size={24} />
+          App Preferences
+        </h3>
+        
+        <div className="space-y-4">
+          {/* Theme */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Theme</label>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setPreferences({...preferences, theme: 'light'})}
+                className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition ${
+                  preferences.theme === 'light' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+                }`}
+              >
+                <Sun size={20} />
+                Light
+              </button>
+              <button
+                onClick={() => setPreferences({...preferences, theme: 'dark'})}
+                className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition ${
+                  preferences.theme === 'dark' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'
+                }`}
+              >
+                <Moon size={20} />
+                Dark
+              </button>
+            </div>
+          </div>
+
+          {/* Language */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Language</label>
+            <select
+              value={preferences.language}
+              onChange={(e) => setPreferences({...preferences, language: e.target.value})}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="en">English</option>
+              <option value="hi">हिन्दी (Hindi)</option>
+            </select>
+          </div>
+
+          {/* Timezone */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Timezone</label>
+            <select
+              value={preferences.timezone}
+              onChange={(e) => setPreferences({...preferences, timezone: e.target.value})}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
+              <option value="America/New_York">America/New York (EST)</option>
+              <option value="Europe/London">Europe/London (GMT)</option>
+              <option value="Asia/Dubai">Asia/Dubai (GST)</option>
+            </select>
+          </div>
+        </div>
+        
+        <button
+          onClick={handleSavePreferences}
+          className="mt-6 px-6 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition"
+        >
+          Save Preferences
+        </button>
+      </div>
+    </div>
+  );
+
+  // Render Legal & Support Tab Content
+  const renderLegalTab = () => (
+    <div className="space-y-6">
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          <FileText className="text-blue-500" size={24} />
+          Legal Documents
+        </h3>
+        
+        <div className="space-y-3">
+          <a href="#" className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+            <span className="font-medium text-gray-800">Terms & Conditions</span>
+            <Download size={18} className="text-gray-500" />
+          </a>
+          <a href="#" className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+            <span className="font-medium text-gray-800">Privacy Policy</span>
+            <Download size={18} className="text-gray-500" />
+          </a>
+        </div>
+      </div>
+
+      <div className="bg-white border border-gray-200 rounded-xl p-6">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          <HelpCircle className="text-green-500" size={24} />
+          Help & Support
+        </h3>
+        
+        <div className="space-y-3">
+          <a href="#" className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+            <span className="font-medium text-gray-800">FAQ / Help Center</span>
+          </a>
+          <a href="#" className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+            <span className="font-medium text-gray-800">Contact Support</span>
+          </a>
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-gray-600">Version: 1.0.0</p>
+            <p className="text-sm text-gray-600">© 2025 Global IP Intelligence Platform</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Render Account Management Tab Content
+  const renderAccountTab = () => (
+    <div className="space-y-6">
+      <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+          <AlertCircle className="text-yellow-500" size={24} />
+          Danger Zone
+        </h3>
+        
+        <div className="space-y-4">
+          <div className="bg-white border border-gray-300 rounded-lg p-4">
+            <h4 className="font-semibold text-gray-800 mb-2">Deactivate Account</h4>
+            <p className="text-sm text-gray-600 mb-3">Temporarily disable your account. You can reactivate it anytime by logging in.</p>
+            <button
+              onClick={handleDeactivateAccount}
+              className="px-6 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition"
+            >
+              Deactivate Account
+            </button>
+          </div>
+
+          <div className="bg-red-50 border border-red-300 rounded-lg p-4">
+            <h4 className="font-semibold text-gray-800 mb-2">Delete Account</h4>
+            <p className="text-sm text-gray-600 mb-3">
+              Permanently delete your account and all associated data. This action cannot be undone.
+            </p>
+            
+            {!showDeleteConfirm ? (
+              <button
+                onClick={handleDeleteAccount}
+                className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+              >
+                Delete Account
+              </button>
+            ) : (
+              <div className="space-y-3">
+                <p className="font-semibold text-red-600">Are you absolutely sure? This cannot be undone!</p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleDeleteAccount}
+                    className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                  >
+                    Yes, Delete My Account
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (isLoading) {
+    return (
+      <div className="max-w-6xl mx-auto">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent mr-3"></div>
+            <p className="text-blue-800">Loading settings...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-6xl mx-auto">
+      <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
+        {/* Header */}
+        <div className="bg-gradient-to-br from-blue-500 to-purple-600 px-8 py-10 text-white">
+          <button
+            onClick={onBack}
+            className="mb-6 text-white/80 hover:text-white flex items-center gap-2"
+          >
+            ← Back to Dashboard
+          </button>
+
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+              <Settings size={32} />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold">Settings</h1>
+              <p className="text-blue-100 mt-1">Manage your account settings and preferences</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs Navigation */}
+        <div className="border-b border-gray-200 bg-gray-50 px-6 overflow-x-auto">
+          <div className="flex gap-2 min-w-max">
+            {tabs.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => setActiveTab(id)}
+                className={`flex items-center gap-2 px-4 py-3 border-b-2 transition whitespace-nowrap ${
+                  activeTab === id 
+                    ? 'border-blue-500 text-blue-600 font-semibold' 
+                    : 'border-transparent text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                <Icon size={18} />
+                <span className="hidden sm:inline">{label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        <div className="p-6">
+          {activeTab === 'security' && renderSecurityTab()}
+          {activeTab === 'subscription' && renderSubscriptionTab()}
+          {activeTab === 'notifications' && renderNotificationsTab()}
+          {activeTab === 'preferences' && renderPreferencesTab()}
+          {activeTab === 'legal' && renderLegalTab()}
+          {activeTab === 'account' && renderAccountTab()}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default SettingsPage;
