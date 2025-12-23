@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import GoogleMap from "../../GoogleMap";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 
 const IPDetails = () => {
@@ -199,6 +200,8 @@ const IPDetails = () => {
             <span className="text-white">Inventor(s):</span> {ip.inventor}
           </p>
         )}
+
+        {/* Location removed from details view per user request */}
       </div>
 
       {/* Bottom Section */}

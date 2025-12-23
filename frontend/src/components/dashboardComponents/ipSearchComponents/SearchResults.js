@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import GoogleMap from "../../GoogleMap";
 
 const SearchResults = () => {
   const navigate = useNavigate();
@@ -509,182 +510,53 @@ const MapView = ({ results, searchType }) => {
     return acc;
   }, {});
 
-  // Map coordinates for different jurisdictions
+  // Map coordinates for different jurisdictions (real lat/lng used for markers)
   const jurisdictionCoordinates = {
-    "United States": { top: "45%", left: "20%" },
-    "European Union": { top: "35%", left: "48%" },
-    China: { top: "42%", left: "70%" },
-    Japan: { top: "38%", left: "78%" },
-    "South Korea": { top: "40%", left: "76%" },
-    India: { top: "50%", left: "65%" },
-    Canada: { top: "30%", left: "22%" },
-    Australia: { top: "75%", left: "75%" },
-    "United Kingdom": { top: "32%", left: "46%" },
-    Germany: { top: "33%", left: "50%" },
+    "United States": { lat: 37.0902, lng: -95.7129 },
+    "European Union": { lat: 50.1109, lng: 8.6821 },
+    China: { lat: 35.8617, lng: 104.1954 },
+    Japan: { lat: 36.2048, lng: 138.2529 },
+    "South Korea": { lat: 36.5, lng: 127.5 },
+    India: { lat: 20.5937, lng: 78.9629 },
+    Canada: { lat: 56.1304, lng: -106.3468 },
+    Australia: { lat: -25.2744, lng: 133.7751 },
+    "United Kingdom": { lat: 55.3781, lng: -3.4360 },
+    Germany: { lat: 51.1657, lng: 10.4515 },
   };
+
+  // Build markers array for GoogleMap
+  const markers = Object.entries(groupedByJurisdiction)
+    .map(([jurisdiction, items]) => {
+      const coords = jurisdictionCoordinates[jurisdiction];
+      if (!coords) return null;
+      return {
+        jurisdiction,
+        lat: coords.lat,
+        lng: coords.lng,
+        count: items.length,
+        info: `<div style="font-family: Arial, sans-serif;"><strong>${jurisdiction}</strong><div>${items.length} ${searchType}(s)</div></div>`,
+      };
+    })
+    .filter(Boolean);
 
   return (
     <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
       <div className="mb-4 flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-white">
-          Geographic Distribution
-        </h3>
-        <div className="text-sm text-gray-300">
-          {Object.keys(groupedByJurisdiction).length} jurisdictions
-        </div>
+        <h3 className="text-lg font-semibold text-white">Geographic Distribution</h3>
+        <div className="text-sm text-gray-300">{Object.keys(groupedByJurisdiction).length} jurisdictions</div>
       </div>
 
-      <div className="relative h-[600px] bg-gradient-to-br from-indigo-950/80 via-purple-900/60 to-slate-900/80 rounded-xl overflow-hidden">
-        {/* World map background representation */}
+      <div className="relative h-[600px] rounded-xl overflow-hidden">
+        {/* Google Map fills the container */}
         <div className="absolute inset-0">
-          {/* Continents as blurred shapes */}
-          <div className="absolute w-[30%] h-[50%] bg-white/5 rounded-full blur-3xl top-[25%] left-[15%]" />
-          <div className="absolute w-[25%] h-[40%] bg-white/5 rounded-full blur-3xl top-[20%] left-[42%]" />
-          <div className="absolute w-[35%] h-[45%] bg-white/5 rounded-full blur-3xl top-[30%] left-[60%]" />
-          <div className="absolute w-[20%] h-[30%] bg-white/5 rounded-full blur-3xl top-[60%] left-[70%]" />
-        </div>
-
-        {/* Markers for each jurisdiction */}
-        {Object.entries(groupedByJurisdiction).map(([jurisdiction, items]) => {
-          const coords = jurisdictionCoordinates[jurisdiction] || {
-            top: "50%",
-            left: "50%",
-          };
-          const isSelected = selectedMarker === jurisdiction;
-
-          return (
-            <div
-              key={jurisdiction}
-              className="absolute transform -translate-x-1/2 -translate-y-1/2"
-              style={{ top: coords.top, left: coords.left }}
-            >
-              {/* Marker */}
-              <button
-                onClick={() =>
-                  setSelectedMarker(isSelected ? null : jurisdiction)
-                }
-                className="relative group"
-              >
-                {/* Pulse animation */}
-                <span className="absolute inset-0 w-8 h-8 bg-blue-500 rounded-full animate-ping opacity-30"></span>
-
-                {/* Main marker */}
-                <div
-                  className={`relative w-8 h-8 rounded-full flex items-center justify-center transition-all ${
-                    isSelected
-                      ? "bg-yellow-500 scale-125"
-                      : "bg-blue-500 hover:bg-blue-400"
-                  } shadow-lg`}
-                >
-                  <span className="text-white text-xs font-bold">
-                    {items.length}
-                  </span>
-                </div>
-
-                {/* Hover tooltip */}
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                  <div className="bg-black/90 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap">
-                    {jurisdiction}
-                    <div className="text-gray-300">
-                      {items.length} {searchType}(s)
-                    </div>
-                  </div>
-                </div>
-              </button>
-
-              {/* Detailed popup when selected */}
-              {isSelected && (
-                <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 z-50">
-                  <div className="bg-white/95 backdrop-blur-md rounded-xl p-4 shadow-2xl border border-white/20 w-80 max-h-96 overflow-y-auto">
-                    <div className="flex justify-between items-center mb-3">
-                      <h4 className="font-semibold text-gray-900">
-                        {jurisdiction}
-                      </h4>
-                      <button
-                        onClick={() => {
-                          setSelectedMarker(null);
-                          setExpandedMarker(null);
-                        }}
-                        className="text-gray-500 hover:text-gray-700"
-                      >
-                        <svg
-                          className="h-5 w-5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
-                      </button>
-                    </div>
-
-                    <div className="text-sm text-gray-600 mb-3">
-                      {items.length} {searchType}
-                      {items.length !== 1 ? "s" : ""} found
-                    </div>
-
-                    <div className="space-y-2 max-h-64 overflow-y-auto">
-                      {(expandedMarker === jurisdiction
-                        ? items
-                        : items.slice(0, 5)
-                      ).map((item) => (
-                        <div
-                          key={item.id}
-                          className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                        >
-                          <div className="font-medium text-gray-900 text-sm mb-1 line-clamp-1">
-                            {item.title}
-                          </div>
-                          <div className="flex items-center gap-2 text-xs">
-                            <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded">
-                              {item.number}
-                            </span>
-                            <span
-                              className={`px-2 py-0.5 rounded ${
-                                item.status === "Granted" ||
-                                item.status === "Active"
-                                  ? "bg-green-100 text-green-700"
-                                  : item.status === "Pending"
-                                  ? "bg-yellow-100 text-yellow-700"
-                                  : "bg-gray-100 text-gray-700"
-                              }`}
-                            >
-                              {item.status}
-                            </span>
-                          </div>
-                          <div className="text-xs text-gray-600 mt-1">
-                            {item.assignee} • {item.date}
-                          </div>
-                        </div>
-                      ))}
-                      {items.length > 5 && expandedMarker !== jurisdiction && (
-                        <button
-                          onClick={() => setExpandedMarker(jurisdiction)}
-                          className="w-full text-center text-xs text-blue-600 hover:text-blue-800 py-2 hover:bg-blue-50 rounded transition-colors"
-                        >
-                          +{items.length - 5} more results (click to show all)
-                        </button>
-                      )}
-                      {expandedMarker === jurisdiction && items.length > 5 && (
-                        <button
-                          onClick={() => setExpandedMarker(null)}
-                          className="w-full text-center text-xs text-gray-600 hover:text-gray-800 py-2 hover:bg-gray-50 rounded transition-colors"
-                        >
-                          Show less
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
+          {markers.length ? (
+            <GoogleMap markers={markers} zoom={2} />
+          ) : (
+            <div className="w-full h-full bg-gradient-to-br from-indigo-950/80 via-purple-900/60 to-slate-900/80 flex items-center justify-center text-gray-400">
+              No geographic data available
             </div>
-          );
-        })}
+          )}
+        </div>
 
         {/* Legend */}
         <div className="absolute bottom-4 left-4 bg-black/80 backdrop-blur-md rounded-lg p-4 text-white">
@@ -698,9 +570,7 @@ const MapView = ({ results, searchType }) => {
               <div className="w-4 h-4 bg-yellow-500 rounded-full"></div>
               <span>Selected marker</span>
             </div>
-            <div className="text-gray-300 mt-2">
-              Click markers to view details
-            </div>
+            <div className="text-gray-300 mt-2">Click markers to view details</div>
           </div>
         </div>
 
@@ -712,10 +582,7 @@ const MapView = ({ results, searchType }) => {
               Total Results: <span className="font-bold">{results.length}</span>
             </div>
             <div>
-              Jurisdictions:{" "}
-              <span className="font-bold">
-                {Object.keys(groupedByJurisdiction).length}
-              </span>
+              Jurisdictions: <span className="font-bold">{Object.keys(groupedByJurisdiction).length}</span>
             </div>
             <div>
               Type: <span className="font-bold capitalize">{searchType}</span>
