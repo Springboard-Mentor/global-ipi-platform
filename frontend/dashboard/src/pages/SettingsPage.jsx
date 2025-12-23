@@ -133,13 +133,6 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
         updatedAt: serverTimestamp()
       });
       
-      // Apply theme
-      if (preferences.theme === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-      
       alert('Preferences saved!');
     } catch (error) {
       alert('Error saving preferences: ' + error.message);
@@ -147,6 +140,15 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
       setIsSaving(false);
     }
   };
+
+  // Apply theme whenever preferences.theme changes
+  useEffect(() => {
+    if (preferences.theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [preferences.theme]);
 
   // Handle Enter key press
   const handleKeyPress = (e) => {
@@ -213,49 +215,54 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
   const renderSecurityTab = () => (
     <div className="space-y-6">
       {/* Change Password */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <Lock className="text-blue-500" size={24} />
-          <h3 className="text-lg font-semibold text-gray-800">Change Password</h3>
+      <div className="bg-gradient-to-br from-white to-blue-50 border-2 border-blue-200 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-3 bg-blue-100 rounded-xl">
+            <Lock className="text-blue-600" size={24} />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-gray-800">Change Password</h3>
+            <p className="text-sm text-gray-500">Update your account password</p>
+          </div>
         </div>
         
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Current Password</label>
             <input
               type="password"
               value={passwordData.currentPassword}
               onChange={(e) => setPasswordData({...passwordData, currentPassword: e.target.value})}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               placeholder="Enter current password"
             />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">New Password</label>
             <input
               type="password"
               value={passwordData.newPassword}
               onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               placeholder="Enter new password (min 6 characters)"
             />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Confirm New Password</label>
             <input
               type="password"
               value={passwordData.confirmPassword}
               onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
               placeholder="Confirm new password"
             />
           </div>
           
           <button
             onClick={handleChangePassword}
-            className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+            className="px-8 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-300 font-bold shadow-lg hover:shadow-xl hover:scale-105"
           >
             Change Password
           </button>
@@ -263,46 +270,56 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
       </div>
 
       {/* Login Activity */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <Activity className="text-green-500" size={24} />
-          <h3 className="text-lg font-semibold text-gray-800">Login Activity</h3>
+      <div className="bg-gradient-to-br from-white to-green-50 border-2 border-green-200 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-3 bg-green-100 rounded-xl">
+            <Activity className="text-green-600" size={24} />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-gray-800">Login Activity</h3>
+            <p className="text-sm text-gray-500">Track your account access</p>
+          </div>
         </div>
         
         <div className="space-y-3">
-          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-white/70 backdrop-blur-sm rounded-xl border border-green-100 hover:border-green-300 transition-all">
             <div>
-              <p className="font-medium text-gray-800">Last Login</p>
-              <p className="text-sm text-gray-500">
+              <p className="font-semibold text-gray-800">Last Login</p>
+              <p className="text-sm text-gray-600">
                 {userProfile?.lastSignInTime ? new Date(userProfile.lastSignInTime).toLocaleString() : 'N/A'}
               </p>
             </div>
-            <Clock className="text-gray-400" size={20} />
+            <Clock className="text-green-500" size={24} />
           </div>
           
-          <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-white/70 backdrop-blur-sm rounded-xl border border-green-100 hover:border-green-300 transition-all">
             <div>
-              <p className="font-medium text-gray-800">Account Created</p>
-              <p className="text-sm text-gray-500">
+              <p className="font-semibold text-gray-800">Account Created</p>
+              <p className="text-sm text-gray-600">
                 {userProfile?.creationTime ? new Date(userProfile.creationTime).toLocaleString() : 'N/A'}
               </p>
             </div>
-            <Calendar className="text-gray-400" size={20} />
+            <Calendar className="text-green-500" size={24} />
           </div>
         </div>
       </div>
 
       {/* Logout All Devices */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
+      <div className="bg-gradient-to-br from-white to-red-50 border-2 border-red-200 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300">
         <div className="flex items-center gap-3 mb-4">
-          <LogOut className="text-red-500" size={24} />
-          <h3 className="text-lg font-semibold text-gray-800">Session Management</h3>
+          <div className="p-3 bg-red-100 rounded-xl">
+            <LogOut className="text-red-600" size={24} />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-gray-800">Session Management</h3>
+            <p className="text-sm text-gray-500">Control your active sessions</p>
+          </div>
         </div>
         
         <p className="text-gray-600 mb-4">Log out from all devices where you're currently signed in.</p>
         <button
           onClick={handleLogoutAllDevices}
-          className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+          className="px-8 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-300 font-bold shadow-lg hover:shadow-xl hover:scale-105"
         >
           Logout from All Devices
         </button>
@@ -410,23 +427,31 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
   // Render Notifications Tab Content
   const renderNotificationsTab = () => (
     <div className="space-y-6">
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-          <Bell className="text-blue-500" size={24} />
-          Notification Preferences
-        </h3>
+      <div className="bg-gradient-to-br from-white to-purple-50 border-2 border-purple-200 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-3 bg-purple-100 rounded-xl">
+            <Bell className="text-purple-600" size={24} />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-gray-800">Notification Preferences</h3>
+            <p className="text-sm text-gray-500">Manage how you receive updates</p>
+          </div>
+        </div>
         
         <div className="space-y-4">
           {[
-            { key: 'emailNotifications', label: 'Email Notifications', desc: 'Receive updates via email' },
-            { key: 'paymentAlerts', label: 'Payment Alerts', desc: 'Get notified about payments and billing' },
-            { key: 'searchAlerts', label: 'Search Alerts', desc: 'Alerts for new search results' },
-            { key: 'systemAnnouncements', label: 'System Announcements', desc: 'Important platform updates' }
-          ].map(({ key, label, desc }) => (
-            <div key={key} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <div>
-                <p className="font-medium text-gray-800">{label}</p>
-                <p className="text-sm text-gray-500">{desc}</p>
+            { key: 'emailNotifications', label: 'Email Notifications', desc: 'Receive updates via email', icon: '📧' },
+            { key: 'paymentAlerts', label: 'Payment Alerts', desc: 'Get notified about payments and billing', icon: '💳' },
+            { key: 'searchAlerts', label: 'Search Alerts', desc: 'Alerts for new search results', icon: '🔍' },
+            { key: 'systemAnnouncements', label: 'System Announcements', desc: 'Important platform updates', icon: '📢' }
+          ].map(({ key, label, desc, icon }) => (
+            <div key={key} className="flex items-center justify-between p-4 bg-white/70 backdrop-blur-sm rounded-xl border-2 border-purple-100 hover:border-purple-300 transition-all">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{icon}</span>
+                <div>
+                  <p className="font-semibold text-gray-800">{label}</p>
+                  <p className="text-sm text-gray-600">{desc}</p>
+                </div>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
@@ -443,7 +468,7 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
         
         <button
           onClick={handleSaveNotifications}
-          className="mt-6 px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
+          className="mt-6 px-8 py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl hover:from-purple-600 hover:to-purple-700 transition-all duration-300 font-bold shadow-lg hover:shadow-xl hover:scale-105"
         >
           Save Notification Settings
         </button>
@@ -577,50 +602,55 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
   // Render Account Management Tab Content
   const renderAccountTab = () => (
     <div className="space-y-6">
-      <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-          <AlertCircle className="text-yellow-500" size={24} />
-          Danger Zone
-        </h3>
+      <div className="bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-300 rounded-2xl p-6 shadow-lg">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-3 bg-yellow-100 rounded-xl">
+            <AlertCircle className="text-yellow-600" size={28} />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-gray-800">Danger Zone</h3>
+            <p className="text-sm text-gray-600">Proceed with caution</p>
+          </div>
+        </div>
         
         <div className="space-y-4">
-          <div className="bg-white border border-gray-300 rounded-lg p-4">
-            <h4 className="font-semibold text-gray-800 mb-2">Deactivate Account</h4>
-            <p className="text-sm text-gray-600 mb-3">Temporarily disable your account. You can reactivate it anytime by logging in.</p>
+          <div className="bg-white border-2 border-yellow-300 rounded-xl p-5 hover:shadow-md transition-all">
+            <h4 className="font-bold text-gray-800 mb-2 text-lg">Deactivate Account</h4>
+            <p className="text-sm text-gray-600 mb-4">Temporarily disable your account. You can reactivate it anytime by logging in.</p>
             <button
               onClick={handleDeactivateAccount}
-              className="px-6 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition"
+              className="px-6 py-2.5 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-xl hover:from-yellow-600 hover:to-orange-600 transition-all duration-300 font-bold shadow-md hover:shadow-lg"
             >
               Deactivate Account
             </button>
           </div>
 
-          <div className="bg-red-50 border border-red-300 rounded-lg p-4">
-            <h4 className="font-semibold text-gray-800 mb-2">Delete Account</h4>
-            <p className="text-sm text-gray-600 mb-3">
-              Permanently delete your account and all associated data. This action cannot be undone.
+          <div className="bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-400 rounded-xl p-5 hover:shadow-md transition-all">
+            <h4 className="font-bold text-red-800 mb-2 text-lg">Delete Account</h4>
+            <p className="text-sm text-red-700 mb-4 font-medium">
+              ⚠️ Permanently delete your account and all associated data. This action cannot be undone!
             </p>
             
             {!showDeleteConfirm ? (
               <button
                 onClick={handleDeleteAccount}
-                className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+                className="px-6 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-300 font-bold shadow-md hover:shadow-lg"
               >
                 Delete Account
               </button>
             ) : (
               <div className="space-y-3">
-                <p className="font-semibold text-red-600">Are you absolutely sure? This cannot be undone!</p>
+                <p className="font-bold text-red-700 bg-red-200 p-3 rounded-lg border-2 border-red-400">⚠️ Are you absolutely sure? This cannot be undone!</p>
                 <div className="flex gap-3">
                   <button
                     onClick={handleDeleteAccount}
-                    className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl hover:from-red-700 hover:to-red-800 transition-all duration-300 font-bold shadow-lg hover:shadow-xl"
                   >
                     Yes, Delete My Account
                   </button>
                   <button
                     onClick={() => setShowDeleteConfirm(false)}
-                    className="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition"
+                    className="flex-1 px-6 py-3 bg-gray-300 text-gray-700 rounded-xl hover:bg-gray-400 transition-all font-bold"
                   >
                     Cancel
                   </button>

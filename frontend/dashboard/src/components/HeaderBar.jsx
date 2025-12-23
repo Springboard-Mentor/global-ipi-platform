@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Menu, Search, Bell, Crown, Zap, Calendar, Clock, X, Shield } from 'lucide-react';
 
 const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, currentPage, sidebarOpen, notifications = [], onDismissNotification }) => {
   const [query, setQuery] = useState('');
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
   const [showNotifications, setShowNotifications] = useState(false);
+  const notificationRef = useRef(null);
 
   useEffect(() => {
     if (currentPage === 'dashboard') {
@@ -20,6 +21,23 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
 
     return () => clearInterval(timer);
   }, []);
+
+  // Close notifications when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setShowNotifications(false);
+      }
+    };
+
+    if (showNotifications) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showNotifications]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -225,17 +243,17 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
         
         <form onSubmit={handleSearch} className="flex-1 max-w-2xl mx-auto">
           <div className="relative">
-            <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-teal-600" size={18} />
+            <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-blue-600 z-10" size={20} />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search patents..."
-              className="w-full pl-10 sm:pl-12 pr-16 sm:pr-20 py-2 sm:py-2.5 text-sm bg-white/95 backdrop-blur-sm border border-white/30 rounded-xl focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 shadow-md"
+              className="w-full pl-10 sm:pl-12 pr-16 sm:pr-20 py-2.5 sm:py-3 text-sm text-gray-800 bg-white/95 backdrop-blur-sm border-2 border-white/40 rounded-xl focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 shadow-lg placeholder-gray-500"
             />
             <button
               type="submit"
-              className="absolute right-2 top-1/2 -translate-y-1/2 px-2 sm:px-3 py-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs sm:text-sm rounded-lg hover:shadow-lg transition font-semibold"
+              className="absolute right-2 top-1/2 -translate-y-1/2 px-3 sm:px-4 py-1.5 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs sm:text-sm rounded-lg hover:shadow-xl transition-all duration-300 font-bold hover:scale-105"
             >
               Search
             </button>
@@ -255,7 +273,7 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
             </div>
           </div>
 
-          <div className="relative">
+          <div className="relative" ref={notificationRef}>
             <button 
               onClick={() => setShowNotifications(!showNotifications)}
               className="p-2 sm:p-2.5 hover:bg-white/20 rounded-xl relative transition"
@@ -269,8 +287,15 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
             {/* Notification Dropdown */}
             {showNotifications && (
               <div className="absolute right-0 top-full mt-2 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 max-h-96 overflow-y-auto">
-                <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-3 rounded-t-xl">
+                <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-3 rounded-t-xl flex items-center justify-between">
                   <h3 className="font-bold">Notifications</h3>
+                  <button 
+                    onClick={() => setShowNotifications(false)}
+                    className="p-1 hover:bg-white/20 rounded-full transition"
+                    title="Close notifications"
+                  >
+                    <X size={18} className="text-white" />
+                  </button>
                 </div>
                 
                 {notifications.length === 0 ? (
