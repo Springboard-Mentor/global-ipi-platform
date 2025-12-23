@@ -1,6 +1,7 @@
 package com.example.demo.ip.dto;
 
 import lombok.Data;
+import jakarta.validation.constraints.NotBlank;
 
 @Data
 public class IPSearchRequest {

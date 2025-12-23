@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
-import com.example.demo.ip.client.PatentViewClient;
+import com.example.demo.ip.client.ExternalPatentClient;
 import com.example.demo.ip.dto.IPSearchRequest;
 import com.example.demo.ip.dto.IPSearchResultDTO;
 import com.example.demo.ip.entity.IPAsset;
@@ -23,28 +23,42 @@ public class IPSearchService {
 
     private static final int PAGE_SIZE = 20;
 
-    private final PatentViewClient patentClient;
+    private final ExternalPatentClient externalPatentClient;
     private final IPAssetRepository repository;
     private final IPAssetMapper mapper;
 
     public List<IPSearchResultDTO> search(IPSearchRequest request) {
 
+        // 🔒 Basic validation
         if (request == null || request.getQuery() == null || request.getQuery().isBlank()) {
             return List.of();
         }
 
-        String query = request.getQuery();
+        String query = request.getQuery().trim();
 
-        // 1️⃣ Check DB first
-        Page<IPAsset> cachedAssets =
-                repository.findByTitleContainingIgnoreCase(
-                        query,
-                        PageRequest.of(0, PAGE_SIZE)
-                );
+        // 🔹 Normalize source
+        String source = request.getSource();
+        if (source == null || source.isBlank()) {
+            source = "LOCAL";
+        }
 
-        if (cachedAssets.hasContent()) {
+        // =====================================================
+        // 1️⃣ LOCAL DATABASE SEARCH
+        // =====================================================
+        if ("LOCAL".equalsIgnoreCase(source)) {
+
+            Page<IPAsset> cachedAssets =
+                    repository.findByTitleContainingIgnoreCase(
+                            query,
+                            PageRequest.of(0, PAGE_SIZE)
+                    );
+
+            if (!cachedAssets.hasContent()) {
+                return List.of();
+            }
+
             return cachedAssets.getContent().stream()
-                    .map(mapper::toDto)   // ✅ FIXED
+                    .map(mapper::toDto)
                     .map(assetDto -> {
                         IPSearchResultDTO dto = new IPSearchResultDTO();
                         dto.setId(assetDto.getId());
@@ -57,23 +71,28 @@ public class IPSearchService {
                     .toList();
         }
 
-        // 2️⃣ Call external API (already returns IPSearchResultDTO)
+        // =====================================================
+        // 2️⃣ EXTERNAL SOURCE (SerpAPI / Google Patents)
+        // =====================================================
         List<IPSearchResultDTO> results =
-                patentClient.searchPatents(query, PAGE_SIZE);
+                externalPatentClient.searchPatents(query, PAGE_SIZE);
 
         if (results == null || results.isEmpty()) {
             return List.of();
         }
 
-        // 3️⃣ Map DTO → Entity
+        // =====================================================
+        // 3️⃣ CACHE EXTERNAL RESULTS INTO DB
+        // =====================================================
         List<IPAsset> assets = results.stream()
-                .map(mapper::toEntity)   // ✅ FIXED
+                .map(mapper::toEntity)
                 .toList();
 
-        // 4️⃣ Save
         repository.saveAll(assets);
 
-        // 5️⃣ Return API results
+        // =====================================================
+        // 4️⃣ RETURN RESULTS TO FRONTEND
+        // =====================================================
         return results;
     }
 }
