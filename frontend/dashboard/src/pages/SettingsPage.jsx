@@ -106,20 +106,36 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
   };
 
   const handleCancelSubscription = async () => {
-    if (!confirm('Are you sure you want to cancel your subscription? Your plan will remain active until the end of the billing period.')) {
+    if (!confirm('Are you sure you want to cancel your subscription? All your subscription data including payment history will be permanently deleted.')) {
       return;
     }
     
     try {
       const userRef = doc(db, 'users', currentUID);
+      
+      // Delete all subscription-related data from Firestore
       await updateDoc(userRef, {
         subscriptionType: 'basic',
         subscriptionPrice: 0,
         subscriptionEndDate: null,
+        subscriptionStartDate: null,
+        lastPayment: null,  // Delete payment history completely
         updatedAt: serverTimestamp()
       });
       
-      alert('Subscription cancelled successfully. You will be on the basic plan after the current billing period ends.');
+      // Update local state
+      if (setUserProfile) {
+        setUserProfile(prev => ({
+          ...prev,
+          subscriptionType: 'basic',
+          subscriptionPrice: 0,
+          subscriptionEndDate: null,
+          subscriptionStartDate: null,
+          lastPayment: null
+        }));
+      }
+      
+      alert('Subscription cancelled successfully. All subscription data has been removed.');
       window.location.reload();
     } catch (error) {
       console.error('Error cancelling subscription:', error);
