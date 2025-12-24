@@ -1,23 +1,49 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { getIPDetails } from "../../../api/ipApi";
 
 const IPDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const ip = location.state?.ip;
-
-  if (!ip) {
+  const [ip, setIp] = useState(location.state?.ip);
+  const [loading, setLoading] = useState(!location.state?.ip);
+  const [error, setError] = useState(null);
+  useEffect(() => {
+    const fetchIPDetails = async () => {
+      if (!ip) {
+        try {
+          setLoading(true);
+          const data = await getIPDetails(id);
+          setIp(data);
+        } catch (err) {
+          setError("Failed to load IP details");
+          console.error(err);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    fetchIPDetails();
+  }, [id, ip]);
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center">
+        <div className="animate-pulse">Loading IP details...</div>
+      </div>
+    );
+  }
+  if (error || !ip) {
     return (
       <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center">
         <div>
-          <p className="mb-4">No IP data available.</p>
+          <p className="text-red-400 mb-4">{error || "IP details not found"}</p>
           <button
             onClick={() => navigate("/ip-search")}
-            className="px-4 py-2 bg-blue-600 rounded-lg"
+            className="px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700"
           >
-            Go Back to Search
+            Back to Search
           </button>
         </div>
       </div>
@@ -73,10 +99,10 @@ const IPDetails = () => {
     status === "GRANTED"
       ? "bg-green-500 shadow-[0_0_20px_rgba(34,197,94,0.8)]"
       : status === "PENDING"
-      ? "bg-yellow-500"
-      : status === "ACTIVE"
-      ? "bg-green-500"
-      : "bg-gray-500";
+        ? "bg-yellow-500"
+        : status === "ACTIVE"
+          ? "bg-green-500"
+          : "bg-gray-500";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 px-6 py-8">
@@ -211,11 +237,10 @@ const IPDetails = () => {
                 <div key={index} className="relative flex gap-6">
                   <div className="relative z-10">
                     <div
-                      className={`w-6 h-6 rounded-full ${
-                        item.active
+                      className={`w-6 h-6 rounded-full ${item.active
                           ? "w-6 h-6 bg-green-400 shadow-[0_0_14px_rgba(34,197,94,0.9)]"
                           : "w-4 h-4 bg-blue-400"
-                      } rounded-full border-2 border-white/30`}
+                        } rounded-full border-2 border-white/30`}
                     />
                   </div>
 

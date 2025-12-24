@@ -13,12 +13,13 @@ import com.example.demo.ip.client.ExternalPatentClient;
 import com.example.demo.ip.dto.IPSearchRequest;
 import com.example.demo.ip.dto.IPSearchResultDTO;
 import com.example.demo.ip.entity.IPAsset;
+import com.example.demo.ip.exception.IPAssetNotFoundException;
 import com.example.demo.ip.mapper.IPAssetMapper;
 import com.example.demo.ip.repository.IPAssetRepository;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional(readOnly = true)
 public class IPSearchService {
 
     private static final int PAGE_SIZE = 20;
@@ -26,6 +27,24 @@ public class IPSearchService {
     private final ExternalPatentClient externalPatentClient;
     private final IPAssetRepository repository;
     private final IPAssetMapper mapper;
+
+    public IPSearchResultDTO getIPDetails(Long id) {
+        IPAsset asset = repository.findById(id)
+                .orElseThrow(() -> new IPAssetNotFoundException("IP Asset not found with id: " + id));
+
+        IPSearchResultDTO dto = new IPSearchResultDTO();
+        dto.setId(asset.getId());
+        dto.setTitle(asset.getTitle());
+        dto.setApplicationNumber(asset.getApplicationNumber());
+        dto.setCountry(asset.getCountry());
+        dto.setStatus(asset.getStatus());
+        dto.setAssetType(asset.getAssetType());
+        dto.setOwnerName(asset.getOwnerName());
+        dto.setInventorName(asset.getInventorName());
+        dto.setFilingDate(asset.getFilingDate() != null ? asset.getFilingDate().toString() : null);
+        dto.setPublicationDate(asset.getPublicationDate() != null ? asset.getPublicationDate().toString() : null);
+        return dto;
+    }
 
     public List<IPSearchResultDTO> search(IPSearchRequest request) {
 

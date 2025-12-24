@@ -3,7 +3,7 @@ package com.example.demo.ip.controller;
 import com.example.demo.ip.dto.IPSearchRequest;
 import com.example.demo.ip.dto.IPSearchResultDTO;
 import com.example.demo.ip.service.IPSearchService;
-
+import org.springframework.http.ResponseEntity;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +20,11 @@ public class IPSearchController {
     @PostMapping("/search")
     public List<IPSearchResultDTO> search(
            @Valid @RequestBody IPSearchRequest request) {
-
         return ipSearchService.search(request);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<IPSearchResultDTO> getIPDetails(@PathVariable Long id) {
+        return ResponseEntity.ok(ipSearchService.getIPDetails(id));
     }
 }
