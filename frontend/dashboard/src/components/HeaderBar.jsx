@@ -206,15 +206,17 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
 
                 {subscriptionDetails.paymentId !== 'N/A' && (
                   <>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Payment ID:</span>
-                      <span className="font-mono text-xs text-gray-700">{subscriptionDetails.paymentId}</span>
+                    <div className="border-t pt-2 mt-2">
+                      <div className="flex justify-between items-start">
+                        <span className="text-gray-600">Transaction ID:</span>
+                        <span className="font-mono text-xs text-gray-700 break-all text-right max-w-[180px]">{subscriptionDetails.paymentId}</span>
+                      </div>
                     </div>
                     
                     {subscriptionDetails.orderId !== 'N/A' && (
-                      <div className="flex justify-between">
+                      <div className="flex justify-between items-start">
                         <span className="text-gray-600">Order ID:</span>
-                        <span className="font-mono text-xs text-gray-700">{subscriptionDetails.orderId}</span>
+                        <span className="font-mono text-xs text-gray-700 break-all text-right max-w-[180px]">{subscriptionDetails.orderId}</span>
                       </div>
                     )}
                   </>

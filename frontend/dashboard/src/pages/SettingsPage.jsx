@@ -4,6 +4,7 @@ import {
   HelpCircle, Trash, CreditCard, Download, Moon, Sun, Settings, Clock, 
   AlertCircle, Calendar, Crown, Shield, User, Mail
 } from 'lucide-react';
+import UpgradeModal from '../components/UpgradeModal';
 import { db, auth } from '../firebase';
 import { doc, updateDoc, serverTimestamp, getDoc, deleteDoc } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
@@ -32,6 +33,7 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const currentUID = auth.currentUser?.uid || userProfile?.uid;
 
@@ -50,9 +52,18 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
         if (userDocSnap.exists()) {
           const data = userDocSnap.data();
           
+          // Update userProfile with latest Firestore data including lastPayment
+          if (setUserProfile) {
+            setUserProfile(prev => ({
+              ...prev,
+              ...data,
+              uid: currentUID
+            }));
+          }
+          
           // Set user basic details
           setUserDetails({
-            name: userProfile?.firstName || data.firstName || data.name || auth.currentUser?.displayName || 'User',
+            name: data.firstName || data.name || auth.currentUser?.displayName || 'User',
             email: data.email || auth.currentUser?.email || '',
             lastUpdated: data.updatedAt?.toDate ? data.updatedAt.toDate() : (data.updatedAt || null)
           });
@@ -67,7 +78,7 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
         } else {
           // If no Firestore data, use auth data
           setUserDetails({
-            name: userProfile?.firstName || auth.currentUser?.displayName || 'User',
+            name: auth.currentUser?.displayName || 'User',
             email: auth.currentUser?.email || '',
             lastUpdated: null
           });
@@ -81,6 +92,40 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
 
     loadSettings();
   }, [currentUID]);
+
+  // Subscription Handlers
+  const handleUpgradeClick = () => {
+    const subscriptionType = userProfile?.subscriptionType || 'basic';
+    
+    // If user has basic plan, allow upgrade
+    if (subscriptionType.toLowerCase() === 'basic') {
+      setShowUpgradeModal(true);
+    }
+    // If user has other subscription, they need to cancel first
+    // Button will be disabled in this case
+  };
+
+  const handleCancelSubscription = async () => {
+    if (!confirm('Are you sure you want to cancel your subscription? Your plan will remain active until the end of the billing period.')) {
+      return;
+    }
+    
+    try {
+      const userRef = doc(db, 'users', currentUID);
+      await updateDoc(userRef, {
+        subscriptionType: 'basic',
+        subscriptionPrice: 0,
+        subscriptionEndDate: null,
+        updatedAt: serverTimestamp()
+      });
+      
+      alert('Subscription cancelled successfully. You will be on the basic plan after the current billing period ends.');
+      window.location.reload();
+    } catch (error) {
+      console.error('Error cancelling subscription:', error);
+      alert('Error cancelling subscription: ' + error.message);
+    }
+  };
 
   // Security Settings Handlers
   const handleSendPasswordReset = async () => {
@@ -351,41 +396,83 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
           )}
         </div>
 
-        {/* Payment History */}
+        {/* Active Subscription History */}
         <div className="bg-white border border-gray-200 rounded-xl p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
             <CreditCard className="text-green-500" size={24} />
-            Payment History
+            Active Subscription History
           </h3>
           
-          {userProfile?.lastPayment ? (
+          {userProfile?.subscriptionType && userProfile.subscriptionType.toLowerCase() !== 'basic' ? (
             <div className="space-y-3">
               <div className="flex justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
                 <div>
-                  <p className="font-medium text-gray-800">Last Payment</p>
+                  <p className="font-medium text-gray-800">Active Subscription</p>
                   <p className="text-sm text-gray-500">
-                    ₹{userProfile.lastPayment.amount} {userProfile.lastPayment.currency}
+                    ₹{subscriptionPrice} / month
                   </p>
                 </div>
-                <span className="px-3 py-1 bg-green-500 text-white text-sm rounded-full h-fit">Success</span>
+                <span className="px-3 py-1 bg-green-500 text-white text-sm rounded-full h-fit">Active</span>
               </div>
               
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-gray-500">Payment ID</p>
-                  <p className="font-mono text-xs text-gray-800 break-all">{userProfile.lastPayment.razorpayPaymentId}</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-gray-500 font-medium mb-1">Transaction ID</p>
+                  <p className="font-mono text-xs text-gray-800 break-all">
+                    {(userProfile && userProfile.lastPayment && userProfile.lastPayment.razorpayPaymentId) || 'N/A'}
+                  </p>
                 </div>
                 
-                {userProfile.lastPayment.razorpayOrderId && (
-                  <div>
-                    <p className="text-gray-500">Order ID</p>
-                    <p className="font-mono text-xs text-gray-800 break-all">{userProfile.lastPayment.razorpayOrderId}</p>
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-gray-500 font-medium mb-1">Amount Paid</p>
+                  <p className="font-semibold text-gray-800">
+                    ₹{userProfile?.lastPayment?.amount || subscriptionPrice} {userProfile?.lastPayment?.currency || 'INR'}
+                  </p>
+                </div>
+                
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-gray-500 font-medium mb-1">Subscription Start Date</p>
+                  <p className="font-semibold text-gray-800">
+                    {userProfile?.subscriptionStartDate ? 
+                      (userProfile.subscriptionStartDate.toDate ? 
+                        userProfile.subscriptionStartDate.toDate().toLocaleDateString() : 
+                        new Date(userProfile.subscriptionStartDate).toLocaleDateString()
+                      ) : 'N/A'}
+                  </p>
+                </div>
+                
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-gray-500 font-medium mb-1">Subscription End Date</p>
+                  <p className="font-semibold text-gray-800">
+                    {endDate ? endDate.toLocaleDateString() : 'N/A'}
+                  </p>
+                </div>
+                
+                {userProfile?.lastPayment?.razorpayOrderId && (
+                  <div className="p-3 bg-gray-50 rounded-lg md:col-span-2">
+                    <p className="text-gray-500 font-medium mb-1">Order ID</p>
+                    <p className="font-mono text-xs text-gray-800 break-all">
+                      {userProfile.lastPayment.razorpayOrderId}
+                    </p>
+                  </div>
+                )}
+                
+                {userProfile?.lastPayment?.timestamp && (
+                  <div className="p-3 bg-gray-50 rounded-lg md:col-span-2">
+                    <p className="text-gray-500 font-medium mb-1">Payment Date</p>
+                    <p className="font-semibold text-gray-800">
+                      {userProfile.lastPayment.timestamp.toDate ? 
+                        userProfile.lastPayment.timestamp.toDate().toLocaleString() : 
+                        new Date(userProfile.lastPayment.timestamp).toLocaleString()}
+                    </p>
                   </div>
                 )}
               </div>
             </div>
           ) : (
-            <p className="text-gray-500">No payment history available</p>
+            <div className="text-center py-6">
+              <p className="text-gray-500">You do not have any active subscriptions</p>
+            </div>
           )}
         </div>
 
@@ -393,12 +480,26 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
         <div className="bg-white border border-gray-200 rounded-xl p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Manage Subscription</h3>
           <div className="space-y-3">
-            <button className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:shadow-lg transition">
-              Upgrade Plan
+            <button 
+              onClick={handleUpgradeClick}
+              disabled={subscriptionType.toLowerCase() !== 'basic'}
+              className={`w-full px-6 py-3 rounded-lg transition ${
+                subscriptionType.toLowerCase() === 'basic'
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:shadow-lg hover:from-blue-600 hover:to-purple-700'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              {subscriptionType.toLowerCase() === 'basic' ? 'Upgrade Plan' : 'Cancel Current Plan to Upgrade'}
             </button>
-            <button className="w-full px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
-              Cancel Subscription
-            </button>
+            
+            {subscriptionType.toLowerCase() !== 'basic' && (
+              <button 
+                onClick={handleCancelSubscription}
+                className="w-full px-6 py-3 border-2 border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition font-semibold"
+              >
+                Cancel Subscription
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -710,6 +811,14 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
           {activeTab === 'account' && renderAccountTab()}
         </div>
       </div>
+      
+      {/* Upgrade Modal */}
+      <UpgradeModal 
+        isOpen={showUpgradeModal} 
+        onClose={() => setShowUpgradeModal(false)} 
+        userProfile={userProfile}
+        onAddNotification={(msg) => console.log(msg)}
+      />
     </div>
   );
 };
