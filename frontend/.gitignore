@@ -1,48 +1,50 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-
-# Dependencies
-node_modules
-
-# Build outputs
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
+# ==========================================
+# 1. OS & IDE Specific
+# ==========================================
+.DS_Store
+Thumbs.db
+.idea/
+*.iml
 .vscode/*
 !.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+.project
+.settings/
+.classpath
 
-# Environment Variables (CRITICAL - Contains Firebase API Keys)
+# ==========================================
+# 2. Frontend (React / Vite / Node)
+# ==========================================
+node_modules/
+dist/
+dist-ssr/
+*.local
+npm-debug.log*
+
+# ==========================================
+# 3. Backend (Java / Spring Boot / Maven)
+# ==========================================
+target/
+*.class
+*.jar
+*.war
+.mvn/wrapper/maven-wrapper.jar
+
+# ==========================================
+# 4. Environment & Keys (CRITICAL SECURITY)
+# ==========================================
+# Frontend Environment variables
 .env
 .env.local
 .env.development
 .env.production
-.env.test
 
-# Firebase
-.firebase/
-.firebaserc
-firebase-debug.log
-firebase-debug.*.log
+# Backend Service Account Keys (Firebase/Google Cloud)
+# This ignores any .json file in the config or resources folder
+backend/src/main/resources/*.json
+service-account-file.json
 
-# Testing
-coverage/
-.nyc_output/
-
-# Temporary files
-*.tmp
-*.temp
+# ==========================================
+# 5. Database (Local persistence)
+# ==========================================
+*.mv.db
+*.trace.db
