@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
-import com.example.demo.ip.client.ExternalPatentClient;
+import com.example.demo.ip.client.GooglePatentsClient;
 import com.example.demo.ip.dto.IPSearchRequest;
 import com.example.demo.ip.dto.IPSearchResultDTO;
 import com.example.demo.ip.entity.IPAsset;
@@ -19,12 +19,11 @@ import com.example.demo.ip.repository.IPAssetRepository;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class IPSearchService {
 
     private static final int PAGE_SIZE = 20;
 
-    private final ExternalPatentClient externalPatentClient;
+    private final GooglePatentsClient googlePatentsClient;
     private final IPAssetRepository repository;
     private final IPAssetMapper mapper;
 
@@ -56,10 +55,7 @@ public class IPSearchService {
         String query = request.getQuery().trim();
 
         // 🔹 Normalize source
-        String source = request.getSource();
-        if (source == null || source.isBlank()) {
-            source = "LOCAL";
-        }
+         String source = request.getSource() == null ? "LOCAL" : request.getSource().trim();
 
         // =====================================================
         // 1️⃣ LOCAL DATABASE SEARCH
@@ -69,6 +65,7 @@ public class IPSearchService {
             Page<IPAsset> cachedAssets = repository.findByTitleContainingIgnoreCase(
                     query,
                     PageRequest.of(0, PAGE_SIZE));
+
 
             if (!cachedAssets.hasContent()) {
                 return List.of();
@@ -101,21 +98,25 @@ public class IPSearchService {
         // =====================================================
         // 2️⃣ EXTERNAL SOURCE (SerpAPI / Google Patents)
         // =====================================================
-        List<IPSearchResultDTO> results = externalPatentClient.searchPatents(query, PAGE_SIZE);
+        List<IPSearchResultDTO> results = googlePatentsClient.searchPatents(query, PAGE_SIZE);
 
         if (results == null || results.isEmpty()) {
             // fallback to local DB
             return repository.findByTitleContainingIgnoreCase(
                     query,
                     PageRequest.of(0, PAGE_SIZE)).getContent().stream()
-                    .map(mapper::toDto)
-                    .map(assetDto -> {
+                    .map(asset -> {
                         IPSearchResultDTO dto = new IPSearchResultDTO();
-                        dto.setId(assetDto.getId());
-                        dto.setTitle(assetDto.getTitle());
-                        dto.setCountry(assetDto.getCountry());
-                        dto.setStatus(assetDto.getStatus());
-                        dto.setAssetType(assetDto.getAssetType());
+                        dto.setId(asset.getId());
+                        dto.setTitle(asset.getTitle());
+                        dto.setApplicationNumber(asset.getApplicationNumber());
+                        dto.setCountry(asset.getCountry());
+                        dto.setStatus(asset.getStatus());
+                        dto.setAssetType(asset.getAssetType());
+                        dto.setOwnerName(asset.getOwnerName());
+                        dto.setInventorName(asset.getInventorName());
+                        dto.setFilingDate(asset.getFilingDate() != null ? asset.getFilingDate().toString() : null);
+                        dto.setPublicationDate(asset.getPublicationDate() != null ? asset.getPublicationDate().toString() : null);
                         return dto;
                     })
                     .toList();
@@ -125,7 +126,17 @@ public class IPSearchService {
         // 3️⃣ CACHE EXTERNAL RESULTS INTO DB
         // =====================================================
         List<IPAsset> assets = results.stream()
-                .map(mapper::toEntity)
+                .map(dto -> {
+                    IPAsset asset = new IPAsset();
+                    asset.setTitle(dto.getTitle());
+                    asset.setAssetType(dto.getAssetType());
+                    asset.setApplicationNumber(dto.getApplicationNumber());
+                    asset.setStatus(dto.getStatus());
+                    asset.setCountry(dto.getCountry());
+                    asset.setOwnerName(dto.getOwnerName());
+                    asset.setInventorName(dto.getInventorName());
+                    return asset;
+                })
                 .filter(asset -> asset.getApplicationNumber() != null &&
                         !repository.existsByApplicationNumber(asset.getApplicationNumber()))
                 .toList();

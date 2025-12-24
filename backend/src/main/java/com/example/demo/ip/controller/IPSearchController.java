@@ -18,9 +18,11 @@ public class IPSearchController {
     private final IPSearchService ipSearchService;
 
     @PostMapping("/search")
-    public List<IPSearchResultDTO> search(
+    public ResponseEntity<List<IPSearchResultDTO>> search(
            @Valid @RequestBody IPSearchRequest request) {
-        return ipSearchService.search(request);
+        List<IPSearchResultDTO> results = ipSearchService.search(request);
+        System.out.println("API returning " + results.size() + " results");
+        return ResponseEntity.ok(results);
     }
 
     @GetMapping("/{id}")

@@ -19,21 +19,18 @@ public class ExternalPatentClient {
 
     private final RestTemplate restTemplate;
 
-    @Value("${serpapi.api.key}")
+    @Value("${serpapi.key:}")
     private String apiKey;
 
-    private static final String SERPAPI_URL = "https://serpapi.com/search.json";
-
-    @SuppressWarnings("unchecked")
     public List<IPSearchResultDTO> searchPatents(String query, int limit) {
 
         if (apiKey == null || apiKey.isBlank()) {
-            log.warn("SerpAPI key not configured");
+            log.error("SerpAPI key not configured properly. Please set a valid API key in application.properties");
             return Collections.emptyList();
         }
 
         try {
-            String url = UriComponentsBuilder.fromHttpUrl(SERPAPI_URL)
+            String url = UriComponentsBuilder.fromHttpUrl("https://serpapi.com/search.json")
                     .queryParam("engine", "google_patents")
                     .queryParam("q", query)
                     .queryParam("num", limit)

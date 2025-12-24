@@ -32,9 +32,9 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(request -> {
                     CorsConfiguration config = new CorsConfiguration();
                     config.setAllowCredentials(true);
-                    config.setAllowedOrigins(Arrays.asList("http://localhost:3000"));
-                    config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept"));
-                    config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                    config.setAllowedOriginPatterns(Arrays.asList("*"));
+                    config.setAllowedHeaders(Arrays.asList("*"));
+                    config.setAllowedMethods(Arrays.asList("*"));
                     return config;
                 }))
 
@@ -42,17 +42,11 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                org.springframework.http.HttpMethod.POST,
-                                "/api/ip/search")
-                        .permitAll()
-
-                        .requestMatchers(
-                                "/auth/login",
-                                "/auth/register",
+                                "/api/**",
+                                "/auth/**",
                                 "/h2-console/**")
                         .permitAll()
-                        .requestMatchers("/api/users/**").authenticated()
-                        .anyRequest().authenticated())
+                        .anyRequest().permitAll())
 
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
