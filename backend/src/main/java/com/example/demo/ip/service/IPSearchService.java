@@ -47,17 +47,48 @@ public class IPSearchService {
         // =====================================================
         if ("LOCAL".equalsIgnoreCase(source)) {
 
-            Page<IPAsset> cachedAssets =
-                    repository.findByTitleContainingIgnoreCase(
-                            query,
-                            PageRequest.of(0, PAGE_SIZE)
-                    );
+            Page<IPAsset> cachedAssets = repository.findByTitleContainingIgnoreCase(
+                    query,
+                    PageRequest.of(0, PAGE_SIZE));
 
             if (!cachedAssets.hasContent()) {
                 return List.of();
             }
 
             return cachedAssets.getContent().stream()
+                    .map(assetDto -> {
+                        IPSearchResultDTO dto = new IPSearchResultDTO();
+                        dto.setId(assetDto.getId());
+                        dto.setTitle(assetDto.getTitle());
+                        dto.setApplicationNumber(assetDto.getApplicationNumber());
+                        dto.setCountry(assetDto.getCountry());
+                        dto.setStatus(assetDto.getStatus());
+                        dto.setAssetType(assetDto.getAssetType());
+                        dto.setOwnerName(assetDto.getOwnerName());
+                        dto.setInventorName(assetDto.getInventorName());
+                        dto.setFilingDate(
+                                assetDto.getFilingDate() != null
+                                        ? assetDto.getFilingDate().toString()
+                                        : null);
+                        dto.setPublicationDate(
+                                assetDto.getPublicationDate() != null
+                                        ? assetDto.getPublicationDate().toString()
+                                        : null);
+                        return dto;
+                    })
+                    .toList();
+        }
+
+        // =====================================================
+        // 2️⃣ EXTERNAL SOURCE (SerpAPI / Google Patents)
+        // =====================================================
+        List<IPSearchResultDTO> results = externalPatentClient.searchPatents(query, PAGE_SIZE);
+
+        if (results == null || results.isEmpty()) {
+            // fallback to local DB
+            return repository.findByTitleContainingIgnoreCase(
+                    query,
+                    PageRequest.of(0, PAGE_SIZE)).getContent().stream()
                     .map(mapper::toDto)
                     .map(assetDto -> {
                         IPSearchResultDTO dto = new IPSearchResultDTO();
@@ -72,23 +103,17 @@ public class IPSearchService {
         }
 
         // =====================================================
-        // 2️⃣ EXTERNAL SOURCE (SerpAPI / Google Patents)
-        // =====================================================
-        List<IPSearchResultDTO> results =
-                externalPatentClient.searchPatents(query, PAGE_SIZE);
-
-        if (results == null || results.isEmpty()) {
-            return List.of();
-        }
-
-        // =====================================================
         // 3️⃣ CACHE EXTERNAL RESULTS INTO DB
         // =====================================================
         List<IPAsset> assets = results.stream()
                 .map(mapper::toEntity)
+                .filter(asset -> asset.getApplicationNumber() != null &&
+                        !repository.existsByApplicationNumber(asset.getApplicationNumber()))
                 .toList();
 
-        repository.saveAll(assets);
+        if (!assets.isEmpty()) {
+            repository.saveAll(assets);
+        }
 
         // =====================================================
         // 4️⃣ RETURN RESULTS TO FRONTEND

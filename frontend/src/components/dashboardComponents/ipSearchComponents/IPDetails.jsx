@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import GoogleMap from "../../GoogleMap";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 
 const IPDetails = () => {
@@ -26,37 +25,31 @@ const IPDetails = () => {
   }
 
   //  Derived Fields (API-Ready)
-  const filingDate = ip.filingDate || ip.date;
-  const publicationDate = ip.publicationDate || "2023-09-01";
+  const filingDate = ip.timeline?.filing || ip.date || "N/A";
+
+  const publicationDate = ip.timeline?.publication || "N/A";
+
+  const grantDate = ip.timeline?.grant || null;
 
   // Patent duration (20 years standard)
-  const expiryYear = new Date(filingDate).getFullYear() + 20;
-  const duration = `20 Years (Expires in ${expiryYear})`;
+  const expiryYear =
+    filingDate !== "N/A" ? new Date(filingDate).getFullYear() + 20 : "N/A";
+
+  const duration =
+    expiryYear !== "N/A" ? `20 Years (Expires in ${expiryYear})` : "N/A";
 
   //  Legal Timeline (Event-based)
-  const timeline = ip.legalTimeline || [
+  const timeline = [
+    {
+      label: "Priority Date",
+      date: ip.timeline?.priority || "—",
+      description: "Initial priority filing",
+      active: false,
+    },
     {
       label: "Application Filed",
       date: filingDate,
-      description: "Provisional patent application submitted",
-      active: false,
-    },
-    {
-      label: "Examination Commenced",
-      date: "2022-09-20",
-      description: "Patent office started examination",
-      active: false,
-    },
-    {
-      label: "First Office Action Issued",
-      date: "2023-01-05",
-      description: "Initial examination report issued",
-      active: false,
-    },
-    {
-      label: "Response Filed",
-      date: "2023-07-10",
-      description: "Applicant responded to office action",
+      description: "Patent application officially filed",
       active: false,
     },
     {
@@ -66,26 +59,24 @@ const IPDetails = () => {
       active: false,
     },
     {
-      label: "Notice of Allowance",
-      date: "2024-02-18",
-      description: "Patent allowed by authority",
-      active: false,
-    },
-    {
       label: "Patent Granted",
-      date: "2024-05-25",
-      description: "Patent officially granted",
-      active: true,
+      date: grantDate || "—",
+      description: "Patent legally granted",
+      active: Boolean(grantDate),
     },
   ];
+
   //  Status Badge Styling
+  const status = ip.status?.toUpperCase() || "UNKNOWN";
+
   const statusColor =
-    {
-      Granted: "bg-green-500",
-      Active: "bg-green-500",
-      Pending: "bg-yellow-500",
-      Expired: "bg-gray-500",
-    }[ip.status] || "bg-blue-500";
+    status === "GRANTED"
+      ? "bg-green-500 shadow-[0_0_20px_rgba(34,197,94,0.8)]"
+      : status === "PENDING"
+      ? "bg-yellow-500"
+      : status === "ACTIVE"
+      ? "bg-green-500"
+      : "bg-gray-500";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 px-6 py-8">
@@ -164,11 +155,11 @@ const IPDetails = () => {
         {/* Metadata */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 text-sm text-gray-300">
           <div>
-            <span className="text-white">Owner:</span> {ip.assignee}
+            <span className="text-white">Owner:</span> {ip.assignee || "N/A"}
           </div>
           <div>
             <span className="text-white">Issuing Authority:</span>{" "}
-            {ip.jurisdiction}
+            {ip.jurisdiction || "N/A"}
           </div>
           <div>
             <span className="text-white">Area of Coverage:</span>{" "}
@@ -176,7 +167,8 @@ const IPDetails = () => {
           </div>
 
           <div>
-            <span className="text-white">Application Number:</span> {ip.number}
+            <span className="text-white">Application Number:</span>{" "}
+            {ip.number || "N/A"}
           </div>
           <div>
             <span className="text-white">Filed Date:</span> {filingDate}
@@ -192,16 +184,15 @@ const IPDetails = () => {
         </div>
 
         <p className="mt-4 text-gray-400 text-sm">
-          <span className="text-white">Abstract:</span> {ip.abstract}
+          <span className="text-white">Abstract:</span> {ip.abstract || "N/A"}
         </p>
 
         {ip.inventor && (
           <p className="mt-2 text-gray-400 text-sm">
-            <span className="text-white">Inventor(s):</span> {ip.inventor}
+            <span className="text-white">Inventor(s):</span>{" "}
+            {ip.inventor || "N/A"}
           </p>
         )}
-
-        {/* Location removed from details view per user request */}
       </div>
 
       {/* Bottom Section */}
@@ -249,9 +240,31 @@ const IPDetails = () => {
             <p className="text-gray-300 text-sm mb-3">
               Document preview unavailable
             </p>
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-              View Full Document
-            </button>
+
+            {/* PDF Button */}
+            {ip.pdf && (
+              <a
+                href={ip.pdf}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm"
+              >
+                View Full Document (PDF)
+              </a>
+            )}
+
+            {/* Google Patents Link */}
+            {ip.patentLink && (
+              <a
+                href={ip.patentLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-blue-400 text-xs mt-3 hover:underline"
+              >
+                View on Google Patents →
+              </a>
+            )}
+
             <p className="text-gray-500 text-xs mt-3">PDF • Patent document</p>
           </div>
 

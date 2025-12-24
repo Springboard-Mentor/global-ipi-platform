@@ -3,4 +3,4 @@ server:
 
 serpapi:
   api:
-    key:  ${SERPAPI_API_KEY}
+    key:  

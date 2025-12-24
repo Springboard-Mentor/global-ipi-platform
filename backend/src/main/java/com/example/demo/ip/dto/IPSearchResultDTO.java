@@ -12,11 +12,11 @@ public class IPSearchResultDTO {
 
     private Long id;
     private String title;
-    private String assetType;          // PATENT / TRADEMARK
+    private String assetType; // PATENT / TRADEMARK
     private String applicationNumber;
-    private String status;             // LIVE / DEAD / GRANTED
+    private String status; // LIVE / DEAD / GRANTED
     private String country;
-    private String filingDate;         // yyyy-MM-dd
+    private String filingDate; // yyyy-MM-dd
     private String publicationDate;
     private String abstractText;
     private String ownerName;
@@ -24,7 +24,7 @@ public class IPSearchResultDTO {
 
     // Optional lightweight constructor
     public IPSearchResultDTO(String title, String assetType,
-                             String applicationNumber, String status) {
+            String applicationNumber, String status) {
         this.title = title;
         this.assetType = assetType;
         this.applicationNumber = applicationNumber;

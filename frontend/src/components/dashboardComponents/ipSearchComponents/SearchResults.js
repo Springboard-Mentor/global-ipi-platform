@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import GoogleMap from "../../GoogleMap";
+import { searchIP } from "../../../api/ipApi";
 
 const SearchResults = () => {
   const navigate = useNavigate();
@@ -11,125 +12,80 @@ const SearchResults = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Mock data - in real app, this would come from API
+  // API Data
   const [results, setResults] = useState([]);
   const [totalResults, setTotalResults] = useState(0);
 
+  const query = searchParams.get("keyword");
+  const type = searchParams.get("type") || "PATENT";
+  const source = searchParams.get("source") || "EXTERNAL";
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
   useEffect(() => {
-    // Simulate API call with search parameters
-    const mockResults = generateMockResults(
-      searchParams.get("type") || "patent"
-    );
-    setResults(mockResults);
-    setTotalResults(mockResults.length);
-  }, [searchParams]);
+    if (!query) return;
 
-  const generateMockResults = (type) => {
-    const keyword = searchParams.get("keyword") || "";
-    const assigneeFilter = searchParams.get("assignee") || "";
-    const inventorFilter = searchParams.get("inventor") || "";
-    const jurisdictionFilter = searchParams.get("jurisdiction") || "";
+    const fetchResults = async () => {
+      setLoading(true);
+      setError(null);
 
-    const mockData = [];
+      try {
+        const data = await searchIP({
+          query,
+          type,
+          source,
+        });
 
-    // Generate keyword-relevant titles
-    const getRelevantTitle = (type, keyword, index) => {
-      if (!keyword) {
-        return type === "patent"
-          ? `Method and System for ${
-              [
-                "AI Processing",
-                "Data Analysis",
-                "Machine Learning",
-                "Cloud Computing",
-              ][index % 4]
-            }`
-          : `Brand Name ${index} - ${
-              ["Technology", "Fashion", "Food", "Services"][index % 4]
-            }`;
-      }
+    const normalized = Array.isArray(data)
+  ? data.map((item, index) => ({
+      id: item.id || index,
+      title: item.title,
+      number: item.applicationNumber || "N/A",
+      assignee: item.ownerName || "Unknown",
+      inventor: item.inventorName || null,
+      jurisdiction: item.country || "Unknown",
+      date: item.filingDate || "N/A",
+      status: item.status || "Unknown",
+      abstract: item.abstractText || "",
+    }))
+  : [];
 
-      const keywordLower = keyword.toLowerCase();
-      if (type === "patent") {
-        return `${keyword} Processing System and Method for Advanced ${
-          ["Technology", "Innovation", "Solutions", "Applications"][index % 4]
-        }`;
-      } else {
-        return `${keyword} Brand - ${
-          ["Premium", "Professional", "Advanced", "Elite"][index % 4]
-        } ${["Services", "Products", "Solutions", "Systems"][index % 4]}`;
+setResults(normalized);
+setTotalResults(normalized.length);
+
+// 🔴 ADD THESE
+setCurrentPage(1);
+setFilterStatus("");
+setSortBy("relevance");
+
+console.log("Normalized results:", normalized);
+
+        setResults(normalized);
+        setTotalResults(normalized.length);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to load search results");
+      } finally {
+        setLoading(false);
       }
     };
 
-    // Generate relevant abstract
-    const getRelevantAbstract = (keyword) => {
-      if (!keyword) {
-        return "A comprehensive system and method for implementing advanced technological solutions...";
-      }
-      return `A comprehensive system and method for implementing ${keyword}-based solutions, providing advanced capabilities for ${keyword} processing and analysis...`;
-    };
-
-    for (let i = 1; i <= 47; i++) {
-      const title = getRelevantTitle(type, keyword, i);
-      const assignee =
-        assigneeFilter ||
-        ["Tech Corp", "Innovation Labs", "Global Industries", "Future Systems"][
-          i % 4
-        ];
-      const inventor =
-        type === "patent"
-          ? inventorFilter ||
-            ["John Smith", "Jane Doe", "Bob Johnson", "Alice Williams"][i % 4]
-          : null;
-      const jurisdiction =
-        jurisdictionFilter ||
-        ["United States", "European Union", "China", "Japan"][i % 4];
-
-      mockData.push({
-        id: i,
-        type: type,
-        title: title,
-        number: type === "patent" ? `US${10000000 + i}` : `TM${5000000 + i}`,
-        assignee: assignee,
-        inventor: inventor,
-        jurisdiction: jurisdiction,
-        status: ["Granted", "Pending", "Active", "Expired"][i % 4],
-        date: new Date(2024 - (i % 5), i % 12, (i % 28) + 1)
-          .toISOString()
-          .split("T")[0],
-        abstract: getRelevantAbstract(keyword),
-      });
-    }
-    return mockData;
-  };
+    fetchResults();
+  }, [query, type, source]);
 
   // Apply filters and sorting
   const getFilteredResults = () => {
     let filtered = [...results];
 
-    // Apply keyword filter if searching within results
-    const keyword = searchParams.get("keyword");
-    if (keyword) {
-      const keywordLower = keyword.toLowerCase();
-      filtered = filtered.filter(
-        (r) =>
-          r.title.toLowerCase().includes(keywordLower) ||
-          r.assignee.toLowerCase().includes(keywordLower) ||
-          (r.inventor && r.inventor.toLowerCase().includes(keywordLower)) ||
-          r.abstract.toLowerCase().includes(keywordLower) ||
-          r.number.toLowerCase().includes(keywordLower)
-      );
-    }
-
-    // Apply assignee filter
     const assigneeFilter = searchParams.get("assignee");
     if (assigneeFilter) {
       filtered = filtered.filter((r) =>
-        r.assignee.toLowerCase().includes(assigneeFilter.toLowerCase())
+        r.assignee?.toLowerCase().includes(assigneeFilter.toLowerCase())
       );
     }
 
-    // Apply inventor filter
+
     const inventorFilter = searchParams.get("inventor");
     if (inventorFilter && searchParams.get("type") === "patent") {
       filtered = filtered.filter(
@@ -139,18 +95,15 @@ const SearchResults = () => {
       );
     }
 
-    // Apply jurisdiction filter
     const jurisdictionFilter = searchParams.get("jurisdiction");
     if (jurisdictionFilter) {
       filtered = filtered.filter((r) => r.jurisdiction === jurisdictionFilter);
     }
 
-    // Apply status filter from sidebar
     if (filterStatus) {
       filtered = filtered.filter((r) => r.status === filterStatus);
     }
 
-    // Sort
     filtered.sort((a, b) => {
       switch (sortBy) {
         case "date-desc":
@@ -167,12 +120,23 @@ const SearchResults = () => {
     return filtered;
   };
 
-  const filteredResults = getFilteredResults();
+  const filteredResults = React.useMemo(() => {
+  return getFilteredResults();
+}, [results, sortBy, filterStatus, searchParams]);
   const totalPages = Math.ceil(filteredResults.length / itemsPerPage);
   const paginatedResults = filteredResults.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
+
+  console.log("SEARCH PARAMS", {
+  keyword: searchParams.get("keyword"),
+  type: searchParams.get("type"),
+  source: searchParams.get("source"),
+});
+
+console.log("filtered length", filteredResults.length);
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -520,7 +484,7 @@ const MapView = ({ results, searchType }) => {
     India: { lat: 20.5937, lng: 78.9629 },
     Canada: { lat: 56.1304, lng: -106.3468 },
     Australia: { lat: -25.2744, lng: 133.7751 },
-    "United Kingdom": { lat: 55.3781, lng: -3.4360 },
+    "United Kingdom": { lat: 55.3781, lng: -3.436 },
     Germany: { lat: 51.1657, lng: 10.4515 },
   };
 
@@ -542,8 +506,12 @@ const MapView = ({ results, searchType }) => {
   return (
     <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20">
       <div className="mb-4 flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-white">Geographic Distribution</h3>
-        <div className="text-sm text-gray-300">{Object.keys(groupedByJurisdiction).length} jurisdictions</div>
+        <h3 className="text-lg font-semibold text-white">
+          Geographic Distribution
+        </h3>
+        <div className="text-sm text-gray-300">
+          {Object.keys(groupedByJurisdiction).length} jurisdictions
+        </div>
       </div>
 
       <div className="relative h-[600px] rounded-xl overflow-hidden">
@@ -570,7 +538,9 @@ const MapView = ({ results, searchType }) => {
               <div className="w-4 h-4 bg-yellow-500 rounded-full"></div>
               <span>Selected marker</span>
             </div>
-            <div className="text-gray-300 mt-2">Click markers to view details</div>
+            <div className="text-gray-300 mt-2">
+              Click markers to view details
+            </div>
           </div>
         </div>
 
@@ -582,7 +552,10 @@ const MapView = ({ results, searchType }) => {
               Total Results: <span className="font-bold">{results.length}</span>
             </div>
             <div>
-              Jurisdictions: <span className="font-bold">{Object.keys(groupedByJurisdiction).length}</span>
+              Jurisdictions:{" "}
+              <span className="font-bold">
+                {Object.keys(groupedByJurisdiction).length}
+              </span>
             </div>
             <div>
               Type: <span className="font-bold capitalize">{searchType}</span>
