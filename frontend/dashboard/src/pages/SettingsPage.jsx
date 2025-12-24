@@ -2,20 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { 
   Lock, Key, Activity, LogOut, Bell, Palette, Globe, FileText, 
   HelpCircle, Trash, CreditCard, Download, Moon, Sun, Settings, Clock, 
-  AlertCircle, Calendar, Crown, Shield, User
+  AlertCircle, Calendar, Crown, Shield, User, Mail
 } from 'lucide-react';
 import { db, auth } from '../firebase';
 import { doc, updateDoc, serverTimestamp, getDoc, deleteDoc } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
-import { updatePassword, reauthenticateWithCredential, EmailAuthProvider, signOut } from 'firebase/auth';
+import { sendPasswordResetEmail, signOut } from 'firebase/auth';
 import { storage } from '../firebase';
 
 const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
   const [activeTab, setActiveTab] = useState('security');
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
+  const [userDetails, setUserDetails] = useState({
+    name: '',
+    email: '',
+    lastUpdated: null
   });
   const [notificationSettings, setNotificationSettings] = useState({
     emailNotifications: true,
@@ -31,6 +31,7 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
 
   const currentUID = auth.currentUser?.uid || userProfile?.uid;
 
@@ -49,6 +50,13 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
         if (userDocSnap.exists()) {
           const data = userDocSnap.data();
           
+          // Set user basic details
+          setUserDetails({
+            name: userProfile?.firstName || data.firstName || data.name || auth.currentUser?.displayName || 'User',
+            email: data.email || auth.currentUser?.email || '',
+            lastUpdated: data.updatedAt?.toDate ? data.updatedAt.toDate() : (data.updatedAt || null)
+          });
+          
           if (data.notificationSettings) {
             setNotificationSettings(data.notificationSettings);
           }
@@ -56,6 +64,13 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
           if (data.preferences) {
             setPreferences(data.preferences);
           }
+        } else {
+          // If no Firestore data, use auth data
+          setUserDetails({
+            name: userProfile?.firstName || auth.currentUser?.displayName || 'User',
+            email: auth.currentUser?.email || '',
+            lastUpdated: null
+          });
         }
       } catch (error) {
         console.error('Error loading settings:', error);
@@ -68,46 +83,34 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
   }, [currentUID]);
 
   // Security Settings Handlers
-  const handleChangePassword = async () => {
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      alert('New passwords do not match!');
-      return;
-    }
-
-    if (passwordData.newPassword.length < 6) {
-      alert('Password must be at least 6 characters long');
-      return;
-    }
-
+  const handleSendPasswordReset = async () => {
     try {
-      const user = auth.currentUser;
-      const credential = EmailAuthProvider.credential(user.email, passwordData.currentPassword);
+      const email = userDetails.email || auth.currentUser?.email;
       
-      await reauthenticateWithCredential(user, credential);
-      await updatePassword(user, passwordData.newPassword);
+      if (!email) {
+        alert('Email not found. Please login again.');
+        return;
+      }
+
+      await sendPasswordResetEmail(auth, email);
+      setResetEmailSent(true);
+      alert(`Password reset email sent to ${email}. Please check your inbox.`);
       
-      alert('Password changed successfully!');
-      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      // Reset the message after 5 seconds
+      setTimeout(() => {
+        setResetEmailSent(false);
+      }, 5000);
     } catch (error) {
-      console.error('Error changing password:', error);
-      if (error.code === 'auth/wrong-password') {
-        alert('Current password is incorrect');
+      console.error('Error sending password reset email:', error);
+      if (error.code === 'auth/too-many-requests') {
+        alert('Too many requests. Please try again later.');
       } else {
         alert('Error: ' + error.message);
       }
     }
   };
 
-  const handleLogoutAllDevices = async () => {
-    if (!confirm('This will log you out from all devices. Continue?')) return;
-    
-    try {
-      await signOut(auth);
-      window.location.href = '/';
-    } catch (error) {
-      alert('Error: ' + error.message);
-    }
-  };
+
 
   // Notification Settings Handler
   const handleSaveNotifications = async () => {
@@ -214,116 +217,94 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
   // Render Security Tab Content
   const renderSecurityTab = () => (
     <div className="space-y-6">
-      {/* Change Password */}
+      {/* User Basic Details */}
+      <div className="bg-gradient-to-br from-white to-indigo-50 border-2 border-indigo-200 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-3 bg-indigo-100 rounded-xl">
+            <User className="text-indigo-600" size={24} />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-gray-800">User Details</h3>
+            <p className="text-sm text-gray-500">Your basic account information</p>
+          </div>
+        </div>
+        
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-4 bg-white/70 backdrop-blur-sm rounded-xl border border-indigo-100 hover:border-indigo-300 transition-all">
+            <div className="flex items-center gap-3">
+              <User className="text-indigo-500" size={20} />
+              <div>
+                <p className="text-sm font-semibold text-gray-500">First Name</p>
+                <p className="font-bold text-gray-800">{userDetails.name}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-between p-4 bg-white/70 backdrop-blur-sm rounded-xl border border-indigo-100 hover:border-indigo-300 transition-all">
+            <div className="flex items-center gap-3">
+              <Mail className="text-indigo-500" size={20} />
+              <div>
+                <p className="text-sm font-semibold text-gray-500">Email</p>
+                <p className="font-bold text-gray-800">{userDetails.email}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-between p-4 bg-white/70 backdrop-blur-sm rounded-xl border border-indigo-100 hover:border-indigo-300 transition-all">
+            <div className="flex items-center gap-3">
+              <Clock className="text-indigo-500" size={20} />
+              <div>
+                <p className="text-sm font-semibold text-gray-500">Last Updated</p>
+                <p className="font-bold text-gray-800">
+                  {userDetails.lastUpdated ? new Date(userDetails.lastUpdated).toLocaleString() : 'N/A'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Reset Password */}
       <div className="bg-gradient-to-br from-white to-blue-50 border-2 border-blue-200 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-3 bg-blue-100 rounded-xl">
             <Lock className="text-blue-600" size={24} />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-gray-800">Change Password</h3>
-            <p className="text-sm text-gray-500">Update your account password</p>
+            <h3 className="text-lg font-bold text-gray-800">Reset Password</h3>
+            <p className="text-sm text-gray-500">Send password reset link to your email</p>
           </div>
         </div>
         
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Current Password</label>
-            <input
-              type="password"
-              value={passwordData.currentPassword}
-              onChange={(e) => setPasswordData({...passwordData, currentPassword: e.target.value})}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-              placeholder="Enter current password"
-            />
+          <div className="p-4 bg-blue-50/50 border border-blue-200 rounded-xl">
+            <p className="text-gray-700 mb-2">
+              Click the button below to receive a password reset link at:
+            </p>
+            <p className="font-bold text-blue-600 flex items-center gap-2">
+              <Mail size={18} />
+              {userDetails.email}
+            </p>
           </div>
           
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">New Password</label>
-            <input
-              type="password"
-              value={passwordData.newPassword}
-              onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-              placeholder="Enter new password (min 6 characters)"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Confirm New Password</label>
-            <input
-              type="password"
-              value={passwordData.confirmPassword}
-              onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-              placeholder="Confirm new password"
-            />
-          </div>
+          {resetEmailSent && (
+            <div className="p-4 bg-green-50 border-2 border-green-300 rounded-xl flex items-center gap-3">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <p className="text-green-700 font-semibold">
+                ✓ Reset email sent! Check your inbox.
+              </p>
+            </div>
+          )}
           
           <button
-            onClick={handleChangePassword}
+            onClick={handleSendPasswordReset}
             className="px-8 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-300 font-bold shadow-lg hover:shadow-xl hover:scale-105"
           >
-            Change Password
+            Send Reset Password Email
           </button>
         </div>
       </div>
 
-      {/* Login Activity */}
-      <div className="bg-gradient-to-br from-white to-green-50 border-2 border-green-200 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 bg-green-100 rounded-xl">
-            <Activity className="text-green-600" size={24} />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-gray-800">Login Activity</h3>
-            <p className="text-sm text-gray-500">Track your account access</p>
-          </div>
-        </div>
-        
-        <div className="space-y-3">
-          <div className="flex items-center justify-between p-4 bg-white/70 backdrop-blur-sm rounded-xl border border-green-100 hover:border-green-300 transition-all">
-            <div>
-              <p className="font-semibold text-gray-800">Last Login</p>
-              <p className="text-sm text-gray-600">
-                {userProfile?.lastSignInTime ? new Date(userProfile.lastSignInTime).toLocaleString() : 'N/A'}
-              </p>
-            </div>
-            <Clock className="text-green-500" size={24} />
-          </div>
-          
-          <div className="flex items-center justify-between p-4 bg-white/70 backdrop-blur-sm rounded-xl border border-green-100 hover:border-green-300 transition-all">
-            <div>
-              <p className="font-semibold text-gray-800">Account Created</p>
-              <p className="text-sm text-gray-600">
-                {userProfile?.creationTime ? new Date(userProfile.creationTime).toLocaleString() : 'N/A'}
-              </p>
-            </div>
-            <Calendar className="text-green-500" size={24} />
-          </div>
-        </div>
-      </div>
-
-      {/* Logout All Devices */}
-      <div className="bg-gradient-to-br from-white to-red-50 border-2 border-red-200 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-3 bg-red-100 rounded-xl">
-            <LogOut className="text-red-600" size={24} />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-gray-800">Session Management</h3>
-            <p className="text-sm text-gray-500">Control your active sessions</p>
-          </div>
-        </div>
-        
-        <p className="text-gray-600 mb-4">Log out from all devices where you're currently signed in.</p>
-        <button
-          onClick={handleLogoutAllDevices}
-          className="px-8 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-300 font-bold shadow-lg hover:shadow-xl hover:scale-105"
-        >
-          Logout from All Devices
-        </button>
-      </div>
     </div>
   );
 
