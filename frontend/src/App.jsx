@@ -30,7 +30,7 @@ const App = () => {
           const userData = await authAPI.getCurrentUser();
           setUser(userData);
           if (['landing', 'login', 'register'].includes(currentPage)) {
-             setCurrentPage('dashboard');
+            setCurrentPage('dashboard');
           }
         } catch (error) {
           console.error('Session expired:', error);
@@ -40,7 +40,7 @@ const App = () => {
       setLoading(false);
     };
     checkAuth();
-  }, []); 
+  }, []);
 
   const handleLogin = async (userData) => {
     setUser(userData);
@@ -90,9 +90,9 @@ const App = () => {
       
       default:
         return (
-          <DashboardLayout 
-            user={user} 
-            onLogout={handleLogout} 
+          <DashboardLayout
+            user={user}
+            onLogout={handleLogout}
             currentPage={currentPage}
             onNavigate={handleNavigate}
           >

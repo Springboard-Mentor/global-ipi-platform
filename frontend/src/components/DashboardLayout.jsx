@@ -32,7 +32,9 @@ const DashboardLayout = ({ user, onLogout, currentPage, onNavigate, children }) 
 
     { id: 'new-filing', label: 'New Filing', icon: Shield },
     { id: 'analysis', label: 'IP Analysis', icon: Activity },
+     { id: 'search', label: 'Search', icon: Search },
     { id: 'settings', label: 'Settings', icon: Settings },
+    
   ];
 
   return (

@@ -1,4 +1,3 @@
-// components/PatentsPage.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { Search, Filter, Download, Plus, FileText, Calendar, MapPin, Tag, Eye, User, Building } from 'lucide-react';
 
@@ -121,6 +120,7 @@ const PatentsPage = ({ onViewPatent }) => {
     const filteredPatents = useMemo(() => {
         let filtered = patents;
 
+
         // 1. Filter by search term
         if (searchTerm) {
             const lowerCaseSearch = searchTerm.toLowerCase();
@@ -132,13 +132,16 @@ const PatentsPage = ({ onViewPatent }) => {
             );
         }
 
+
         // 2. Filter by status
         if (statusFilter !== 'All') {
             filtered = filtered.filter(patent => patent.status === statusFilter);
         }
 
+
         return filtered;
     }, [searchTerm, statusFilter, patents]);
+
 
     // --- Helper Functions ---
     const getStatusColor = (status) => {
@@ -150,6 +153,7 @@ const PatentsPage = ({ onViewPatent }) => {
         };
         return colors[status] || 'bg-gray-100 text-gray-800 border-gray-200';
     };
+
 
     const uniqueStatuses = useMemo(() => {
         return ['All', ...new Set(patents.map(p => p.status).filter(Boolean))];
@@ -164,9 +168,10 @@ const PatentsPage = ({ onViewPatent }) => {
         }
     };
 
+
     return (
         <div className="space-y-6">
-            
+           
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
@@ -194,6 +199,7 @@ const PatentsPage = ({ onViewPatent }) => {
                         />
                     </div>
 
+
                     {/* Status Filter */}
                     <div className="sm:w-48">
                         <select
@@ -207,6 +213,7 @@ const PatentsPage = ({ onViewPatent }) => {
                         </select>
                     </div>
 
+
                     {/* Export Button */}
                     <button className="px-4 py-2.5 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition text-sm font-medium flex items-center gap-2 text-slate-700">
                         <Download className="h-4 w-4" />
@@ -214,6 +221,7 @@ const PatentsPage = ({ onViewPatent }) => {
                     </button>
                 </div>
             </div>
+
 
             {/* Patents List */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -243,6 +251,7 @@ const PatentsPage = ({ onViewPatent }) => {
                                                 {patent.status}
                                             </span>
                                         </div>
+
 
                                         {/* Title */}
                                         <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-indigo-600 transition-colors">
@@ -301,4 +310,5 @@ const PatentsPage = ({ onViewPatent }) => {
     );
 };
 
-export default PatentsPage;
+
+export default PatentsPage; 
