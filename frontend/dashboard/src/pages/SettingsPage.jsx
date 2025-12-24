@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Lock, Key, Activity, LogOut, Bell, Palette, Globe, FileText, 
   HelpCircle, Trash, CreditCard, Download, Moon, Sun, Settings, Clock, 
-  AlertCircle, Calendar, Crown, Shield, User, Mail
+  AlertCircle, Calendar, Crown, Shield, User, Mail, ChevronDown, ChevronUp
 } from 'lucide-react';
 import UpgradeModal from '../components/UpgradeModal';
 import { db, auth } from '../firebase';
@@ -34,6 +34,15 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  
+  // Legal & Support states
+  const [faqs, setFaqs] = useState([]);
+  const [termsConditions, setTermsConditions] = useState(null);
+  const [privacyPolicy, setPrivacyPolicy] = useState(null);
+  const [expandedFaq, setExpandedFaq] = useState(null);
+  const [showTerms, setShowTerms] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
+  const [legalLoading, setLegalLoading] = useState(false);
 
   const currentUID = auth.currentUser?.uid || userProfile?.uid;
 
@@ -92,6 +101,45 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
 
     loadSettings();
   }, [currentUID]);
+
+  // Load Legal & Support Data
+  useEffect(() => {
+    const loadLegalData = async () => {
+      if (activeTab !== 'legal') return;
+      
+      setLegalLoading(true);
+      try {
+        const API_BASE = 'http://localhost:8080/api';
+        
+        // Fetch FAQs
+        const faqResponse = await fetch(`${API_BASE}/faq`);
+        if (faqResponse.ok) {
+          const faqData = await faqResponse.json();
+          setFaqs(faqData.data || []);
+        }
+        
+        // Fetch Terms & Conditions
+        const termsResponse = await fetch(`${API_BASE}/terms`);
+        if (termsResponse.ok) {
+          const termsData = await termsResponse.json();
+          setTermsConditions(termsData.data || null);
+        }
+        
+        // Fetch Privacy Policy
+        const privacyResponse = await fetch(`${API_BASE}/privacy`);
+        if (privacyResponse.ok) {
+          const privacyData = await privacyResponse.json();
+          setPrivacyPolicy(privacyData.data || null);
+        }
+      } catch (error) {
+        console.error('Error loading legal data:', error);
+      } finally {
+        setLegalLoading(false);
+      }
+    };
+
+    loadLegalData();
+  }, [activeTab]);
 
   // Subscription Handlers
   const handleUpgradeClick = () => {
@@ -656,44 +704,178 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
 
   // Render Legal & Support Tab Content
   const renderLegalTab = () => (
-    <div className="space-y-6">
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-          <FileText className="text-blue-500" size={24} />
-          Legal Documents
-        </h3>
-        
-        <div className="space-y-3">
-          <a href="#" className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-            <span className="font-medium text-gray-800">Terms & Conditions</span>
-            <Download size={18} className="text-gray-500" />
-          </a>
-          <a href="#" className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-            <span className="font-medium text-gray-800">Privacy Policy</span>
-            <Download size={18} className="text-gray-500" />
-          </a>
-        </div>
-      </div>
-
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-          <HelpCircle className="text-green-500" size={24} />
-          Help & Support
-        </h3>
-        
-        <div className="space-y-3">
-          <a href="#" className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-            <span className="font-medium text-gray-800">FAQ / Help Center</span>
-          </a>
-          <a href="#" className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-            <span className="font-medium text-gray-800">Contact Support</span>
-          </a>
-          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-gray-600">Version: 1.0.0</p>
-            <p className="text-sm text-gray-600">© 2025 Global IP Intelligence Platform</p>
+    <div className="space-y-4">
+      {legalLoading ? (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-300 rounded-xl p-4 shadow-sm">
+          <div className="flex items-center">
+            <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent mr-3"></div>
+            <p className="text-blue-900 font-medium">Loading legal documents...</p>
           </div>
         </div>
-      </div>
+      ) : (
+        <>
+          {/* Legal Documents */}
+          <div className="bg-gradient-to-br from-white to-gray-50 border border-gray-300 rounded-xl shadow-lg overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-4">
+              <h3 className="text-lg font-bold text-white flex items-center gap-3">
+                <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                  <FileText className="text-white" size={22} strokeWidth={2.5} />
+                </div>
+                Legal Documents
+              </h3>
+            </div>
+            
+            <div className="p-4 space-y-2">
+              {/* Terms & Conditions */}
+              <div className="border-2 border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-200">
+                <button
+                  onClick={() => setShowTerms(!showTerms)}
+                  className={`w-full flex items-center justify-between px-4 py-3.5 transition-all duration-200 ${
+                    showTerms 
+                      ? 'bg-gradient-to-r from-blue-50 to-indigo-50' 
+                      : 'bg-white hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`p-1.5 rounded-lg ${showTerms ? 'bg-blue-600' : 'bg-gray-700'}`}>
+                      <FileText size={16} className="text-white" strokeWidth={2.5} />
+                    </div>
+                    <span className="font-semibold text-gray-900">Terms & Conditions</span>
+                  </div>
+                  {showTerms ? 
+                    <ChevronUp size={20} className="text-gray-700" strokeWidth={2.5} /> : 
+                    <ChevronDown size={20} className="text-gray-700" strokeWidth={2.5} />
+                  }
+                </button>
+                {showTerms && termsConditions && (
+                  <div className="px-5 py-4 bg-white border-t-2 border-gray-200 max-h-96 overflow-y-auto">
+                    <div className="mb-4 pb-3 border-b border-gray-200">
+                      <h4 className="text-xl font-bold text-gray-900">{termsConditions.title}</h4>
+                      <p className="text-xs text-gray-600 mt-1 font-medium">
+                        Version {termsConditions.version} | Effective: {new Date(termsConditions.effectiveDate).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div 
+                      className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
+                      dangerouslySetInnerHTML={{ __html: termsConditions.content }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Privacy Policy */}
+              <div className="border-2 border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-200">
+                <button
+                  onClick={() => setShowPrivacy(!showPrivacy)}
+                  className={`w-full flex items-center justify-between px-4 py-3.5 transition-all duration-200 ${
+                    showPrivacy 
+                      ? 'bg-gradient-to-r from-purple-50 to-pink-50' 
+                      : 'bg-white hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`p-1.5 rounded-lg ${showPrivacy ? 'bg-purple-600' : 'bg-gray-700'}`}>
+                      <Shield size={16} className="text-white" strokeWidth={2.5} />
+                    </div>
+                    <span className="font-semibold text-gray-900">Privacy Policy</span>
+                  </div>
+                  {showPrivacy ? 
+                    <ChevronUp size={20} className="text-gray-700" strokeWidth={2.5} /> : 
+                    <ChevronDown size={20} className="text-gray-700" strokeWidth={2.5} />
+                  }
+                </button>
+                {showPrivacy && privacyPolicy && (
+                  <div className="px-5 py-4 bg-white border-t-2 border-gray-200 max-h-96 overflow-y-auto">
+                    <div className="mb-4 pb-3 border-b border-gray-200">
+                      <h4 className="text-xl font-bold text-gray-900">{privacyPolicy.title}</h4>
+                      <p className="text-xs text-gray-600 mt-1 font-medium">
+                        Version {privacyPolicy.version} | Effective: {new Date(privacyPolicy.effectiveDate).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div 
+                      className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
+                      dangerouslySetInnerHTML={{ __html: privacyPolicy.content }}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Help & Support */}
+          <div className="bg-gradient-to-br from-white to-gray-50 border border-gray-300 rounded-xl shadow-lg overflow-hidden">
+            <div className="bg-gradient-to-r from-green-600 to-emerald-600 px-5 py-4">
+              <h3 className="text-lg font-bold text-white flex items-center gap-3">
+                <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                  <HelpCircle className="text-white" size={22} strokeWidth={2.5} />
+                </div>
+                FAQ / Help Center
+              </h3>
+            </div>
+            
+            <div className="p-4 space-y-2">
+              {faqs.length > 0 ? (
+                faqs.map((faq) => (
+                  <div key={faq.id} className="border-2 border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-200">
+                    <button
+                      onClick={() => setExpandedFaq(expandedFaq === faq.id ? null : faq.id)}
+                      className={`w-full flex items-center justify-between px-4 py-3.5 transition-all duration-200 text-left ${
+                        expandedFaq === faq.id
+                          ? 'bg-gradient-to-r from-green-50 to-emerald-50'
+                          : 'bg-white hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className={`p-1.5 rounded-lg flex-shrink-0 ${expandedFaq === faq.id ? 'bg-green-600' : 'bg-gray-700'}`}>
+                          <HelpCircle size={16} className="text-white" strokeWidth={2.5} />
+                        </div>
+                        <span className="font-semibold text-gray-900">{faq.question}</span>
+                      </div>
+                      {expandedFaq === faq.id ? 
+                        <ChevronUp size={20} className="text-gray-700 flex-shrink-0 ml-2" strokeWidth={2.5} /> : 
+                        <ChevronDown size={20} className="text-gray-700 flex-shrink-0 ml-2" strokeWidth={2.5} />
+                      }
+                    </button>
+                    {expandedFaq === faq.id && (
+                      <div className="px-5 py-4 bg-white border-t-2 border-gray-200">
+                        <p className="text-gray-700 whitespace-pre-line leading-relaxed">{faq.answer}</p>
+                        {faq.category && (
+                          <span className="inline-block mt-3 px-3 py-1.5 bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 text-xs font-semibold rounded-full border border-blue-200">
+                            {faq.category}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-center py-6 font-medium">No FAQs available</p>
+              )}
+            </div>
+
+            <div className="p-4 pt-2 space-y-2 border-t border-gray-200">
+              <a 
+                href="mailto:support@globalip.com" 
+                className="flex items-center justify-between px-4 py-3.5 bg-gradient-to-r from-gray-700 to-gray-800 text-white rounded-lg hover:from-gray-800 hover:to-gray-900 transition-all duration-200 shadow-md hover:shadow-lg group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-1.5 bg-white/20 rounded-lg backdrop-blur-sm">
+                    <Mail size={16} className="text-white" strokeWidth={2.5} />
+                  </div>
+                  <span className="font-semibold">Contact Support</span>
+                </div>
+                <div className="p-1 bg-white/20 rounded group-hover:bg-white/30 transition-colors">
+                  <Mail size={16} className="text-white" strokeWidth={2.5} />
+                </div>
+              </a>
+              <div className="px-4 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg">
+                <p className="text-sm text-gray-700 font-semibold">Version: 1.0.0</p>
+                <p className="text-sm text-gray-600 font-medium">© 2025 Global IP Intelligence Platform</p>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 

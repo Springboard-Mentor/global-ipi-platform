@@ -224,11 +224,6 @@ public class PatentService {
             return patent;
         }
     }
-
-    private List<Patent> getLocalPatents(String query) {
-        // This method is deprecated - use searchInDatabase instead
-        return searchInDatabase(query);
-    }
     
     private List<Patent> searchInDatabase(String query) {
         List<Patent> dbPatents = new ArrayList<>();
