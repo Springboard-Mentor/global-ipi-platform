@@ -1,5 +1,6 @@
 package com.project.backend.service;
 
+import com.project.backend.dto.GeoLocationDTO;
 import com.project.backend.dto.PatentDTO;
 import com.project.backend.entity.IPAsset;
 import com.project.backend.repository.IPAssetRepository;
@@ -10,49 +11,77 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class IPAssetService {
 
     private final IPAssetRepository ipAssetRepository;
-    private final ExternalIPService externalIPService; // ✅ Uses your existing API service
+    private final ExternalIPService externalIPService;
 
     public IPAssetService(IPAssetRepository ipAssetRepository, ExternalIPService externalIPService) {
         this.ipAssetRepository = ipAssetRepository;
         this.externalIPService = externalIPService;
     }
 
+    /**
+     * Fetch geographic distribution for the Map view.
+     * Aggregates counts by jurisdiction based on a search keyword.
+     */
+    public List<GeoLocationDTO> getGeoDistribution(String keyword) {
+        List<Object[]> results = ipAssetRepository.getJurisdictionCounts(keyword);
+        List<GeoLocationDTO> distribution = new ArrayList<>();
+
+        for (Object[] row : results) {
+            GeoLocationDTO dto = new GeoLocationDTO();
+            dto.setJurisdiction((String) row[0]);
+            
+            // Extract the count from the query result
+            int countValue = ((Long) row[1]).intValue();
+            dto.setCount(countValue);
+            
+            // FIX: Cast int to long to match the DTO field type
+            dto.setPatentCount((long) countValue); 
+            
+            distribution.add(dto);
+        }
+        return distribution;
+    }
+
+    /**
+     * Core search logic handling both Local DB and External API.
+     */
     public Page<IPAsset> search(String keyword, String type, String source, int page, int size, String sortBy, String sortDirection) {
         
         Sort sort = Sort.by(Sort.Direction.fromString(sortDirection), sortBy);
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        // 🟢 API SEARCH CASE
+        // API SEARCH CASE: Fetch from external source and sync to local DB
         if ("api".equalsIgnoreCase(source)) {
             System.out.println("🌐 Calling External API for: " + keyword);
             
-            // 1. Fetch from SerpApi
             List<PatentDTO> apiResults = externalIPService.searchSerpApi(keyword);
-            
-            // 2. Save to Database (Transactional)
             saveApiResultsToDatabase(apiResults);
             
-            // 3. Return Data from Database marked as 'api'
+            // Return saved data marked as 'api' from local storage
             return ipAssetRepository.searchAssets(keyword, type, "api", pageable);
         }
 
-        // 🔵 LOCAL SEARCH CASE
+        // LOCAL SEARCH CASE: Standard database search
         if (keyword == null) keyword = "";
         if (type == null) type = "ALL";
         if (source == null) source = "local";
 
         System.out.println("📦 Searching Local DB for: " + keyword);
-        // Repository query updated to include saved API results in 'local' search
-        return ipAssetRepository.searchAssets(keyword, type, "local", pageable);
+        return ipAssetRepository.searchAssets(keyword, type, source, pageable);
     }
 
-    @Transactional // ✅ Ensures data is committed to DB
+    /**
+     * Persists API results to the local database.
+     * Transactional ensures data consistency.
+     */
+    @Transactional
     public void saveApiResultsToDatabase(List<PatentDTO> dtos) {
         if (dtos == null || dtos.isEmpty()) {
             System.out.println("⚠️ No results to save.");
@@ -65,7 +94,7 @@ public class IPAssetService {
                 String assetId = dto.getAssetNumber();
                 if (assetId == null || assetId.isEmpty()) assetId = dto.getId();
 
-                // ✅ Duplicate Check using optimized Repository method
+                // Duplicate Check: Only save if the asset doesn't already exist
                 if (!ipAssetRepository.existsByAssetNumber(assetId)) {
                     
                     IPAsset asset = new IPAsset();
@@ -80,7 +109,7 @@ public class IPAssetService {
                     asset.setInventor(truncate(dto.getInventor(), 255));
                     
                     asset.setFilingDate(parseDate(dto.getFilingDate()));
-                    asset.setApiSource("api"); // ✅ Marks as API data
+                    asset.setApiSource("api"); // Mark as API data for filtering
                     asset.setLastUpdated(LocalDateTime.now());
 
                     ipAssetRepository.save(asset);
@@ -93,12 +122,18 @@ public class IPAssetService {
         System.out.println("💾 Saved " + savedCount + " new records from Real API.");
     }
 
+    /**
+     * Helper: Truncates strings to prevent Database column overflow errors.
+     */
     private String truncate(String val, int length) {
         if (val == null) return null;
         if (val.length() > length) return val.substring(0, length - 3) + "...";
         return val;
     }
 
+    /**
+     * Helper: Safely parses various date formats into LocalDateTime.
+     */
     private LocalDateTime parseDate(String dateStr) {
         try {
             if (dateStr == null || dateStr.isEmpty()) return LocalDateTime.now();

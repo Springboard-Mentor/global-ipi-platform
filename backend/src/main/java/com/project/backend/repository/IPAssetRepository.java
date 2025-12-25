@@ -7,48 +7,59 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
 import java.util.List;
 
 @Repository
 public interface IPAssetRepository extends JpaRepository<IPAsset, Integer> {
 
-    // ✅ REQUIRED for duplicate checking in Service
+    // Checks if an asset exists by its unique asset number
     boolean existsByAssetNumber(String assetNumber);
 
-    // ✅ The Main Search Method
-    // Logic: If source is 'local', it returns everything in the DB.
-    // If source is 'api', it only returns records previously marked as 'api'.
+    // --- MISSING METHODS ADDED BELOW TO FIX BUILD ERRORS ---
+
+    // 1. Used by GeoService: Find assets by their type (e.g., PATENT, TRADEMARK)
+    List<IPAsset> findByType(String type);
+
+    // 2. Used by GeoService: Search by keyword in Title OR Details (Case Insensitive)
+    List<IPAsset> findByTitleContainingIgnoreCaseOrDetailsContainingIgnoreCase(String title, String details);
+
+    // 3. Used by GeoService: Search by Type AND (Title OR Details)
+    List<IPAsset> findByTypeAndTitleContainingIgnoreCaseOrDetailsContainingIgnoreCase(String type, String title, String details);
+
+    // 4. Used by UnifiedSearchService: Custom query to search keyword in title or details
+    @Query("SELECT i FROM IPAsset i WHERE LOWER(i.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(i.details) LIKE LOWER(CONCAT('%', :keyword, '%'))")
+    List<IPAsset> searchByKeyword(@Param("keyword") String keyword);
+
+    // --------------------------------------------------------
+
+    // Existing method: Simple title search
+    List<IPAsset> findByTitleContainingIgnoreCase(String keyword);
+
+    // Existing method: Main search with filters for pagination
     @Query("SELECT i FROM IPAsset i WHERE " +
-           "(:keyword IS NULL OR :keyword = '' OR " +
-           "  LOWER(i.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "  LOWER(i.assetNumber) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "  LOWER(i.assignee) LIKE LOWER(CONCAT('%', :keyword, '%')) OR " +
-           "  LOWER(i.inventor) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
-           "AND (:type IS NULL OR :type = 'ALL' OR :type = '' OR i.type = :type) " +
-           "AND (:source IS NULL OR :source = '' OR :source = 'local' OR LOWER(i.apiSource) = LOWER(:source))")
+           "(:keyword IS NULL OR LOWER(i.title) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
+           "(:type = 'ALL' OR i.type = :type) AND " +
+           "(:source = 'all' OR i.apiSource = :source)")
     Page<IPAsset> searchAssets(@Param("keyword") String keyword, 
                                @Param("type") String type, 
                                @Param("source") String source, 
                                Pageable pageable);
 
-    // --- Legacy Methods ---
-    @Query("""
-        SELECT ip FROM IPAsset ip
-        WHERE (:keyword IS NULL OR LOWER(ip.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                               OR LOWER(ip.assignee) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                               OR LOWER(ip.inventor) LIKE LOWER(CONCAT('%', :keyword, '%')))
-          AND (:assignee IS NULL OR LOWER(ip.assignee) LIKE LOWER(CONCAT('%', :assignee, '%')))
-          AND (:inventor IS NULL OR LOWER(ip.inventor) LIKE LOWER(CONCAT('%', :inventor, '%')))
-          AND (:jurisdiction IS NULL OR LOWER(ip.jurisdiction) = LOWER(:jurisdiction))
-    """)
-    List<IPAsset> advancedSearch(
-            @Param("keyword") String keyword,
-            @Param("assignee") String assignee,
-            @Param("inventor") String inventor,
-            @Param("jurisdiction") String jurisdiction
-    );
+    // Existing method: Advanced search with specific fields
+    @Query("SELECT i FROM IPAsset i WHERE " +
+           "(:keyword IS NULL OR LOWER(i.title) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
+           "(:assignee IS NULL OR LOWER(i.assignee) LIKE LOWER(CONCAT('%', :assignee, '%'))) AND " +
+           "(:inventor IS NULL OR LOWER(i.inventor) LIKE LOWER(CONCAT('%', :inventor, '%'))) AND " +
+           "(:jurisdiction IS NULL OR LOWER(i.jurisdiction) = LOWER(:jurisdiction))")
+    List<IPAsset> advancedSearch(@Param("keyword") String keyword, 
+                                 @Param("assignee") String assignee, 
+                                 @Param("inventor") String inventor, 
+                                 @Param("jurisdiction") String jurisdiction);
 
-    @Query("SELECT ip FROM IPAsset ip WHERE LOWER(ip.title) LIKE LOWER(CONCAT('%', :keyword, '%'))")
-    List<IPAsset> searchByKeyword(@Param("keyword") String keyword);
+    // Existing method: Aggregate counts by jurisdiction for the map
+    @Query("SELECT a.jurisdiction as jurisdiction, COUNT(a) as count " +
+           "FROM IPAsset a " +
+           "WHERE (:keyword IS NULL OR LOWER(a.title) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+           "GROUP BY a.jurisdiction")
+    List<Object[]> getJurisdictionCounts(@Param("keyword") String keyword);
 }
