@@ -12,6 +12,7 @@ import SettingsPage from './components/SettingsPage.jsx';
 import SearchResultsPage from './components/SearchResultsPage.jsx'; 
 import PatentDetailsPage from './components/PatentDetailsPage.jsx'; 
 import { authAPI } from './services/ai.js';
+import 'leaflet/dist/leaflet.css';
 
 const App = () => {
   const [currentPage, setCurrentPage] = useState('landing');

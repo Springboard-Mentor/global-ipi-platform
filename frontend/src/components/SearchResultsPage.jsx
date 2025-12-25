@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Filter, Download, Grid, List, ChevronLeft, ChevronRight, Check, Database, Globe, User, Calendar, Tag, X } from 'lucide-react';
+import { Search, Filter, Download, Grid, List, ChevronLeft, ChevronRight, Check, Database, Globe, User, Calendar, Tag, X, MapPin } from 'lucide-react';
 import { searchAPI } from '../api/searchAPI';
+import MapViewPage from './MapViewPage';
 
 const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
 
   // --- 1. STATE INITIALIZATION ---
   
-  // Try to restore state from Session Storage (for "Back" button functionality)
   const loadSavedState = () => {
     try {
       const saved = sessionStorage.getItem('searchPageParams');
@@ -15,19 +15,16 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
   };
 
   const savedState = loadSavedState();
-  // Only restore if the keyword matches (or if it's a fresh load with no prop)
   const shouldRestore = savedState && (!initialKeyword || initialKeyword === savedState.filters.keyword);
 
-  // Initialize State
   const [results, setResults] = useState(shouldRestore && Array.isArray(savedState.results) ? savedState.results : []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [viewMode, setViewMode] = useState(shouldRestore ? savedState.viewMode : 'list');
+  const [viewMode, setViewMode] = useState(shouldRestore ? savedState.viewMode : 'list'); 
   const [showFilters, setShowFilters] = useState(true);
   
   const [trackedIds, setTrackedIds] = useState(shouldRestore ? savedState.trackedIds : {});
 
-  // Pagination & Sorting
   const [currentPage, setCurrentPage] = useState(shouldRestore ? savedState.currentPage : 1);
   const [itemsPerPage, setItemsPerPage] = useState(shouldRestore ? savedState.itemsPerPage : 10);
   const [totalResults, setTotalResults] = useState(shouldRestore ? savedState.totalResults : 0);
@@ -35,7 +32,6 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
   const [sortBy, setSortBy] = useState(shouldRestore ? savedState.sortBy : 'filingDate');
   const [sortDirection, setSortDirection] = useState(shouldRestore ? savedState.sortDirection : 'desc');
 
-  // Filters
   const [filters, setFilters] = useState({
     keyword: shouldRestore ? savedState.filters.keyword : initialKeyword,
     jurisdictions: shouldRestore ? savedState.filters.jurisdictions : [],
@@ -55,11 +51,10 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
       sortBy, sortDirection, trackedIds, viewMode, hasSearched
     };
     sessionStorage.setItem('searchPageParams', JSON.stringify(stateToSave));
-  }, [results, filters, currentPage, itemsPerPage, sortBy, sortDirection, trackedIds, viewMode, hasSearched]);
+  }, [results, filters, currentPage, itemsPerPage, sortBy, sortDirection, trackedIds, viewMode, hasSearched, totalResults, totalPages]);
 
   // --- 3. API CALL ---
   const fetchResults = useCallback(async () => {
-    // Prevent empty search unless filters are active
     if (!filters.keyword.trim() && filters.jurisdictions.length === 0 && filters.statuses.length === 0) return;
 
     setLoading(true);
@@ -69,7 +64,7 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
       const searchParams = {
         keyword: filters.keyword.trim() || null,
         ipType: filters.ipType,
-        source: filters.source, // This sends 'local' or 'api' to backend
+        source: filters.source,
         jurisdictions: filters.jurisdictions.length > 0 ? filters.jurisdictions.join(',') : null,
         statuses: filters.statuses.length > 0 ? filters.statuses.join(',') : null,
         dateFrom: filters.dateFrom || null,
@@ -80,30 +75,25 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
         sortDirection,
       };
 
-      console.log("🚀 Fetching Results:", searchParams);
-
       const response = await searchAPI.searchAll(searchParams);
-      
-      // Safety check to ensure array
       const content = (response && Array.isArray(response.content)) ? response.content : [];
       setResults(content);
       setTotalResults(response.totalElements || content.length);
       setTotalPages(response.totalPages || Math.ceil(content.length / itemsPerPage));
-      
       setHasSearched(true);
 
     } catch (err) {
-      console.error("API Error:", err);
-      setError('Failed to load results. Please check your connection.');
+      console.error('Search API Error:', err);
+      setError('Failed to load results. Please check your connection or try again.');
       setResults([]); 
+      setTotalResults(0);
+      setTotalPages(0);
     } finally {
       setLoading(false);
     }
   }, [filters, currentPage, itemsPerPage, sortBy, sortDirection]);
 
   // --- 4. EFFECTS ---
-
-  // Initial Load (Landing Page)
   useEffect(() => {
     if (initialKeyword && initialKeyword !== filters.keyword) {
        setFilters(prev => ({ ...prev, keyword: initialKeyword }));
@@ -111,24 +101,20 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
     } else if (!hasSearched && initialKeyword) {
        fetchResults();
     }
-  }, [initialKeyword]);
+  }, [initialKeyword, filters.keyword, hasSearched, fetchResults]);
 
-  // Debounce Keyword Search
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (hasSearched) fetchResults();
     }, 600); 
     return () => clearTimeout(timeoutId);
-  }, [filters.keyword]);
+  }, [filters.keyword, hasSearched, fetchResults]);
 
-  // Trigger Fetch on Filter/Source Changes
   useEffect(() => {
     if (hasSearched) fetchResults();
-  }, [currentPage, itemsPerPage, sortBy, sortDirection, filters.source, filters.ipType, filters.jurisdictions, filters.statuses, filters.dateFrom, filters.dateTo]);
-
+  }, [currentPage, itemsPerPage, sortBy, sortDirection, filters.source, filters.ipType, filters.jurisdictions, filters.statuses, filters.dateFrom, filters.dateTo, hasSearched, fetchResults]);
 
   // --- 5. HANDLERS ---
-
   const handleManualSearch = () => {
     setCurrentPage(1);
     setHasSearched(true); 
@@ -144,14 +130,17 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
     if (onViewPatent) onViewPatent(item);
   };
 
-  // ✅ CRITICAL: Switch between Local and API correctly
+  const handleBackToList = () => {
+    setViewMode('list');
+  };
+
   const handleSourceChange = (newSource) => {
     if (filters.source === newSource) return;
-
     setFilters(prev => ({ ...prev, source: newSource }));
     setCurrentPage(1);
-    setResults([]); // Clear results to show loading state immediately
-    // The useEffect above will detect the change in 'filters.source' and trigger fetchResults
+    setResults([]); 
+    setTotalResults(0);
+    setTotalPages(0);
   };
 
   const handleFilterChange = (key, value) => {
@@ -174,6 +163,8 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
         ipType: 'both', source: filters.source 
     });
     setResults([]);
+    setTotalResults(0);
+    setTotalPages(0);
     setHasSearched(false);
     sessionStorage.removeItem('searchPageParams');
   };
@@ -208,13 +199,14 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Export failed:", err);
+      alert("Export failed. Please try again.");
     }
   };
 
   // --- 6. RENDER HELPERS ---
-
   const getStatusColor = (s) => {
     s = (s || '').toUpperCase();
     if (['ACTIVE', 'GRANTED', 'REGISTERED'].includes(s)) return 'bg-emerald-100 text-emerald-800 border-emerald-200';
@@ -225,7 +217,7 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
 
   const getJurisdictionFlag = (code) => {
     const flags = { US: '🇺🇸', EP: '🇪🇺', CN: '🇨🇳', IN: '🇮🇳', JP: '🇯🇵', KR: '🇰🇷', GB: '🇬🇧', DE: '🇩🇪', FR: '🇫🇷' };
-    return flags[code] || '🌐';
+    return flags[code] || '🌍';
   };
 
   const getInventorsDisplay = (item) => {
@@ -244,7 +236,18 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
     return pages;
   };
 
-  // --- 7. RENDER ---
+  // --- 7. CONDITIONAL RENDER FOR MAP VIEW ---
+  if (viewMode === 'map') {
+    return (
+      <MapViewPage 
+        results={results}
+        filters={filters}
+        onViewPatent={handleViewDetails}
+        onBack={handleBackToList}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       
@@ -308,7 +311,7 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
           
           {/* SIDEBAR FILTERS */}
           {showFilters && (
-            <aside className="w-64 flex-shrink-0 bg-white rounded-xl shadow-sm p-5 h-fit sticky top-24 border border-slate-200 hidden md:block animate-in slide-in-from-left-4 duration-300">
+            <aside className="w-64 flex-shrink-0 bg-white rounded-xl shadow-sm p-5 h-fit sticky top-24 border border-slate-200 hidden md:block">
               <div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
                 <h2 className="font-bold text-slate-800 flex items-center gap-2"><Filter size={18} className="text-indigo-500"/> Filters</h2>
                 {hasSearched && <button onClick={handleClearFilters} className="text-xs text-slate-400 hover:text-red-500 flex items-center gap-1"><X size={12}/> Clear</button>}
@@ -332,7 +335,7 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
 
                 <div>
                     <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">Jurisdiction</label>
-                    <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
+                    <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
                         {['US', 'EP', 'CN', 'IN', 'JP', 'KR', 'GB', 'DE', 'FR'].map(code => (
                             <label key={code} className="flex items-center gap-3 cursor-pointer group">
                                 <input type="checkbox" checked={filters.jurisdictions.includes(code)} onChange={(e) => handleCheckboxFilter('jurisdictions', code, e.target.checked)} className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
@@ -374,9 +377,29 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
                   <button onClick={() => setShowFilters(!showFilters)} className={`px-4 py-2 border rounded-lg flex gap-2 text-sm font-medium transition-colors ${showFilters ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'border-slate-200 text-slate-600 hover:bg-slate-50'}`}>
                     <Filter size={16}/> {showFilters ? 'Hide Filters' : 'Filters'}
                   </button>
+                  
                   <div className="flex border border-slate-200 rounded-lg overflow-hidden p-0.5 bg-slate-50">
-                    <button onClick={() => setViewMode('list')} className={`p-1.5 rounded-md ${viewMode === 'list' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}><List size={18}/></button>
-                    <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-md ${viewMode === 'grid' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}><Grid size={18}/></button>
+                    <button 
+                      onClick={() => setViewMode('list')} 
+                      className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
+                      title="List View"
+                    >
+                      <List size={18}/>
+                    </button>
+                    <button 
+                      onClick={() => setViewMode('grid')} 
+                      className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
+                      title="Grid View"
+                    >
+                      <Grid size={18}/>
+                    </button>
+                    <button 
+                      onClick={() => setViewMode('map')} 
+                      className={`p-1.5 rounded-md transition-all ${viewMode === 'map' ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-400 hover:text-slate-600'}`}
+                      title="Map View"
+                    >
+                      <MapPin size={18}/>
+                    </button>
                   </div>
               </div>
 
@@ -423,7 +446,6 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
                     onClick={() => handleViewDetails(result)}
                   >
                     <div className="flex gap-5">
-                      {/* Icon */}
                       <div className={`w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 border shadow-sm ${result.type === 'PATENT' ? 'bg-blue-50 border-blue-100 text-blue-600' : 'bg-purple-50 border-purple-100 text-purple-600'}`}>
                         <span className="font-bold text-xs tracking-wider">{result.type === 'PATENT' ? 'PAT' : 'TM'}</span>
                       </div>
@@ -442,13 +464,11 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
                             <span className="flex items-center gap-1.5 font-medium"><Globe size={12} className="text-indigo-400"/> {getJurisdictionFlag(result.jurisdiction)} {result.jurisdiction}</span>
                             <span className="flex items-center gap-1.5 font-mono bg-slate-50 px-2 py-0.5 rounded border border-slate-200 text-slate-600">{result.patentNumber || result.id}</span>
                             <span className="flex items-center gap-1.5"><Calendar size={12} className="text-indigo-400"/> {result.filingDate}</span>
-                            {/* IPC CODE ADDED */}
                             {(result.ipcCode || result.assetClass) && (
                                 <span className="flex items-center gap-1.5 font-semibold text-slate-600 bg-slate-100 px-1.5 rounded"><Tag size={10}/> {result.ipcCode || result.assetClass}</span>
                             )}
                         </div>
 
-                        {/* ✅ INVENTORS SECTION */}
                         {getInventorsDisplay(result) && (
                             <div className="flex items-start gap-2 text-xs text-slate-600 mb-3 bg-slate-50/80 p-2 rounded-lg border border-slate-100">
                                 <User className="w-3.5 h-3.5 text-slate-400 mt-0.5 flex-shrink-0" />
