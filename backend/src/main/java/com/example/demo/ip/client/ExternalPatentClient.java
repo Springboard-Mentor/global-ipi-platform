@@ -19,7 +19,7 @@ public class ExternalPatentClient {
 
     private final RestTemplate restTemplate;
 
-    @Value("${serpapi.key:}")
+    @Value("${serpapi.key}")
     private String apiKey;
 
     public List<IPSearchResultDTO> searchPatents(String query, int limit) {

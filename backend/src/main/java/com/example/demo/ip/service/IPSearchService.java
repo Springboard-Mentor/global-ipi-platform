@@ -9,7 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
-import com.example.demo.ip.client.GooglePatentsClient;
+import com.example.demo.ip.client.ExternalPatentClient;
+
 import com.example.demo.ip.dto.IPSearchRequest;
 import com.example.demo.ip.dto.IPSearchResultDTO;
 import com.example.demo.ip.entity.IPAsset;
@@ -19,13 +20,14 @@ import com.example.demo.ip.repository.IPAssetRepository;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class IPSearchService {
 
     private static final int PAGE_SIZE = 20;
 
-    private final GooglePatentsClient googlePatentsClient;
+    private final ExternalPatentClient externalPatentClient;
     private final IPAssetRepository repository;
-    private final IPAssetMapper mapper;
+   
 
     public IPSearchResultDTO getIPDetails(Long id) {
         IPAsset asset = repository.findById(id)
@@ -41,7 +43,7 @@ public class IPSearchService {
         dto.setOwnerName(asset.getOwnerName());
         dto.setInventorName(asset.getInventorName());
         dto.setFilingDate(asset.getFilingDate() != null ? asset.getFilingDate().toString() : null);
-        dto.setPublicationDate(asset.getPublicationDate() != null ? asset.getPublicationDate().toString() : null);
+        // dto.setReferenceSource(dto.getReferenceSource());
         return dto;
     }
 
@@ -55,7 +57,7 @@ public class IPSearchService {
         String query = request.getQuery().trim();
 
         // 🔹 Normalize source
-         String source = request.getSource() == null ? "LOCAL" : request.getSource().trim();
+        String source = request.getSource() == null ? "LOCAL" : request.getSource().trim();
 
         // =====================================================
         // 1️⃣ LOCAL DATABASE SEARCH
@@ -65,7 +67,6 @@ public class IPSearchService {
             Page<IPAsset> cachedAssets = repository.findByTitleContainingIgnoreCase(
                     query,
                     PageRequest.of(0, PAGE_SIZE));
-
 
             if (!cachedAssets.hasContent()) {
                 return List.of();
@@ -98,7 +99,7 @@ public class IPSearchService {
         // =====================================================
         // 2️⃣ EXTERNAL SOURCE (SerpAPI / Google Patents)
         // =====================================================
-        List<IPSearchResultDTO> results = googlePatentsClient.searchPatents(query, PAGE_SIZE);
+        List<IPSearchResultDTO> results = externalPatentClient.searchPatents(query, PAGE_SIZE);
 
         if (results == null || results.isEmpty()) {
             // fallback to local DB
@@ -116,7 +117,9 @@ public class IPSearchService {
                         dto.setOwnerName(asset.getOwnerName());
                         dto.setInventorName(asset.getInventorName());
                         dto.setFilingDate(asset.getFilingDate() != null ? asset.getFilingDate().toString() : null);
-                        dto.setPublicationDate(asset.getPublicationDate() != null ? asset.getPublicationDate().toString() : null);
+                        dto.setPublicationDate(
+                                asset.getPublicationDate() != null ? asset.getPublicationDate().toString() : null);
+                        // dto.setAbstractText(asset.getAbstractText());
                         return dto;
                     })
                     .toList();

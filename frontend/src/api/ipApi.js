@@ -1,4 +1,4 @@
-const BASE_URL = process.env.REACT_APP_API_BASE_URL;
+const BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8081";
 
 /**
  * Search Intellectual Property (Patents, Trademarks, etc.)
@@ -10,7 +10,7 @@ export async function searchIP({
   source = "EXTERNAL",
 }) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000); // 15s timeout
+  const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
 
   try {
     const response = await fetch(`${BASE_URL}/api/ip/search`, {

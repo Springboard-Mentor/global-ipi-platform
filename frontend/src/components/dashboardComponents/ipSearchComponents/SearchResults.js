@@ -39,7 +39,7 @@ const SearchResults = () => {
 
     const normalized = Array.isArray(data)
   ? data.map((item, index) => ({
-      id: item.id || index,
+      id: item.id ?? `${item.number}-${index}`,
       title: item.title,
       number: item.applicationNumber || "N/A",
       assignee: item.ownerName || "Unknown",
@@ -61,8 +61,6 @@ setSortBy("relevance");
 
 console.log("Normalized results:", normalized);
 
-        setResults(normalized);
-        setTotalResults(normalized.length);
       } catch (err) {
         console.error(err);
         setError("Failed to load search results");
@@ -87,7 +85,8 @@ console.log("Normalized results:", normalized);
 
 
     const inventorFilter = searchParams.get("inventor");
-    if (inventorFilter && searchParams.get("type") === "patent") {
+    if (inventorFilter && searchParams.get("type")?.toUpperCase() === "PATENT"
+) {
       filtered = filtered.filter(
         (r) =>
           r.inventor &&
