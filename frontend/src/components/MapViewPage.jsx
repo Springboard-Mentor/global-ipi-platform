@@ -63,12 +63,27 @@ const MapViewPage = ({ results = [], filters = {}, onViewPatent, onBack }) => {
   const [showSidebar, setShowSidebar] = useState(true);
   const [mapStyle, setMapStyle] = useState('default');
 
+  // --- UPDATED EFFECT WITH POLLING LOGIC ---
   useEffect(() => {
-    fetchGeoData();
+    // 1. Initial Load (Shows Spinner)
+    fetchGeoData(false);
+
+    // 2. Set up Interval (Runs every 10 seconds, Hides Spinner)
+    const intervalId = setInterval(() => {
+      fetchGeoData(true); // Pass true to indicate background update
+    }, 10000);
+
+    // 3. Cleanup on unmount or filter change
+    return () => clearInterval(intervalId);
   }, [filters, results]);
 
-  const fetchGeoData = async () => {
-    setLoading(true);
+  // --- UPDATED FETCH FUNCTION ---
+  // isBackgroundUpdate = true means don't show the loading spinner
+  const fetchGeoData = async (isBackgroundUpdate = false) => {
+    if (!isBackgroundUpdate) {
+      setLoading(true);
+    }
+    
     try {
       // Try API first
       let data;
@@ -91,7 +106,9 @@ const MapViewPage = ({ results = [], filters = {}, onViewPatent, onBack }) => {
       console.warn('API Error or 404, falling back to local calculation:', error);
       processLocalResults();
     } finally {
-      setLoading(false);
+      if (!isBackgroundUpdate) {
+        setLoading(false);
+      }
     }
   };
 

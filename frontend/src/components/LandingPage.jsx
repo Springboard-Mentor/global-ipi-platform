@@ -1,10 +1,143 @@
-import React from 'react';
-import { BrainCircuit, Globe, ShieldCheck, TrendingUp, Search, Zap, ArrowRight } from 'lucide-react';
+import React, { useState } from 'react';
+import { BrainCircuit, Globe, ShieldCheck, TrendingUp, Search, Zap, ArrowRight, X, Mail, MapPin } from 'lucide-react';
 
 const LandingPage = ({ onNavigate }) => {
+  const [showModal, setShowModal] = useState(null);
+
+  const ModalContent = () => {
+    if (showModal === 'privacy') {
+      return (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-slate-900">Privacy Policy</h2>
+          <div className="space-y-3 text-sm text-slate-600 max-h-96 overflow-y-auto">
+            <p><strong>Last Updated:</strong> December 26, 2025</p>
+            <h3 className="text-lg font-semibold text-slate-900 mt-4">1. Information We Collect</h3>
+            <p>We collect information you provide directly to us, including:</p>
+            <ul className="list-disc pl-6 space-y-1">
+              <li>Name, email address, and contact information</li>
+              <li>Company/organization details</li>
+              <li>Patent and trademark information you submit</li>
+              <li>Usage data and analytics</li>
+            </ul>
+            <h3 className="text-lg font-semibold text-slate-900 mt-4">2. How We Use Your Information</h3>
+            <p>We use the information we collect to:</p>
+            <ul className="list-disc pl-6 space-y-1">
+              <li>Provide, maintain, and improve our services</li>
+              <li>Process your IP filings and monitoring requests</li>
+              <li>Send you technical notices and support messages</li>
+              <li>Respond to your comments and questions</li>
+              <li>Detect and prevent fraud and abuse</li>
+            </ul>
+            <h3 className="text-lg font-semibold text-slate-900 mt-4">3. Data Security</h3>
+            <p>We implement industry-standard security measures to protect your data, including encryption, secure servers, and regular security audits.</p>
+            <h3 className="text-lg font-semibold text-slate-900 mt-4">4. Data Sharing</h3>
+            <p>We do not sell your personal information. We may share data with service providers, government IP offices, and legal authorities when required.</p>
+            <h3 className="text-lg font-semibold text-slate-900 mt-4">5. Your Rights</h3>
+            <p>You have the right to access, correct, or delete your personal data. Contact us at bhargavabhay182@gmail.com for any privacy requests.</p>
+            <h3 className="text-lg font-semibold text-slate-900 mt-4">6. Contact</h3>
+            <p>Email: <a href="mailto:bhargavabhay182@gmail.com" className="text-indigo-600 hover:underline">bhargavabhay182@gmail.com</a></p>
+          </div>
+        </div>
+      );
+    }
+
+    if (showModal === 'terms') {
+      return (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-slate-900">Terms of Service</h2>
+          <div className="space-y-3 text-sm text-slate-600 max-h-96 overflow-y-auto">
+            <p><strong>Last Updated:</strong> December 26, 2025</p>
+            <h3 className="text-lg font-semibold text-slate-900 mt-4">1. Acceptance of Terms</h3>
+            <p>By accessing Global IP Intelligence Platform, you agree to be bound by these Terms of Service and all applicable laws and regulations.</p>
+            <h3 className="text-lg font-semibold text-slate-900 mt-4">2. Use License</h3>
+            <p>Permission is granted to use the platform for managing your intellectual property portfolio, searching databases, monitoring IP assets, and filing new applications.</p>
+            <h3 className="text-lg font-semibold text-slate-900 mt-4">3. User Responsibilities</h3>
+            <p>You agree to:</p>
+            <ul className="list-disc pl-6 space-y-1">
+              <li>Provide accurate and complete information</li>
+              <li>Maintain the security of your account credentials</li>
+              <li>Not use the platform for illegal purposes</li>
+              <li>Not attempt to breach security measures</li>
+              <li>Respect intellectual property rights of others</li>
+            </ul>
+            <h3 className="text-lg font-semibold text-slate-900 mt-4">4. Service Availability</h3>
+            <p>We strive for 99.9% uptime but do not guarantee uninterrupted service. Maintenance and updates may cause temporary unavailability.</p>
+            <h3 className="text-lg font-semibold text-slate-900 mt-4">5. Intellectual Property</h3>
+            <p>All platform content, features, and functionality are owned by Global IP Intelligence Inc. and protected by international copyright laws.</p>
+            <h3 className="text-lg font-semibold text-slate-900 mt-4">6. Limitation of Liability</h3>
+            <p>We are not liable for any indirect, incidental, or consequential damages arising from use of our platform. This is an academic project.</p>
+            <h3 className="text-lg font-semibold text-slate-900 mt-4">7. Contact</h3>
+            <p>Email: <a href="mailto:bhargavabhay182@gmail.com" className="text-indigo-600 hover:underline">bhargavabhay182@gmail.com</a></p>
+          </div>
+        </div>
+      );
+    }
+
+    if (showModal === 'contact') {
+      return (
+        <div className="space-y-6">
+          <h2 className="text-2xl font-bold text-slate-900">Contact Us</h2>
+          <div className="space-y-4">
+            <div className="flex items-start gap-4 p-4 bg-indigo-50 rounded-lg border border-indigo-100">
+              <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center">
+                <Mail className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-900 mb-1">Email</h3>
+                <a href="mailto:bhargavabhay182@gmail.com" className="text-indigo-600 hover:underline">
+                  bhargavabhay182@gmail.com
+                </a>
+                <p className="text-sm text-slate-600 mt-1">We typically respond within 24 hours</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-4 p-4 bg-purple-50 rounded-lg border border-purple-100">
+              <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-purple-600 flex items-center justify-center">
+                <MapPin className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-slate-900 mb-1">Global Operations</h3>
+                <p className="text-slate-600">Serving 150+ countries worldwide</p>
+                <p className="text-sm text-slate-500 mt-1">Academic Project - Infosys Springboard</p>
+              </div>
+            </div>
+            <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+              <h3 className="font-semibold text-slate-900 mb-2">Business Hours</h3>
+              <p className="text-sm text-slate-600">Support: Monday - Friday, 9:00 AM - 6:00 PM (IST)</p>
+              <p className="text-sm text-slate-600">Emergency Support: 24/7 for critical issues</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-slate-50">
-      {/* Hero Section */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+            <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Globe className="h-5 w-5 text-indigo-600" />
+                <span className="font-semibold text-slate-900">Global IP Intelligence</span>
+              </div>
+              <button onClick={() => setShowModal(null)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                <X className="w-5 h-5 text-slate-600" />
+              </button>
+            </div>
+            <div className="p-6">
+              <ModalContent />
+            </div>
+            <div className="sticky bottom-0 bg-slate-50 border-t border-slate-200 px-6 py-4">
+              <button onClick={() => setShowModal(null)} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-lg transition-colors">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 pt-20 pb-16">
         <div className="w-full max-w-6xl space-y-12 text-center">
           <div className="flex flex-col items-center justify-center">
@@ -37,7 +170,6 @@ const LandingPage = ({ onNavigate }) => {
             </button>
           </div>
           
-          {/* Key Features Icons */}
           <div className="mt-20 grid grid-cols-1 gap-8 sm:grid-cols-3 text-slate-600">
             <div className="flex flex-col items-center p-6 bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:scale-105">
               <div className="p-4 bg-indigo-100 rounded-xl mb-4">
@@ -64,7 +196,6 @@ const LandingPage = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* Additional Features Section */}
       <div className="bg-white py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-3xl font-bold text-center text-slate-900 mb-12">
@@ -104,7 +235,6 @@ const LandingPage = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* Stats Section */}
       <div className="bg-gradient-to-r from-indigo-600 to-purple-600 py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center text-white">
@@ -128,7 +258,6 @@ const LandingPage = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* CTA Section */}
       <div className="bg-slate-50 py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold text-slate-900 mb-4">
@@ -147,18 +276,73 @@ const LandingPage = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="bg-slate-900 text-slate-400 py-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-6xl mx-auto text-center">
-          <p className="text-sm">
-            &copy; 2025 Global IP Intelligence Inc. All rights reserved.
-          </p>
-          <div className="mt-4 flex items-center justify-center gap-6 text-xs">
-            <button className="hover:text-white transition-colors">Privacy Policy</button>
-            <span>•</span>
-            <button className="hover:text-white transition-colors">Terms of Service</button>
-            <span>•</span>
-            <button className="hover:text-white transition-colors">Contact Us</button>
+      <footer className="bg-slate-900 text-slate-400 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <Globe className="h-6 w-6 text-indigo-400" />
+                <span className="text-white font-semibold text-lg">Global IP Intelligence</span>
+              </div>
+              <p className="text-sm text-slate-400 leading-relaxed">
+                Empowering innovators worldwide with intelligent intellectual property management and protection solutions.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="text-white font-semibold mb-4">Legal</h3>
+              <div className="space-y-2">
+                <button 
+                  onClick={() => setShowModal('privacy')}
+                  className="block text-sm hover:text-white transition-colors"
+                >
+                  Privacy Policy
+                </button>
+                <button 
+                  onClick={() => setShowModal('terms')}
+                  className="block text-sm hover:text-white transition-colors"
+                >
+                  Terms of Service
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-white font-semibold mb-4">Contact Us</h3>
+              <div className="space-y-3">
+                <a 
+                  href="mailto:bhargavabhay182@gmail.com"
+                  className="flex items-center gap-2 text-sm hover:text-white transition-colors group"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center group-hover:bg-indigo-600 transition-colors">
+                    <Mail className="w-4 h-4" />
+                  </div>
+                  <span>bhargavabhay182@gmail.com</span>
+                </a>
+                <button
+                  onClick={() => setShowModal('contact')}
+                  className="flex items-center gap-2 text-sm hover:text-white transition-colors group"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center group-hover:bg-indigo-600 transition-colors">
+                    <MapPin className="w-4 h-4" />
+                  </div>
+                  <span>View Contact Details</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-8 border-t border-slate-800">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+              <p className="text-sm text-center md:text-left">
+                &copy; 2025 Global IP Intelligence Inc. All rights reserved.
+              </p>
+              <div className="flex items-center gap-4 text-xs">
+                <span className="text-slate-500">Academic Project</span>
+                <span className="text-slate-600">•</span>
+                <span className="text-slate-500">Infosys Springboard</span>
+              </div>
+            </div>
           </div>
         </div>
       </footer>
