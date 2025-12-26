@@ -241,8 +241,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
                 <p className="text-xs text-red-700 font-semibold mb-1">⚠️ Backend Server Not Running</p>
                 <p className="text-xs text-red-600">
                   Please start the backend server:
-                  <br />1. Open terminal in backend/backend folder
-                  <br />2. Run: <code className="bg-red-100 px-1 rounded">mvn spring-boot:run</code>
+
                 </p>
               </div>
             )}

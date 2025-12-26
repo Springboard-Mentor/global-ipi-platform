@@ -11,14 +11,14 @@ function Show-Banner {
 
 function Test-BackendConnection {
     try {
-        $response = Invoke-RestMethod -Uri "$API_BASE/patents" -Method Get -ErrorAction Stop
-        Write-Host "`n✓ Backend server is running" -ForegroundColor Green
-        return $true
-    } catch {
-        Write-Host "`n✗ Backend server is NOT running!" -ForegroundColor Red
-        Write-Host "Please start the backend with: mvn spring-boot:run" -ForegroundColor Yellow
-        return $false
-    }
+    $response = Invoke-RestMethod -Uri "$API_BASE/patents" -Method Get -ErrorAction Stop
+    Write-Host "`n✔ All systems are operational." -ForegroundColor Green
+    return $true
+} catch {
+    Write-Host "`n✖ We’re unable to connect to the service at the moment." -ForegroundColor Red
+    Write-Host "Our team is working to restore access. Please try again shortly." -ForegroundColor Yellow
+    return $false
+}
 }
 
 function Show-Patents {
