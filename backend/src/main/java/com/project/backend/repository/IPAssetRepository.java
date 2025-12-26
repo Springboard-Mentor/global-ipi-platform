@@ -8,12 +8,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
 import java.util.List;
 
 @Repository
 public interface IPAssetRepository extends JpaRepository<IPAsset, Integer> {
 
+<<<<<<< HEAD
     // ===========================
     // 🔐 BASIC CHECKS
     // ===========================
@@ -91,3 +91,56 @@ public interface IPAssetRepository extends JpaRepository<IPAsset, Integer> {
     """)
     List<Object[]> getJurisdictionCounts(@Param("keyword") String keyword);
 }
+=======
+    // Checks if an asset exists by its unique asset number
+    boolean existsByAssetNumber(String assetNumber);
+
+    // --- MISSING METHODS ADDED BELOW TO FIX BUILD ERRORS ---
+
+    // 1. Used by GeoService: Find assets by their type (e.g., PATENT, TRADEMARK)
+    List<IPAsset> findByType(String type);
+
+    // 2. Used by GeoService: Search by keyword in Title OR Details (Case Insensitive)
+    List<IPAsset> findByTitleContainingIgnoreCaseOrDetailsContainingIgnoreCase(String title, String details);
+
+    // 3. Used by GeoService: Search by Type AND (Title OR Details)
+    List<IPAsset> findByTypeAndTitleContainingIgnoreCaseOrDetailsContainingIgnoreCase(String type, String title, String details);
+
+    // 4. Used by UnifiedSearchService: Custom query to search keyword in title or details
+    @Query("SELECT i FROM IPAsset i WHERE LOWER(i.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(i.details) LIKE LOWER(CONCAT('%', :keyword, '%'))")
+    List<IPAsset> searchByKeyword(@Param("keyword") String keyword);
+
+    // --------------------------------------------------------
+
+    // Existing method: Simple title search
+    List<IPAsset> findByTitleContainingIgnoreCase(String keyword);
+
+    // Existing method: Main search with filters for pagination
+    @Query("SELECT i FROM IPAsset i WHERE " +
+           "(:keyword IS NULL OR LOWER(i.title) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
+           "(:type = 'ALL' OR i.type = :type) AND " +
+           "(:source = 'all' OR i.apiSource = :source)")
+    Page<IPAsset> searchAssets(@Param("keyword") String keyword, 
+                               @Param("type") String type, 
+                               @Param("source") String source, 
+                               Pageable pageable);
+
+    // Existing method: Advanced search with specific fields
+    @Query("SELECT i FROM IPAsset i WHERE " +
+           "(:keyword IS NULL OR LOWER(i.title) LIKE LOWER(CONCAT('%', :keyword, '%'))) AND " +
+           "(:assignee IS NULL OR LOWER(i.assignee) LIKE LOWER(CONCAT('%', :assignee, '%'))) AND " +
+           "(:inventor IS NULL OR LOWER(i.inventor) LIKE LOWER(CONCAT('%', :inventor, '%'))) AND " +
+           "(:jurisdiction IS NULL OR LOWER(i.jurisdiction) = LOWER(:jurisdiction))")
+    List<IPAsset> advancedSearch(@Param("keyword") String keyword, 
+                                 @Param("assignee") String assignee, 
+                                 @Param("inventor") String inventor, 
+                                 @Param("jurisdiction") String jurisdiction);
+
+    // Existing method: Aggregate counts by jurisdiction for the map
+    @Query("SELECT a.jurisdiction as jurisdiction, COUNT(a) as count " +
+           "FROM IPAsset a " +
+           "WHERE (:keyword IS NULL OR LOWER(a.title) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+           "GROUP BY a.jurisdiction")
+    List<Object[]> getJurisdictionCounts(@Param("keyword") String keyword);
+}
+>>>>>>> 71ba37d001b36b1799f10796e42f8456ab3ea6f8

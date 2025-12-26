@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+
+// Component Imports
 import LandingPage from './components/LandingPage.jsx';
 import LoginPage from './components/LoginPage.jsx';
 import RegisterPage from './components/RegisterPage.jsx';
@@ -11,16 +14,83 @@ import AnalysisPage from './components/AnalysisPage.jsx';
 import SettingsPage from './components/SettingsPage.jsx';
 import SearchResultsPage from './components/SearchResultsPage.jsx'; 
 import PatentDetailsPage from './components/PatentDetailsPage.jsx'; 
+
+// Services & Styles
 import { authAPI } from './services/ai.js';
+import 'leaflet/dist/leaflet.css';
+
+// --- WRAPPER COMPONENTS ---
+
+const DashboardWithRouter = ({ user, handleLogout, handleUpdateUser }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleNavigate = (path) => {
+    if (path === 'dashboard') navigate('/overview');
+    else navigate(`/${path}`);
+  };
+
+  const getCurrentPageId = () => {
+    const path = location.pathname.substring(1); 
+    return path || 'dashboard';
+  };
+
+  return (
+    <DashboardLayout
+      user={user}
+      onLogout={handleLogout}
+      currentPage={getCurrentPageId()} 
+      onNavigate={handleNavigate} 
+    >
+      <Routes>
+        <Route path="overview" element={<DashboardHome onNavigate={handleNavigate} />} />
+        <Route path="profile" element={<ProfilePage user={user} onUpdateUser={handleUpdateUser} />} />
+        <Route path="patents" element={<PatentsWithNav />} />
+        <Route path="new-filing" element={<NewFilingPage />} />
+        <Route path="analysis" element={<AnalysisPage />} />
+        <Route path="settings" element={<SettingsPage />} />
+        <Route path="search" element={<SearchWithNav />} />
+        <Route path="patent-details" element={<DetailsWithNav />} />
+        <Route path="*" element={<Navigate to="/overview" replace />} />
+      </Routes>
+    </DashboardLayout>
+  );
+};
+
+const PatentsWithNav = () => {
+  const navigate = useNavigate();
+  const handleViewPatent = (patent) => {
+    navigate('/patent-details', { state: { patent } });
+  };
+  return <PatentsPage onViewPatent={handleViewPatent} />;
+};
+
+const SearchWithNav = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const initialKeyword = location.state?.keyword || '';
+
+  const handleViewPatent = (patent) => {
+    navigate('/patent-details', { state: { patent } });
+  };
+  return <SearchResultsPage initialKeyword={initialKeyword} onViewPatent={handleViewPatent} />;
+};
+
+const DetailsWithNav = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const patent = location.state?.patent;
+
+  if (!patent) return <Navigate to="/search" />;
+
+  return <PatentDetailsPage patent={patent} onBack={() => navigate(-1)} />;
+};
+
+// --- MAIN APP COMPONENT ---
 
 const App = () => {
-  const [currentPage, setCurrentPage] = useState('landing');
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [searchKeyword, setSearchKeyword] = useState('');
-  
-  // ✅ State to hold the specific patent clicked
-  const [selectedPatent, setSelectedPatent] = useState(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -29,12 +99,10 @@ const App = () => {
         try {
           const userData = await authAPI.getCurrentUser();
           setUser(userData);
-          if (['landing', 'login', 'register'].includes(currentPage)) {
-            setCurrentPage('dashboard');
-          }
         } catch (error) {
           console.error('Session expired:', error);
-          handleLogout();
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
         }
       }
       setLoading(false);
@@ -42,90 +110,15 @@ const App = () => {
     checkAuth();
   }, []);
 
-  const handleLogin = async (userData) => {
+  const handleLogin = (userData) => {
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
-    setCurrentPage('dashboard');
   };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
-    setCurrentPage('landing');
-  };
-
-  const handleNavigate = (page, keyword = '') => {
-    if (keyword) setSearchKeyword(keyword);
-    setCurrentPage(page);
-  };
-
-  // ✅ HANDLER: View Patent Details
-  // This function is passed down to SearchResultsPage and PatentsPage
-  const handleViewPatent = (patent) => {
-    console.log("Saving patent to state:", patent); // Debug log
-    setSelectedPatent(patent);      // Save data
-    setCurrentPage('patent-details'); // Switch view
-  };
-
-  const handleUpdateUser = (updates) => {
-    if (user) {
-      const updatedUser = { ...user, ...updates };
-      setUser(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-    }
-  };
-
-  const renderPage = () => {
-    const protectedPages = ['dashboard', 'profile', 'patents', 'new-filing', 'analysis', 'settings', 'search', 'patent-details'];
-    
-    if (protectedPages.includes(currentPage) && !user) {
-      return <LoginPage onLogin={handleLogin} onNavigate={handleNavigate} />;
-    }
-
-    switch (currentPage) {
-      case 'landing': return <LandingPage onNavigate={handleNavigate} />;
-      case 'login': return <LoginPage onLogin={handleLogin} onNavigate={handleNavigate} />;
-      case 'register': return <RegisterPage onLogin={handleLogin} onNavigate={handleNavigate} />;
-      
-      default:
-        return (
-          <DashboardLayout
-            user={user}
-            onLogout={handleLogout}
-            currentPage={currentPage}
-            onNavigate={handleNavigate}
-          >
-            {currentPage === 'dashboard'  && <DashboardHome onNavigate={handleNavigate} />}
-            {currentPage === 'profile'    && <ProfilePage user={user} onUpdateUser={handleUpdateUser} />}
-            
-            {/* ✅ Updated PatentsPage to receive the view handler */}
-            {currentPage === 'patents'    && (
-              <PatentsPage onViewPatent={handleViewPatent} />
-            )}
-            
-            {currentPage === 'new-filing' && <NewFilingPage />}
-            {currentPage === 'analysis'   && <AnalysisPage />} 
-            {currentPage === 'settings'   && <SettingsPage />} 
-            
-            {/* ✅ Updated SearchResultsPage to receive the view handler */}
-            {currentPage === 'search'     && (
-              <SearchResultsPage 
-                initialKeyword={searchKeyword} 
-                onViewPatent={handleViewPatent} 
-              />
-            )}
-
-            {/* ✅ PatentDetailsPage receives the data and back handler */}
-            {currentPage === 'patent-details' && (
-              <PatentDetailsPage 
-                patent={selectedPatent} 
-                onBack={() => setCurrentPage('search')} 
-              />
-            )}
-          </DashboardLayout>
-        );
-    }
   };
 
   if (loading) {
@@ -136,7 +129,36 @@ const App = () => {
     );
   }
 
-  return <div className="min-h-screen font-sans text-slate-900 bg-white">{renderPage()}</div>;
+  // NOTE: <Router> tags removed here because they exist in main.jsx
+  return (
+    <Routes>
+      <Route path="/" element={<LandingPage onNavigate={(path) => window.location.href = path} />} />
+      
+      <Route 
+        path="/login" 
+        element={!user ? <LoginPage onLogin={handleLogin} /> : <Navigate to="/overview" />} 
+      />
+      <Route 
+        path="/register" 
+        element={!user ? <RegisterPage onLogin={handleLogin} /> : <Navigate to="/overview" />} 
+      />
+
+      <Route 
+        path="/*" 
+        element={
+          user ? (
+            <DashboardWithRouter 
+              user={user} 
+              handleLogout={handleLogout} 
+              handleUpdateUser={(updates) => setUser({ ...user, ...updates })} 
+            />
+          ) : (
+            <Navigate to="/login" />
+          )
+        } 
+      />
+    </Routes>
+  );
 };
 
 export default App;
