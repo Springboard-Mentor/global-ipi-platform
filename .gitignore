@@ -60,3 +60,6 @@ mvnw.cmd
 **/*.secret
 .credentials/
 
+# Markdown documentation files
+*.md
+

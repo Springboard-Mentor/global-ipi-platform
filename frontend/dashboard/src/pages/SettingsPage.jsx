@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import UpgradeModal from '../components/UpgradeModal';
 import { db, auth } from '../firebase';
-import { doc, updateDoc, serverTimestamp, getDoc, deleteDoc } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp, getDoc, deleteDoc, setDoc } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { sendPasswordResetEmail, signOut } from 'firebase/auth';
 import { storage } from '../firebase';
@@ -30,7 +30,6 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
     timezone: 'Asia/Kolkata'
   });
   const [isSaving, setIsSaving] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -269,48 +268,57 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
     }
   };
 
-  // Account Management
-  const handleDeactivateAccount = async () => {
-    if (!confirm('Are you sure you want to deactivate your account? You can reactivate it by logging in again.')) return;
-    
+  // Quick Logout - No confirmation, instant redirect
+  const handleQuickLogout = async () => {
     try {
-      const userRef = doc(db, 'users', currentUID);
-      await updateDoc(userRef, {
-        accountStatus: 'deactivated',
-        deactivatedAt: serverTimestamp()
-      });
+      // Clear localStorage first
+      localStorage.removeItem('userProfile');
+      localStorage.removeItem('searchMode');
+      
+      // Sign out from Firebase
       await signOut(auth);
-      window.location.href = '/';
+      
+      // Force redirect to login page (main public site)
+      window.location.replace('http://localhost:3000');
     } catch (error) {
-      alert('Error: ' + error.message);
+      console.error('Logout error:', error);
+      // Clear localStorage and redirect anyway
+      localStorage.clear();
+      window.location.replace('http://localhost:3000');
     }
   };
 
-  const handleDeleteAccount = async () => {
-    if (!showDeleteConfirm) {
-      setShowDeleteConfirm(true);
-      return;
-    }
-
+  // Account Deactivation - Instant with 30-day auto-delete
+  const handleDeactivateAccount = async () => {
     try {
-      // Delete user data from Firestore
-      await deleteDoc(doc(db, 'users', currentUID));
+      const userRef = doc(db, 'users', currentUID);
       
-      // Delete user's photos from Storage
-      try {
-        const photoRef = ref(storage, `users/${currentUID}/profile.jpg`);
-        await deleteObject(photoRef);
-      } catch (e) {
-        console.log('No photos to delete');
-      }
+      console.log('Deactivating account for user:', currentUID);
       
-      // Delete auth account
-      await auth.currentUser.delete();
+      // Update status immediately in Firestore
+      await setDoc(userRef, {
+        accountStatus: 'deactivated',
+        deactivatedAt: serverTimestamp()
+      }, { merge: true });
       
-      alert('Account deleted successfully');
-      window.location.href = '/';
+      console.log('✅ Account status updated in Firestore. Will auto-delete in 30 days if not reactivated.');
+      
+      // Clear localStorage
+      localStorage.removeItem('userProfile');
+      localStorage.removeItem('searchMode');
+      
+      // Sign out and redirect immediately
+      await signOut(auth);
+      console.log('✅ User signed out successfully');
+      
+      // Force redirect to login page (main public site)
+      window.location.replace('http://localhost:3000');
     } catch (error) {
-      alert('Error: ' + error.message);
+      console.error('❌ Deactivation error:', error);
+      console.error('Error details:', error.message, error.code);
+      // Force redirect even if error
+      await signOut(auth);
+      window.location.href = '/register';
     }
   };
 
@@ -881,63 +889,84 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
 
   // Render Account Management Tab Content
   const renderAccountTab = () => (
-    <div className="space-y-6">
-      <div className="bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-300 rounded-2xl p-6 shadow-lg">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 bg-yellow-100 rounded-xl">
-            <AlertCircle className="text-yellow-600" size={28} />
+    <div className="space-y-8">
+      {/* Quick Logout Section - Enhanced with animations */}
+      <div className="group bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100 border-3 border-blue-400 rounded-3xl p-8 shadow-2xl hover:shadow-blue-300/50 hover:scale-[1.02] transition-all duration-500 hover:border-blue-500">
+        <div className="flex items-center gap-4 mb-6">
+          <div className="p-4 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+            <LogOut className="text-white" size={32} />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-gray-800">Danger Zone</h3>
-            <p className="text-sm text-gray-600">Proceed with caution</p>
+            <h3 className="text-2xl font-extrabold text-gray-900 tracking-tight">Quick Account Switch</h3>
+            <p className="text-base text-gray-700 font-medium mt-1">Logout and switch accounts instantly</p>
           </div>
         </div>
         
-        <div className="space-y-4">
-          <div className="bg-white border-2 border-yellow-300 rounded-xl p-5 hover:shadow-md transition-all">
-            <h4 className="font-bold text-gray-800 mb-2 text-lg">Deactivate Account</h4>
-            <p className="text-sm text-gray-600 mb-4">Temporarily disable your account. You can reactivate it anytime by logging in.</p>
-            <button
-              onClick={handleDeactivateAccount}
-              className="px-6 py-2.5 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-xl hover:from-yellow-600 hover:to-orange-600 transition-all duration-300 font-bold shadow-md hover:shadow-lg"
-            >
-              Deactivate Account
-            </button>
+        <div className="bg-white/90 backdrop-blur-sm border-3 border-blue-300 rounded-2xl p-6 hover:shadow-xl hover:border-blue-400 transition-all duration-300 hover:bg-white">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="p-2 bg-blue-100 rounded-lg mt-1">
+              <span className="text-2xl">🚀</span>
+            </div>
+            <div>
+              <p className="text-base text-gray-700 leading-relaxed">Instantly logout and return to login page. No confirmation needed - perfect for switching accounts.</p>
+            </div>
           </div>
+          
+          <button
+            onClick={handleQuickLogout}
+            className="w-full px-8 py-4 bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 text-white rounded-2xl hover:from-blue-700 hover:via-blue-600 hover:to-indigo-700 transition-all duration-300 font-bold shadow-xl hover:shadow-2xl hover:scale-105 flex items-center justify-center gap-3 text-lg group"
+          >
+            <LogOut size={24} className="group-hover:translate-x-1 transition-transform" />
+            <span>Quick Logout</span>
+          </button>
+        </div>
+      </div>
 
-          <div className="bg-gradient-to-br from-red-50 to-red-100 border-2 border-red-400 rounded-xl p-5 hover:shadow-md transition-all">
-            <h4 className="font-bold text-red-800 mb-2 text-lg">Delete Account</h4>
-            <p className="text-sm text-red-700 mb-4 font-medium">
-              ⚠️ Permanently delete your account and all associated data. This action cannot be undone!
-            </p>
-            
-            {!showDeleteConfirm ? (
-              <button
-                onClick={handleDeleteAccount}
-                className="px-6 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-300 font-bold shadow-md hover:shadow-lg"
-              >
-                Delete Account
-              </button>
-            ) : (
-              <div className="space-y-3">
-                <p className="font-bold text-red-700 bg-red-200 p-3 rounded-lg border-2 border-red-400">⚠️ Are you absolutely sure? This cannot be undone!</p>
-                <div className="flex gap-3">
-                  <button
-                    onClick={handleDeleteAccount}
-                    className="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl hover:from-red-700 hover:to-red-800 transition-all duration-300 font-bold shadow-lg hover:shadow-xl"
-                  >
-                    Yes, Delete My Account
-                  </button>
-                  <button
-                    onClick={() => setShowDeleteConfirm(false)}
-                    className="flex-1 px-6 py-3 bg-gray-300 text-gray-700 rounded-xl hover:bg-gray-400 transition-all font-bold"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
+      {/* Danger Zone - Enhanced with warning visuals */}
+      <div className="group bg-gradient-to-br from-amber-50 via-orange-50 to-red-50 border-3 border-orange-400 rounded-3xl p-8 shadow-2xl hover:shadow-orange-300/50 hover:scale-[1.02] transition-all duration-500 hover:border-orange-500">
+        <div className="flex items-center gap-4 mb-6">
+          <div className="p-4 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 animate-pulse">
+            <AlertCircle className="text-white" size={32} />
           </div>
+          <div>
+            <h3 className="text-2xl font-extrabold text-gray-900 tracking-tight">⚠️ Danger Zone</h3>
+            <p className="text-base text-gray-700 font-medium mt-1">Proceed with extreme caution</p>
+          </div>
+        </div>
+        
+        <div className="bg-white border-2 border-orange-300 rounded-xl p-6">
+          <div className="flex items-start gap-3 mb-4">
+            <AlertCircle className="text-orange-600 flex-shrink-0 mt-1" size={24} />
+            <div>
+              <h4 className="font-bold text-gray-900 mb-2 text-lg">Deactivate Account</h4>
+              <p className="text-gray-700 mb-4">Temporarily disable your account with 30-day grace period.</p>
+            </div>
+          </div>
+          
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+            <ul className="space-y-2 text-sm text-gray-800">
+              <li className="flex items-start gap-2">
+                <span className="text-orange-600 mt-0.5">•</span>
+                <span>Account deactivated <strong>immediately</strong></span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-green-600 mt-0.5">•</span>
+                <span>Login within 30 days to <strong>reactivate</strong></span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-red-600 mt-0.5">•</span>
+                <span>Auto-deletes after 30 days if not reactivated</span>
+              </li>
+            </ul>
+          </div>
+          
+          <button
+            onClick={handleDeactivateAccount}
+            className="w-full px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-all duration-200 font-semibold flex items-center justify-center gap-2"
+          >
+            <AlertCircle size={20} />
+            <span>Deactivate Account</span>
+          </button>
         </div>
       </div>
     </div>

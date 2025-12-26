@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import { signInWithEmailAndPassword, signInWithPopup, deleteUser } from "firebase/auth";
 import { auth, googleProvider, db } from "../firebase";
-import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, getDoc, serverTimestamp, deleteDoc } from "firebase/firestore";
 import { useNavigate, Link } from "react-router-dom";
 import "../App.css";
 
@@ -44,15 +44,59 @@ function Login() {
       const userCredential = await signInWithEmailAndPassword(auth, trimmedEmail, trimmedPassword);
       console.log("Login successful:", userCredential.user);
       
-      // Update last login time in Firestore
+      // Check account status in Firestore
       const userRef = doc(db, "users", userCredential.user.uid);
       const userDoc = await getDoc(userRef);
       
       if (userDoc.exists()) {
-        await setDoc(userRef, {
-          lastLogin: serverTimestamp(),
-          updatedAt: serverTimestamp()
-        }, { merge: true });
+        const userData = userDoc.data();
+        
+        // Check if account is deactivated
+        if (userData.accountStatus === 'deactivated' && userData.deactivatedAt) {
+          const deactivatedDate = userData.deactivatedAt.toDate();
+          const daysSinceDeactivation = (new Date() - deactivatedDate) / (1000 * 60 * 60 * 24);
+          
+          if (daysSinceDeactivation > 30) {
+            // Account deactivated for more than 30 days - DELETE IT
+            console.log('Account deactivated for >30 days. Deleting...');
+            
+            try {
+              // Delete Firestore document
+              await deleteDoc(userRef);
+              
+              // Delete auth account
+              await deleteUser(userCredential.user);
+              
+              setError('Your account was deactivated for more than 30 days and has been permanently deleted.');
+              setLoading(false);
+              return;
+            } catch (deleteError) {
+              console.error('Error deleting account:', deleteError);
+              setError('Account deletion failed. Please contact support.');
+              setLoading(false);
+              return;
+            }
+          } else {
+            // Account deactivated for less than 30 days - REACTIVATE IT
+            console.log(`Account deactivated for ${Math.floor(daysSinceDeactivation)} days. Reactivating...`);
+            
+            await setDoc(userRef, {
+              accountStatus: 'active',
+              deactivatedAt: null,
+              reactivatedAt: serverTimestamp(),
+              lastLogin: serverTimestamp(),
+              updatedAt: serverTimestamp()
+            }, { merge: true });
+            
+            console.log('Account reactivated successfully!');
+          }
+        } else {
+          // Account is active - just update last login
+          await setDoc(userRef, {
+            lastLogin: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          }, { merge: true });
+        }
       }
       
       // Get ID token and save to localStorage for verification
@@ -66,6 +110,7 @@ function Login() {
         navigate("/verification");
       }, 1000);
     } catch (err) {
+      console.error('Login error:', err);
       setError("Invalid email or password. Please try again.");
     } finally {
       setLoading(false);
@@ -91,11 +136,54 @@ function Login() {
       const userDoc = await getDoc(userRef);
       
       if (userDoc.exists()) {
-        // Update existing user
-        await setDoc(userRef, {
-          lastLogin: serverTimestamp(),
-          updatedAt: serverTimestamp()
-        }, { merge: true });
+        const userData = userDoc.data();
+        
+        // Check if account is deactivated
+        if (userData.accountStatus === 'deactivated' && userData.deactivatedAt) {
+          const deactivatedDate = userData.deactivatedAt.toDate();
+          const daysSinceDeactivation = (new Date() - deactivatedDate) / (1000 * 60 * 60 * 24);
+          
+          if (daysSinceDeactivation > 30) {
+            // Account deactivated for more than 30 days - DELETE IT
+            console.log('Account deactivated for >30 days. Deleting...');
+            
+            try {
+              // Delete Firestore document
+              await deleteDoc(userRef);
+              
+              // Delete auth account
+              await deleteUser(result.user);
+              
+              setError('Your account was deactivated for more than 30 days and has been permanently deleted.');
+              setLoading(false);
+              return;
+            } catch (deleteError) {
+              console.error('Error deleting account:', deleteError);
+              setError('Account deletion failed. Please contact support.');
+              setLoading(false);
+              return;
+            }
+          } else {
+            // Account deactivated for less than 30 days - REACTIVATE IT
+            console.log(`Account deactivated for ${Math.floor(daysSinceDeactivation)} days. Reactivating...`);
+            
+            await setDoc(userRef, {
+              accountStatus: 'active',
+              deactivatedAt: null,
+              reactivatedAt: serverTimestamp(),
+              lastLogin: serverTimestamp(),
+              updatedAt: serverTimestamp()
+            }, { merge: true });
+            
+            console.log('Account reactivated successfully!');
+          }
+        } else {
+          // Update existing active user
+          await setDoc(userRef, {
+            lastLogin: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          }, { merge: true });
+        }
       } else {
         // Create new user document
         await setDoc(userRef, {
@@ -106,6 +194,7 @@ function Login() {
           photoURL: result.user.photoURL || "",
           uid: result.user.uid,
           authProvider: "google",
+          accountStatus: "active",
           createdAt: serverTimestamp(),
           lastLogin: serverTimestamp(),
           updatedAt: serverTimestamp()
