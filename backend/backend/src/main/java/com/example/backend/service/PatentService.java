@@ -242,4 +242,21 @@ public class PatentService {
         
         return dbPatents;
     }
+
+    /**
+     * Search only in local database (my_project_db) - does NOT call external API
+     */
+    public List<Patent> searchInLocalDatabase(String query) {
+        logger.info("Searching local database (my_project_db) for query: {}", query);
+        return searchInDatabase(query);
+    }
+
+    /**
+     * Get total count of patents stored in local database
+     */
+    public long getPatentCount() {
+        long count = patentRepository.count();
+        logger.info("Total patents in database (my_project_db): {}", count);
+        return count;
+    }
 }

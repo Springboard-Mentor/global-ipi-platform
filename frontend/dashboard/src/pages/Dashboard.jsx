@@ -23,6 +23,44 @@ import OverviewGrid from "../components/OverviewGrid";
 import IPAssetPanel from "../components/IPAssetPanel";
 
 const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
+  const [dbPatentCount, setDbPatentCount] = React.useState(0);
+  const [dbConnectionStatus, setDbConnectionStatus] = React.useState('checking'); // 'checking', 'connected', 'error'
+  const [dbError, setDbError] = React.useState('');
+
+  // Fetch patent count from database on component mount
+  React.useEffect(() => {
+    const fetchPatentCount = async () => {
+      setDbConnectionStatus('checking');
+      try {
+        console.log('Fetching patent count from backend...');
+        const response = await fetch('http://localhost:8080/api/patents/count');
+        if (response.ok) {
+          const count = await response.json();
+          console.log('Patent count received:', count, 'Type:', typeof count);
+          // Ensure we set a number, not an object
+          const finalCount = typeof count === 'number' ? count : parseInt(count, 10) || 0;
+          setDbPatentCount(finalCount);
+          setDbConnectionStatus('connected');
+          setDbError('');
+          console.log('✓ Database connected. Patents found:', finalCount);
+        } else {
+          console.error('Failed to fetch patent count. Status:', response.status);
+          setDbConnectionStatus('error');
+          setDbError(`HTTP ${response.status}: ${response.statusText}`);
+        }
+      } catch (error) {
+        console.error('Error fetching patent count:', error);
+        setDbPatentCount(0);
+        setDbConnectionStatus('error');
+        setDbError(error.message || 'Cannot connect to backend server');
+      }
+    };
+    fetchPatentCount();
+    
+    // Refresh count every 30 seconds
+    const interval = setInterval(fetchPatentCount, 30000);
+    return () => clearInterval(interval);
+  }, []);
   const [dashboardData, setDashboardData] = useState({
     portfolioValue: "$0",
     portfolioGrowth: "0%",
@@ -185,8 +223,37 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
             <p className="text-xs text-gray-500 mt-2">
               {searchMode === 'api' 
                 ? 'Searching from external patent database API' 
-                : `Searching from local database (${JSON.parse(localStorage.getItem('patentDatabase') || '[]').length} patents stored)`}
+                : dbConnectionStatus === 'connected'
+                  ? `Searching from local database (${dbPatentCount} patents stored)`
+                  : dbConnectionStatus === 'checking'
+                    ? 'Connecting to database...'
+                    : `⚠️ Database connection error: ${dbError}`}
             </p>
+            {searchMode === 'local' && dbConnectionStatus === 'connected' && dbPatentCount > 0 && (
+              <div className="mt-3">
+                <p className="text-xs text-gray-600 mb-2">
+                  💡 Tip: Search with any keyword or go to search directly to see all {dbPatentCount} patents
+                </p>
+              </div>
+            )}
+            {searchMode === 'local' && dbConnectionStatus === 'error' && (
+              <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-xs text-red-700 font-semibold mb-1">⚠️ Backend Server Not Running</p>
+                <p className="text-xs text-red-600">
+                  Please start the backend server:
+                  <br />1. Open terminal in backend/backend folder
+                  <br />2. Run: <code className="bg-red-100 px-1 rounded">mvn spring-boot:run</code>
+                </p>
+              </div>
+            )}
+            {searchMode === 'local' && dbConnectionStatus === 'connected' && dbPatentCount === 0 && (
+              <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-xs text-yellow-700 font-semibold mb-1">ℹ️ No Patents in Database</p>
+                <p className="text-xs text-yellow-600">
+                  Your local database is empty. Try searching with API mode to add patents.
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
