@@ -48,3 +48,4 @@ service-account-file.json
 # ==========================================
 *.mv.db
 *.trace.db
+.env
