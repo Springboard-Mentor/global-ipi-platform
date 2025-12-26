@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { TrendingUp, CheckCircle, Database, Globe, Crown, Zap, Calendar, Info } from "lucide-react";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 
 import {
@@ -26,6 +26,11 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
   const [dbPatentCount, setDbPatentCount] = React.useState(0);
   const [dbConnectionStatus, setDbConnectionStatus] = React.useState('checking'); // 'checking', 'connected', 'error'
   const [dbError, setDbError] = React.useState('');
+  
+  // State for total registered users
+  const [totalUsers, setTotalUsers] = React.useState(0);
+  const [usersStatus, setUsersStatus] = React.useState('checking'); // 'checking', 'connected', 'error'
+  const [usersError, setUsersError] = React.useState('');
 
   // Fetch patent count from database on component mount
   React.useEffect(() => {
@@ -61,6 +66,35 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
     const interval = setInterval(fetchPatentCount, 30000);
     return () => clearInterval(interval);
   }, []);
+  
+  // Fetch total users count from Firestore
+  React.useEffect(() => {
+    const fetchUsersCount = async () => {
+      setUsersStatus('checking');
+      try {
+        console.log('Fetching users count from Firestore...');
+        const usersCollection = collection(db, 'users');
+        const usersSnapshot = await getDocs(usersCollection);
+        const count = usersSnapshot.size;
+        console.log('Users count received:', count);
+        setTotalUsers(count);
+        setUsersStatus('connected');
+        setUsersError('');
+        console.log('✓ Firestore connected. Users found:', count);
+      } catch (error) {
+        console.error('Error fetching users count:', error);
+        setTotalUsers(0);
+        setUsersStatus('error');
+        setUsersError(error.message || 'Cannot connect to Firestore');
+      }
+    };
+    fetchUsersCount();
+    
+    // Refresh count every 30 seconds
+    const interval = setInterval(fetchUsersCount, 30000);
+    return () => clearInterval(interval);
+  }, []);
+  
   const [dashboardData, setDashboardData] = useState({
     portfolioValue: "$0",
     portfolioGrowth: "0%",
@@ -274,6 +308,48 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
 
       {/* RIGHT SECTION */}
       <div className="xl:col-span-1 space-y-1.5">
+        {/* Total Registered Users Card */}
+        <div className="bg-white rounded-xl p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-gray-600 text-sm">Total Registered Users</h3>
+            <div className="p-2 bg-purple-50 rounded-lg">
+              <Database size={16} className="text-purple-600" />
+            </div>
+          </div>
+
+          <div className="flex items-baseline gap-2 mt-2">
+            <p className="text-3xl font-bold">
+              {usersStatus === 'checking' ? (
+                <span className="text-gray-400">Loading...</span>
+              ) : usersStatus === 'error' ? (
+                <span className="text-red-500">Error</span>
+              ) : (
+                totalUsers.toLocaleString()
+              )}
+            </p>
+            {usersStatus === 'connected' && (
+              <CheckCircle size={20} className="text-green-500 mb-1" />
+            )}
+          </div>
+          
+          <div className="flex items-center gap-1 mt-1">
+            {usersStatus === 'connected' ? (
+              <>
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <p className="text-sm text-green-600 font-medium">
+                  Live from Database
+                </p>
+              </>
+            ) : usersStatus === 'checking' ? (
+              <p className="text-sm text-gray-500">Connecting...</p>
+            ) : (
+              <p className="text-sm text-red-500">
+                {usersError || 'Connection failed'}
+              </p>
+            )}
+          </div>
+        </div>
+
         {/* Total Patents Card */}
         <div className="bg-white rounded-xl p-4 shadow-sm">
           <div className="flex items-center justify-between">
