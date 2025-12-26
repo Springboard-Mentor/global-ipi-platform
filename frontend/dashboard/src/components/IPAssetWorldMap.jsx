@@ -3,15 +3,15 @@ import ReactECharts from 'echarts-for-react';
 import * as echarts from 'echarts';
 import worldJson from './world.json'; // Ensure this path is correct based on where we downloaded it
 
-const IPAssetWorldMap = () => {
+const IPAssetWorldMap = ({ data }) => {
     const [options, setOptions] = useState({});
 
     useEffect(() => {
         // Register the map
         echarts.registerMap('world', worldJson);
 
-        // Dummy Data
-        const data = [
+        // Use backend data if available, otherwise default to empty or keep the structure ready
+        const mapData = data && data.length > 0 ? data : [
             { name: "United States", value: 80 },
             { name: "China", value: 150 },
             { name: "India", value: 110 },
@@ -69,13 +69,13 @@ const IPAssetWorldMap = () => {
                         areaColor: '#cbd5e1', // Darker gray (slate-300) for better visibility
                         borderColor: '#fff'
                     },
-                    data: data
+                    data: mapData
                 }
             ]
         };
 
         setOptions(chartOptions);
-    }, []);
+    }, [data]);
 
     return (
         <div style={{ width: '100%', height: '100%', minHeight: '250px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderRadius: '0.75rem' }}>

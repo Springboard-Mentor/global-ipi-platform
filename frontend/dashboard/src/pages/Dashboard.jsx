@@ -29,6 +29,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
     activeSubscriptions: 0,
     recentFilings: 0,
     openAlerts: 0,
+    geoDistribution: [],
     loading: true,
   });
 
@@ -78,6 +79,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
             activeSubscriptions: data.activeSubscriptions || 0,
             recentFilings: data.recentFilings || 0,
             openAlerts: data.openAlerts || 0,
+            geoDistribution: data.geoDistribution || [], // Fetch geo data or default to empty
             loading: false,
           });
         } else {
@@ -87,6 +89,13 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
             activeSubscriptions: 12,
             recentFilings: 45,
             openAlerts: 3,
+            geoDistribution: [ // Fallback mock data for map
+              { name: "United States", value: 100 },
+              { name: "China", value: 50 },
+              { name: "Germany", value: 30 },
+              { name: "Brazil", value: 20 },
+              { name: "India", value: 80 }
+            ],
             loading: false,
           });
         }
@@ -107,7 +116,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
 
   const calculateDaysRemaining = (endDate) => {
     if (!endDate) return null;
-    
+
     try {
       let end;
       if (endDate instanceof Date) {
@@ -119,11 +128,11 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
       } else {
         return null;
       }
-      
+
       const now = new Date();
       const diffTime = end - now;
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      
+
       return diffDays > 0 ? diffDays : 0;
     } catch (error) {
       console.error('Error calculating days remaining:', error);
@@ -161,30 +170,28 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
             <div className="flex gap-2">
               <button
                 onClick={() => setSearchMode('api')}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm ${
-                  searchMode === 'api'
-                    ? 'bg-blue-500 text-white shadow-md'
-                    : 'bg-white text-gray-700 hover:bg-gray-100'
-                }`}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm ${searchMode === 'api'
+                  ? 'bg-blue-500 text-white shadow-md'
+                  : 'bg-white text-gray-700 hover:bg-gray-100'
+                  }`}
               >
                 <Globe size={14} />
                 <span className="font-medium">API Search</span>
               </button>
               <button
                 onClick={() => setSearchMode('local')}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm ${
-                  searchMode === 'local'
-                    ? 'bg-purple-500 text-white shadow-md'
-                    : 'bg-white text-gray-700 hover:bg-gray-100'
-                }`}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm ${searchMode === 'local'
+                  ? 'bg-purple-500 text-white shadow-md'
+                  : 'bg-white text-gray-700 hover:bg-gray-100'
+                  }`}
               >
                 <Database size={14} />
                 <span className="font-medium">Local Database</span>
               </button>
             </div>
             <p className="text-xs text-gray-500 mt-2">
-              {searchMode === 'api' 
-                ? 'Searching from external patent database API' 
+              {searchMode === 'api'
+                ? 'Searching from external patent database API'
                 : `Searching from local database (${JSON.parse(localStorage.getItem('patentDatabase') || '[]').length} patents stored)`}
             </p>
           </div>
@@ -276,7 +283,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
           </div>
         </div>
 
-        <IPAssetPanel />
+        <IPAssetPanel geoData={dashboardData.geoDistribution} />
       </div>
     </div>
   );
