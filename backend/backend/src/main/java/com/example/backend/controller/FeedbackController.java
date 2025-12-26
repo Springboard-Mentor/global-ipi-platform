@@ -3,7 +3,6 @@ package com.example.backend.controller;
 import com.example.backend.model.Feedback;
 import com.example.backend.repository.FeedbackRepository;
 import com.example.backend.service.EmailService;
-import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

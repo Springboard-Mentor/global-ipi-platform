@@ -132,140 +132,148 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
   
   return (
     <div className="bg-gradient-to-r from-teal-600 via-blue-600 to-indigo-700 border-b border-teal-500/30 px-3 sm:px-6 py-3 sm:py-4 shadow-lg">
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3 justify-between">
 
-        <button 
-          onClick={onMenuClick}
-          className={`p-2 hover:bg-white/20 rounded-xl transition ${sidebarOpen ? 'invisible' : ''}`}
-        >
-          <Menu size={24} className="text-white" />
-        </button>
+        {/* Left Section - Menu, Logo, Subscription */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+          <button 
+            onClick={onMenuClick}
+            className={`p-2 hover:bg-white/20 rounded-xl transition ${sidebarOpen ? 'invisible' : ''}`}
+          >
+            <Menu size={24} className="text-white" />
+          </button>
 
-        {/* App Logo and Branding */}
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
-          <Shield className="text-yellow-300" size={20} />
-          <span className="text-white font-bold text-sm sm:text-base hidden sm:inline whitespace-nowrap">
-            Global IP Platform
-          </span>
-          <span className="text-white font-bold text-xs sm:hidden">
-            GIP
-          </span>
-        </div>
+          {/* App Logo and Branding */}
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
+            <Shield className="text-yellow-300" size={20} />
+            <span className="text-white font-bold text-sm sm:text-base hidden sm:inline whitespace-nowrap">
+              Global IP Platform
+            </span>
+            <span className="text-white font-bold text-xs sm:hidden">
+              GIP
+            </span>
+          </div>
 
-        {/* Subscription Badge with Hover Details */}
-        {subscriptionDetails ? (
-          <div className="relative group">
-            <div className="flex items-center gap-2 px-4 sm:px-5 py-2 rounded-xl bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 text-white shadow-lg cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 min-w-[140px] sm:min-w-[180px]">
-              <Crown size={18} className="animate-pulse" />
-              <div className="flex flex-col">
-                <span className="text-xs font-bold uppercase leading-tight">
-                  {subscriptionDetails.type}
-                </span>
-                <span className="text-xs font-semibold opacity-90">
-                  {subscriptionDetails.daysLeft} days left
-                </span>
-              </div>
-            </div>
-
-            {/* Hover Tooltip - Subscription Details */}
-            <div className="absolute left-0 top-full mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 p-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-              <div className="flex items-center justify-between mb-3 pb-3 border-b">
-                <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                  <Crown size={18} className="text-purple-600" />
-                  {subscriptionDetails.type.toUpperCase()} Plan
-                </h3>
-                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
-                  Active
-                </span>
+          {/* Subscription Badge with Hover Details - Hidden on small/medium screens */}
+          {subscriptionDetails ? (
+            <div className="relative group hidden md:block">
+              <div className="flex items-center gap-2 px-3 md:px-4 lg:px-5 py-2 rounded-xl bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 text-white shadow-lg cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 min-w-[120px] md:min-w-[140px] lg:min-w-[180px]">
+                <Crown size={18} className="animate-pulse" />
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold uppercase leading-tight">
+                    {subscriptionDetails.type}
+                  </span>
+                  <span className="text-xs font-semibold opacity-90">
+                    {subscriptionDetails.daysLeft} days left
+                  </span>
+                </div>
               </div>
 
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Days Remaining:</span>
-                  <span className="font-semibold text-gray-800">{subscriptionDetails.daysLeft} days</span>
-                </div>
-                
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Start Date:</span>
-                  <span className="font-medium text-gray-800 text-xs">{subscriptionDetails.startDate}</span>
-                </div>
-                
-                <div className="flex justify-between">
-                  <span className="text-gray-600">End Date:</span>
-                  <span className="font-medium text-gray-800 text-xs">{subscriptionDetails.endDate}</span>
+              {/* Hover Tooltip - Subscription Details */}
+              <div className="absolute left-0 top-full mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 p-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <div className="flex items-center justify-between mb-3 pb-3 border-b">
+                  <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                    <Crown size={18} className="text-purple-600" />
+                    {subscriptionDetails.type.toUpperCase()} Plan
+                  </h3>
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
+                    Active
+                  </span>
                 </div>
 
-                <div className="border-t pt-2 mt-2">
+                <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Amount Paid:</span>
-                    <span className="font-bold text-green-600">
-                      ₹{subscriptionDetails.amount} {subscriptionDetails.currency}
-                    </span>
+                    <span className="text-gray-600">Days Remaining:</span>
+                    <span className="font-semibold text-gray-800">{subscriptionDetails.daysLeft} days</span>
                   </div>
-                </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Start Date:</span>
+                    <span className="font-medium text-gray-800 text-xs">{subscriptionDetails.startDate}</span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">End Date:</span>
+                    <span className="font-medium text-gray-800 text-xs">{subscriptionDetails.endDate}</span>
+                  </div>
 
-                {subscriptionDetails.paymentId !== 'N/A' && (
-                  <>
+                  <div className="border-t pt-2 mt-2">
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Payment ID:</span>
-                      <span className="font-mono text-xs text-gray-700">{subscriptionDetails.paymentId}</span>
+                      <span className="text-gray-600">Amount Paid:</span>
+                      <span className="font-bold text-green-600">
+                        ₹{subscriptionDetails.amount} {subscriptionDetails.currency}
+                      </span>
                     </div>
-                    
-                    {subscriptionDetails.orderId !== 'N/A' && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Order ID:</span>
-                        <span className="font-mono text-xs text-gray-700">{subscriptionDetails.orderId}</span>
+                  </div>
+
+                  {subscriptionDetails.paymentId !== 'N/A' && (
+                    <>
+                      <div className="border-t pt-2 mt-2">
+                        <div className="flex justify-between items-start">
+                          <span className="text-gray-600">Transaction ID:</span>
+                          <span className="font-mono text-xs text-gray-700 break-all text-right max-w-[180px]">{subscriptionDetails.paymentId}</span>
+                        </div>
                       </div>
-                    )}
-                  </>
-                )}
+                      
+                      {subscriptionDetails.orderId !== 'N/A' && (
+                        <div className="flex justify-between items-start">
+                          <span className="text-gray-600">Order ID:</span>
+                          <span className="font-mono text-xs text-gray-700 break-all text-right max-w-[180px]">{subscriptionDetails.orderId}</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2 px-4 sm:px-5 py-2 rounded-xl bg-gradient-to-r from-gray-400 to-gray-600 text-white shadow-lg min-w-[120px] sm:min-w-[150px]">
-            <Zap size={16} />
-            <span className="text-xs font-bold uppercase">BASIC</span>
-          </div>
-        )}
+          ) : (
+            <div className="hidden md:flex items-center gap-2 px-3 md:px-4 lg:px-5 py-2 rounded-xl bg-gradient-to-r from-gray-400 to-gray-600 text-white shadow-lg min-w-[100px] md:min-w-[120px] lg:min-w-[150px]">
+              <Zap size={16} />
+              <span className="text-xs font-bold uppercase">BASIC</span>
+            </div>
+          )}
 
-        {/* Date and Time Display - Responsive */}
-        <div className="hidden lg:flex flex-col items-start bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-white/20">
-          <div className="flex items-center gap-2 text-sm font-medium text-white">
-            <Calendar size={16} className="text-yellow-300" />
-            <span>{date}</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-white/90">
-            <Clock size={14} className="text-yellow-300" />
-            <span>{time}</span>
+          {/* Date and Time Display - Hidden on all smaller screens */}
+          <div className="hidden xl:flex flex-col items-start bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-white/20">
+            <div className="flex items-center gap-2 text-sm font-medium text-white">
+              <Calendar size={16} className="text-yellow-300" />
+              <span>{date}</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-white/90">
+              <Clock size={14} className="text-yellow-300" />
+              <span>{time}</span>
+            </div>
           </div>
         </div>
         
-        <form onSubmit={handleSearch} className="flex-1 max-w-2xl mx-auto">
+        {/* Center Section - Search Bar */}
+        <form onSubmit={handleSearch} className="flex-1 max-w-xs sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl mx-2 sm:mx-3">
           <div className="relative">
-            <Search className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-blue-600 z-10" size={20} />
+            <Search className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 text-blue-600 z-10" size={18} />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search patents..."
-              className="w-full pl-10 sm:pl-12 pr-16 sm:pr-20 py-2.5 sm:py-3 text-sm text-gray-800 bg-white/95 backdrop-blur-sm border-2 border-white/40 rounded-xl focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 shadow-lg placeholder-gray-500"
+              className="w-full pl-8 sm:pl-10 pr-12 sm:pr-16 md:pr-20 py-2 sm:py-2.5 text-xs sm:text-sm text-gray-800 bg-white/95 backdrop-blur-sm border-2 border-white/40 rounded-xl focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 shadow-lg placeholder-gray-500"
             />
             <button
               type="submit"
-              className="absolute right-2 top-1/2 -translate-y-1/2 px-3 sm:px-4 py-1.5 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs sm:text-sm rounded-lg hover:shadow-xl transition-all duration-300 font-bold hover:scale-105"
+              className="absolute right-1 sm:right-2 top-1/2 -translate-y-1/2 px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs sm:text-sm rounded-lg hover:shadow-xl transition-all duration-300 font-bold hover:scale-105"
             >
-              Search
+              <span className="hidden sm:inline">Search</span>
+              <Search className="sm:hidden" size={14} />
             </button>
           </div>
         </form>
 
-        <div className="flex items-center gap-2 sm:gap-3 ml-2 sm:ml-4">
-          {/* Date/Time Mobile View */}
-          <div className="lg:hidden flex flex-col items-end bg-white/10 px-2 py-1 rounded-lg">
+        {/* Right Section - Date/Time, Notifications, Profile */}
+        <div className="flex items-center gap-1 sm:gap-2 md:gap-3 flex-shrink-0">
+          {/* Date/Time Mobile View - Hidden on very small screens */}
+          <div className="hidden sm:flex xl:hidden flex-col items-end bg-white/10 px-2 py-1 rounded-lg">
             <div className="flex items-center gap-1 text-xs font-medium text-white">
               <Calendar size={12} className="text-yellow-300" />
-              <span className="hidden sm:inline">{date.split(',')[0]}</span>
+              <span className="hidden md:inline">{date.split(',')[0]}</span>
             </div>
             <div className="flex items-center gap-1 text-xs text-white/90">
               <Clock size={12} className="text-yellow-300" />
@@ -276,11 +284,11 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
           <div className="relative" ref={notificationRef}>
             <button 
               onClick={() => setShowNotifications(!showNotifications)}
-              className="p-2 sm:p-2.5 hover:bg-white/20 rounded-xl relative transition"
+              className="p-1.5 sm:p-2 hover:bg-white/20 rounded-xl relative transition"
             >
-              <Bell size={18} className="text-white" />
+              <Bell size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
               {notifications.length > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-yellow-400 rounded-full animate-pulse shadow-lg"></span>
+                <span className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 w-2 h-2 bg-yellow-400 rounded-full animate-pulse shadow-lg"></span>
               )}
             </button>
 
@@ -353,17 +361,17 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
             )}
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="text-right hidden md:block">
-              <div className="text-sm font-bold text-white drop-shadow-md">
+          <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
+            <div className="text-right hidden sm:block">
+              <div className="text-xs sm:text-sm font-bold text-white drop-shadow-md truncate max-w-[120px] sm:max-w-[150px] md:max-w-[200px]">
                 {userProfile.firstName} {userProfile.lastName}
               </div>
-              <div className="text-xs text-white/90 drop-shadow-sm">{userProfile.email}</div>
+              <div className="text-[10px] sm:text-xs text-white/90 drop-shadow-sm truncate max-w-[120px] sm:max-w-[150px] md:max-w-[200px]">{userProfile.email}</div>
             </div>
             
             <button 
               onClick={onProfileClick}
-              className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center overflow-hidden shadow-lg ring-2 ring-white/30 hover:ring-white/50 transition"
+              className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center overflow-hidden shadow-lg ring-2 ring-white/30 hover:ring-white/50 transition flex-shrink-0"
               title={`${userProfile.firstName} ${userProfile.lastName}`}
             >
               {userProfile.photoURL ? (
