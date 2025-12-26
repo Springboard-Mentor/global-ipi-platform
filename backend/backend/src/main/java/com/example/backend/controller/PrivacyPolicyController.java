@@ -1,5 +1,4 @@
 package com.example.backend.controller;
-
 import com.example.backend.repository.PrivacyPolicyRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
