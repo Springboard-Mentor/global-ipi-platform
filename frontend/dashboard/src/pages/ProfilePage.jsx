@@ -333,7 +333,6 @@ const ProfilePage = ({ userProfile, setUserProfile, onBack }) => {
     }
     
     setIsSaving(true);
-    let photoUrlToSave = formData.photoURL;
 
     try {
       // Use only the current authenticated user's UID - no fallbacks
@@ -348,137 +347,99 @@ const ProfilePage = ({ userProfile, setUserProfile, onBack }) => {
 
       console.log('🔑 Using authenticated user UID:', userId);
 
-      // 1. Handle Photo Upload to Firebase Storage
+      // 1. Update UI IMMEDIATELY for instant save
+      const quickUpdateData = {
+        ...formData,
+        uid: userId,
+        updatedAt: new Date()
+      };
+      
+      setFormData(quickUpdateData);
+      if (setUserProfile) {
+        setUserProfile(quickUpdateData);
+      }
+      setIsEditing(false);
+      setIsSaving(false); // Stop loading indicator INSTANTLY
+      
+      // 2. Show success message IMMEDIATELY
+      alert('✅ Profile saved successfully!' + (newFile ? '\n\n📸 Photo is uploading in the background...' : ''));
+      
+      console.log('✅ Profile saved instantly to UI!');
+      
+      // 3. Handle Photo Upload in background (non-blocking)
+      let photoUrlToSave = formData.photoURL;
+      
       if (newFile) {
-        console.log('📸 New file detected, starting upload...');
-        console.log('File details:', {
-          name: newFile.name,
-          size: newFile.size,
-          type: newFile.type
-        });
-        
-        try {
-          // Show uploading indicator
-          alert('Uploading photo...');
-          
-          photoUrlToSave = await uploadPhotoToStorage(newFile, userId);
-          console.log('✅ Photo uploaded successfully! URL:', photoUrlToSave);
-          console.log('✅ URL Type:', typeof photoUrlToSave);
-          console.log('✅ URL Length:', photoUrlToSave?.length);
-          
-          if (!photoUrlToSave || photoUrlToSave.length === 0) {
-            throw new Error('Upload succeeded but no URL was returned');
-          }
-          
-          // Update formData with new URL immediately
-          setFormData(prev => ({ ...prev, photoURL: photoUrlToSave }));
-          
-        } catch (uploadError) {
-          console.error('❌ Photo upload failed:', uploadError);
-          alert('Failed to upload photo: ' + uploadError.message + '\n\nPlease check:\n1. Firebase Storage rules allow uploads\n2. Internet connection is stable\n3. File is a valid image');
-          setIsSaving(false);
-          return; // Stop the save process if photo upload fails
-        }
+        console.log('📸 Starting background photo upload...');
+        uploadPhotoToStorage(newFile, userId)
+          .then(async (uploadedUrl) => {
+            console.log('✅ Photo uploaded! URL:', uploadedUrl);
+            photoUrlToSave = uploadedUrl;
+            
+            // Update Firestore with photo URL
+            const userRef = doc(db, 'users', userId);
+            await updateDoc(userRef, {
+              photoURL: uploadedUrl,
+              firstName: formData.firstName,
+              lastName: formData.lastName,
+              email: formData.email || '',
+              company: formData.company || '',
+              position: formData.position || '',
+              phoneNumber: formData.phoneNumber || '',
+              updatedAt: new Date()
+            });
+            
+            // Update UI with photo URL
+            setFormData(prev => ({ ...prev, photoURL: uploadedUrl }));
+            if (setUserProfile) {
+              setUserProfile(prev => ({ ...prev, photoURL: uploadedUrl }));
+            }
+            setNewFile(null);
+            
+            console.log('✅ Photo synced to Firestore');
+          })
+          .catch((uploadError) => {
+            console.error('❌ Background photo upload failed:', uploadError);
+            // Photo failed but data is already saved - silent failure
+          });
       } else if (formData.photoURL === '' && !newFile) {
-        // User wants to remove the photo completely
-        console.log('🗑️ User removing photo completely...');
-        await deleteOldPhotoFromStorage(userId);
-        photoUrlToSave = ''; // Ensure empty string is saved
+        // User wants to remove the photo completely (background deletion)
+        console.log('🗑️ Removing photo in background...');
+        deleteOldPhotoFromStorage(userId).catch(err => console.error('Photo deletion error:', err));
+        photoUrlToSave = '';
       } else {
-        console.log('ℹ️ No photo changes - using existing photoURL');
-        // Keep the existing photoURL from formData
         photoUrlToSave = formData.photoURL || '';
       }
       
-      // Ensure we don't save Base64 strings to Firestore
+      // Don't save Base64 to Firestore
       if (photoUrlToSave && photoUrlToSave.startsWith('data:')) {
-        console.warn('⚠️ Detected Base64 string instead of storage URL, clearing...');
-        photoUrlToSave = ''; // Don't save Base64 to Firestore
+        photoUrlToSave = '';
       }
       
-      // 2. Save updated data (including the new public photoURL) to Firestore
-      const userRef = doc(db, 'users', userId);
-      console.log('💾 Updating Firestore document...');
-      
-      const updateData = {
-        firstName: formData.firstName.trim(),
-        lastName: formData.lastName.trim(),
-        email: formData.email || auth.currentUser?.email || '',
-        company: formData.company || '',
-        position: formData.position || '',
-        phoneNumber: formData.phoneNumber || '',
-        emailVerified: auth.currentUser?.emailVerified || formData.emailVerified || false,
-        authProvider: formData.authProvider || 'google',
-        photoURL: photoUrlToSave,
-        updatedAt: serverTimestamp()
-      };
-
-      console.log('💾 Firestore update data:', {
-        ...updateData,
-        photoURL: photoUrlToSave ? `${photoUrlToSave.substring(0, 50)}...` : '(empty)'
-      });
-      
-      await updateDoc(userRef, updateData);
-      
-      console.log('✅ Profile updated successfully in Firestore!');
-      
-      // 3. Fetch fresh data from Firestore after save to confirm
-      console.log('🔄 Fetching fresh data from Firestore...');
-      const updatedDocSnap = await getDoc(userRef);
-      
-      if (updatedDocSnap.exists()) {
-        const freshData = updatedDocSnap.data();
-        console.log('✅ Fresh data fetched after save');
-        console.log('📷 PhotoURL from Firestore:', freshData.photoURL);
-        
-        // 4. Prepare complete profile data with auth metadata
-        const finalProfileData = {
-          ...freshData,
-          uid: userId,
-          email: freshData.email || auth.currentUser?.email || formData.email || '',
-          emailVerified: freshData.emailVerified !== undefined ? freshData.emailVerified : (auth.currentUser?.emailVerified || formData.emailVerified || false),
-          phoneNumber: freshData.phoneNumber || '',
-          photoURL: freshData.photoURL || '',
-          creationTime: auth.currentUser?.metadata?.creationTime || formData.creationTime || '',
-          lastSignInTime: auth.currentUser?.metadata?.lastSignInTime || formData.lastSignInTime || '',
-          authProvider: freshData.authProvider || formData.authProvider || '',
+      // 4. Save text data to Firestore in background (if no photo upload)
+      if (!newFile) {
+        const userRef = doc(db, 'users', userId);
+        const updateData = {
+          firstName: formData.firstName.trim(),
+          lastName: formData.lastName.trim(),
+          email: formData.email || auth.currentUser?.email || '',
+          company: formData.company || '',
+          position: formData.position || '',
+          phoneNumber: formData.phoneNumber || '',
+          emailVerified: auth.currentUser?.emailVerified || formData.emailVerified || false,
+          authProvider: formData.authProvider || 'google',
+          photoURL: photoUrlToSave,
+          updatedAt: serverTimestamp()
         };
         
-        console.log('📊 Final profile data after save:', {
-          ...finalProfileData,
-          photoURL: finalProfileData.photoURL ? `${finalProfileData.photoURL.substring(0, 50)}...` : '(empty)'
-        });
-
-        // 5. Update both local and parent state with fresh data
-        setFormData(finalProfileData);
-        
-        if (setUserProfile) {
-          console.log('📤 Syncing to Dashboard...');
-          setUserProfile(finalProfileData);
-        }
-        
-        console.log('✅ Profile saved successfully!');
-        alert('Profile saved successfully!' + (newFile ? '\n\nYour profile photo has been uploaded.' : ''));
-        setIsEditing(false);
-        setNewFile(null); // Clear the file after successful save
-      } else {
-        console.log('⚠️ Could not fetch fresh data after save, using local data');
-        // Fallback if fetch fails - use local data
-        const fallbackProfileData = {
-          ...formData,
-          photoURL: photoUrlToSave || '',
-          updatedAt: new Date().toISOString()
-        };
-        
-        setFormData(fallbackProfileData);
-        
-        if (setUserProfile) {
-          setUserProfile(fallbackProfileData);
-        }
-        
-        alert('Profile saved successfully!');
-        setIsEditing(false);
-        setNewFile(null);
+        updateDoc(userRef, updateData)
+          .then(() => {
+            console.log('✅ Firestore sync completed');
+            setNewFile(null);
+          })
+          .catch((firestoreError) => {
+            console.error('❌ Firestore sync failed:', firestoreError);
+          });
       }
       
     } catch (error) {
