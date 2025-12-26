@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // ✅ Added Hook for navigation
 import AuthLayout from './AuthLayout.jsx';
 import { 
   Lock, Mail, ArrowRight, XCircle 
@@ -7,7 +8,11 @@ import {
 import { auth, googleProvider } from '../firebase';
 import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
 
-const LoginPage = ({ onLogin, onNavigate }) => {
+// ✅ ENV Variable Setup
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+
+const LoginPage = ({ onLogin }) => {
+  const navigate = useNavigate(); // ✅ Initialize Navigation
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -30,7 +35,6 @@ const LoginPage = ({ onLogin, onNavigate }) => {
       console.log("🔵 Attempting Email Login...");
       
       // A. Verify Credentials with Firebase
-      // This will throw an error if password is wrong
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       console.log("✅ Firebase Verified:", user.email);
@@ -38,8 +42,8 @@ const LoginPage = ({ onLogin, onNavigate }) => {
       // B. Get Secure Token
       const idToken = await user.getIdToken();
 
-      // C. Sync with Backend
-      const response = await fetch('http://localhost:5001/api/auth/firebase-login', {
+      // C. Sync with Backend (Using ENV URL)
+      const response = await fetch(`${API_URL}/auth/firebase-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idToken })
@@ -56,7 +60,9 @@ const LoginPage = ({ onLogin, onNavigate }) => {
       localStorage.setItem('user', JSON.stringify(data.user));
       
       if (onLogin) onLogin(data.user);
-      if (onNavigate) onNavigate('dashboard');
+      
+      // ✅ Navigate to Dashboard
+      navigate('/overview'); 
 
     } catch (err) {
       console.error("❌ Login Error:", err.code, err.message);
@@ -89,8 +95,8 @@ const LoginPage = ({ onLogin, onNavigate }) => {
       const idToken = await result.user.getIdToken();
       console.log("✅ Google Verified");
 
-      // B. Send Token to Backend
-      const response = await fetch('http://localhost:5001/api/auth/firebase-login', {
+      // B. Send Token to Backend (Using ENV URL)
+      const response = await fetch(`${API_URL}/auth/firebase-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idToken })
@@ -107,7 +113,9 @@ const LoginPage = ({ onLogin, onNavigate }) => {
       localStorage.setItem('user', JSON.stringify(data.user));
       
       if (onLogin) onLogin(data.user);
-      if (onNavigate) onNavigate('dashboard');
+      
+      // ✅ Navigate to Dashboard
+      navigate('/overview');
 
     } catch (err) {
       console.error("❌ Google Login Error:", err);
@@ -245,7 +253,7 @@ const LoginPage = ({ onLogin, onNavigate }) => {
             Don't have an account?{' '}
             <button
               type="button"
-              onClick={() => onNavigate('register')}
+              onClick={() => navigate('/register')} // ✅ Updated Navigation
               className="text-indigo-600 hover:text-indigo-700 font-bold hover:underline"
             >
               Create account

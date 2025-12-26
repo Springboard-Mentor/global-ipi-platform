@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // ✅ Added Hook
 import { 
   Globe, Shield, Sparkles, Lock, Mail, User, Building2, 
   Eye, EyeOff, XCircle, ArrowRight, Scale
 } from 'lucide-react';
-// Firebase Imports
 import { auth, googleProvider } from '../firebase';
 import { signInWithPopup, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-// API Import (This fixes the URL issues)
-import { authAPI } from '../api/ai';
 
-// --- Modal Component ---
+// ✅ ENV Variable Setup
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+
+// --- Modal Component (Original) ---
 const Modal = ({ title, content, onClose }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col scale-100 animate-in zoom-in-95 duration-200">
@@ -44,7 +45,7 @@ const Modal = ({ title, content, onClose }) => (
   </div>
 );
 
-// --- Expanded Terms of Service Content ---
+// --- Expanded Terms of Service Content (Original) ---
 const TermsContent = (
   <div className="space-y-6">
     <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-100 mb-6">
@@ -66,7 +67,7 @@ const TermsContent = (
   </div >
 );
 
-// --- Expanded Privacy Policy Content ---
+// --- Expanded Privacy Policy Content (Original) ---
 const PrivacyContent = (
   <div className="space-y-6">
     <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-100 mb-6">
@@ -84,7 +85,7 @@ const PrivacyContent = (
   </div >
 );
 
-// --- Auth Layout Component ---
+// --- Auth Layout Component (Original) ---
 const AuthLayout = ({ title, subtitle, children }) => (
   <div className="min-h-screen flex relative overflow-hidden bg-slate-900">
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -154,7 +155,8 @@ const AuthLayout = ({ title, subtitle, children }) => (
 );
 
 // --- Main Register Component ---
-const RegisterPage = ({ onNavigate, onLogin }) => {
+const RegisterPage = ({ onLogin }) => {
+  const navigate = useNavigate(); // ✅ Hook
   const [formData, setFormData] = useState({
     fullname: '',
     email: '',
@@ -172,6 +174,7 @@ const RegisterPage = ({ onNavigate, onLogin }) => {
   const [touchedFields, setTouchedFields] = useState({});
   const [activeModal, setActiveModal] = useState(null);
 
+  // --- Password Logic Preserved ---
   const calculatePasswordStrength = (password) => {
     let strength = 0;
     if (password.length >= 8) strength += 25;
@@ -206,7 +209,7 @@ const RegisterPage = ({ onNavigate, onLogin }) => {
     return newErrors;
   };
 
-  // --- SUBMIT HANDLER (Uses authAPI) ---
+  // --- SUBMIT HANDLER (Updated for .ENV & Router) ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = validateForm();
@@ -230,37 +233,41 @@ const RegisterPage = ({ onNavigate, onLogin }) => {
       console.log('✅ Firebase User Created:', user.email);
       const idToken = await user.getIdToken(true);
 
-      // --- USE CENTRALIZED API HERE ---
-      console.log('🔵 Sending to Backend via authAPI...');
-      const data = await authAPI.firebaseLogin(idToken);
+      // --- ✅ FIXED: Direct Fetch with .env ---
+      console.log('🔵 Sending to Backend via Direct Fetch...');
+      const response = await fetch(`${API_URL}/auth/firebase-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken })
+      });
+
+      if (!response.ok) {
+        throw new Error('Backend registration failed');
+      }
+
+      const data = await response.json();
       console.log('✅ Backend Registration Success:', data);
 
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
 
       if (onLogin) onLogin(data.user);
-      if (onNavigate) {
-        onNavigate('dashboard');
-      } else {
-        window.location.href = '/dashboard';
-      }
+      
+      // ✅ Use navigate hook
+      navigate('/overview');
 
     } catch (error) {
       console.error('❌ Registration Error:', error);
       let errorMessage = "Registration failed. Please try again.";
       if (error.code === 'auth/email-already-in-use') errorMessage = "This email is already registered. Please login instead.";
       else if (error.code === 'auth/weak-password') errorMessage = "Password is too weak.";
-      else if (error.response && error.response.data && error.response.data.message) {
-         // Handle Backend errors (e.g. 400 Bad Request)
-         errorMessage = error.response.data.message;
-      }
       setErrors({ submit: errorMessage });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // --- GOOGLE REGISTER (Uses authAPI) ---
+  // --- GOOGLE REGISTER (Updated for .ENV & Router) ---
   const handleGoogleRegister = async () => {
     setIsLoading(true);
     setErrors({});
@@ -271,20 +278,27 @@ const RegisterPage = ({ onNavigate, onLogin }) => {
       const idToken = await result.user.getIdToken();
       console.log('✅ Firebase Sign-In Success');
       
-      // --- USE CENTRALIZED API HERE ---
-      console.log('🔵 Sending to Backend via authAPI...');
-      const data = await authAPI.firebaseLogin(idToken);
+      // --- ✅ FIXED: Direct Fetch with .env ---
+      const response = await fetch(`${API_URL}/auth/firebase-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken })
+      });
+
+      if (!response.ok) {
+        throw new Error('Backend registration failed');
+      }
+
+      const data = await response.json();
       console.log('✅ Backend Response:', data);
       
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       
       if (onLogin) onLogin(data.user);
-      if (onNavigate) {
-        onNavigate('dashboard');
-      } else {
-        window.location.href = '/dashboard';
-      }
+      
+      // ✅ Use navigate hook
+      navigate('/overview');
       
     } catch (error) {
       console.error('❌ Google Sign-Up Error:', error);
@@ -406,7 +420,7 @@ const RegisterPage = ({ onNavigate, onLogin }) => {
           </button>
           
           <div className="text-center pt-4 border-t border-slate-100">
-            <p className="text-sm text-slate-600">Already have an account?{' '} <button type="button" onClick={() => onNavigate('login')} className="text-indigo-600 hover:text-indigo-700 font-semibold hover:underline">Log in</button></p>
+            <p className="text-sm text-slate-600">Already have an account?{' '} <button type="button" onClick={() => navigate('/login')} className="text-indigo-600 hover:text-indigo-700 font-semibold hover:underline">Log in</button></p>
           </div>
         </form>
 
