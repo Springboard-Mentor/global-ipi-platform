@@ -29,7 +29,7 @@ public class IPAssetMapper {
         dto.setOwnerName(entity.getOwnerName());
         dto.setInventorName(entity.getInventorName());
         dto.setFilingDate(entity.getFilingDate());
-        dto.setPublicationDate(entity.getPublicationDate()); // ✅ ADDED HERE
+        dto.setPublicationDate(entity.getPublicationDate()); 
         return dto;
     }
 

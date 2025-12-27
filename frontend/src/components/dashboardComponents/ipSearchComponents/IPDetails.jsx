@@ -10,6 +10,57 @@ const IPDetails = () => {
   const [ip, setIp] = useState(location.state?.ip);
   const [loading, setLoading] = useState(!location.state?.ip);
   const [error, setError] = useState(null);
+
+  // text file
+  const exportAsTextFile = () => {
+    if (!ip) return;
+
+    const content = `
+IP DETAILS
+=========================
+
+Title: ${ip.title || "N/A"}
+Status: ${ip.status || "N/A"}
+
+Owner: ${ip.assignee || "N/A"}
+Issuing Authority: ${ip.jurisdiction || "N/A"}
+Area of Coverage: ${ip.coverage || "N/A"}
+
+Application Number: ${ip.number || "N/A"}
+Filed Date: ${ip.timeline?.filing || ip.date || "N/A"}
+Publication Date: ${ip.timeline?.publication || "N/A"}
+Grant Date: ${ip.timeline?.grant || "N/A"}
+
+IP Duration: ${
+      ip.date
+        ? `20 Years (Expires in ${new Date(ip.date).getFullYear() + 20})`
+        : "N/A"
+    }
+
+Inventor(s): ${ip.inventor || "N/A"}
+
+Abstract:
+${ip.abstract || "N/A"}
+
+-------------------------
+Generated from IP Portal
+`;
+
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${ip.number || "IP_Details"}.txt`;
+
+    document.body.appendChild(link);
+    link.click();
+
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+  const pdfLink =
+    ip?.pdfLink || (ip?.patentLink ? `${ip.patentLink}.pdf` : null);
   useEffect(() => {
     const fetchIPDetails = async () => {
       if (!ip) {
@@ -99,10 +150,10 @@ const IPDetails = () => {
     status === "GRANTED"
       ? "bg-green-500 shadow-[0_0_20px_rgba(34,197,94,0.8)]"
       : status === "PENDING"
-        ? "bg-yellow-500"
-        : status === "ACTIVE"
-          ? "bg-green-500"
-          : "bg-gray-500";
+      ? "bg-yellow-500"
+      : status === "ACTIVE"
+      ? "bg-green-500"
+      : "bg-gray-500";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 px-6 py-8">
@@ -147,7 +198,10 @@ const IPDetails = () => {
           </button>
 
           {/* Export */}
-          <button className="flex items-center gap-2 px-4 py-2 text-sm bg-purple-600/80 hover:bg-purple-700 rounded-lg text-white transition">
+          <button
+            onClick={exportAsTextFile}
+            className="flex items-center gap-2 px-4 py-2 text-sm bg-purple-600/80 hover:bg-purple-700 rounded-lg text-white transition"
+          >
             <svg
               className="w-4 h-4"
               fill="none"
@@ -159,7 +213,7 @@ const IPDetails = () => {
               <path d="M7 10l5 5 5-5" />
               <path d="M12 15V3" />
             </svg>
-            Export
+            Export PDF
           </button>
 
           {/* Notify */}
@@ -237,10 +291,11 @@ const IPDetails = () => {
                 <div key={index} className="relative flex gap-6">
                   <div className="relative z-10">
                     <div
-                      className={`w-6 h-6 rounded-full ${item.active
+                      className={`w-6 h-6 rounded-full ${
+                        item.active
                           ? "w-6 h-6 bg-green-400 shadow-[0_0_14px_rgba(34,197,94,0.9)]"
                           : "w-4 h-4 bg-blue-400"
-                        } rounded-full border-2 border-white/30`}
+                      } rounded-full border-2 border-white/30`}
                     />
                   </div>
 
@@ -267,9 +322,9 @@ const IPDetails = () => {
             </p>
 
             {/* PDF Button */}
-            {ip.pdf && (
+            {ip.pdfLink && (
               <a
-                href={ip.pdf}
+                href={ip.pdfLink}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm"

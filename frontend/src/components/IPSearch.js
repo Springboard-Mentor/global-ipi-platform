@@ -6,7 +6,7 @@ const IPSearch = () => {
 
   // ✅ Required States
   const [searchType, setSearchType] = useState("PATENT"); // PATENT | TRADEMARK
-  const [source, setSource] = useState("LOCAL"); // LOCAL | EXTERNAL
+  const [source, setSource] = useState("EXTERNAL"); // LOCAL | EXTERNAL
   const [keyword, setKeyword] = useState("");
 
   // ✅ SEARCH HANDLER (FIXED)
@@ -36,7 +36,7 @@ const IPSearch = () => {
   const handleReset = () => {
     setKeyword("");
     setSearchType("PATENT");
-    setSource("LOCAL");
+    setSource("EXTERNAL");
   };
 
   return (

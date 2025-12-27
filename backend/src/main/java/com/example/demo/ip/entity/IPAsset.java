@@ -20,9 +20,68 @@ public class IPAsset {
     private String inventorName;
     private LocalDate filingDate;
     private LocalDate publicationDate;
+    private String referenceSource;
+    private LocalDate priorityDate;
+    private LocalDate grantDate;
 
+    @Column(length = 500)
+    private String patentLink;
+
+    @Column(length = 500)
+    private String pdfLink;
+
+    @Column(length = 500)
+    private String thumbnail;
 
     // getters & setters
+
+    public LocalDate getPriorityDate() {
+        return priorityDate;
+    }
+
+    public void setPriorityDate(LocalDate priorityDate) {
+        this.priorityDate = priorityDate;
+    }
+
+    public LocalDate getGrantDate() {
+        return grantDate;
+    }
+
+    public void setGrantDate(LocalDate grantDate) {
+        this.grantDate = grantDate;
+    }
+
+    public String getPatentLink() {
+        return patentLink;
+    }
+
+    public void setPatentLink(String patentLink) {
+        this.patentLink = patentLink;
+    }
+
+    public String getPdfLink() {
+        return pdfLink;
+    }
+
+    public void setPdfLink(String pdfLink) {
+        this.pdfLink = pdfLink;
+    }
+
+    public String getThumbnail() {
+        return thumbnail;
+    }
+
+    public void setThumbnail(String thumbnail) {
+        this.thumbnail = thumbnail;
+    }
+
+    public String getReferenceSource() {
+        return referenceSource;
+    }
+
+    public void setReferenceSource(String referenceSource) {
+        this.referenceSource = referenceSource;
+    }
 
     public LocalDate getPublicationDate() {
         return publicationDate;

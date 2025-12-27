@@ -21,6 +21,12 @@ public class IPSearchResultDTO {
     private String abstractText;
     private String ownerName;
     private String inventorName;
+    private String referenceSource;
+    private String priorityDate;
+    private String grantDate;
+    private String patentLink;
+    private String pdfLink;
+    private String thumbnail;
 
     // Optional lightweight constructor
     public IPSearchResultDTO(String title, String assetType,
