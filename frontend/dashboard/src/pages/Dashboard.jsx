@@ -23,6 +23,7 @@ import OverviewGrid from "../components/OverviewGrid";
 import IPAssetPanel from "../components/IPAssetPanel";
 
 const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
+
   const [dbPatentCount, setDbPatentCount] = React.useState(0);
   const [dbConnectionStatus, setDbConnectionStatus] = React.useState('checking'); // 'checking', 'connected', 'error'
   const [dbError, setDbError] = React.useState('');
@@ -95,6 +96,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
     return () => clearInterval(interval);
   }, []);
   
+
   const [dashboardData, setDashboardData] = useState({
     portfolioValue: "$0",
     portfolioGrowth: "0%",
@@ -262,38 +264,10 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
               </button>
             </div>
             <p className="text-xs text-gray-500 mt-2">
-              {searchMode === 'api' 
-                ? 'Searching from external patent database API' 
-                : dbConnectionStatus === 'connected'
-                  ? `Searching from local database (${dbPatentCount} patents stored)`
-                  : dbConnectionStatus === 'checking'
-                    ? 'Connecting to database...'
-                    : `⚠️ Database connection error: ${dbError}`}
+              {searchMode === 'api'
+                ? 'Searching from external patent database API'
+                : `Searching from local database (${JSON.parse(localStorage.getItem('patentDatabase') || '[]').length} patents stored)`}
             </p>
-            {searchMode === 'local' && dbConnectionStatus === 'connected' && dbPatentCount > 0 && (
-              <div className="mt-3">
-                <p className="text-xs text-gray-600 mb-2">
-                  💡 Tip: Search with any keyword or go to search directly to see all {dbPatentCount} patents
-                </p>
-              </div>
-            )}
-            {searchMode === 'local' && dbConnectionStatus === 'error' && (
-              <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-xs text-red-700 font-semibold mb-1">⚠️ Backend Server Not Running</p>
-                <p className="text-xs text-red-600">
-                  Please start the backend server:
-
-                </p>
-              </div>
-            )}
-            {searchMode === 'local' && dbConnectionStatus === 'connected' && dbPatentCount === 0 && (
-              <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-xs text-yellow-700 font-semibold mb-1">ℹ️ No Patents in Database</p>
-                <p className="text-xs text-yellow-600">
-                  Your local database is empty. Try searching with API mode to add patents.
-                </p>
-              </div>
-            )}
           </div>
         </div>
 
