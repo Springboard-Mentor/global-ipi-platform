@@ -248,84 +248,108 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
       {/* FULL WIDTH WELCOME CARD */}
       <div className="w-full">
         {/* Welcome Card */}
-        <div className="bg-white rounded-xl p-5 shadow-sm">
-          <p className="text-sm text-gray-500">Welcome back,</p>
-          <h1 className="text-3xl font-bold">
-            {getTimeGreeting()}, {userProfile?.firstName || "User"}.
-          </h1>
-          <p className="text-gray-600 mt-1">
-            {userProfile?.email} • {userProfile?.company || "IP Platform"}
-          </p>
+        <div className="bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30 rounded-2xl p-6 shadow-xl border border-gray-100">
+          <div className="flex flex-col lg:flex-row items-start justify-between gap-6 lg:gap-8">
+            {/* Left Side - User Info */}
+            <div className="flex-1 min-w-0 w-full lg:w-auto">
+              <p className="text-base font-semibold text-gray-700">Welcome back,</p>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                {getTimeGreeting()}, {userProfile?.firstName || "User"}.
+              </h1>
+              <p className="text-gray-600 mt-2">
+                {userProfile?.email} • {userProfile?.company || "IP Platform"}
+              </p>
 
-          {userProfile?.emailVerified && (
-            <div className="flex items-center gap-2 mt-2">
-              <CheckCircle size={16} className="text-green-500" />
-              <span className="text-sm text-green-600 font-medium">
-                Verified Account
-              </span>
+              {userProfile?.emailVerified && (
+                <div className="flex items-center gap-2 mt-3 px-3 py-2 bg-green-50 rounded-lg border border-green-200 inline-flex">
+                  <CheckCircle size={16} className="text-green-600" />
+                  <span className="text-sm text-green-700 font-semibold">
+                    Verified Account
+                  </span>
+                </div>
+              )}
             </div>
-          )}
 
-          {/* Search Mode Toggle */}
-          <div className="mt-3 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
-            <p className="text-xs font-medium text-gray-700 mb-2">Search Mode</p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setSearchMode('api')}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm ${
-                  searchMode === 'api'
-                    ? 'bg-blue-500 text-white shadow-md'
-                    : 'bg-white text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                <Globe size={14} />
-                <span className="font-medium">API Search</span>
-              </button>
-              <button
-                onClick={() => setSearchMode('local')}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm ${
-                  searchMode === 'local'
-                    ? 'bg-purple-500 text-white shadow-md'
-                    : 'bg-white text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                <Database size={14} />
-                <span className="font-medium">Local Database</span>
-              </button>
+            {/* Right Side - Search Mode - Water Drop Color */}
+            <div className="w-full lg:w-96 flex-shrink-0">
+              <div className="bg-gradient-to-br from-cyan-50 via-blue-50 to-teal-50 rounded-2xl shadow-xl border-2 border-cyan-200/50 p-5 hover:shadow-2xl transition-all hover:scale-[1.01]">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-base font-bold bg-gradient-to-r from-cyan-700 to-teal-700 bg-clip-text text-transparent">Search Mode</p>
+                  <div className={`w-2.5 h-2.5 rounded-full ${searchMode === 'api' ? 'bg-cyan-500' : 'bg-teal-500'} animate-pulse shadow-lg`}></div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setSearchMode('api')}
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-all text-sm font-medium ${
+                      searchMode === 'api'
+                        ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg'
+                        : 'bg-white text-gray-700 hover:bg-cyan-50 border border-cyan-200 shadow-sm'
+                    }`}
+                    title="Search from external patent database API"
+                  >
+                    <Globe size={18} />
+                    <span>API</span>
+                  </button>
+                  <button
+                    onClick={() => setSearchMode('local')}
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-all text-sm font-medium ${
+                      searchMode === 'local'
+                        ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg'
+                        : 'bg-white text-gray-700 hover:bg-teal-50 border border-teal-200 shadow-sm'
+                    }`}
+                    title={searchMode === 'local' && dbConnectionStatus === 'connected' 
+                      ? `Searching from local database (${dbPatentCount} patents stored)`
+                      : 'Search from local database'}
+                  >
+                    <Database size={18} />
+                    <span>Local</span>
+                  </button>
+                </div>
+
+                {/* Compact Status Indicator */}
+                <div className="mt-4 pt-3 border-t border-cyan-200/50">
+                  {searchMode === 'api' && (
+                    <div className="flex items-start gap-2 bg-white/70 backdrop-blur-sm rounded-lg p-3 border border-cyan-200 shadow-sm">
+                      <div className="p-1.5 bg-cyan-100 rounded-lg">
+                        <Globe size={16} className="text-cyan-600" />
+                      </div>
+                      <p className="text-sm text-gray-700 leading-relaxed font-medium">
+                        Searching from external API
+                      </p>
+                    </div>
+                  )}
+                  {searchMode === 'local' && dbConnectionStatus === 'connected' && dbPatentCount > 0 && (
+                    <div className="flex items-start gap-2 bg-white/70 backdrop-blur-sm rounded-lg p-3 border border-teal-200 shadow-sm">
+                      <div className="p-1.5 bg-teal-100 rounded-lg">
+                        <Database size={16} className="text-teal-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-800 font-semibold">Local Database</p>
+                        <p className="text-xs text-gray-600 mt-0.5">{dbPatentCount} patents stored</p>
+                      </div>
+                    </div>
+                  )}
+                  {searchMode === 'local' && dbConnectionStatus === 'checking' && (
+                    <div className="flex items-center gap-2 bg-white/70 backdrop-blur-sm rounded-lg p-3 border border-cyan-200 shadow-sm">
+                      <div className="w-4 h-4 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+                      <p className="text-sm text-gray-700 font-medium">Connecting...</p>
+                    </div>
+                  )}
+                  {searchMode === 'local' && dbConnectionStatus === 'error' && (
+                    <div className="flex items-start gap-2 p-3 bg-red-50 rounded-lg border border-red-200 shadow-sm">
+                      <span className="text-red-600 text-sm">⚠️</span>
+                      <p className="text-sm text-red-700 font-medium">Server not running</p>
+                    </div>
+                  )}
+                  {searchMode === 'local' && dbConnectionStatus === 'connected' && dbPatentCount === 0 && (
+                    <div className="flex items-start gap-2 p-3 bg-yellow-50 rounded-lg border border-yellow-200 shadow-sm">
+                      <span className="text-yellow-600 text-sm">ℹ️</span>
+                      <p className="text-sm text-yellow-700 font-medium">Database empty</p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-            <p className="text-xs text-gray-500 mt-2">
-              {searchMode === 'api' 
-                ? 'Searching from external patent database API' 
-                : dbConnectionStatus === 'connected'
-                  ? `Searching from local database (${dbPatentCount} patents stored)`
-                  : dbConnectionStatus === 'checking'
-                    ? 'Connecting to database...'
-                    : `⚠️ Database connection error: ${dbError}`}
-            </p>
-            {searchMode === 'local' && dbConnectionStatus === 'connected' && dbPatentCount > 0 && (
-              <div className="mt-3">
-                <p className="text-xs text-gray-600 mb-2">
-                  💡 Tip: Search with any keyword or go to search directly to see all {dbPatentCount} patents
-                </p>
-              </div>
-            )}
-            {searchMode === 'local' && dbConnectionStatus === 'error' && (
-              <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-xs text-red-700 font-semibold mb-1">⚠️ Backend Server Not Running</p>
-                <p className="text-xs text-red-600">
-                  Please start the backend server:
-
-                </p>
-              </div>
-            )}
-            {searchMode === 'local' && dbConnectionStatus === 'connected' && dbPatentCount === 0 && (
-              <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-xs text-yellow-700 font-semibold mb-1">ℹ️ No Patents in Database</p>
-                <p className="text-xs text-yellow-600">
-                  Your local database is empty. Try searching with API mode to add patents.
-                </p>
-              </div>
-            )}
           </div>
         </div>
       </div>
