@@ -11,6 +11,7 @@ import SearchResultsPage from './pages/SearchResultsPage';
 import IPAssetPanel from './components/IPAssetPanel';
 import ContactForm from './components/ContactForm';
 import FeedbackForm from './components/FeedbackForm';
+import PatentFilingForm from './components/PatentFilingForm';
 
 const App = () => {
   // Check URL parameters for auth data
@@ -504,10 +505,14 @@ const App = () => {
                 <p className="text-gray-600">Legal status functionality coming soon...</p>
               </div>
             ) : currentPage === 'patent-filing' ? (
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <h2 className="text-2xl font-bold text-gray-800 mb-4">Patent Filing</h2>
-                <p className="text-gray-600">Form will be there soon.</p>
-              </div>
+              <PatentFilingForm 
+                onClose={() => {
+                  setCurrentPage('dashboard');
+                  setActiveItem('dashboard');
+                }} 
+                userProfile={userProfile}
+                onAddNotification={addNotification}
+              />
             ) : currentPage === 'contact' ? (
               <ContactForm onClose={() => {
                 setCurrentPage('dashboard');
