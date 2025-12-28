@@ -54,6 +54,74 @@ public class PatentFiling {
     @Column(name = "applicant_type", nullable = false, length = 50)
     private String applicantType;
     
+    // Personal Details (NEW)
+    @Column(name = "date_of_birth")
+    private LocalDate dateOfBirth;
+    
+    @Column(name = "age")
+    private Integer age;
+    
+    @Column(name = "gender", length = 20)
+    private String gender;
+    
+    @Column(name = "occupation", length = 100)
+    private String occupation;
+    
+    @Column(name = "educational_qualification", length = 200)
+    private String educationalQualification;
+    
+    @Column(name = "designation", length = 100)
+    private String designation;
+    
+    @Column(name = "application_date", nullable = false)
+    private LocalDate applicationDate;
+    
+    // Additional Contact Details (NEW)
+    @Column(name = "alternate_phone", length = 20)
+    private String alternatePhone;
+    
+    @Column(name = "alternate_email")
+    private String alternateEmail;
+    
+    // Government ID Details (NEW)
+    @Column(name = "govt_id_type", length = 50)
+    private String govtIdType;
+    
+    @Column(name = "govt_id_number", length = 50)
+    private String govtIdNumber;
+    
+    @Column(name = "passport_country", length = 100)
+    private String passportCountry;
+    
+    @Column(name = "driving_license_state", length = 100)
+    private String drivingLicenseState;
+    
+    // Tax Details
+    @Column(name = "gstin", length = 15)
+    private String gstin;
+    
+    @Column(name = "aadhaar_number", length = 12)
+    private String aadhaarNumber;
+    
+    @Column(name = "pan_number", length = 10)
+    private String panNumber;
+    
+    // Correspondence Address (NEW)
+    @Column(name = "correspondence_address", columnDefinition = "TEXT")
+    private String correspondenceAddress;
+    
+    @Column(name = "correspondence_city", length = 100)
+    private String correspondenceCity;
+    
+    @Column(name = "correspondence_state", length = 100)
+    private String correspondenceState;
+    
+    @Column(name = "correspondence_pincode", length = 10)
+    private String correspondencePincode;
+    
+    @Column(name = "same_as_applicant_address")
+    private Boolean sameAsApplicantAddress = true;
+    
     // Invention Details
     @Column(name = "invention_title", nullable = false, length = 500)
     private String inventionTitle;
@@ -75,6 +143,16 @@ public class PatentFiling {
     
     @Column(name = "prior_art", columnDefinition = "TEXT")
     private String priorArt;
+    
+    // Additional Invention Details (NEW)
+    @Column(name = "keywords", length = 500)
+    private String keywords;
+    
+    @Column(name = "target_industry", length = 200)
+    private String targetIndustry;
+    
+    @Column(name = "commercial_application", columnDefinition = "TEXT")
+    private String commercialApplication;
     
     // Patent Details
     @Column(name = "patent_type", nullable = false, length = 50)
@@ -132,6 +210,10 @@ public class PatentFiling {
     
     @Column(name = "payment_timestamp")
     private LocalDateTime paymentTimestamp;
+    
+    // Agreement (NEW)
+    @Column(name = "agreed_to_terms")
+    private Boolean agreedToTerms = false;
     
     // Status and Timestamps
     @Column(name = "status", length = 50)
@@ -292,4 +374,86 @@ public class PatentFiling {
     
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    
+    // NEW Getters and Setters for Personal Details
+    public LocalDate getDateOfBirth() { return dateOfBirth; }
+    public void setDateOfBirth(LocalDate dateOfBirth) { this.dateOfBirth = dateOfBirth; }
+    
+    public Integer getAge() { return age; }
+    public void setAge(Integer age) { this.age = age; }
+    
+    public String getGender() { return gender; }
+    public void setGender(String gender) { this.gender = gender; }
+    
+    public String getOccupation() { return occupation; }
+    public void setOccupation(String occupation) { this.occupation = occupation; }
+    
+    public String getEducationalQualification() { return educationalQualification; }
+    public void setEducationalQualification(String educationalQualification) { this.educationalQualification = educationalQualification; }
+    
+    public String getDesignation() { return designation; }
+    public void setDesignation(String designation) { this.designation = designation; }
+    
+    public LocalDate getApplicationDate() { return applicationDate; }
+    public void setApplicationDate(LocalDate applicationDate) { this.applicationDate = applicationDate; }
+    
+    // NEW Getters and Setters for Additional Contact
+    public String getAlternatePhone() { return alternatePhone; }
+    public void setAlternatePhone(String alternatePhone) { this.alternatePhone = alternatePhone; }
+    
+    public String getAlternateEmail() { return alternateEmail; }
+    public void setAlternateEmail(String alternateEmail) { this.alternateEmail = alternateEmail; }
+    
+    // NEW Getters and Setters for Government ID
+    public String getGovtIdType() { return govtIdType; }
+    public void setGovtIdType(String govtIdType) { this.govtIdType = govtIdType; }
+    
+    public String getGovtIdNumber() { return govtIdNumber; }
+    public void setGovtIdNumber(String govtIdNumber) { this.govtIdNumber = govtIdNumber; }
+    
+    public String getPassportCountry() { return passportCountry; }
+    public void setPassportCountry(String passportCountry) { this.passportCountry = passportCountry; }
+    
+    public String getDrivingLicenseState() { return drivingLicenseState; }
+    public void setDrivingLicenseState(String drivingLicenseState) { this.drivingLicenseState = drivingLicenseState; }
+    
+    // NEW Getters and Setters for Tax Details
+    public String getGstin() { return gstin; }
+    public void setGstin(String gstin) { this.gstin = gstin; }
+    
+    public String getAadhaarNumber() { return aadhaarNumber; }
+    public void setAadhaarNumber(String aadhaarNumber) { this.aadhaarNumber = aadhaarNumber; }
+    
+    public String getPanNumber() { return panNumber; }
+    public void setPanNumber(String panNumber) { this.panNumber = panNumber; }
+    
+    // NEW Getters and Setters for Correspondence Address
+    public String getCorrespondenceAddress() { return correspondenceAddress; }
+    public void setCorrespondenceAddress(String correspondenceAddress) { this.correspondenceAddress = correspondenceAddress; }
+    
+    public String getCorrespondenceCity() { return correspondenceCity; }
+    public void setCorrespondenceCity(String correspondenceCity) { this.correspondenceCity = correspondenceCity; }
+    
+    public String getCorrespondenceState() { return correspondenceState; }
+    public void setCorrespondenceState(String correspondenceState) { this.correspondenceState = correspondenceState; }
+    
+    public String getCorrespondencePincode() { return correspondencePincode; }
+    public void setCorrespondencePincode(String correspondencePincode) { this.correspondencePincode = correspondencePincode; }
+    
+    public Boolean getSameAsApplicantAddress() { return sameAsApplicantAddress; }
+    public void setSameAsApplicantAddress(Boolean sameAsApplicantAddress) { this.sameAsApplicantAddress = sameAsApplicantAddress; }
+    
+    // NEW Getters and Setters for Additional Invention Details
+    public String getKeywords() { return keywords; }
+    public void setKeywords(String keywords) { this.keywords = keywords; }
+    
+    public String getTargetIndustry() { return targetIndustry; }
+    public void setTargetIndustry(String targetIndustry) { this.targetIndustry = targetIndustry; }
+    
+    public String getCommercialApplication() { return commercialApplication; }
+    public void setCommercialApplication(String commercialApplication) { this.commercialApplication = commercialApplication; }
+    
+    // NEW Getters and Setters for Agreement
+    public Boolean getAgreedToTerms() { return agreedToTerms; }
+    public void setAgreedToTerms(Boolean agreedToTerms) { this.agreedToTerms = agreedToTerms; }
 }

@@ -12,6 +12,7 @@ import IPAssetPanel from './components/IPAssetPanel';
 import ContactForm from './components/ContactForm';
 import FeedbackForm from './components/FeedbackForm';
 import PatentFilingForm from './components/PatentFilingForm';
+import FilingTracker from './components/FilingTracker';
 
 const App = () => {
   // Check URL parameters for auth data
@@ -495,10 +496,7 @@ const App = () => {
                 }} 
               />
             ) : currentPage === 'filing' ? (
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <h2 className="text-2xl font-bold text-gray-800 mb-4">Filing Tracker</h2>
-                <p className="text-gray-600">Filing tracker functionality coming soon...</p>
-              </div>
+              <FilingTracker />
             ) : currentPage === 'legal' ? (
               <div className="bg-white rounded-xl shadow-lg p-6">
                 <h2 className="text-2xl font-bold text-gray-800 mb-4">Legal Status</h2>

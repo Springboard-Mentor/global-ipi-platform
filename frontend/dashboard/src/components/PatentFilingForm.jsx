@@ -10,6 +10,11 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showWarning, setShowWarning] = useState(true);
+  const [showStepSuccess, setShowStepSuccess] = useState(false);
+  const [nextStepNumber, setNextStepNumber] = useState(2);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
   
   // Indian States and Countries
   const indianStates = [
@@ -50,6 +55,38 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
     organizationName: "",
     applicantType: "individual", // individual, organization, joint
     
+    // Personal Details
+    dateOfBirth: "",
+    age: "",
+    gender: "",
+    occupation: "",
+    educationalQualification: "",
+    designation: "",
+    applicationDate: new Date().toISOString().split('T')[0], // Today's date
+    
+    // Additional applicant details
+    alternatePhone: "",
+    alternateEmail: "",
+    gstin: "",
+    aadhaarNumber: "",
+    panNumber: "",
+    
+    // Government ID Details
+    govtIdType: "", // aadhaar, pan, passport, voterId, drivingLicense
+    govtIdNumber: "",
+    passportCountry: "",
+    drivingLicenseState: "",
+    
+    // Co-inventors (for joint applications)
+    coInventors: [],
+    
+    // Correspondence details
+    correspondenceAddress: "",
+    correspondenceCity: "",
+    correspondenceState: "",
+    correspondencePincode: "",
+    sameAsApplicantAddress: true,
+    
     // Step 2: Invention Details
     inventionTitle: "",
     inventionField: "",
@@ -58,6 +95,9 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
     proposedSolution: "",
     advantages: "",
     priorArt: "",
+    keywords: "",
+    commercialApplication: "",
+    targetIndustry: "",
     
     // Step 3: Patent Details
     patentType: "provisional", // provisional, complete
@@ -139,6 +179,51 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
     if (formData.applicantType === 'organization' && !formData.organizationName.trim()) {
       newErrors.organizationName = "Organization name is required";
     }
+    
+    // Government ID Validation (Mandatory)
+    if (!formData.govtIdType) {
+      newErrors.govtIdType = "Government ID type is required (compulsory)";
+    } else {
+      if (!formData.govtIdNumber.trim()) {
+        newErrors.govtIdNumber = "Government ID number is required";
+      } else {
+        // Validate based on ID type
+        switch(formData.govtIdType) {
+          case 'aadhaar':
+            if (!/^\d{12}$/.test(formData.govtIdNumber.replace(/\s/g, ''))) {
+              newErrors.govtIdNumber = "Aadhaar must be exactly 12 digits";
+            }
+            break;
+          case 'pan':
+            if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(formData.govtIdNumber)) {
+              newErrors.govtIdNumber = "Invalid PAN format (e.g., ABCDE1234F)";
+            }
+            break;
+          case 'passport':
+            if (!formData.govtIdNumber.trim()) {
+              newErrors.govtIdNumber = "Passport number is required";
+            }
+            if (!formData.passportCountry.trim()) {
+              newErrors.passportCountry = "Passport country is required";
+            }
+            break;
+          case 'voterId':
+            if (!formData.govtIdNumber.trim()) {
+              newErrors.govtIdNumber = "Voter ID number is required";
+            }
+            break;
+          case 'drivingLicense':
+            if (!formData.govtIdNumber.trim()) {
+              newErrors.govtIdNumber = "Driving License number is required";
+            }
+            if (!formData.drivingLicenseState.trim()) {
+              newErrors.drivingLicenseState = "State of issue is required";
+            }
+            break;
+        }
+      }
+    }
+    
     return newErrors;
   };
 
@@ -237,8 +322,18 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
 
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
+      
+      // Show toast message
+      setToastMessage('⚠️ Please fill all the required details before proceeding to the next step');
+      setShowToast(true);
+      
+      // Auto-hide toast after 4 seconds
+      setTimeout(() => {
+        setShowToast(false);
+      }, 4000);
+      
       // Scroll to first error
-      const firstErrorField = document.querySelector('.border-red-300');
+      const firstErrorField = document.querySelector('.border-red-400');
       if (firstErrorField) {
         firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
@@ -247,6 +342,8 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
 
     setErrors({});
     if (currentStep < 5) {
+      setNextStepNumber(currentStep + 1);
+      setShowStepSuccess(true);
       setCurrentStep(currentStep + 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -395,6 +492,33 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
         organizationName: formData.organizationName || null,
         applicantType: formData.applicantType,
         
+        // Personal Details
+        dateOfBirth: formData.dateOfBirth || null,
+        age: formData.age ? parseInt(formData.age) : null,
+        gender: formData.gender || null,
+        occupation: formData.occupation || null,
+        designation: formData.designation || null,
+        educationalQualification: formData.educationalQualification || null,
+        applicationDate: formData.applicationDate,
+        
+        // Government ID Details
+        govtIdType: formData.govtIdType || null,
+        govtIdNumber: formData.govtIdNumber || null,
+        aadhaarNumber: formData.aadhaarNumber || null,
+        panNumber: formData.panNumber || null,
+        passportCountry: formData.passportCountry || null,
+        drivingLicenseState: formData.drivingLicenseState || null,
+        
+        // Additional Contact & Address
+        alternatePhone: formData.alternatePhone || null,
+        alternateEmail: formData.alternateEmail || null,
+        gstin: formData.gstin || null,
+        sameAsApplicantAddress: formData.sameAsApplicantAddress || false,
+        correspondenceAddress: formData.correspondenceAddress || null,
+        correspondenceCity: formData.correspondenceCity || null,
+        correspondenceState: formData.correspondenceState || null,
+        correspondencePincode: formData.correspondencePincode || null,
+        
         // Invention Details
         inventionTitle: formData.inventionTitle,
         inventionField: formData.inventionField,
@@ -403,6 +527,9 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
         proposedSolution: formData.proposedSolution,
         advantages: formData.advantages,
         priorArt: formData.priorArt || null,
+        keywords: formData.keywords || null,
+        commercialApplication: formData.commercialApplication || null,
+        targetIndustry: formData.targetIndustry || null,
         
         // Patent Details
         patentType: formData.patentType,
@@ -427,6 +554,7 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
         paymentSignature: paymentResult.signature || null,
         paymentStatus: 'completed',
         paymentTimestamp: new Date().toISOString(),
+        agreedToTerms: formData.agreedToTerms || false,
         
         // Status
         status: 'submitted',
@@ -551,67 +679,206 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 py-8 px-4">
-      <div className="max-w-5xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-3xl font-bold">
-                  Patent Filing Application
-                </h2>
-                <p className="text-blue-100 text-sm mt-1">
-                  Step {currentStep} of 5: {steps[currentStep - 1].title}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+      {/* Warning Popup */}
+      {showWarning && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border-4 border-yellow-400">
+            <div className="bg-gradient-to-r from-yellow-400 to-orange-400 p-5 rounded-t-xl">
+              <h3 className="text-2xl font-bold text-white flex items-center">
+                <AlertCircle size={28} className="mr-3" />
+                Important Notice
+              </h3>
+            </div>
+            <div className="p-6">
+              <div className="space-y-4">
+                <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded">
+                  <p className="text-gray-800 font-bold text-lg mb-2">
+                    ⚠️ Single-Session Form Submission
+                  </p>
+                  <p className="text-gray-700 leading-relaxed">
+                    This patent filing form must be completed in <strong>one continuous session</strong>.
+                  </p>
+                </div>
+
+                <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+                  <p className="text-red-800 font-bold mb-2">
+                    ❌ No Auto-Save Feature
+                  </p>
+                  <ul className="text-gray-700 space-y-2 list-disc list-inside">
+                    <li>Your data will <strong>NOT be saved</strong> if you leave this form</li>
+                    <li>Closing the form will <strong>delete all entered information</strong></li>
+                    <li>You will need to <strong>start over from the beginning</strong></li>
+                  </ul>
+                </div>
+
+                <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded">
+                  <p className="text-green-800 font-bold mb-2">
+                    ✅ How to Proceed
+                  </p>
+                  <ul className="text-gray-700 space-y-2 list-disc list-inside">
+                    <li>Keep all required documents ready before starting</li>
+                    <li>Complete all 5 steps without interruption</li>
+                    <li>Only submit when you've filled everything</li>
+                  </ul>
+                </div>
+
+                <p className="text-sm text-gray-600 text-center italic mt-4">
+                  Please ensure you have enough time to complete the entire form before proceeding.
                 </p>
               </div>
+
+              <div className="mt-6 flex justify-center">
+                <button
+                  onClick={() => setShowWarning(false)}
+                  className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:shadow-lg hover:scale-105 transition-all flex items-center gap-2"
+                >
+                  <CheckCircle2 size={20} />
+                  I Understand, Let's Proceed
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Message */}
+      {showToast && (
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-[100] transition-all duration-300">
+          <div className="bg-red-500 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 min-w-[300px] max-w-[500px]">
+            <AlertCircle size={24} className="flex-shrink-0" />
+            <p className="font-semibold text-sm sm:text-base">{toastMessage}</p>
+            <button
+              onClick={() => setShowToast(false)}
+              className="ml-auto flex-shrink-0 hover:bg-red-600 rounded-full p-1 transition"
+            >
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Step Success Notification */}
+      {showStepSuccess && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[99] p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border-4 border-green-400 animate-fadeIn">
+            <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-5 rounded-t-xl relative">
               <button
-                onClick={onClose}
-                className="p-2 rounded-xl hover:bg-white/20 transition"
+                onClick={() => setShowStepSuccess(false)}
+                className="absolute top-3 right-3 text-white hover:text-gray-200 transition"
               >
                 <X size={24} />
               </button>
+              <h3 className="text-2xl font-bold text-white flex items-center">
+                <CheckCircle2 size={28} className="mr-3" />
+                Step Completed!
+              </h3>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded">
+                <p className="text-green-800 font-bold text-lg mb-2">
+                  ✅ Step {currentStep - 1} Completed Successfully!
+                </p>
+                <p className="text-gray-700 leading-relaxed">
+                  Great progress! You've successfully validated and completed this step.
+                </p>
+              </div>
+
+              <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+                <p className="text-blue-800 font-bold mb-2">
+                  📋 Now on Step {nextStepNumber}:
+                </p>
+                <p className="text-gray-700 font-semibold">
+                  {nextStepNumber === 2 && "Invention Details"}
+                  {nextStepNumber === 3 && "Patent Specifications"}
+                  {nextStepNumber === 4 && "Document Upload"}
+                  {nextStepNumber === 5 && "Review & Payment"}
+                </p>
+                <p className="text-gray-600 text-sm mt-2">
+                  Please fill the data of the next step carefully.
+                </p>
+              </div>
+
+              <button
+                onClick={() => setShowStepSuccess(false)}
+                className="w-full px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-bold hover:shadow-lg hover:scale-105 transition-all flex items-center justify-center gap-2"
+              >
+                <ArrowRight size={20} />
+                Continue to Next Step
+              </button>
             </div>
           </div>
+        </div>
+      )}
 
-          {/* Progress Indicator */}
-          <div className="px-6 pt-6 bg-gray-50">
-            <div className="flex items-center justify-between mb-6">
-              {steps.map((step, index) => {
-                const StepIcon = step.icon;
-                return (
-                  <div key={step.number} className="flex-1">
-                    <div className="flex items-center">
-                      <div className={`
-                        flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all
-                        ${currentStep >= step.number 
-                          ? 'bg-gradient-to-br from-blue-500 to-purple-600 border-transparent text-white' 
-                          : 'border-gray-300 text-gray-400 bg-white'
-                        }
-                      `}>
-                        <StepIcon size={20} />
-                      </div>
-                      {index < steps.length - 1 && (
-                        <div className={`
-                          flex-1 h-1 mx-2 transition-all
-                          ${currentStep > step.number ? 'bg-gradient-to-r from-blue-500 to-purple-600' : 'bg-gray-200'}
-                        `} />
-                      )}
-                    </div>
-                    <p className={`
-                      text-xs mt-2 hidden md:block text-center
-                      ${currentStep >= step.number ? 'text-gray-800 font-medium' : 'text-gray-400'}
+      {/* Fixed Header - Improved Responsive Design */}
+      <div className="sticky top-0 z-50 bg-white shadow-lg border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16 sm:h-20">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 truncate">
+                Patent Filing Application
+              </h1>
+              <p className="text-xs sm:text-sm text-gray-600 mt-0.5">
+                Step {currentStep} of 5: {steps[currentStep - 1].title}
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              className="ml-4 p-2 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0"
+              title="Close"
+            >
+              <X size={24} className="text-gray-600" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Progress Indicator - Responsive */}
+      <div className="bg-white border-b border-gray-200 sticky top-16 sm:top-20 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          <div className="flex items-center justify-between">
+            {steps.map((step, index) => {
+              const StepIcon = step.icon;
+              return (
+                <div key={step.number} className="flex-1">
+                  <div className="flex items-center">
+                    <div className={`
+                      flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 transition-all
+                      ${currentStep >= step.number 
+                        ? 'bg-gradient-to-br from-blue-500 to-purple-600 border-transparent text-white' 
+                        : 'border-gray-300 text-gray-400 bg-white'
+                      }
                     `}>
-                      {step.title}
-                    </p>
+                      <StepIcon size={16} className="sm:hidden" />
+                      <StepIcon size={20} className="hidden sm:block" />
+                    </div>
+                    {index < steps.length - 1 && (
+                      <div className={`
+                        flex-1 h-1 mx-1 sm:mx-2 transition-all
+                        ${currentStep > step.number ? 'bg-gradient-to-r from-blue-500 to-purple-600' : 'bg-gray-200'}
+                      `} />
+                    )}
                   </div>
-                );
-              })}
-            </div>
+                  <p className={`
+                    text-[10px] sm:text-xs mt-1 sm:mt-2 text-center hidden md:block
+                    ${currentStep >= step.number ? 'text-gray-800 font-medium' : 'text-gray-400'}
+                  `}>
+                    {step.title}
+                  </p>
+                </div>
+              );
+            })}
           </div>
+        </div>
+      </div>
 
+      {/* Main Content Area - Full Page Layout */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           {/* Form Content */}
-          <div className="px-6 py-8 min-h-[500px]">
+          <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 min-h-[600px]">
           {/* Step 1: Applicant Information */}
           {currentStep === 1 && (
             <div className="space-y-5">
@@ -638,7 +905,7 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-bold text-gray-800 mb-2">
                     <User size={16} className="inline mr-1" />
                     Full Name *
                   </label>
@@ -647,8 +914,8 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
                     name="applicantName"
                     value={formData.applicantName}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 rounded-xl border transition ${
-                      errors.applicantName ? 'border-red-300 bg-red-50' : 'border-gray-300 focus:border-blue-500'
+                    className={`w-full px-4 py-3 rounded-xl border-2 bg-white text-gray-800 transition ${
+                      errors.applicantName ? 'border-red-400 bg-red-50' : 'border-gray-400 focus:border-blue-600'
                     } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
                     placeholder="Enter your full name"
                   />
@@ -661,7 +928,7 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-bold text-gray-800 mb-2">
                     <Mail size={16} className="inline mr-1" />
                     Email Address *
                   </label>
@@ -670,8 +937,8 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
                     name="applicantEmail"
                     value={formData.applicantEmail}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 rounded-xl border transition ${
-                      errors.applicantEmail ? 'border-red-300 bg-red-50' : 'border-gray-300 focus:border-blue-500'
+                    className={`w-full px-4 py-3 rounded-xl border-2 bg-white text-gray-800 transition ${
+                      errors.applicantEmail ? 'border-red-400 bg-red-50' : 'border-gray-400 focus:border-blue-600'
                     } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
                     placeholder="your.email@example.com"
                   />
@@ -686,7 +953,7 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-bold text-gray-800 mb-2">
                     <Phone size={16} className="inline mr-1" />
                     Phone Number *
                   </label>
@@ -695,8 +962,8 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
                     name="applicantPhone"
                     value={formData.applicantPhone}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 rounded-xl border transition ${
-                      errors.applicantPhone ? 'border-red-300 bg-red-50' : 'border-gray-300 focus:border-blue-500'
+                    className={`w-full px-4 py-3 rounded-xl border-2 bg-white text-gray-800 transition ${
+                      errors.applicantPhone ? 'border-red-400 bg-red-50' : 'border-gray-400 focus:border-blue-600'
                     } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
                     placeholder="10-digit mobile number"
                   />
@@ -710,7 +977,7 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
 
                 {formData.applicantType === 'organization' && (
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label className="block text-sm font-bold text-gray-800 mb-2">
                       <Building size={16} className="inline mr-1" />
                       Organization Name *
                     </label>
@@ -719,8 +986,8 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
                       name="organizationName"
                       value={formData.organizationName}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-3 rounded-xl border transition ${
-                        errors.organizationName ? 'border-red-300 bg-red-50' : 'border-gray-300 focus:border-blue-500'
+                      className={`w-full px-4 py-3 rounded-xl border-2 bg-white text-gray-800 transition ${
+                        errors.organizationName ? 'border-red-400 bg-red-50' : 'border-gray-400 focus:border-blue-600'
                       } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
                       placeholder="Company/Organization name"
                     />
@@ -734,8 +1001,138 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
                 )}
               </div>
 
+              {/* Personal Details Section - Only for individuals */}
+              {formData.applicantType === 'individual' && (
+                <div className="border-t-2 border-gray-300 pt-6 mt-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-5 flex items-center">
+                    <User size={22} className="mr-2 text-blue-600" />
+                    Personal Details
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <div>
+                      <label className="block text-sm font-bold text-gray-800 mb-2">
+                        <Calendar size={16} className="inline mr-1" />
+                        Date of Birth
+                      </label>
+                      <input
+                        type="date"
+                        name="dateOfBirth"
+                        value={formData.dateOfBirth}
+                        onChange={(e) => {
+                          handleInputChange(e);
+                          // Calculate age automatically
+                          if (e.target.value) {
+                            const today = new Date();
+                            const birthDate = new Date(e.target.value);
+                            let age = today.getFullYear() - birthDate.getFullYear();
+                            const monthDiff = today.getMonth() - birthDate.getMonth();
+                            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                              age--;
+                            }
+                            setFormData(prev => ({ ...prev, age: age.toString() }));
+                          }
+                        }}
+                        max={new Date().toISOString().split('T')[0]}
+                        className="w-full px-4 py-3 rounded-xl border-2 border-gray-400 bg-white text-gray-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-bold text-gray-800 mb-2">
+                        Age
+                      </label>
+                      <input
+                        type="text"
+                        name="age"
+                        value={formData.age}
+                        readOnly
+                        className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 bg-gray-100 text-gray-700 font-semibold cursor-not-allowed"
+                        placeholder="Auto-calculated"
+                      />
+                      <p className="text-xs text-gray-600 mt-1 font-medium">
+                        Calculated from DOB
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-bold text-gray-800 mb-2">
+                        <Users size={16} className="inline mr-1" />
+                        Gender
+                      </label>
+                      <select
+                        name="gender"
+                        value={formData.gender}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 rounded-xl border-2 border-gray-400 bg-white text-gray-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      >
+                        <option value="">Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                        <option value="Prefer not to say">Prefer not to say</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5">
+                    <div>
+                      <label className="block text-sm font-bold text-gray-800 mb-2">
+                        <Building size={16} className="inline mr-1" />
+                        Occupation/Profession
+                      </label>
+                      <input
+                        type="text"
+                        name="occupation"
+                        value={formData.occupation}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 rounded-xl border-2 border-gray-400 bg-white text-gray-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        placeholder="e.g., Engineer, Researcher, Entrepreneur"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-bold text-gray-800 mb-2">
+                        Educational Qualification
+                      </label>
+                      <select
+                        name="educationalQualification"
+                        value={formData.educationalQualification}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 rounded-xl border-2 border-gray-400 bg-white text-gray-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      >
+                        <option value="">Select Qualification</option>
+                        <option value="High School">High School</option>
+                        <option value="Diploma">Diploma</option>
+                        <option value="Bachelor's Degree">Bachelor's Degree</option>
+                        <option value="Master's Degree">Master's Degree</option>
+                        <option value="PhD/Doctorate">PhD/Doctorate</option>
+                        <option value="Post-Doctorate">Post-Doctorate</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {formData.occupation && (
+                    <div className="mt-5">
+                      <label className="block text-sm font-bold text-gray-800 mb-2">
+                        Designation/Position
+                      </label>
+                      <input
+                        type="text"
+                        name="designation"
+                        value={formData.designation}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 rounded-xl border-2 border-gray-400 bg-white text-gray-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        placeholder="Your current designation or position"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-bold text-gray-800 mb-2">
                   <MapPin size={16} className="inline mr-1" />
                   Address *
                 </label>
@@ -744,8 +1141,8 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
                   value={formData.applicantAddress}
                   onChange={handleInputChange}
                   rows={3}
-                  className={`w-full px-4 py-3 rounded-xl border transition ${
-                    errors.applicantAddress ? 'border-red-300 bg-red-50' : 'border-gray-300 focus:border-blue-500'
+                  className={`w-full px-4 py-3 rounded-xl border-2 bg-white text-gray-800 transition ${
+                    errors.applicantAddress ? 'border-red-400 bg-red-50' : 'border-gray-400 focus:border-blue-600'
                   } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
                   placeholder="Enter complete address"
                 />
@@ -759,7 +1156,7 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-bold text-gray-800 mb-2">
                     City *
                   </label>
                   <input
@@ -767,8 +1164,8 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
                     name="applicantCity"
                     value={formData.applicantCity}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 rounded-xl border transition ${
-                      errors.applicantCity ? 'border-red-300 bg-red-50' : 'border-gray-300 focus:border-blue-500'
+                    className={`w-full px-4 py-3 rounded-xl border-2 bg-white text-gray-800 transition ${
+                      errors.applicantCity ? 'border-red-400 bg-red-50' : 'border-gray-400 focus:border-blue-600'
                     } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
                     placeholder="City"
                   />
@@ -781,22 +1178,19 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-bold text-gray-800 mb-2">
                     State *
                   </label>
-                  <select
+                  <input
+                    type="text"
                     name="applicantState"
                     value={formData.applicantState}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 rounded-xl border transition ${
-                      errors.applicantState ? 'border-red-300 bg-red-50' : 'border-gray-300 focus:border-blue-500'
+                    className={`w-full px-4 py-3 rounded-xl border-2 bg-white text-gray-800 transition ${
+                      errors.applicantState ? 'border-red-400 bg-red-50' : 'border-gray-400 focus:border-blue-600'
                     } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
-                  >
-                    <option value="">Select State</option>
-                    {indianStates.map(state => (
-                      <option key={state} value={state}>{state}</option>
-                    ))}
-                  </select>
+                    placeholder="Enter State"
+                  />
                   {errors.applicantState && (
                     <p className="text-red-500 text-xs mt-1 flex items-center">
                       <AlertCircle size={12} className="mr-1" />
@@ -806,7 +1200,7 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-sm font-bold text-gray-800 mb-2">
                     Pincode *
                   </label>
                   <input
@@ -814,8 +1208,8 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
                     name="applicantPincode"
                     value={formData.applicantPincode}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 rounded-xl border transition ${
-                      errors.applicantPincode ? 'border-red-300 bg-red-50' : 'border-gray-300 focus:border-blue-500'
+                    className={`w-full px-4 py-3 rounded-xl border-2 bg-white text-gray-800 transition ${
+                      errors.applicantPincode ? 'border-red-400 bg-red-50' : 'border-gray-400 focus:border-blue-600'
                     } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
                     placeholder="6-digit pincode"
                     maxLength={6}
@@ -830,7 +1224,7 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-bold text-gray-800 mb-2">
                   <Globe size={16} className="inline mr-1" />
                   Country *
                 </label>
@@ -838,12 +1232,399 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
                   name="applicantCountry"
                   value={formData.applicantCountry}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-400 bg-white text-gray-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 >
                   {countries.map(country => (
                     <option key={country} value={country}>{country}</option>
                   ))}
                 </select>
+              </div>
+
+              {/* Additional Contact Details */}
+              <div className="border-t-2 border-gray-300 pt-6 mt-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-5">Additional Contact Information</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-800 mb-2">
+                      <Phone size={16} className="inline mr-1" />
+                      Alternate Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      name="alternatePhone"
+                      value={formData.alternatePhone}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-400 bg-white text-gray-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      placeholder="Alternative contact number"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-bold text-gray-800 mb-2">
+                      <Mail size={16} className="inline mr-1" />
+                      Alternate Email Address
+                    </label>
+                    <input
+                      type="email"
+                      name="alternateEmail"
+                      value={formData.alternateEmail}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-400 bg-white text-gray-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      placeholder="Alternative email"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Identity & Tax Details */}
+              <div className="border-t-2 border-gray-300 pt-6 mt-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-5">Identity & Tax Information</h3>
+                
+                {/* Government ID Selection - Mandatory */}
+                <div className="mb-5">
+                  <label className="block text-sm font-bold text-gray-800 mb-2">
+                    <span className="text-red-600">*</span> Government Issued ID Type (Compulsory)
+                  </label>
+                  <select
+                    name="govtIdType"
+                    value={formData.govtIdType}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-3 rounded-xl border-2 bg-white text-gray-800 transition ${
+                      errors.govtIdType ? 'border-red-400 bg-red-50' : 'border-gray-400 focus:border-blue-600'
+                    } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+                    required
+                  >
+                    <option value="">-- Select Government ID Type --</option>
+                    <option value="aadhaar">Aadhaar Card</option>
+                    <option value="pan">PAN Card</option>
+                    <option value="passport">Passport</option>
+                    <option value="voterId">Voter ID Card</option>
+                    <option value="drivingLicense">Driving License</option>
+                  </select>
+                  {errors.govtIdType && (
+                    <p className="text-red-500 text-xs mt-1 flex items-center">
+                      <AlertCircle size={12} className="mr-1" />
+                      {errors.govtIdType}
+                    </p>
+                  )}
+                </div>
+
+                {/* Conditional ID Fields based on selection */}
+                {formData.govtIdType && (
+                  <div className="space-y-5">
+                    {/* Aadhaar Card Fields */}
+                    {formData.govtIdType === 'aadhaar' && (
+                      <div>
+                        <label className="block text-sm font-bold text-gray-800 mb-2">
+                          <span className="text-red-600">*</span> Aadhaar Number (12 digits)
+                        </label>
+                        <input
+                          type="text"
+                          name="govtIdNumber"
+                          value={formData.govtIdNumber}
+                          onChange={handleInputChange}
+                          className={`w-full px-4 py-3 rounded-xl border-2 bg-white text-gray-800 transition ${
+                            errors.govtIdNumber ? 'border-red-400 bg-red-50' : 'border-gray-400 focus:border-blue-600'
+                          } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+                          placeholder="Enter 12-digit Aadhaar Number"
+                          maxLength={12}
+                          pattern="[0-9]{12}"
+                          required
+                        />
+                        <p className="text-xs text-gray-600 mt-1">Format: XXXX XXXX XXXX (12 digits)</p>
+                        {errors.govtIdNumber && (
+                          <p className="text-red-500 text-xs mt-1 flex items-center">
+                            <AlertCircle size={12} className="mr-1" />
+                            {errors.govtIdNumber}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* PAN Card Fields */}
+                    {formData.govtIdType === 'pan' && (
+                      <div>
+                        <label className="block text-sm font-bold text-gray-800 mb-2">
+                          <span className="text-red-600">*</span> PAN Card Number (10 characters)
+                        </label>
+                        <input
+                          type="text"
+                          name="govtIdNumber"
+                          value={formData.govtIdNumber}
+                          onChange={(e) => {
+                            e.target.value = e.target.value.toUpperCase();
+                            handleInputChange(e);
+                          }}
+                          className={`w-full px-4 py-3 rounded-xl border-2 bg-white text-gray-800 transition uppercase ${
+                            errors.govtIdNumber ? 'border-red-400 bg-red-50' : 'border-gray-400 focus:border-blue-600'
+                          } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+                          placeholder="Enter PAN Number (e.g., ABCDE1234F)"
+                          maxLength={10}
+                          pattern="[A-Z]{5}[0-9]{4}[A-Z]{1}"
+                          required
+                        />
+                        <p className="text-xs text-gray-600 mt-1">Format: ABCDE1234F (5 letters, 4 numbers, 1 letter)</p>
+                        {errors.govtIdNumber && (
+                          <p className="text-red-500 text-xs mt-1 flex items-center">
+                            <AlertCircle size={12} className="mr-1" />
+                            {errors.govtIdNumber}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Passport Fields */}
+                    {formData.govtIdType === 'passport' && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                          <label className="block text-sm font-bold text-gray-800 mb-2">
+                            <span className="text-red-600">*</span> Passport Number
+                          </label>
+                          <input
+                            type="text"
+                            name="govtIdNumber"
+                            value={formData.govtIdNumber}
+                            onChange={(e) => {
+                              e.target.value = e.target.value.toUpperCase();
+                              handleInputChange(e);
+                            }}
+                            className={`w-full px-4 py-3 rounded-xl border-2 bg-white text-gray-800 transition uppercase ${
+                              errors.govtIdNumber ? 'border-red-400 bg-red-50' : 'border-gray-400 focus:border-blue-600'
+                            } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+                            placeholder="Enter Passport Number"
+                            maxLength={20}
+                            required
+                          />
+                          {errors.govtIdNumber && (
+                            <p className="text-red-500 text-xs mt-1 flex items-center">
+                              <AlertCircle size={12} className="mr-1" />
+                              {errors.govtIdNumber}
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-bold text-gray-800 mb-2">
+                            <span className="text-red-600">*</span> Country of Issue
+                          </label>
+                          <input
+                            type="text"
+                            name="passportCountry"
+                            value={formData.passportCountry}
+                            onChange={handleInputChange}
+                            className="w-full px-4 py-3 rounded-xl border-2 border-gray-400 bg-white text-gray-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                            placeholder="e.g., India"
+                            required
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Voter ID Fields */}
+                    {formData.govtIdType === 'voterId' && (
+                      <div>
+                        <label className="block text-sm font-bold text-gray-800 mb-2">
+                          <span className="text-red-600">*</span> Voter ID Number
+                        </label>
+                        <input
+                          type="text"
+                          name="govtIdNumber"
+                          value={formData.govtIdNumber}
+                          onChange={(e) => {
+                            e.target.value = e.target.value.toUpperCase();
+                            handleInputChange(e);
+                          }}
+                          className={`w-full px-4 py-3 rounded-xl border-2 bg-white text-gray-800 transition uppercase ${
+                            errors.govtIdNumber ? 'border-red-400 bg-red-50' : 'border-gray-400 focus:border-blue-600'
+                          } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+                          placeholder="Enter Voter ID Number"
+                          maxLength={20}
+                          required
+                        />
+                        <p className="text-xs text-gray-600 mt-1">Enter your Voter ID / EPIC Number</p>
+                        {errors.govtIdNumber && (
+                          <p className="text-red-500 text-xs mt-1 flex items-center">
+                            <AlertCircle size={12} className="mr-1" />
+                            {errors.govtIdNumber}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Driving License Fields */}
+                    {formData.govtIdType === 'drivingLicense' && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                          <label className="block text-sm font-bold text-gray-800 mb-2">
+                            <span className="text-red-600">*</span> Driving License Number
+                          </label>
+                          <input
+                            type="text"
+                            name="govtIdNumber"
+                            value={formData.govtIdNumber}
+                            onChange={(e) => {
+                              e.target.value = e.target.value.toUpperCase();
+                              handleInputChange(e);
+                            }}
+                            className={`w-full px-4 py-3 rounded-xl border-2 bg-white text-gray-800 transition uppercase ${
+                              errors.govtIdNumber ? 'border-red-400 bg-red-50' : 'border-gray-400 focus:border-blue-600'
+                            } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+                            placeholder="Enter DL Number"
+                            maxLength={20}
+                            required
+                          />
+                          {errors.govtIdNumber && (
+                            <p className="text-red-500 text-xs mt-1 flex items-center">
+                              <AlertCircle size={12} className="mr-1" />
+                              {errors.govtIdNumber}
+                            </p>
+                          )}
+                        </div>
+                        <div>
+                          <label className="block text-sm font-bold text-gray-800 mb-2">
+                            <span className="text-red-600">*</span> State of Issue
+                          </label>
+                          <input
+                            type="text"
+                            name="drivingLicenseState"
+                            value={formData.drivingLicenseState}
+                            onChange={handleInputChange}
+                            className="w-full px-4 py-3 rounded-xl border-2 border-gray-400 bg-white text-gray-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                            placeholder="e.g., Maharashtra"
+                            required
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* GSTIN for Organizations */}
+                {formData.applicantType === 'organization' && (
+                  <div className="mt-5">
+                    <label className="block text-sm font-bold text-gray-800 mb-2">
+                      GSTIN (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      name="gstin"
+                      value={formData.gstin}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-3 rounded-xl border-2 border-gray-400 bg-white text-gray-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      placeholder="GST Identification Number"
+                      maxLength={15}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Correspondence Address */}
+              <div className="border-t-2 border-gray-300 pt-6 mt-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-5">Correspondence Address</h3>
+                
+                <div className="mb-4">
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      name="sameAsApplicantAddress"
+                      checked={formData.sameAsApplicantAddress}
+                      onChange={handleInputChange}
+                      className="mr-3 w-5 h-5 text-blue-600 rounded"
+                    />
+                    <span className="text-sm font-semibold text-gray-700">
+                      Same as applicant address
+                    </span>
+                  </label>
+                </div>
+
+                {!formData.sameAsApplicantAddress && (
+                  <div className="space-y-5">
+                    <div>
+                      <label className="block text-sm font-bold text-gray-800 mb-2">
+                        <MapPin size={16} className="inline mr-1" />
+                        Correspondence Address
+                      </label>
+                      <textarea
+                        name="correspondenceAddress"
+                        value={formData.correspondenceAddress}
+                        onChange={handleInputChange}
+                        rows={3}
+                        className="w-full px-4 py-3 rounded-xl border-2 border-gray-400 bg-white text-gray-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        placeholder="Enter correspondence address"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                      <div>
+                        <label className="block text-sm font-bold text-gray-800 mb-2">
+                          City
+                        </label>
+                        <input
+                          type="text"
+                          name="correspondenceCity"
+                          value={formData.correspondenceCity}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-3 rounded-xl border-2 border-gray-400 bg-white text-gray-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                          placeholder="City"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-bold text-gray-800 mb-2">
+                          State
+                        </label>
+                        <input
+                          type="text"
+                          name="correspondenceState"
+                          value={formData.correspondenceState}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-3 rounded-xl border-2 border-gray-400 bg-white text-gray-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                          placeholder="Enter State"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-bold text-gray-800 mb-2">
+                          Pincode
+                        </label>
+                        <input
+                          type="text"
+                          name="correspondencePincode"
+                          value={formData.correspondencePincode}
+                          onChange={handleInputChange}
+                          className="w-full px-4 py-3 rounded-xl border-2 border-gray-400 bg-white text-gray-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                          placeholder="6-digit pincode"
+                          maxLength={6}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Application Date - Auto-filled and Read-only */}
+              <div className="border-t-2 border-gray-300 pt-6 mt-6">
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-300 rounded-xl p-5">
+                  <label className="block text-base font-bold text-gray-800 mb-3 flex items-center">
+                    <Calendar size={20} className="inline mr-2 text-blue-600" />
+                    Application Submission Date
+                  </label>
+                  <input
+                    type="text"
+                    name="applicationDateDisplay"
+                    value={new Date(formData.applicationDate).toLocaleDateString('en-IN', { 
+                      weekday: 'long', 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                    readOnly
+                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 bg-gray-100 text-gray-700 font-bold cursor-not-allowed"
+                  />
+                  <p className="text-xs text-gray-600 mt-2 font-medium">
+                    📅 Auto-filled with today's date. This date cannot be modified.
+                  </p>
+                </div>
               </div>
             </div>
           )}
@@ -852,7 +1633,7 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
           {currentStep === 2 && (
             <div className="space-y-5">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-bold text-gray-900 mb-2">
                   <Lightbulb size={16} className="inline mr-1" />
                   Invention Title *
                 </label>
@@ -861,8 +1642,8 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
                   name="inventionTitle"
                   value={formData.inventionTitle}
                   onChange={handleInputChange}
-                  className={`w-full px-4 py-3 rounded-xl border transition ${
-                    errors.inventionTitle ? 'border-red-300 bg-red-50' : 'border-gray-300 focus:border-blue-500'
+                  className={`w-full px-4 py-3 rounded-xl border-2 transition ${
+                    errors.inventionTitle ? 'border-red-400 bg-red-50' : 'border-gray-400 focus:border-blue-500'
                   } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
                   placeholder="Brief title of your invention (min 10 characters)"
                 />
@@ -874,33 +1655,49 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Field of Invention *
-                </label>
-                <select
-                  name="inventionField"
-                  value={formData.inventionField}
-                  onChange={handleInputChange}
-                  className={`w-full px-4 py-3 rounded-xl border transition ${
-                    errors.inventionField ? 'border-red-300 bg-red-50' : 'border-gray-300 focus:border-blue-500'
-                  } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
-                >
-                  <option value="">Select Field of Invention</option>
-                  {inventionFields.map(field => (
-                    <option key={field} value={field}>{field}</option>
-                  ))}
-                </select>
-                {errors.inventionField && (
-                  <p className="text-red-500 text-xs mt-1 flex items-center">
-                    <AlertCircle size={12} className="mr-1" />
-                    {errors.inventionField}
-                  </p>
-                )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-sm font-bold text-gray-900 mb-2">
+                    Field of Invention *
+                  </label>
+                  <select
+                    name="inventionField"
+                    value={formData.inventionField}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-3 rounded-xl border-2 transition ${
+                      errors.inventionField ? 'border-red-400 bg-red-50' : 'border-gray-400 focus:border-blue-500'
+                    } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+                  >
+                    <option value="">Select Field of Invention</option>
+                    {inventionFields.map(field => (
+                      <option key={field} value={field}>{field}</option>
+                    ))}
+                  </select>
+                  {errors.inventionField && (
+                    <p className="text-red-500 text-xs mt-1 flex items-center">
+                      <AlertCircle size={12} className="mr-1" />
+                      {errors.inventionField}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-gray-900 mb-2">
+                    Target Industry
+                  </label>
+                  <input
+                    type="text"
+                    name="targetIndustry"
+                    value={formData.targetIndustry}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    placeholder="e.g., Healthcare, Manufacturing, etc."
+                  />
+                </div>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-bold text-gray-900 mb-2">
                   <FileText size={16} className="inline mr-1" />
                   Detailed Description of Invention *
                 </label>
@@ -909,8 +1706,8 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
                   value={formData.inventionDescription}
                   onChange={handleInputChange}
                   rows={6}
-                  className={`w-full px-4 py-3 rounded-xl border transition ${
-                    errors.inventionDescription ? 'border-red-300 bg-red-50' : 'border-gray-300 focus:border-blue-500'
+                  className={`w-full px-4 py-3 rounded-xl border-2 transition ${
+                    errors.inventionDescription ? 'border-red-400 bg-red-50' : 'border-gray-400 focus:border-blue-500'
                   } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
                   placeholder="Provide a comprehensive description of your invention (min 100 characters)"
                 />
@@ -926,7 +1723,24 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-bold text-gray-900 mb-2">
+                  Keywords (comma-separated)
+                </label>
+                <input
+                  type="text"
+                  name="keywords"
+                  value={formData.keywords}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  placeholder="e.g., AI, machine learning, optimization"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Add relevant keywords to help classify your invention
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-900 mb-2">
                   Technical Problem Addressed *
                 </label>
                 <textarea
@@ -934,8 +1748,8 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
                   value={formData.technicalProblem}
                   onChange={handleInputChange}
                   rows={4}
-                  className={`w-full px-4 py-3 rounded-xl border transition ${
-                    errors.technicalProblem ? 'border-red-300 bg-red-50' : 'border-gray-300 focus:border-blue-500'
+                  className={`w-full px-4 py-3 rounded-xl border-2 transition ${
+                    errors.technicalProblem ? 'border-red-400 bg-red-50' : 'border-gray-400 focus:border-blue-500'
                   } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
                   placeholder="What problem does your invention solve?"
                 />
@@ -948,7 +1762,7 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-bold text-gray-900 mb-2">
                   Proposed Solution *
                 </label>
                 <textarea
@@ -956,8 +1770,8 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
                   value={formData.proposedSolution}
                   onChange={handleInputChange}
                   rows={4}
-                  className={`w-full px-4 py-3 rounded-xl border transition ${
-                    errors.proposedSolution ? 'border-red-300 bg-red-50' : 'border-gray-300 focus:border-blue-500'
+                  className={`w-full px-4 py-3 rounded-xl border-2 transition ${
+                    errors.proposedSolution ? 'border-red-400 bg-red-50' : 'border-gray-400 focus:border-blue-500'
                   } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
                   placeholder="How does your invention solve the problem?"
                 />
@@ -970,7 +1784,7 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-bold text-gray-900 mb-2">
                   Advantages & Benefits *
                 </label>
                 <textarea
@@ -978,8 +1792,8 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
                   value={formData.advantages}
                   onChange={handleInputChange}
                   rows={4}
-                  className={`w-full px-4 py-3 rounded-xl border transition ${
-                    errors.advantages ? 'border-red-300 bg-red-50' : 'border-gray-300 focus:border-blue-500'
+                  className={`w-full px-4 py-3 rounded-xl border-2 transition ${
+                    errors.advantages ? 'border-red-400 bg-red-50' : 'border-gray-400 focus:border-blue-500'
                   } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
                   placeholder="List the key advantages and benefits of your invention"
                 />
@@ -992,7 +1806,21 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                <label className="block text-sm font-bold text-gray-900 mb-2">
+                  Commercial Application
+                </label>
+                <textarea
+                  name="commercialApplication"
+                  value={formData.commercialApplication}
+                  onChange={handleInputChange}
+                  rows={3}
+                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  placeholder="Describe potential commercial applications and market opportunities"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-900 mb-2">
                   Prior Art (Optional)
                 </label>
                 <textarea
@@ -1000,7 +1828,7 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
                   value={formData.priorArt}
                   onChange={handleInputChange}
                   rows={3}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                   placeholder="Any existing similar inventions or patents you're aware of"
                 />
               </div>
@@ -1294,46 +2122,283 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
           {/* Step 5: Review & Payment */}
           {currentStep === 5 && (
             <div className="space-y-6">
-              <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-200">
-                <h3 className="text-xl font-bold text-gray-800 mb-4">Application Summary</h3>
+              <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6 border-2 border-blue-300">
+                <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+                  <FileCheck size={28} className="mr-3 text-blue-600" />
+                  Complete Application Summary
+                </h3>
                 
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between border-b border-gray-200 pb-2">
-                    <span className="font-semibold text-gray-700">Applicant Name:</span>
-                    <span className="text-gray-600">{formData.applicantName}</span>
+                {/* Step 1: Applicant Information */}
+                <div className="mb-6">
+                  <h4 className="text-lg font-bold text-gray-900 mb-4 border-b-2 border-blue-400 pb-2">
+                    📋 Applicant Information
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div className="bg-white p-3 rounded-lg border border-gray-200">
+                      <span className="font-bold text-gray-800">Applicant Type:</span>
+                      <p className="text-gray-700 mt-1 capitalize">{formData.applicantType}</p>
+                    </div>
+                    <div className="bg-white p-3 rounded-lg border border-gray-200">
+                      <span className="font-bold text-gray-800">Full Name:</span>
+                      <p className="text-gray-700 mt-1">{formData.applicantName}</p>
+                    </div>
+                    <div className="bg-white p-3 rounded-lg border border-gray-200">
+                      <span className="font-bold text-gray-800">Email:</span>
+                      <p className="text-gray-700 mt-1">{formData.applicantEmail}</p>
+                    </div>
+                    <div className="bg-white p-3 rounded-lg border border-gray-200">
+                      <span className="font-bold text-gray-800">Phone:</span>
+                      <p className="text-gray-700 mt-1">{formData.applicantPhone}</p>
+                    </div>
+                    {formData.alternatePhone && (
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <span className="font-bold text-gray-800">Alternate Phone:</span>
+                        <p className="text-gray-700 mt-1">{formData.alternatePhone}</p>
+                      </div>
+                    )}
+                    {formData.alternateEmail && (
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <span className="font-bold text-gray-800">Alternate Email:</span>
+                        <p className="text-gray-700 mt-1">{formData.alternateEmail}</p>
+                      </div>
+                    )}
+                    {formData.organizationName && (
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <span className="font-bold text-gray-800">Organization:</span>
+                        <p className="text-gray-700 mt-1">{formData.organizationName}</p>
+                      </div>
+                    )}
+                    {formData.dateOfBirth && (
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <span className="font-bold text-gray-800">Date of Birth:</span>
+                        <p className="text-gray-700 mt-1">{new Date(formData.dateOfBirth).toLocaleDateString('en-IN')}</p>
+                      </div>
+                    )}
+                    {formData.age && (
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <span className="font-bold text-gray-800">Age:</span>
+                        <p className="text-gray-700 mt-1">{formData.age} years</p>
+                      </div>
+                    )}
+                    {formData.gender && (
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <span className="font-bold text-gray-800">Gender:</span>
+                        <p className="text-gray-700 mt-1 capitalize">{formData.gender}</p>
+                      </div>
+                    )}
+                    {formData.occupation && (
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <span className="font-bold text-gray-800">Occupation:</span>
+                        <p className="text-gray-700 mt-1">{formData.occupation}</p>
+                      </div>
+                    )}
+                    {formData.educationalQualification && (
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <span className="font-bold text-gray-800">Education:</span>
+                        <p className="text-gray-700 mt-1">{formData.educationalQualification}</p>
+                      </div>
+                    )}
+                    {formData.designation && (
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <span className="font-bold text-gray-800">Designation:</span>
+                        <p className="text-gray-700 mt-1">{formData.designation}</p>
+                      </div>
+                    )}
+                    <div className="bg-white p-3 rounded-lg border border-gray-200 md:col-span-2">
+                      <span className="font-bold text-gray-800">Address:</span>
+                      <p className="text-gray-700 mt-1">{formData.applicantAddress}</p>
+                      <p className="text-gray-700">{formData.applicantCity}, {formData.applicantState} - {formData.applicantPincode}</p>
+                      <p className="text-gray-700">{formData.applicantCountry}</p>
+                    </div>
+                    {formData.govtIdType && (
+                      <>
+                        <div className="bg-white p-3 rounded-lg border border-gray-200">
+                          <span className="font-bold text-gray-800">Government ID Type:</span>
+                          <p className="text-gray-700 mt-1 capitalize">{formData.govtIdType === 'aadhaar' ? 'Aadhaar Card' : formData.govtIdType === 'pan' ? 'PAN Card' : formData.govtIdType === 'voterId' ? 'Voter ID' : formData.govtIdType === 'drivingLicense' ? 'Driving License' : 'Passport'}</p>
+                        </div>
+                        <div className="bg-white p-3 rounded-lg border border-gray-200">
+                          <span className="font-bold text-gray-800">ID Number:</span>
+                          <p className="text-gray-700 mt-1">{formData.govtIdNumber}</p>
+                        </div>
+                        {formData.passportCountry && (
+                          <div className="bg-white p-3 rounded-lg border border-gray-200">
+                            <span className="font-bold text-gray-800">Passport Country:</span>
+                            <p className="text-gray-700 mt-1">{formData.passportCountry}</p>
+                          </div>
+                        )}
+                        {formData.drivingLicenseState && (
+                          <div className="bg-white p-3 rounded-lg border border-gray-200">
+                            <span className="font-bold text-gray-800">DL State:</span>
+                            <p className="text-gray-700 mt-1">{formData.drivingLicenseState}</p>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    {formData.gstin && (
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <span className="font-bold text-gray-800">GSTIN:</span>
+                        <p className="text-gray-700 mt-1">{formData.gstin}</p>
+                      </div>
+                    )}
+                    {!formData.sameAsApplicantAddress && (
+                      <div className="bg-white p-3 rounded-lg border border-gray-200 md:col-span-2">
+                        <span className="font-bold text-gray-800">Correspondence Address:</span>
+                        <p className="text-gray-700 mt-1">{formData.correspondenceAddress}</p>
+                        <p className="text-gray-700">{formData.correspondenceCity}, {formData.correspondenceState} - {formData.correspondencePincode}</p>
+                      </div>
+                    )}
+                    <div className="bg-white p-3 rounded-lg border border-gray-200">
+                      <span className="font-bold text-gray-800">Application Date:</span>
+                      <p className="text-gray-700 mt-1">{new Date(formData.applicationDate).toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                    </div>
                   </div>
-                  <div className="flex justify-between border-b border-gray-200 pb-2">
-                    <span className="font-semibold text-gray-700">Email:</span>
-                    <span className="text-gray-600">{formData.applicantEmail}</span>
+                </div>
+
+                {/* Step 2: Invention Details */}
+                <div className="mb-6">
+                  <h4 className="text-lg font-bold text-gray-900 mb-4 border-b-2 border-purple-400 pb-2">
+                    💡 Invention Details
+                  </h4>
+                  <div className="space-y-4">
+                    <div className="bg-white p-4 rounded-lg border border-gray-200">
+                      <span className="font-bold text-gray-800">Invention Title:</span>
+                      <p className="text-gray-700 mt-2">{formData.inventionTitle}</p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <span className="font-bold text-gray-800">Field of Invention:</span>
+                        <p className="text-gray-700 mt-1">{formData.inventionField}</p>
+                      </div>
+                      {formData.targetIndustry && (
+                        <div className="bg-white p-3 rounded-lg border border-gray-200">
+                          <span className="font-bold text-gray-800">Target Industry:</span>
+                          <p className="text-gray-700 mt-1">{formData.targetIndustry}</p>
+                        </div>
+                      )}
+                    </div>
+                    <div className="bg-white p-4 rounded-lg border border-gray-200">
+                      <span className="font-bold text-gray-800">Detailed Description:</span>
+                      <p className="text-gray-700 mt-2 whitespace-pre-wrap">{formData.inventionDescription}</p>
+                    </div>
+                    {formData.keywords && (
+                      <div className="bg-white p-4 rounded-lg border border-gray-200">
+                        <span className="font-bold text-gray-800">Keywords:</span>
+                        <p className="text-gray-700 mt-2">{formData.keywords}</p>
+                      </div>
+                    )}
+                    <div className="bg-white p-4 rounded-lg border border-gray-200">
+                      <span className="font-bold text-gray-800">Technical Problem Addressed:</span>
+                      <p className="text-gray-700 mt-2 whitespace-pre-wrap">{formData.technicalProblem}</p>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg border border-gray-200">
+                      <span className="font-bold text-gray-800">Proposed Solution:</span>
+                      <p className="text-gray-700 mt-2 whitespace-pre-wrap">{formData.proposedSolution}</p>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg border border-gray-200">
+                      <span className="font-bold text-gray-800">Advantages & Benefits:</span>
+                      <p className="text-gray-700 mt-2 whitespace-pre-wrap">{formData.advantages}</p>
+                    </div>
+                    {formData.commercialApplication && (
+                      <div className="bg-white p-4 rounded-lg border border-gray-200">
+                        <span className="font-bold text-gray-800">Commercial Application:</span>
+                        <p className="text-gray-700 mt-2 whitespace-pre-wrap">{formData.commercialApplication}</p>
+                      </div>
+                    )}
+                    {formData.priorArt && (
+                      <div className="bg-white p-4 rounded-lg border border-gray-200">
+                        <span className="font-bold text-gray-800">Prior Art:</span>
+                        <p className="text-gray-700 mt-2 whitespace-pre-wrap">{formData.priorArt}</p>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex justify-between border-b border-gray-200 pb-2">
-                    <span className="font-semibold text-gray-700">Invention Title:</span>
-                    <span className="text-gray-600">{formData.inventionTitle}</span>
+                </div>
+
+                {/* Step 3: Patent Specifications */}
+                <div className="mb-6">
+                  <h4 className="text-lg font-bold text-gray-900 mb-4 border-b-2 border-green-400 pb-2">
+                    📄 Patent Specifications
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div className="bg-white p-3 rounded-lg border border-gray-200">
+                      <span className="font-bold text-gray-800">Patent Type:</span>
+                      <p className="text-gray-700 mt-1 capitalize">{formData.patentType}</p>
+                    </div>
+                    <div className="bg-white p-3 rounded-lg border border-gray-200">
+                      <span className="font-bold text-gray-800">Filing Type:</span>
+                      <p className="text-gray-700 mt-1 capitalize">{formData.filingType}</p>
+                    </div>
+                    <div className="bg-white p-3 rounded-lg border border-gray-200">
+                      <span className="font-bold text-gray-800">Number of Claims:</span>
+                      <p className="text-gray-700 mt-1">{formData.numberOfClaims}</p>
+                    </div>
+                    {formData.numberOfDrawings && (
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <span className="font-bold text-gray-800">Number of Drawings:</span>
+                        <p className="text-gray-700 mt-1">{formData.numberOfDrawings}</p>
+                      </div>
+                    )}
+                    {formData.claimsPriority && (
+                      <>
+                        <div className="bg-white p-3 rounded-lg border border-gray-200">
+                          <span className="font-bold text-gray-800">Priority Date:</span>
+                          <p className="text-gray-700 mt-1">{new Date(formData.priorityDate).toLocaleDateString('en-IN')}</p>
+                        </div>
+                        <div className="bg-white p-3 rounded-lg border border-gray-200">
+                          <span className="font-bold text-gray-800">Priority Number:</span>
+                          <p className="text-gray-700 mt-1">{formData.priorityNumber}</p>
+                        </div>
+                      </>
+                    )}
                   </div>
-                  <div className="flex justify-between border-b border-gray-200 pb-2">
-                    <span className="font-semibold text-gray-700">Patent Type:</span>
-                    <span className="text-gray-600 capitalize">{formData.patentType}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-gray-200 pb-2">
-                    <span className="font-semibold text-gray-700">Filing Type:</span>
-                    <span className="text-gray-600 capitalize">{formData.filingType}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-gray-200 pb-2">
-                    <span className="font-semibold text-gray-700">Number of Claims:</span>
-                    <span className="text-gray-600">{formData.numberOfClaims}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-gray-200 pb-2">
-                    <span className="font-semibold text-gray-700">Document Links Provided:</span>
-                    <span className="text-gray-600">
-                      {[formData.descriptionFileUrl, formData.claimsFileUrl, formData.abstractFileUrl, formData.drawingsFileUrl]
-                        .filter(url => url && url.trim()).length} links
-                    </span>
+                </div>
+
+                {/* Step 4: Document Links */}
+                <div className="mb-6">
+                  <h4 className="text-lg font-bold text-gray-900 mb-4 border-b-2 border-orange-400 pb-2">
+                    📎 Document Links
+                  </h4>
+                  <div className="space-y-3">
+                    <div className="bg-white p-3 rounded-lg border border-gray-200">
+                      <span className="font-bold text-gray-800">Description Document:</span>
+                      <p className="text-blue-600 mt-1 break-all hover:underline">
+                        <a href={formData.descriptionFileUrl} target="_blank" rel="noopener noreferrer">
+                          {formData.descriptionFileUrl}
+                        </a>
+                      </p>
+                    </div>
+                    <div className="bg-white p-3 rounded-lg border border-gray-200">
+                      <span className="font-bold text-gray-800">Claims Document:</span>
+                      <p className="text-blue-600 mt-1 break-all hover:underline">
+                        <a href={formData.claimsFileUrl} target="_blank" rel="noopener noreferrer">
+                          {formData.claimsFileUrl}
+                        </a>
+                      </p>
+                    </div>
+                    <div className="bg-white p-3 rounded-lg border border-gray-200">
+                      <span className="font-bold text-gray-800">Abstract Document:</span>
+                      <p className="text-blue-600 mt-1 break-all hover:underline">
+                        <a href={formData.abstractFileUrl} target="_blank" rel="noopener noreferrer">
+                          {formData.abstractFileUrl}
+                        </a>
+                      </p>
+                    </div>
+                    {formData.drawingsFileUrl && (
+                      <div className="bg-white p-3 rounded-lg border border-gray-200">
+                        <span className="font-bold text-gray-800">Drawings Document:</span>
+                        <p className="text-blue-600 mt-1 break-all hover:underline">
+                          <a href={formData.drawingsFileUrl} target="_blank" rel="noopener noreferrer">
+                            {formData.drawingsFileUrl}
+                          </a>
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-200">
-                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
+              {/* Payment Details */}
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border-2 border-green-300">
+                <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
                   <IndianRupee size={24} className="mr-2 text-green-600" />
                   Payment Details
                 </h3>
@@ -1393,13 +2458,13 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
           )}
         </div>
 
-          {/* Footer Navigation */}
-          <div className="bg-white border-t border-gray-200 p-6 flex justify-between items-center">
+          {/* Footer Navigation - Responsive */}
+          <div className="bg-white border-t border-gray-200 p-4 sm:p-6 flex flex-col sm:flex-row justify-between items-center gap-4">
             <button
               onClick={handlePrevious}
               disabled={currentStep === 1}
               className={`
-                flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition
+                w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold transition
                 ${currentStep === 1 
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300 hover:shadow-md'
@@ -1407,15 +2472,15 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
               `}
             >
               <ArrowLeft size={20} />
-              Previous
+              <span>Previous</span>
             </button>
 
             {currentStep < 5 ? (
               <button
                 onClick={handleNext}
-                className="flex items-center gap-2 px-8 py-3 rounded-xl font-semibold bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:shadow-lg hover:scale-105 transition-all"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3 rounded-xl font-semibold bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:shadow-lg hover:scale-105 transition-all"
               >
-                Next
+                <span>Next</span>
                 <ArrowRight size={20} />
               </button>
             ) : (
@@ -1423,7 +2488,7 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
                 onClick={handleSubmit}
                 disabled={isSubmitting}
                 className={`
-                  flex items-center gap-2 px-8 py-3 rounded-xl font-bold transition-all
+                  w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3 rounded-xl font-bold transition-all
                   ${isSubmitting 
                     ? 'bg-gray-400 cursor-not-allowed' 
                     : 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:shadow-xl hover:scale-105'
@@ -1433,12 +2498,14 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
                 {isSubmitting ? (
                   <>
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
-                    Processing...
+                    <span className="hidden sm:inline">Processing...</span>
+                    <span className="sm:hidden">Processing...</span>
                   </>
                 ) : (
                   <>
                     <CreditCard size={20} />
-                    Pay ₹{formData.paymentAmount} & Submit
+                    <span className="hidden sm:inline">Pay ₹{formData.paymentAmount} & Submit</span>
+                    <span className="sm:hidden">Pay & Submit</span>
                   </>
                 )}
               </button>
