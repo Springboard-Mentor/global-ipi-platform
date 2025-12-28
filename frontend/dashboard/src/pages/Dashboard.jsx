@@ -31,6 +31,11 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
   const [totalUsers, setTotalUsers] = React.useState(0);
   const [usersStatus, setUsersStatus] = React.useState('checking'); // 'checking', 'connected', 'error'
   const [usersError, setUsersError] = React.useState('');
+  
+  // State for total patent filings
+  const [totalPatentFilings, setTotalPatentFilings] = React.useState(0);
+  const [filingsStatus, setFilingsStatus] = React.useState('checking');
+  const [filingsError, setFilingsError] = React.useState('');
 
   // Fetch patent count from database on component mount
   React.useEffect(() => {
@@ -92,6 +97,40 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
     
     // Refresh count every 30 seconds
     const interval = setInterval(fetchUsersCount, 30000);
+    return () => clearInterval(interval);
+  }, []);
+  
+  // Fetch patent filings count from PostgreSQL
+  React.useEffect(() => {
+    const fetchPatentFilingsCount = async () => {
+      setFilingsStatus('checking');
+      try {
+        console.log('Fetching patent filings count from backend...');
+        const response = await fetch('http://localhost:8080/api/patent-filing/count');
+        if (response.ok) {
+          const count = await response.json();
+          console.log('Patent filings count received:', count);
+          const finalCount = typeof count === 'number' ? count : parseInt(count, 10) || 0;
+          setTotalPatentFilings(finalCount);
+          setFilingsStatus('connected');
+          setFilingsError('');
+          console.log('✓ Database connected. Patent filings found:', finalCount);
+        } else {
+          console.error('Failed to fetch patent filings count. Status:', response.status);
+          setFilingsStatus('error');
+          setFilingsError(`HTTP ${response.status}: ${response.statusText}`);
+        }
+      } catch (error) {
+        console.error('Error fetching patent filings count:', error);
+        setTotalPatentFilings(0);
+        setFilingsStatus('error');
+        setFilingsError(error.message || 'Cannot connect to backend server');
+      }
+    };
+    fetchPatentFilingsCount();
+    
+    // Refresh count every 30 seconds
+    const interval = setInterval(fetchPatentFilingsCount, 30000);
     return () => clearInterval(interval);
   }, []);
   
@@ -205,9 +244,9 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
 
   /* ======================= UI ======================= */
   return (
-    <div className="w-full min-h-screen grid grid-cols-1 xl:grid-cols-5 gap-1.5 p-1.5">
-      {/* LEFT SECTION - Takes more space */}
-      <div className="xl:col-span-4 space-y-1.5">
+    <div className="w-full min-h-screen space-y-1.5 p-1.5">
+      {/* FULL WIDTH WELCOME CARD */}
+      <div className="w-full">
         {/* Welcome Card */}
         <div className="bg-white rounded-xl p-5 shadow-sm">
           <p className="text-sm text-gray-500">Welcome back,</p>
@@ -289,9 +328,138 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
             )}
           </div>
         </div>
+      </div>
 
+      {/* STATS CARDS ROW */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-1.5">
+        {/* Total Registered Users Card */}
+        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-5 shadow-lg hover:shadow-xl transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <div className="p-3 bg-white/20 rounded-lg backdrop-blur-sm">
+              <Database size={24} className="text-white" />
+            </div>
+            <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+          </div>
+
+          <div className="flex items-baseline gap-2">
+            <p className="text-4xl font-bold text-white">
+              {usersStatus === 'checking' ? (
+                <span className="text-white/70">...</span>
+              ) : usersStatus === 'error' ? (
+                <span className="text-white/70">--</span>
+              ) : (
+                totalUsers.toLocaleString()
+              )}
+            </p>
+            {usersStatus === 'connected' && (
+              <CheckCircle size={20} className="text-white/90" />
+            )}
+          </div>
+          
+          <h3 className="text-purple-100 text-sm font-medium mt-1">Total Registered Users</h3>
+          
+          <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-white/20">
+            {usersStatus === 'connected' ? (
+              <p className="text-xs text-white/80 font-medium">
+                ● Live from Firestore
+              </p>
+            ) : usersStatus === 'checking' ? (
+              <p className="text-xs text-white/60">Connecting...</p>
+            ) : (
+              <p className="text-xs text-white/60">
+                {usersError || 'Connection failed'}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Total Patents Card */}
+        <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-5 shadow-lg hover:shadow-xl transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <div className="p-3 bg-white/20 rounded-lg backdrop-blur-sm">
+              <Database size={24} className="text-white" />
+            </div>
+            <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+          </div>
+
+          <div className="flex items-baseline gap-2">
+            <p className="text-4xl font-bold text-white">
+              {dbConnectionStatus === 'checking' ? (
+                <span className="text-white/70">...</span>
+              ) : dbConnectionStatus === 'error' ? (
+                <span className="text-white/70">--</span>
+              ) : (
+                dbPatentCount.toLocaleString()
+              )}
+            </p>
+            {dbConnectionStatus === 'connected' && (
+              <CheckCircle size={20} className="text-white/90" />
+            )}
+          </div>
+          
+          <h3 className="text-indigo-100 text-sm font-medium mt-1">Total Patents</h3>
+          
+          <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-white/20">
+            {dbConnectionStatus === 'connected' ? (
+              <p className="text-xs text-white/80 font-medium">
+                ● Live from Database
+              </p>
+            ) : dbConnectionStatus === 'checking' ? (
+              <p className="text-xs text-white/60">Connecting...</p>
+            ) : (
+              <p className="text-xs text-white/60">
+                {dbError || 'Connection failed'}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Patent Filings Card */}
+        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-5 shadow-lg hover:shadow-xl transition-shadow">
+          <div className="flex items-center justify-between mb-3">
+            <div className="p-3 bg-white/20 rounded-lg backdrop-blur-sm">
+              <CheckCircle size={24} className="text-white" />
+            </div>
+            <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+          </div>
+
+          <div className="flex items-baseline gap-2">
+            <p className="text-4xl font-bold text-white">
+              {filingsStatus === 'checking' ? (
+                <span className="text-white/70">...</span>
+              ) : filingsStatus === 'error' ? (
+                <span className="text-white/70">--</span>
+              ) : (
+                totalPatentFilings.toLocaleString()
+              )}
+            </p>
+            {filingsStatus === 'connected' && (
+              <CheckCircle size={20} className="text-white/90" />
+            )}
+          </div>
+          
+          <h3 className="text-emerald-100 text-sm font-medium mt-1">Patent Filings</h3>
+          
+          <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-white/20">
+            {filingsStatus === 'connected' ? (
+              <p className="text-xs text-white/80 font-medium">
+                ● Live from PostgreSQL
+              </p>
+            ) : filingsStatus === 'checking' ? (
+              <p className="text-xs text-white/60">Connecting...</p>
+            ) : (
+              <p className="text-xs text-white/60">
+                {filingsError || 'Connection failed'}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* CONTENT GRID */}
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-1.5">
         {/* Filters + Overview */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-1.5">
+        <div className="xl:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-1.5">
           <div className="bg-white rounded-xl p-4 shadow-sm">
             <h2 className="font-bold mb-2 text-sm">Quick Filters</h2>
             <Filters />
@@ -300,95 +468,6 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
           <div className="bg-white rounded-xl p-4 shadow-sm">
             <h2 className="font-bold mb-2 text-sm">Overview</h2>
             <OverviewGrid dashboardData={dashboardData} />
-          </div>
-        </div>
-
-
-      </div>
-
-      {/* RIGHT SECTION */}
-      <div className="xl:col-span-1 space-y-1.5">
-        {/* Total Registered Users Card */}
-        <div className="bg-white rounded-xl p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-gray-600 text-sm">Total Registered Users</h3>
-            <div className="p-2 bg-purple-50 rounded-lg">
-              <Database size={16} className="text-purple-600" />
-            </div>
-          </div>
-
-          <div className="flex items-baseline gap-2 mt-2">
-            <p className="text-3xl font-bold">
-              {usersStatus === 'checking' ? (
-                <span className="text-gray-400">Loading...</span>
-              ) : usersStatus === 'error' ? (
-                <span className="text-red-500">Error</span>
-              ) : (
-                totalUsers.toLocaleString()
-              )}
-            </p>
-            {usersStatus === 'connected' && (
-              <CheckCircle size={20} className="text-green-500 mb-1" />
-            )}
-          </div>
-          
-          <div className="flex items-center gap-1 mt-1">
-            {usersStatus === 'connected' ? (
-              <>
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <p className="text-sm text-green-600 font-medium">
-                  Live from Database
-                </p>
-              </>
-            ) : usersStatus === 'checking' ? (
-              <p className="text-sm text-gray-500">Connecting...</p>
-            ) : (
-              <p className="text-sm text-red-500">
-                {usersError || 'Connection failed'}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Total Patents Card */}
-        <div className="bg-white rounded-xl p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-gray-600 text-sm">Total Patents</h3>
-            <div className="p-2 bg-indigo-50 rounded-lg">
-              <Database size={16} className="text-indigo-600" />
-            </div>
-          </div>
-
-          <div className="flex items-baseline gap-2 mt-2">
-            <p className="text-3xl font-bold">
-              {dbConnectionStatus === 'checking' ? (
-                <span className="text-gray-400">Loading...</span>
-              ) : dbConnectionStatus === 'error' ? (
-                <span className="text-red-500">Error</span>
-              ) : (
-                dbPatentCount.toLocaleString()
-              )}
-            </p>
-            {dbConnectionStatus === 'connected' && (
-              <CheckCircle size={20} className="text-green-500 mb-1" />
-            )}
-          </div>
-          
-          <div className="flex items-center gap-1 mt-1">
-            {dbConnectionStatus === 'connected' ? (
-              <>
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <p className="text-sm text-green-600 font-medium">
-                  Live from Database
-                </p>
-              </>
-            ) : dbConnectionStatus === 'checking' ? (
-              <p className="text-sm text-gray-500">Connecting...</p>
-            ) : (
-              <p className="text-sm text-red-500">
-                {dbError || 'Connection failed'}
-              </p>
-            )}
           </div>
         </div>
 
@@ -408,11 +487,10 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
             </ResponsiveContainer>
           </div>
         </div>
-
       </div>
 
       {/* FULL WIDTH CHARTS SECTION */}
-      <div className="xl:col-span-5 grid grid-cols-1 lg:grid-cols-3 gap-1.5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-1.5">
         <div className="bg-white rounded-xl p-4 shadow-sm">
           <h3 className="font-bold mb-3 text-sm">Portfolio Growth</h3>
           <div className="h-[280px]">

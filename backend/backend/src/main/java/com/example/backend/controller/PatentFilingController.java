@@ -19,6 +19,20 @@ public class PatentFilingController {
     @Autowired
     private PatentFilingRepository patentFilingRepository;
     
+    // Get total count of patent filings
+    @GetMapping("/count")
+    public ResponseEntity<Long> getPatentFilingsCount() {
+        try {
+            long count = patentFilingRepository.count();
+            System.out.println("📊 Patent filings count requested: " + count);
+            return ResponseEntity.ok(count);
+        } catch (Exception e) {
+            System.err.println("❌ ERROR getting patent filings count:");
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(0L);
+        }
+    }
+    
     // Submit new patent filing
     @PostMapping("/submit")
     public ResponseEntity<Map<String, Object>> submitPatentFiling(@RequestBody PatentFiling patentFiling) {
