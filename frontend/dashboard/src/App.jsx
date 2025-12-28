@@ -496,7 +496,13 @@ const App = () => {
                 }} 
               />
             ) : currentPage === 'filing' ? (
-              <FilingTracker />
+              <FilingTracker 
+                userProfile={userProfile}
+                onBack={() => {
+                  setCurrentPage('dashboard');
+                  setActiveItem('dashboard');
+                }}
+              />
             ) : currentPage === 'legal' ? (
               <div className="bg-white rounded-xl shadow-lg p-6">
                 <h2 className="text-2xl font-bold text-gray-800 mb-4">Legal Status</h2>

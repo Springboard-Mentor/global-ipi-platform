@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Calendar, User, DollarSign, CheckCircle, Clock, Eye, X } from 'lucide-react';
+import { FileText, Calendar, User, DollarSign, CheckCircle, Clock, Eye, X, ArrowLeft } from 'lucide-react';
 import { auth } from '../firebase';
 
-const FilingTracker = () => {
+const FilingTracker = ({ userProfile, onBack }) => {
   const [filings, setFilings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -10,26 +10,59 @@ const FilingTracker = () => {
   const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
-    fetchUserFilings();
-  }, []);
+    if (userProfile?.uid) {
+      fetchUserFilings();
+    }
+  }, [userProfile]);
 
   const fetchUserFilings = async () => {
     setLoading(true);
     setError('');
     try {
-      const userId = auth.currentUser?.uid;
+      const userId = userProfile?.uid || auth.currentUser?.uid;
+      console.log('Fetching filings for user ID:', userId);
+      console.log('User profile:', userProfile);
+      console.log('Auth current user:', auth.currentUser);
+      
       if (!userId) {
         setError('Please log in to view your filings');
         setLoading(false);
         return;
       }
 
-      const response = await fetch(`http://localhost:8080/api/patent-filing/user/${userId}`);
+      // First try to get user's filings
+      let response = await fetch(`http://localhost:8080/api/patent-filing/user/${userId}`);
+      console.log('Response status:', response.status);
+      
       if (!response.ok) {
         throw new Error('Failed to fetch filings');
       }
 
-      const data = await response.json();
+      let data = await response.json();
+      console.log('Fetched filings for user:', data);
+      
+      // If no filings found, get all filings to check if any exist
+      if (data.length === 0) {
+        console.log('No filings found for user, fetching all filings to debug...');
+        response = await fetch(`http://localhost:8080/api/patent-filing/all`);
+        if (response.ok) {
+          const allFilings = await response.json();
+          console.log('All filings in database:', allFilings);
+          
+          // Filter by email as fallback
+          const userEmail = userProfile?.email || auth.currentUser?.email;
+          console.log('Trying to filter by email:', userEmail);
+          
+          if (userEmail) {
+            data = allFilings.filter(filing => 
+              filing.userEmail === userEmail || 
+              filing.applicantEmail === userEmail
+            );
+            console.log('Filtered filings by email:', data);
+          }
+        }
+      }
+      
       setFilings(data);
     } catch (err) {
       console.error('Error fetching filings:', err);
@@ -104,7 +137,18 @@ const FilingTracker = () => {
   return (
     <div className="bg-white rounded-xl shadow-lg p-6">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">My Patent Filings</h2>
+        <div className="flex items-center gap-4">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="p-2 hover:bg-gray-100 rounded-lg transition flex items-center gap-2 text-gray-600 font-medium"
+            >
+              <ArrowLeft size={20} />
+              Back
+            </button>
+          )}
+          <h2 className="text-2xl font-bold text-gray-800">My Patent Filings</h2>
+        </div>
         <button
           onClick={fetchUserFilings}
           className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"

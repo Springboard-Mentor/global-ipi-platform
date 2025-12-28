@@ -73,9 +73,28 @@ public class PatentFilingController {
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<PatentFiling>> getUserPatentFilings(@PathVariable String userId) {
         try {
+            System.out.println("📋 Fetching patent filings for user: " + userId);
             List<PatentFiling> filings = patentFilingRepository.findByUserId(userId);
+            System.out.println("✅ Found " + filings.size() + " filings for user: " + userId);
             return ResponseEntity.ok(filings);
         } catch (Exception e) {
+            System.err.println("❌ ERROR fetching filings for user " + userId + ":");
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+    
+    // Get ALL patent filings (for admin/debugging)
+    @GetMapping("/all")
+    public ResponseEntity<List<PatentFiling>> getAllPatentFilings() {
+        try {
+            System.out.println("📋 Fetching ALL patent filings");
+            List<PatentFiling> filings = patentFilingRepository.findAll();
+            System.out.println("✅ Found " + filings.size() + " total filings");
+            return ResponseEntity.ok(filings);
+        } catch (Exception e) {
+            System.err.println("❌ ERROR fetching all filings:");
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
