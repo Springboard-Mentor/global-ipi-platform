@@ -836,31 +836,32 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
         </div>
       )}
 
-      {/* Fixed Header - Improved Responsive Design */}
-      <div className="sticky top-0 z-50 bg-white shadow-lg border-b border-gray-200">
+      {/* Fixed Header - Enhanced Modern Design */}
+      <div className="sticky top-0 z-50 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 shadow-2xl border-b-4 border-white/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-20">
             <div className="flex-1 min-w-0">
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 truncate">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white truncate flex items-center gap-2">
+                <FileText size={28} className="hidden sm:block animate-pulse" />
                 Patent Filing Application
               </h1>
-              <p className="text-xs sm:text-sm text-gray-600 mt-0.5">
+              <p className="text-xs sm:text-sm text-white/90 mt-0.5 font-medium">
                 Step {currentStep} of 5: {steps[currentStep - 1].title}
               </p>
             </div>
             <button
               onClick={onClose}
-              className="ml-4 p-2 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0"
+              className="ml-4 p-2 rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-all hover:scale-110 flex-shrink-0 border border-white/30"
               title="Close"
             >
-              <X size={24} className="text-gray-600" />
+              <X size={24} className="text-white" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Progress Indicator - Responsive */}
-      <div className="bg-white border-b border-gray-200 sticky top-16 sm:top-20 z-40">
+      {/* Progress Indicator - Enhanced Design */}
+      <div className="bg-gradient-to-b from-white to-blue-50/30 border-b-2 border-blue-200/50 sticky top-16 sm:top-20 z-40 shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="flex items-center justify-between">
             {steps.map((step, index) => {
@@ -869,25 +870,26 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
                 <div key={step.number} className="flex-1">
                   <div className="flex items-center">
                     <div className={`
-                      flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 transition-all
+                      flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 transition-all duration-300
                       ${currentStep >= step.number 
-                        ? 'bg-gradient-to-br from-blue-500 to-purple-600 border-transparent text-white' 
-                        : 'border-gray-300 text-gray-400 bg-white'
+                        ? 'bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 border-transparent text-white shadow-lg scale-110' 
+                        : 'border-gray-300 text-gray-400 bg-white hover:border-blue-300 hover:scale-105'
                       }
+                      ${currentStep === step.number ? 'ring-4 ring-blue-300/50 animate-pulse' : ''}
                     `}>
                       <StepIcon size={16} className="sm:hidden" />
                       <StepIcon size={20} className="hidden sm:block" />
                     </div>
                     {index < steps.length - 1 && (
                       <div className={`
-                        flex-1 h-1 mx-1 sm:mx-2 transition-all
-                        ${currentStep > step.number ? 'bg-gradient-to-r from-blue-500 to-purple-600' : 'bg-gray-200'}
+                        flex-1 h-1 mx-1 sm:mx-2 transition-all duration-500 rounded-full
+                        ${currentStep > step.number ? 'bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 shadow-sm' : 'bg-gray-200'}
                       `} />
                     )}
                   </div>
                   <p className={`
-                    text-[10px] sm:text-xs mt-1 sm:mt-2 text-center hidden md:block
-                    ${currentStep >= step.number ? 'text-gray-800 font-medium' : 'text-gray-400'}
+                    text-[10px] sm:text-xs mt-1 sm:mt-2 text-center hidden md:block transition-all
+                    ${currentStep >= step.number ? 'text-blue-700 font-bold' : 'text-gray-400'}
                   `}>
                     {step.title}
                   </p>
@@ -898,11 +900,15 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
         </div>
       </div>
 
-      {/* Main Content Area - Full Page Layout */}
+      {/* Main Content Area - Enhanced Layout */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          {/* Form Content */}
-          <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 min-h-[600px]">
+        <div className="relative group">
+          {/* Decorative gradient border */}
+          <div className="absolute -inset-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-3xl opacity-20 group-hover:opacity-30 blur transition-all duration-500"></div>
+          
+          <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-200">
+            {/* Form Content */}
+            <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 min-h-[600px] bg-gradient-to-br from-white via-blue-50/20 to-purple-50/20">
           {/* Step 1: Applicant Information */}
           {currentStep === 1 && (
             <div className="space-y-5">
@@ -2534,6 +2540,7 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
                 )}
               </button>
             )}
+          </div>
           </div>
         </div>
       </div>
