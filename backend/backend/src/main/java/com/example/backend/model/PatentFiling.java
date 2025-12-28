@@ -1,0 +1,295 @@
+package com.example.backend.model;
+
+import jakarta.persistence.*;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "patent_filings")
+public class PatentFiling {
+    
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    // User Information
+    @Column(name = "user_id", nullable = false)
+    private String userId;
+    
+    @Column(name = "user_email", nullable = false)
+    private String userEmail;
+    
+    @Column(name = "user_name")
+    private String userName;
+    
+    // Applicant Information
+    @Column(name = "applicant_name", nullable = false)
+    private String applicantName;
+    
+    @Column(name = "applicant_email", nullable = false)
+    private String applicantEmail;
+    
+    @Column(name = "applicant_phone", nullable = false, length = 20)
+    private String applicantPhone;
+    
+    @Column(name = "applicant_address", nullable = false, columnDefinition = "TEXT")
+    private String applicantAddress;
+    
+    @Column(name = "applicant_city", nullable = false, length = 100)
+    private String applicantCity;
+    
+    @Column(name = "applicant_state", nullable = false, length = 100)
+    private String applicantState;
+    
+    @Column(name = "applicant_pincode", nullable = false, length = 10)
+    private String applicantPincode;
+    
+    @Column(name = "applicant_country", nullable = false, length = 100)
+    private String applicantCountry;
+    
+    @Column(name = "organization_name")
+    private String organizationName;
+    
+    @Column(name = "applicant_type", nullable = false, length = 50)
+    private String applicantType;
+    
+    // Invention Details
+    @Column(name = "invention_title", nullable = false, length = 500)
+    private String inventionTitle;
+    
+    @Column(name = "invention_field", nullable = false)
+    private String inventionField;
+    
+    @Column(name = "invention_description", nullable = false, columnDefinition = "TEXT")
+    private String inventionDescription;
+    
+    @Column(name = "technical_problem", nullable = false, columnDefinition = "TEXT")
+    private String technicalProblem;
+    
+    @Column(name = "proposed_solution", nullable = false, columnDefinition = "TEXT")
+    private String proposedSolution;
+    
+    @Column(name = "advantages", nullable = false, columnDefinition = "TEXT")
+    private String advantages;
+    
+    @Column(name = "prior_art", columnDefinition = "TEXT")
+    private String priorArt;
+    
+    // Patent Details
+    @Column(name = "patent_type", nullable = false, length = 50)
+    private String patentType;
+    
+    @Column(name = "filing_type", nullable = false, length = 50)
+    private String filingType;
+    
+    @Column(name = "priority_date")
+    private LocalDate priorityDate;
+    
+    @Column(name = "priority_number", length = 100)
+    private String priorityNumber;
+    
+    @Column(name = "claims_priority")
+    private Boolean claimsPriority;
+    
+    @Column(name = "number_of_claims", nullable = false)
+    private Integer numberOfClaims;
+    
+    @Column(name = "number_of_drawings")
+    private Integer numberOfDrawings;
+    
+    // Document URLs
+    @Column(name = "description_file_url", nullable = false, columnDefinition = "TEXT")
+    private String descriptionFileUrl;
+    
+    @Column(name = "claims_file_url", nullable = false, columnDefinition = "TEXT")
+    private String claimsFileUrl;
+    
+    @Column(name = "abstract_file_url", nullable = false, columnDefinition = "TEXT")
+    private String abstractFileUrl;
+    
+    @Column(name = "drawings_file_url", columnDefinition = "TEXT")
+    private String drawingsFileUrl;
+    
+    // Payment Information
+    @Column(name = "payment_amount", nullable = false, precision = 10, scale = 2)
+    private BigDecimal paymentAmount;
+    
+    @Column(name = "payment_currency", length = 3)
+    private String paymentCurrency = "INR";
+    
+    @Column(name = "payment_id", nullable = false)
+    private String paymentId;
+    
+    @Column(name = "payment_order_id")
+    private String paymentOrderId;
+    
+    @Column(name = "payment_signature")
+    private String paymentSignature;
+    
+    @Column(name = "payment_status", nullable = false, length = 50)
+    private String paymentStatus;
+    
+    @Column(name = "payment_timestamp")
+    private LocalDateTime paymentTimestamp;
+    
+    // Status and Timestamps
+    @Column(name = "status", length = 50)
+    private String status = "submitted";
+    
+    @Column(name = "filing_date")
+    private LocalDateTime filingDate;
+    
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+    
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+    
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+        if (filingDate == null) {
+            filingDate = LocalDateTime.now();
+        }
+        if (paymentTimestamp == null) {
+            paymentTimestamp = LocalDateTime.now();
+        }
+    }
+    
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+    
+    // Getters and Setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    
+    public String getUserId() { return userId; }
+    public void setUserId(String userId) { this.userId = userId; }
+    
+    public String getUserEmail() { return userEmail; }
+    public void setUserEmail(String userEmail) { this.userEmail = userEmail; }
+    
+    public String getUserName() { return userName; }
+    public void setUserName(String userName) { this.userName = userName; }
+    
+    public String getApplicantName() { return applicantName; }
+    public void setApplicantName(String applicantName) { this.applicantName = applicantName; }
+    
+    public String getApplicantEmail() { return applicantEmail; }
+    public void setApplicantEmail(String applicantEmail) { this.applicantEmail = applicantEmail; }
+    
+    public String getApplicantPhone() { return applicantPhone; }
+    public void setApplicantPhone(String applicantPhone) { this.applicantPhone = applicantPhone; }
+    
+    public String getApplicantAddress() { return applicantAddress; }
+    public void setApplicantAddress(String applicantAddress) { this.applicantAddress = applicantAddress; }
+    
+    public String getApplicantCity() { return applicantCity; }
+    public void setApplicantCity(String applicantCity) { this.applicantCity = applicantCity; }
+    
+    public String getApplicantState() { return applicantState; }
+    public void setApplicantState(String applicantState) { this.applicantState = applicantState; }
+    
+    public String getApplicantPincode() { return applicantPincode; }
+    public void setApplicantPincode(String applicantPincode) { this.applicantPincode = applicantPincode; }
+    
+    public String getApplicantCountry() { return applicantCountry; }
+    public void setApplicantCountry(String applicantCountry) { this.applicantCountry = applicantCountry; }
+    
+    public String getOrganizationName() { return organizationName; }
+    public void setOrganizationName(String organizationName) { this.organizationName = organizationName; }
+    
+    public String getApplicantType() { return applicantType; }
+    public void setApplicantType(String applicantType) { this.applicantType = applicantType; }
+    
+    public String getInventionTitle() { return inventionTitle; }
+    public void setInventionTitle(String inventionTitle) { this.inventionTitle = inventionTitle; }
+    
+    public String getInventionField() { return inventionField; }
+    public void setInventionField(String inventionField) { this.inventionField = inventionField; }
+    
+    public String getInventionDescription() { return inventionDescription; }
+    public void setInventionDescription(String inventionDescription) { this.inventionDescription = inventionDescription; }
+    
+    public String getTechnicalProblem() { return technicalProblem; }
+    public void setTechnicalProblem(String technicalProblem) { this.technicalProblem = technicalProblem; }
+    
+    public String getProposedSolution() { return proposedSolution; }
+    public void setProposedSolution(String proposedSolution) { this.proposedSolution = proposedSolution; }
+    
+    public String getAdvantages() { return advantages; }
+    public void setAdvantages(String advantages) { this.advantages = advantages; }
+    
+    public String getPriorArt() { return priorArt; }
+    public void setPriorArt(String priorArt) { this.priorArt = priorArt; }
+    
+    public String getPatentType() { return patentType; }
+    public void setPatentType(String patentType) { this.patentType = patentType; }
+    
+    public String getFilingType() { return filingType; }
+    public void setFilingType(String filingType) { this.filingType = filingType; }
+    
+    public LocalDate getPriorityDate() { return priorityDate; }
+    public void setPriorityDate(LocalDate priorityDate) { this.priorityDate = priorityDate; }
+    
+    public String getPriorityNumber() { return priorityNumber; }
+    public void setPriorityNumber(String priorityNumber) { this.priorityNumber = priorityNumber; }
+    
+    public Boolean getClaimsPriority() { return claimsPriority; }
+    public void setClaimsPriority(Boolean claimsPriority) { this.claimsPriority = claimsPriority; }
+    
+    public Integer getNumberOfClaims() { return numberOfClaims; }
+    public void setNumberOfClaims(Integer numberOfClaims) { this.numberOfClaims = numberOfClaims; }
+    
+    public Integer getNumberOfDrawings() { return numberOfDrawings; }
+    public void setNumberOfDrawings(Integer numberOfDrawings) { this.numberOfDrawings = numberOfDrawings; }
+    
+    public String getDescriptionFileUrl() { return descriptionFileUrl; }
+    public void setDescriptionFileUrl(String descriptionFileUrl) { this.descriptionFileUrl = descriptionFileUrl; }
+    
+    public String getClaimsFileUrl() { return claimsFileUrl; }
+    public void setClaimsFileUrl(String claimsFileUrl) { this.claimsFileUrl = claimsFileUrl; }
+    
+    public String getAbstractFileUrl() { return abstractFileUrl; }
+    public void setAbstractFileUrl(String abstractFileUrl) { this.abstractFileUrl = abstractFileUrl; }
+    
+    public String getDrawingsFileUrl() { return drawingsFileUrl; }
+    public void setDrawingsFileUrl(String drawingsFileUrl) { this.drawingsFileUrl = drawingsFileUrl; }
+    
+    public BigDecimal getPaymentAmount() { return paymentAmount; }
+    public void setPaymentAmount(BigDecimal paymentAmount) { this.paymentAmount = paymentAmount; }
+    
+    public String getPaymentCurrency() { return paymentCurrency; }
+    public void setPaymentCurrency(String paymentCurrency) { this.paymentCurrency = paymentCurrency; }
+    
+    public String getPaymentId() { return paymentId; }
+    public void setPaymentId(String paymentId) { this.paymentId = paymentId; }
+    
+    public String getPaymentOrderId() { return paymentOrderId; }
+    public void setPaymentOrderId(String paymentOrderId) { this.paymentOrderId = paymentOrderId; }
+    
+    public String getPaymentSignature() { return paymentSignature; }
+    public void setPaymentSignature(String paymentSignature) { this.paymentSignature = paymentSignature; }
+    
+    public String getPaymentStatus() { return paymentStatus; }
+    public void setPaymentStatus(String paymentStatus) { this.paymentStatus = paymentStatus; }
+    
+    public LocalDateTime getPaymentTimestamp() { return paymentTimestamp; }
+    public void setPaymentTimestamp(LocalDateTime paymentTimestamp) { this.paymentTimestamp = paymentTimestamp; }
+    
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+    
+    public LocalDateTime getFilingDate() { return filingDate; }
+    public void setFilingDate(LocalDateTime filingDate) { this.filingDate = filingDate; }
+    
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+}
