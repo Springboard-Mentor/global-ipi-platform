@@ -1,13 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { FileText, Calendar, User, DollarSign, CheckCircle, Clock, Eye, X, ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { FileText, Calendar, User, DollarSign, CheckCircle, Clock, Eye, X, ArrowLeft, Download, Share2, Linkedin } from 'lucide-react';
 import { auth } from '../firebase';
 import PatentProgressTracker from './PatentProgressTracker';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 const FilingTracker = ({ userProfile, onBack }) => {
   const [filings, setFilings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [expandedFilingId, setExpandedFilingId] = useState(null);
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+  const patentDetailsRef = useRef(null);
 
   useEffect(() => {
     if (userProfile?.uid) {
@@ -112,6 +116,167 @@ const FilingTracker = ({ userProfile, onBack }) => {
     setExpandedFilingId(expandedFilingId === filingId ? null : filingId);
   };
 
+  // Generate complete patent data text for sharing
+  const generatePatentDataText = (filing) => {
+    return `
+📋 PATENT APPLICATION DETAILS
+═══════════════════════════════
+
+🎯 INVENTION INFORMATION
+━━━━━━━━━━━━━━━━━━━━━━
+Title: ${filing.inventionTitle || 'N/A'}
+Field: ${filing.inventionField || 'N/A'}
+Description: ${filing.inventionDescription || 'N/A'}
+
+👤 APPLICANT INFORMATION
+━━━━━━━━━━━━━━━━━━━━━━
+Name: ${filing.applicantName || 'N/A'}
+Email: ${filing.applicantEmail || 'N/A'}
+Phone: ${filing.applicantPhone || 'N/A'}
+Type: ${filing.applicantType || 'N/A'}
+${filing.organizationName ? `Organization: ${filing.organizationName}` : ''}
+Address: ${filing.applicantAddress || 'N/A'}, ${filing.applicantCity || 'N/A'}, ${filing.applicantState || 'N/A'} - ${filing.applicantPincode || 'N/A'}
+
+📊 PATENT SPECIFICATIONS
+━━━━━━━━━━━━━━━━━━━━━━
+Patent Type: ${filing.patentType || 'N/A'}
+Filing Type: ${filing.filingType || 'N/A'}
+Number of Claims: ${filing.numberOfClaims || 'N/A'}
+Number of Drawings: ${filing.numberOfDrawings || 'N/A'}
+
+💳 PAYMENT INFORMATION
+━━━━━━━━━━━━━━━━━━━━━━
+Amount: ₹${filing.paymentAmount || 'N/A'} ${filing.paymentCurrency || 'INR'}
+Payment ID: ${filing.paymentId || 'N/A'}
+Status: ${filing.paymentStatus || 'N/A'}
+
+📈 FILING STATUS
+━━━━━━━━━━━━━━━━━━━━━━
+Status: ${filing.status || 'N/A'}
+Filing Date: ${formatDateTime(filing.filingDate)}
+Created: ${formatDateTime(filing.createdAt)}
+Updated: ${formatDateTime(filing.updatedAt)}
+
+🏆 PROGRESS STATUS
+━━━━━━━━━━━━━━━━━━━━━━
+✓ Stage 1 - Patent Filed: ${filing.stage1Filed ? '✅ Complete' : '⏳ Pending'}
+✓ Stage 2 - Admin Review: ${filing.stage2AdminReview ? '✅ Complete' : '⏳ Pending'}
+✓ Stage 3 - Technical Review: ${filing.stage3TechnicalReview ? '✅ Complete' : '⏳ Pending'}
+✓ Stage 4 - Final Verification: ${filing.stage4Verification ? '✅ Complete' : '⏳ Pending'}
+✓ Stage 5 - Patent Granted: ${filing.stage5Granted ? '✅ Complete' : '⏳ Pending'}
+    `.trim();
+  };
+
+  // Download PDF of patent details
+  const downloadPDF = async (filing) => {
+    setGeneratingPdf(true);
+    try {
+      const element = document.getElementById(`patent-details-${filing.id}`);
+      if (!element) {
+        alert('Please expand the patent details first');
+        setGeneratingPdf(false);
+        return;
+      }
+
+      // Create canvas from the element
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      // Define margins (in mm)
+      const marginLeft = 15;
+      const marginRight = 15;
+      const marginTop = 15;
+      const marginBottom = 15;
+      
+      const pageWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const contentWidth = pageWidth - marginLeft - marginRight; // 180mm
+      const contentHeight = pageHeight - marginTop - marginBottom; // 267mm
+      
+      // Calculate image dimensions to fit within margins
+      const imgHeight = (canvas.height * contentWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = marginTop;
+
+      // Add first page with margins
+      pdf.addImage(imgData, 'PNG', marginLeft, position, contentWidth, imgHeight);
+      heightLeft -= contentHeight;
+
+      // Add additional pages if needed with margins
+      while (heightLeft > 0) {
+        position = marginTop - (imgHeight - heightLeft);
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', marginLeft, position, contentWidth, imgHeight);
+        heightLeft -= contentHeight;
+      }
+
+      pdf.save(`Patent_${filing.inventionTitle || 'Application'}_${filing.id}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
+
+  // Share on WhatsApp with complete data
+  const shareOnWhatsApp = (filing) => {
+    const patentData = generatePatentDataText(filing);
+    const message = `🎉 PATENT APPLICATION UPDATE\n\n${patentData}\n\n📱 Shared via Global IPI Platform`;
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
+  // Share on LinkedIn with PDF
+  const shareOnLinkedIn = async (filing) => {
+    // First generate and download the PDF
+    await downloadPDF(filing);
+    
+    // Prepare LinkedIn post text
+    const allStagesComplete = filing.stage1Filed && filing.stage2AdminReview && 
+                               filing.stage3TechnicalReview && filing.stage4Verification && 
+                               filing.stage5Granted;
+    
+    const linkedInText = `🎯 Patent Application Update: "${filing.inventionTitle || 'Patent Application'}"
+
+${allStagesComplete ? '🏆 Exciting News! My patent has been officially GRANTED!' : '📋 Application Status: In Progress'}
+
+Field: ${filing.inventionField || 'Innovation'}
+Type: ${filing.patentType || 'N/A'}
+
+${allStagesComplete ? 
+  '✅ All stages completed successfully!\n🎉 Patent officially approved and published!' : 
+  `Current Progress:
+${filing.stage1Filed ? '✅' : '⏳'} Patent Filed
+${filing.stage2AdminReview ? '✅' : '⏳'} Admin Review
+${filing.stage3TechnicalReview ? '✅' : '⏳'} Technical Review  
+${filing.stage4Verification ? '✅' : '⏳'} Final Verification
+${filing.stage5Granted ? '✅' : '⏳'} Patent Granted`}
+
+#Patent #Innovation #IntellectualProperty #Research #Technology #IP
+
+Note: PDF document has been downloaded. Please attach it manually to your LinkedIn post.`;
+
+    // Copy text to clipboard for easy pasting
+    try {
+      await navigator.clipboard.writeText(linkedInText);
+      alert('✅ LinkedIn post text copied to clipboard!\n\n📄 PDF has been downloaded.\n\nPlease:\n1. Go to LinkedIn\n2. Create a new post\n3. Paste the copied text (Ctrl+V)\n4. Attach the downloaded PDF\n5. Publish your post');
+    } catch (err) {
+      console.error('Failed to copy text:', err);
+    }
+    
+    // Open LinkedIn
+    const linkedInUrl = 'https://www.linkedin.com/feed/';
+    window.open(linkedInUrl, '_blank');
+  };
+
   if (loading) {
     return (
       <div className="bg-white rounded-xl shadow-lg p-6">
@@ -163,88 +328,147 @@ const FilingTracker = ({ userProfile, onBack }) => {
           <p className="text-gray-500 text-sm mt-2">Your submitted patents will appear here</p>
         </div>
       ) : (
-        <div className="grid gap-4">
+        <div className="grid gap-6">
           {filings.map((filing) => (
             <div
               key={filing.id}
-              className="border-2 border-gray-200 rounded-lg p-5 hover:border-blue-300 hover:shadow-md transition"
+              className="relative bg-gradient-to-br from-white via-blue-50 to-purple-50 border-2 border-transparent rounded-2xl p-6 shadow-lg hover:shadow-2xl hover:scale-[1.01] transition-all duration-300 overflow-hidden"
+              style={{
+                background: 'linear-gradient(135deg, #ffffff 0%, #f0f9ff 50%, #faf5ff 100%)',
+                borderImage: 'linear-gradient(135deg, #3b82f6, #8b5cf6, #ec4899) 1'
+              }}
             >
-              <div className="flex items-start justify-between">
+              {/* Decorative corner accents */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-bl-full"></div>
+              <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-purple-400/10 to-pink-400/10 rounded-tr-full"></div>
+              
+              <div className="relative flex items-start justify-between">
                 <div className="flex-1">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">
-                    {filing.inventionTitle}
-                  </h3>
+                  {/* Title with gradient and icon */}
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-3 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-md">
+                      <FileText size={24} className="text-white" />
+                    </div>
+                    <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                      {filing.inventionTitle}
+                    </h3>
+                  </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                    <div className="flex items-center text-gray-700">
-                      <User size={16} className="mr-2 text-blue-500" />
-                      <span className="text-sm"><strong>Applicant:</strong> {filing.applicantName}</span>
+                  {/* Info Grid with enhanced styling */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div className="flex items-center gap-3 p-3 bg-white/80 backdrop-blur rounded-xl border border-blue-200 shadow-sm hover:shadow-md transition">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <User size={18} className="text-blue-600" />
+                      </div>
+                      <div>
+                        <span className="text-xs text-gray-500 block">Applicant</span>
+                        <span className="text-sm font-semibold text-gray-800">{filing.applicantName}</span>
+                      </div>
                     </div>
                     
-                    <div className="flex items-center text-gray-700">
-                      <Calendar size={16} className="mr-2 text-purple-500" />
-                      <span className="text-sm"><strong>Filed:</strong> {formatDate(filing.applicationDate)}</span>
+                    <div className="flex items-center gap-3 p-3 bg-white/80 backdrop-blur rounded-xl border border-purple-200 shadow-sm hover:shadow-md transition">
+                      <div className="p-2 bg-purple-100 rounded-lg">
+                        <Calendar size={18} className="text-purple-600" />
+                      </div>
+                      <div>
+                        <span className="text-xs text-gray-500 block">Filed Date</span>
+                        <span className="text-sm font-semibold text-gray-800">{formatDate(filing.applicationDate)}</span>
+                      </div>
                     </div>
                     
-                    <div className="flex items-center text-gray-700">
-                      <FileText size={16} className="mr-2 text-green-500" />
-                      <span className="text-sm"><strong>Type:</strong> {filing.patentType} ({filing.filingType})</span>
+                    <div className="flex items-center gap-3 p-3 bg-white/80 backdrop-blur rounded-xl border border-green-200 shadow-sm hover:shadow-md transition">
+                      <div className="p-2 bg-green-100 rounded-lg">
+                        <FileText size={18} className="text-green-600" />
+                      </div>
+                      <div>
+                        <span className="text-xs text-gray-500 block">Patent Type</span>
+                        <span className="text-sm font-semibold text-gray-800">{filing.patentType} ({filing.filingType})</span>
+                      </div>
                     </div>
                     
-                    <div className="flex items-center text-gray-700">
-                      <DollarSign size={16} className="mr-2 text-yellow-500" />
-                      <span className="text-sm"><strong>Amount:</strong> ₹{filing.paymentAmount}</span>
+                    <div className="flex items-center gap-3 p-3 bg-white/80 backdrop-blur rounded-xl border border-yellow-200 shadow-sm hover:shadow-md transition">
+                      <div className="p-2 bg-yellow-100 rounded-lg">
+                        <DollarSign size={18} className="text-yellow-600" />
+                      </div>
+                      <div>
+                        <span className="text-xs text-gray-500 block">Amount Paid</span>
+                        <span className="text-sm font-semibold text-gray-800">₹{filing.paymentAmount}</span>
+                      </div>
                     </div>
                   </div>
                   
-                  {/* Progress Tracker Preview */}
-                  <div className="mt-4 mb-3 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-bold text-gray-700">Application Progress</span>
+                  {/* Enhanced Progress Tracker Preview */}
+                  <div className="mt-5 p-5 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10 rounded-2xl border-2 border-blue-300/50 backdrop-blur shadow-inner">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle size={20} className="text-blue-600" />
+                        <span className="text-sm font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                          Application Progress
+                        </span>
+                      </div>
                       {filing.stage5Granted && (
-                        <span className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full animate-pulse">
-                          ✓ GRANTED
+                        <span className="px-4 py-1.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs font-bold rounded-full shadow-lg animate-pulse flex items-center gap-1">
+                          <span className="text-base">🏆</span>
+                          GRANTED
                         </span>
                       )}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-3">
                       {[
-                        { completed: filing.stage1Filed, label: 'Filed' },
-                        { completed: filing.stage2AdminReview, label: 'Admin Review' },
-                        { completed: filing.stage3TechnicalReview, label: 'Technical' },
-                        { completed: filing.stage4Verification, label: 'Verification' },
-                        { completed: filing.stage5Granted, label: 'Granted' }
+                        { completed: filing.stage1Filed, label: 'Filed', color: 'blue' },
+                        { completed: filing.stage2AdminReview, label: 'Admin Review', color: 'purple' },
+                        { completed: filing.stage3TechnicalReview, label: 'Technical', color: 'indigo' },
+                        { completed: filing.stage4Verification, label: 'Verification', color: 'green' },
+                        { completed: filing.stage5Granted, label: 'Granted', color: 'emerald' }
                       ].map((stage, idx) => (
                         <div key={idx} className="flex-1">
-                          <div className={`h-2 rounded-full ${stage.completed ? 'bg-green-500' : 'bg-gray-300'}`} />
-                          <span className="text-xs text-gray-600 block mt-1 text-center">{stage.label}</span>
+                          <div className={`h-3 rounded-full shadow-inner transition-all duration-500 ${
+                            stage.completed 
+                              ? `bg-gradient-to-r from-green-400 to-green-600 shadow-green-300` 
+                              : 'bg-gray-300'
+                          }`}>
+                            {stage.completed && (
+                              <div className="h-full rounded-full bg-gradient-to-r from-green-300/50 to-green-500/50 animate-pulse"></div>
+                            )}
+                          </div>
+                          <span className={`text-xs block mt-2 text-center font-medium ${
+                            stage.completed ? 'text-green-700' : 'text-gray-500'
+                          }`}>
+                            {stage.label}
+                          </span>
                         </div>
                       ))}
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-2 mt-3">
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(filing.status)}`}>
+                  {/* Status badges with enhanced design */}
+                  <div className="flex items-center gap-3 mt-4 flex-wrap">
+                    <span className={`px-4 py-2 rounded-xl text-sm font-bold border-2 shadow-md ${getStatusColor(filing.status)} flex items-center gap-2`}>
+                      <CheckCircle size={16} />
                       {filing.status?.toUpperCase()}
                     </span>
-                    <span className="text-xs text-gray-500">
-                      Payment ID: {filing.paymentId}
+                    <span className="px-4 py-2 bg-white/80 backdrop-blur text-gray-600 rounded-xl text-xs font-medium border border-gray-300 shadow-sm">
+                      💳 Payment ID: <span className="font-bold text-gray-800">{filing.paymentId}</span>
                     </span>
                   </div>
                 </div>
                 
+                {/* Enhanced View Details Button */}
                 <button
                   onClick={() => toggleDetails(filing.id)}
-                  className="ml-4 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:shadow-lg transition flex items-center gap-2"
+                  className="ml-6 px-6 py-3 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white rounded-2xl hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center gap-2 font-bold shadow-lg"
                 >
-                  <Eye size={16} />
+                  <Eye size={20} />
                   {expandedFilingId === filing.id ? 'Hide Details' : 'View Details'}
                 </button>
               </div>
 
               {/* Expanded Details Section */}
               {expandedFilingId === filing.id && (
-                <div className="mt-6 pt-6 border-t-2 border-gray-200 space-y-6 animate-[slideDown_0.3s_ease-out]">
+                <div 
+                  id={`patent-details-${filing.id}`}
+                  className="mt-6 pt-6 border-t-2 border-gray-200 space-y-6 animate-[slideDown_0.3s_ease-out]"
+                >
                   {/* Progress Tracker */}
                   <div>
                     <h3 className="text-lg font-bold text-gray-900 mb-4 border-b-2 border-green-400 pb-2">
@@ -460,6 +684,44 @@ const FilingTracker = ({ userProfile, onBack }) => {
                       <DetailItem label="Filing Date" value={formatDateTime(filing.filingDate)} />
                       <DetailItem label="Created At" value={formatDateTime(filing.createdAt)} />
                       <DetailItem label="Updated At" value={formatDateTime(filing.updatedAt)} />
+                    </div>
+                  </div>
+
+                  {/* Action Buttons - Download PDF, Share WhatsApp, Showcase LinkedIn */}
+                  <div className="pt-6 border-t-2 border-gray-300">
+                    <div className="flex flex-col sm:flex-row gap-4 w-full">
+                      {/* Download PDF Button */}
+                      <button
+                        onClick={() => downloadPDF(filing)}
+                        disabled={generatingPdf}
+                        className="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 disabled:from-gray-400 disabled:to-gray-500 text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-3 disabled:cursor-not-allowed"
+                      >
+                        <Download size={24} />
+                        <span className="text-lg">{generatingPdf ? 'Generating PDF...' : 'Download PDF'}</span>
+                      </button>
+
+                      {/* Share on WhatsApp Button */}
+                      <button
+                        onClick={() => shareOnWhatsApp(filing)}
+                        className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-3"
+                      >
+                        <Share2 size={24} />
+                        <span className="text-lg">Share on WhatsApp</span>
+                      </button>
+
+                      {/* Showcase on LinkedIn Button */}
+                      <button
+                        onClick={() => shareOnLinkedIn(filing)}
+                        className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-3"
+                      >
+                        <Linkedin size={24} />
+                        <span className="text-lg">Showcase on LinkedIn</span>
+                      </button>
+                    </div>
+                    
+                    {/* Helper text */}
+                    <div className="mt-3 text-center text-sm text-gray-600">
+                      <p>💡 <strong>Tip:</strong> Download the complete patent details as PDF, share progress on WhatsApp, or showcase your achievement on LinkedIn!</p>
                     </div>
                   </div>
                 </div>
