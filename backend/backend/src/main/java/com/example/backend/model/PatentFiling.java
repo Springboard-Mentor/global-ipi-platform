@@ -215,6 +215,22 @@ public class PatentFiling {
     @Column(name = "agreed_to_terms")
     private Boolean agreedToTerms = false;
     
+    // Patent Progress Tracker - 5 Stages
+    @Column(name = "stage_1_filed")
+    private Boolean stage1Filed = true; // Automatically true when patent is submitted
+    
+    @Column(name = "stage_2_admin_review")
+    private Boolean stage2AdminReview = false; // Admin first review
+    
+    @Column(name = "stage_3_technical_review")
+    private Boolean stage3TechnicalReview = false; // Technical/Second admin review
+    
+    @Column(name = "stage_4_verification")
+    private Boolean stage4Verification = false; // Final verification
+    
+    @Column(name = "stage_5_granted")
+    private Boolean stage5Granted = false; // Patent granted/published
+    
     // Status and Timestamps
     @Column(name = "status", length = 50)
     private String status = "submitted";
@@ -456,4 +472,20 @@ public class PatentFiling {
     // NEW Getters and Setters for Agreement
     public Boolean getAgreedToTerms() { return agreedToTerms; }
     public void setAgreedToTerms(Boolean agreedToTerms) { this.agreedToTerms = agreedToTerms; }
+    
+    // Getters and Setters for Progress Tracker Stages
+    public Boolean getStage1Filed() { return stage1Filed; }
+    public void setStage1Filed(Boolean stage1Filed) { this.stage1Filed = stage1Filed; }
+    
+    public Boolean getStage2AdminReview() { return stage2AdminReview; }
+    public void setStage2AdminReview(Boolean stage2AdminReview) { this.stage2AdminReview = stage2AdminReview; }
+    
+    public Boolean getStage3TechnicalReview() { return stage3TechnicalReview; }
+    public void setStage3TechnicalReview(Boolean stage3TechnicalReview) { this.stage3TechnicalReview = stage3TechnicalReview; }
+    
+    public Boolean getStage4Verification() { return stage4Verification; }
+    public void setStage4Verification(Boolean stage4Verification) { this.stage4Verification = stage4Verification; }
+    
+    public Boolean getStage5Granted() { return stage5Granted; }
+    public void setStage5Granted(Boolean stage5Granted) { this.stage5Granted = stage5Granted; }
 }

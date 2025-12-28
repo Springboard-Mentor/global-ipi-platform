@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Calendar, User, DollarSign, CheckCircle, Clock, Eye, X, ArrowLeft } from 'lucide-react';
 import { auth } from '../firebase';
+import PatentProgressTracker from './PatentProgressTracker';
 
 const FilingTracker = ({ userProfile, onBack }) => {
   const [filings, setFilings] = useState([]);
@@ -198,6 +199,32 @@ const FilingTracker = ({ userProfile, onBack }) => {
                     </div>
                   </div>
                   
+                  {/* Progress Tracker Preview */}
+                  <div className="mt-4 mb-3 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-bold text-gray-700">Application Progress</span>
+                      {filing.stage5Granted && (
+                        <span className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full animate-pulse">
+                          ✓ GRANTED
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      {[
+                        { completed: filing.stage1Filed, label: 'Filed' },
+                        { completed: filing.stage2AdminReview, label: 'Admin Review' },
+                        { completed: filing.stage3TechnicalReview, label: 'Technical' },
+                        { completed: filing.stage4Verification, label: 'Verification' },
+                        { completed: filing.stage5Granted, label: 'Granted' }
+                      ].map((stage, idx) => (
+                        <div key={idx} className="flex-1">
+                          <div className={`h-2 rounded-full ${stage.completed ? 'bg-green-500' : 'bg-gray-300'}`} />
+                          <span className="text-xs text-gray-600 block mt-1 text-center">{stage.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
                   <div className="flex items-center gap-2 mt-3">
                     <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(filing.status)}`}>
                       {filing.status?.toUpperCase()}
@@ -236,6 +263,14 @@ const FilingTracker = ({ userProfile, onBack }) => {
             </div>
 
             <div className="p-6 space-y-6">
+              {/* Progress Tracker */}
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 mb-4 border-b-2 border-green-400 pb-2">
+                  📊 Application Progress Tracker
+                </h3>
+                <PatentProgressTracker filing={selectedFiling} />
+              </div>
+
               {/* Applicant Information */}
               <div>
                 <h3 className="text-lg font-bold text-gray-900 mb-4 border-b-2 border-blue-400 pb-2">
