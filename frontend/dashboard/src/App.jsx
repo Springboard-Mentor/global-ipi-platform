@@ -503,6 +503,11 @@ const App = () => {
                 <h2 className="text-2xl font-bold text-gray-800 mb-4">Legal Status</h2>
                 <p className="text-gray-600">Legal status functionality coming soon...</p>
               </div>
+            ) : currentPage === 'patent-filing' ? (
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <h2 className="text-2xl font-bold text-gray-800 mb-4">Patent Filing</h2>
+                <p className="text-gray-600">Form will be there soon.</p>
+              </div>
             ) : currentPage === 'contact' ? (
               <ContactForm onClose={() => {
                 setCurrentPage('dashboard');

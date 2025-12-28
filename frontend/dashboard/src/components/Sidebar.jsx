@@ -12,6 +12,7 @@ import {
   Sparkles,
   MessageSquare,
   Mail,
+  FileCheck,
 } from "lucide-react";
 import UpgradeModal from "./UpgradeModal";
 
@@ -23,6 +24,10 @@ const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem, onLogout, userPro
     { id: "filing", icon: FileText, label: "Filing Tracker" },
     { id: "legal", icon: BarChart3, label: "Legal Status" },
   ];
+
+  // Patent filing is only for non-basic users
+  const patentFilingItem = { id: "patent-filing", icon: FileCheck, label: "Patent Filing" };
+  const isBasicUser = !userProfile?.subscriptionType || userProfile?.subscriptionType.toLowerCase() === 'basic';
 
   const bottomItems = [
     { id: "contact", icon: Mail, label: "Contact Us" },
@@ -88,6 +93,25 @@ const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem, onLogout, userPro
               </button>
             );
           })}
+
+          {/* Patent Filing - Only for non-basic users */}
+          {!isBasicUser && (
+            <button
+              key={patentFilingItem.id}
+              onClick={() => setActiveItem(patentFilingItem.id)}
+              className={`
+                w-full flex items-center gap-3 px-4 py-3 rounded-xl transition
+                ${
+                  activeItem === patentFilingItem.id
+                    ? "bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg"
+                    : "text-gray-600 hover:bg-gradient-to-br hover:from-blue-50 hover:to-purple-50"
+                }
+              `}
+            >
+              <FileCheck size={20} />
+              <span className="font-medium">{patentFilingItem.label}</span>
+            </button>
+          )}
 
           {/* Upgrade to Pro Button */}
           {userProfile?.subscriptionType !== "pro" && userProfile?.subscriptionType !== "enterprise" && (
