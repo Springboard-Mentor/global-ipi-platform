@@ -7,8 +7,7 @@ const FilingTracker = ({ userProfile, onBack }) => {
   const [filings, setFilings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [selectedFiling, setSelectedFiling] = useState(null);
-  const [showDetails, setShowDetails] = useState(false);
+  const [expandedFilingId, setExpandedFilingId] = useState(null);
 
   useEffect(() => {
     if (userProfile?.uid) {
@@ -109,9 +108,8 @@ const FilingTracker = ({ userProfile, onBack }) => {
     }
   };
 
-  const viewDetails = (filing) => {
-    setSelectedFiling(filing);
-    setShowDetails(true);
+  const toggleDetails = (filingId) => {
+    setExpandedFilingId(expandedFilingId === filingId ? null : filingId);
   };
 
   if (loading) {
@@ -145,7 +143,7 @@ const FilingTracker = ({ userProfile, onBack }) => {
               className="p-2 hover:bg-gray-100 rounded-lg transition flex items-center gap-2 text-gray-600 font-medium"
             >
               <ArrowLeft size={20} />
-              Back
+              Back to Dashboard
             </button>
           )}
           <h2 className="text-2xl font-bold text-gray-800">My Patent Filings</h2>
@@ -236,254 +234,255 @@ const FilingTracker = ({ userProfile, onBack }) => {
                 </div>
                 
                 <button
-                  onClick={() => viewDetails(filing)}
+                  onClick={() => toggleDetails(filing.id)}
                   className="ml-4 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:shadow-lg transition flex items-center gap-2"
                 >
                   <Eye size={16} />
-                  View Details
+                  {expandedFilingId === filing.id ? 'Hide Details' : 'View Details'}
                 </button>
               </div>
+
+              {/* Expanded Details Section */}
+              {expandedFilingId === filing.id && (
+                <div className="mt-6 pt-6 border-t-2 border-gray-200 space-y-6 animate-[slideDown_0.3s_ease-out]">
+                  {/* Progress Tracker */}
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-4 border-b-2 border-green-400 pb-2">
+                      📊 Application Progress Tracker
+                    </h3>
+                    <PatentProgressTracker filing={filing} />
+                  </div>
+
+                  {/* Applicant Information */}
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-4 border-b-2 border-blue-400 pb-2">
+                      👤 Applicant Information
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <DetailItem label="Name" value={filing.applicantName} />
+                      <DetailItem label="Email" value={filing.applicantEmail} />
+                      <DetailItem label="Phone" value={filing.applicantPhone} />
+                      <DetailItem label="Type" value={filing.applicantType} />
+                      {filing.organizationName && (
+                        <DetailItem label="Organization" value={filing.organizationName} />
+                      )}
+                      {filing.dateOfBirth && (
+                        <DetailItem label="Date of Birth" value={formatDate(filing.dateOfBirth)} />
+                      )}
+                      {filing.age && (
+                        <DetailItem label="Age" value={filing.age} />
+                      )}
+                      {filing.gender && (
+                        <DetailItem label="Gender" value={filing.gender} />
+                      )}
+                      {filing.occupation && (
+                        <DetailItem label="Occupation" value={filing.occupation} />
+                      )}
+                      {filing.designation && (
+                        <DetailItem label="Designation" value={filing.designation} />
+                      )}
+                      {filing.educationalQualification && (
+                        <DetailItem label="Education" value={filing.educationalQualification} />
+                      )}
+                      <DetailItem label="Application Date" value={formatDate(filing.applicationDate)} />
+                    </div>
+                    
+                    <div className="mt-4">
+                      <span className="font-bold text-gray-800">Address:</span>
+                      <p className="text-gray-700 mt-1">
+                        {filing.applicantAddress}, {filing.applicantCity}, {filing.applicantState} - {filing.applicantPincode}, {filing.applicantCountry}
+                      </p>
+                    </div>
+
+                    {/* Government ID Details */}
+                    {filing.govtIdType && (
+                      <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <h4 className="font-bold text-gray-900 mb-2">Government ID Details</h4>
+                        <DetailItem label="ID Type" value={filing.govtIdType} />
+                        <DetailItem label="ID Number" value={filing.govtIdNumber} />
+                        {filing.aadhaarNumber && (
+                          <DetailItem label="Aadhaar Number" value={filing.aadhaarNumber} />
+                        )}
+                        {filing.panNumber && (
+                          <DetailItem label="PAN Number" value={filing.panNumber} />
+                        )}
+                        {filing.passportCountry && (
+                          <DetailItem label="Passport Country" value={filing.passportCountry} />
+                        )}
+                        {filing.drivingLicenseState && (
+                          <DetailItem label="DL State" value={filing.drivingLicenseState} />
+                        )}
+                      </div>
+                    )}
+
+                    {/* Additional Contact */}
+                    {(filing.alternatePhone || filing.alternateEmail || filing.gstin) && (
+                      <div className="mt-4">
+                        <h4 className="font-bold text-gray-900 mb-2">Additional Contact</h4>
+                        {filing.alternatePhone && (
+                          <DetailItem label="Alternate Phone" value={filing.alternatePhone} />
+                        )}
+                        {filing.alternateEmail && (
+                          <DetailItem label="Alternate Email" value={filing.alternateEmail} />
+                        )}
+                        {filing.gstin && (
+                          <DetailItem label="GSTIN" value={filing.gstin} />
+                        )}
+                      </div>
+                    )}
+
+                    {/* Correspondence Address */}
+                    {filing.correspondenceAddress && !filing.sameAsApplicantAddress && (
+                      <div className="mt-4">
+                        <span className="font-bold text-gray-800">Correspondence Address:</span>
+                        <p className="text-gray-700 mt-1">
+                          {filing.correspondenceAddress}, {filing.correspondenceCity}, {filing.correspondenceState} - {filing.correspondencePincode}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Invention Details */}
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-4 border-b-2 border-purple-400 pb-2">
+                      💡 Invention Details
+                    </h3>
+                    <DetailItem label="Title" value={filing.inventionTitle} />
+                    <DetailItem label="Field" value={filing.inventionField} />
+                    {filing.targetIndustry && (
+                      <DetailItem label="Target Industry" value={filing.targetIndustry} />
+                    )}
+                    <div className="mt-4">
+                      <span className="font-bold text-gray-800">Description:</span>
+                      <p className="text-gray-700 mt-1 whitespace-pre-wrap">{filing.inventionDescription}</p>
+                    </div>
+                    {filing.keywords && (
+                      <div className="mt-4">
+                        <span className="font-bold text-gray-800">Keywords:</span>
+                        <p className="text-gray-700 mt-1">{filing.keywords}</p>
+                      </div>
+                    )}
+                    {filing.technicalProblem && (
+                      <div className="mt-4">
+                        <span className="font-bold text-gray-800">Technical Problem:</span>
+                        <p className="text-gray-700 mt-1 whitespace-pre-wrap">{filing.technicalProblem}</p>
+                      </div>
+                    )}
+                    {filing.proposedSolution && (
+                      <div className="mt-4">
+                        <span className="font-bold text-gray-800">Proposed Solution:</span>
+                        <p className="text-gray-700 mt-1 whitespace-pre-wrap">{filing.proposedSolution}</p>
+                      </div>
+                    )}
+                    {filing.advantages && (
+                      <div className="mt-4">
+                        <span className="font-bold text-gray-800">Advantages:</span>
+                        <p className="text-gray-700 mt-1 whitespace-pre-wrap">{filing.advantages}</p>
+                      </div>
+                    )}
+                    {filing.commercialApplication && (
+                      <div className="mt-4">
+                        <span className="font-bold text-gray-800">Commercial Application:</span>
+                        <p className="text-gray-700 mt-1 whitespace-pre-wrap">{filing.commercialApplication}</p>
+                      </div>
+                    )}
+                    {filing.priorArt && (
+                      <div className="mt-4">
+                        <span className="font-bold text-gray-800">Prior Art:</span>
+                        <p className="text-gray-700 mt-1 whitespace-pre-wrap">{filing.priorArt}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Patent Details */}
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-4 border-b-2 border-green-400 pb-2">
+                      📋 Patent Specifications
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <DetailItem label="Patent Type" value={filing.patentType} />
+                      <DetailItem label="Filing Type" value={filing.filingType} />
+                      <DetailItem label="Number of Claims" value={filing.numberOfClaims} />
+                      <DetailItem label="Number of Drawings" value={filing.numberOfDrawings} />
+                      {filing.claimsPriority && filing.priorityDate && (
+                        <>
+                          <DetailItem label="Priority Date" value={formatDate(filing.priorityDate)} />
+                          <DetailItem label="Priority Number" value={filing.priorityNumber} />
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Documents */}
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-4 border-b-2 border-orange-400 pb-2">
+                      📎 Documents
+                    </h3>
+                    <div className="space-y-2">
+                      {filing.descriptionFileUrl && (
+                        <DocumentLink label="Description" url={filing.descriptionFileUrl} />
+                      )}
+                      {filing.claimsFileUrl && (
+                        <DocumentLink label="Claims" url={filing.claimsFileUrl} />
+                      )}
+                      {filing.abstractFileUrl && (
+                        <DocumentLink label="Abstract" url={filing.abstractFileUrl} />
+                      )}
+                      {filing.drawingsFileUrl && (
+                        <DocumentLink label="Drawings" url={filing.drawingsFileUrl} />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Payment Details */}
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-4 border-b-2 border-yellow-400 pb-2">
+                      💳 Payment Information
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <DetailItem label="Amount" value={`₹${filing.paymentAmount} ${filing.paymentCurrency}`} />
+                      <DetailItem label="Payment ID" value={filing.paymentId} />
+                      <DetailItem label="Status" value={filing.paymentStatus} />
+                      <DetailItem label="Payment Time" value={formatDateTime(filing.paymentTimestamp)} />
+                      {filing.paymentOrderId && (
+                        <DetailItem label="Order ID" value={filing.paymentOrderId} />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Filing Status */}
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-4 border-b-2 border-pink-400 pb-2">
+                      📊 Filing Status
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <DetailItem label="Status" value={filing.status} />
+                      <DetailItem label="Filing Date" value={formatDateTime(filing.filingDate)} />
+                      <DetailItem label="Created At" value={formatDateTime(filing.createdAt)} />
+                      <DetailItem label="Updated At" value={formatDateTime(filing.updatedAt)} />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
       )}
 
-      {/* Details Modal */}
-      {showDetails && selectedFiling && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowDetails(false)}>
-          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 flex items-center justify-between rounded-t-xl">
-              <h2 className="text-2xl font-bold">Patent Filing Details</h2>
-              <button
-                onClick={() => setShowDetails(false)}
-                className="p-2 hover:bg-white/20 rounded-lg transition"
-              >
-                <X size={24} />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-6">
-              {/* Progress Tracker */}
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-4 border-b-2 border-green-400 pb-2">
-                  📊 Application Progress Tracker
-                </h3>
-                <PatentProgressTracker filing={selectedFiling} />
-              </div>
-
-              {/* Applicant Information */}
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-4 border-b-2 border-blue-400 pb-2">
-                  👤 Applicant Information
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <DetailItem label="Name" value={selectedFiling.applicantName} />
-                  <DetailItem label="Email" value={selectedFiling.applicantEmail} />
-                  <DetailItem label="Phone" value={selectedFiling.applicantPhone} />
-                  <DetailItem label="Type" value={selectedFiling.applicantType} />
-                  {selectedFiling.organizationName && (
-                    <DetailItem label="Organization" value={selectedFiling.organizationName} />
-                  )}
-                  {selectedFiling.dateOfBirth && (
-                    <DetailItem label="Date of Birth" value={formatDate(selectedFiling.dateOfBirth)} />
-                  )}
-                  {selectedFiling.age && (
-                    <DetailItem label="Age" value={selectedFiling.age} />
-                  )}
-                  {selectedFiling.gender && (
-                    <DetailItem label="Gender" value={selectedFiling.gender} />
-                  )}
-                  {selectedFiling.occupation && (
-                    <DetailItem label="Occupation" value={selectedFiling.occupation} />
-                  )}
-                  {selectedFiling.designation && (
-                    <DetailItem label="Designation" value={selectedFiling.designation} />
-                  )}
-                  {selectedFiling.educationalQualification && (
-                    <DetailItem label="Education" value={selectedFiling.educationalQualification} />
-                  )}
-                  <DetailItem label="Application Date" value={formatDate(selectedFiling.applicationDate)} />
-                </div>
-                
-                <div className="mt-4">
-                  <span className="font-bold text-gray-800">Address:</span>
-                  <p className="text-gray-700 mt-1">
-                    {selectedFiling.applicantAddress}, {selectedFiling.applicantCity}, {selectedFiling.applicantState} - {selectedFiling.applicantPincode}, {selectedFiling.applicantCountry}
-                  </p>
-                </div>
-
-                {/* Government ID Details */}
-                {selectedFiling.govtIdType && (
-                  <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <h4 className="font-bold text-gray-900 mb-2">Government ID Details</h4>
-                    <DetailItem label="ID Type" value={selectedFiling.govtIdType} />
-                    <DetailItem label="ID Number" value={selectedFiling.govtIdNumber} />
-                    {selectedFiling.aadhaarNumber && (
-                      <DetailItem label="Aadhaar Number" value={selectedFiling.aadhaarNumber} />
-                    )}
-                    {selectedFiling.panNumber && (
-                      <DetailItem label="PAN Number" value={selectedFiling.panNumber} />
-                    )}
-                    {selectedFiling.passportCountry && (
-                      <DetailItem label="Passport Country" value={selectedFiling.passportCountry} />
-                    )}
-                    {selectedFiling.drivingLicenseState && (
-                      <DetailItem label="DL State" value={selectedFiling.drivingLicenseState} />
-                    )}
-                  </div>
-                )}
-
-                {/* Additional Contact */}
-                {(selectedFiling.alternatePhone || selectedFiling.alternateEmail || selectedFiling.gstin) && (
-                  <div className="mt-4">
-                    <h4 className="font-bold text-gray-900 mb-2">Additional Contact</h4>
-                    {selectedFiling.alternatePhone && (
-                      <DetailItem label="Alternate Phone" value={selectedFiling.alternatePhone} />
-                    )}
-                    {selectedFiling.alternateEmail && (
-                      <DetailItem label="Alternate Email" value={selectedFiling.alternateEmail} />
-                    )}
-                    {selectedFiling.gstin && (
-                      <DetailItem label="GSTIN" value={selectedFiling.gstin} />
-                    )}
-                  </div>
-                )}
-
-                {/* Correspondence Address */}
-                {selectedFiling.correspondenceAddress && !selectedFiling.sameAsApplicantAddress && (
-                  <div className="mt-4">
-                    <span className="font-bold text-gray-800">Correspondence Address:</span>
-                    <p className="text-gray-700 mt-1">
-                      {selectedFiling.correspondenceAddress}, {selectedFiling.correspondenceCity}, {selectedFiling.correspondenceState} - {selectedFiling.correspondencePincode}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Invention Details */}
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-4 border-b-2 border-purple-400 pb-2">
-                  💡 Invention Details
-                </h3>
-                <DetailItem label="Title" value={selectedFiling.inventionTitle} />
-                <DetailItem label="Field" value={selectedFiling.inventionField} />
-                {selectedFiling.targetIndustry && (
-                  <DetailItem label="Target Industry" value={selectedFiling.targetIndustry} />
-                )}
-                <div className="mt-4">
-                  <span className="font-bold text-gray-800">Description:</span>
-                  <p className="text-gray-700 mt-1 whitespace-pre-wrap">{selectedFiling.inventionDescription}</p>
-                </div>
-                {selectedFiling.keywords && (
-                  <div className="mt-4">
-                    <span className="font-bold text-gray-800">Keywords:</span>
-                    <p className="text-gray-700 mt-1">{selectedFiling.keywords}</p>
-                  </div>
-                )}
-                {selectedFiling.technicalProblem && (
-                  <div className="mt-4">
-                    <span className="font-bold text-gray-800">Technical Problem:</span>
-                    <p className="text-gray-700 mt-1 whitespace-pre-wrap">{selectedFiling.technicalProblem}</p>
-                  </div>
-                )}
-                {selectedFiling.proposedSolution && (
-                  <div className="mt-4">
-                    <span className="font-bold text-gray-800">Proposed Solution:</span>
-                    <p className="text-gray-700 mt-1 whitespace-pre-wrap">{selectedFiling.proposedSolution}</p>
-                  </div>
-                )}
-                {selectedFiling.advantages && (
-                  <div className="mt-4">
-                    <span className="font-bold text-gray-800">Advantages:</span>
-                    <p className="text-gray-700 mt-1 whitespace-pre-wrap">{selectedFiling.advantages}</p>
-                  </div>
-                )}
-                {selectedFiling.commercialApplication && (
-                  <div className="mt-4">
-                    <span className="font-bold text-gray-800">Commercial Application:</span>
-                    <p className="text-gray-700 mt-1 whitespace-pre-wrap">{selectedFiling.commercialApplication}</p>
-                  </div>
-                )}
-                {selectedFiling.priorArt && (
-                  <div className="mt-4">
-                    <span className="font-bold text-gray-800">Prior Art:</span>
-                    <p className="text-gray-700 mt-1 whitespace-pre-wrap">{selectedFiling.priorArt}</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Patent Details */}
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-4 border-b-2 border-green-400 pb-2">
-                  📋 Patent Specifications
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <DetailItem label="Patent Type" value={selectedFiling.patentType} />
-                  <DetailItem label="Filing Type" value={selectedFiling.filingType} />
-                  <DetailItem label="Number of Claims" value={selectedFiling.numberOfClaims} />
-                  <DetailItem label="Number of Drawings" value={selectedFiling.numberOfDrawings} />
-                  {selectedFiling.claimsPriority && selectedFiling.priorityDate && (
-                    <>
-                      <DetailItem label="Priority Date" value={formatDate(selectedFiling.priorityDate)} />
-                      <DetailItem label="Priority Number" value={selectedFiling.priorityNumber} />
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Documents */}
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-4 border-b-2 border-orange-400 pb-2">
-                  📎 Documents
-                </h3>
-                <div className="space-y-2">
-                  {selectedFiling.descriptionFileUrl && (
-                    <DocumentLink label="Description" url={selectedFiling.descriptionFileUrl} />
-                  )}
-                  {selectedFiling.claimsFileUrl && (
-                    <DocumentLink label="Claims" url={selectedFiling.claimsFileUrl} />
-                  )}
-                  {selectedFiling.abstractFileUrl && (
-                    <DocumentLink label="Abstract" url={selectedFiling.abstractFileUrl} />
-                  )}
-                  {selectedFiling.drawingsFileUrl && (
-                    <DocumentLink label="Drawings" url={selectedFiling.drawingsFileUrl} />
-                  )}
-                </div>
-              </div>
-
-              {/* Payment Details */}
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-4 border-b-2 border-yellow-400 pb-2">
-                  💳 Payment Information
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <DetailItem label="Amount" value={`₹${selectedFiling.paymentAmount} ${selectedFiling.paymentCurrency}`} />
-                  <DetailItem label="Payment ID" value={selectedFiling.paymentId} />
-                  <DetailItem label="Status" value={selectedFiling.paymentStatus} />
-                  <DetailItem label="Payment Time" value={formatDateTime(selectedFiling.paymentTimestamp)} />
-                  {selectedFiling.paymentOrderId && (
-                    <DetailItem label="Order ID" value={selectedFiling.paymentOrderId} />
-                  )}
-                </div>
-              </div>
-
-              {/* Filing Status */}
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-4 border-b-2 border-pink-400 pb-2">
-                  📊 Filing Status
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <DetailItem label="Status" value={selectedFiling.status} />
-                  <DetailItem label="Filing Date" value={formatDateTime(selectedFiling.filingDate)} />
-                  <DetailItem label="Created At" value={formatDateTime(selectedFiling.createdAt)} />
-                  <DetailItem label="Updated At" value={formatDateTime(selectedFiling.updatedAt)} />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <style>{`
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            max-height: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            max-height: 5000px;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 };
