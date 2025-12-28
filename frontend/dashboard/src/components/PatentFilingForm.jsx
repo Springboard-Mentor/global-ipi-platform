@@ -680,62 +680,86 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
-      {/* Warning Popup */}
+      {/* Warning Toast */}
       {showWarning && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border-4 border-yellow-400">
-            <div className="bg-gradient-to-r from-yellow-400 to-orange-400 p-5 rounded-t-xl">
-              <h3 className="text-2xl font-bold text-white flex items-center">
-                <AlertCircle size={28} className="mr-3" />
-                Important Notice
-              </h3>
-            </div>
-            <div className="p-6">
-              <div className="space-y-4">
-                <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded">
-                  <p className="text-gray-800 font-bold text-lg mb-2">
-                    ⚠️ Single-Session Form Submission
-                  </p>
-                  <p className="text-gray-700 leading-relaxed">
-                    This patent filing form must be completed in <strong>one continuous session</strong>.
-                  </p>
-                </div>
-
-                <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
-                  <p className="text-red-800 font-bold mb-2">
-                    ❌ No Auto-Save Feature
-                  </p>
-                  <ul className="text-gray-700 space-y-2 list-disc list-inside">
-                    <li>Your data will <strong>NOT be saved</strong> if you leave this form</li>
-                    <li>Closing the form will <strong>delete all entered information</strong></li>
-                    <li>You will need to <strong>start over from the beginning</strong></li>
-                  </ul>
-                </div>
-
-                <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded">
-                  <p className="text-green-800 font-bold mb-2">
-                    ✅ How to Proceed
-                  </p>
-                  <ul className="text-gray-700 space-y-2 list-disc list-inside">
-                    <li>Keep all required documents ready before starting</li>
-                    <li>Complete all 5 steps without interruption</li>
-                    <li>Only submit when you've filled everything</li>
-                  </ul>
-                </div>
-
-                <p className="text-sm text-gray-600 text-center italic mt-4">
-                  Please ensure you have enough time to complete the entire form before proceeding.
-                </p>
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-[100] px-4 w-full max-w-xl pointer-events-none">
+          <div className="relative group pointer-events-auto">
+            {/* Rotating Border Effect */}
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 rounded-xl opacity-75 group-hover:opacity-100 blur-sm group-hover:blur transition-all duration-500 animate-spin-slow"></div>
+            
+            {/* Main Content Card */}
+            <div className="relative bg-white/95 backdrop-blur-xl rounded-xl shadow-2xl border border-white/50 overflow-hidden transform transition-all duration-300 hover:scale-[1.01]">
+              <div className="bg-gradient-to-r from-yellow-400 to-orange-500 p-3 rounded-t-xl">
+                <h3 className="text-base font-bold text-white flex items-center">
+                  <AlertCircle size={18} className="mr-2 animate-pulse" />
+                  Important Notice
+                </h3>
               </div>
+              <div className="p-4 max-h-[550px] overflow-y-auto scrollbar-thin scrollbar-thumb-purple-400 scrollbar-track-purple-100">
+                <div className="space-y-2.5">
+                  <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border-l-4 border-yellow-500 p-2.5 rounded-lg shadow-sm">
+                    <p className="text-gray-800 font-bold text-sm mb-1 flex items-center gap-1.5">
+                      <span className="text-base">⚠️</span> Single-Session Form Submission
+                    </p>
+                    <p className="text-gray-700 text-xs leading-relaxed">
+                      This patent filing form must be completed in <strong className="text-orange-700">one continuous session</strong>.
+                    </p>
+                  </div>
 
-              <div className="mt-6 flex justify-center">
-                <button
-                  onClick={() => setShowWarning(false)}
-                  className="px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:shadow-lg hover:scale-105 transition-all flex items-center gap-2"
-                >
-                  <CheckCircle2 size={20} />
-                  I Understand, Let's Proceed
-                </button>
+                  <div className="bg-gradient-to-r from-red-50 to-pink-50 border-l-4 border-red-500 p-2.5 rounded-lg shadow-sm">
+                    <p className="text-red-800 font-bold mb-1.5 text-sm flex items-center gap-1.5">
+                      <span className="text-base">❌</span> No Auto-Save Feature
+                    </p>
+                    <ul className="text-gray-700 space-y-1 text-xs">
+                      <li className="flex items-start gap-1.5">
+                        <span className="text-red-500 mt-0.5 text-xs">•</span>
+                        <span>Your data will <strong className="text-red-700">NOT be saved</strong> if you leave this form</span>
+                      </li>
+                      <li className="flex items-start gap-1.5">
+                        <span className="text-red-500 mt-0.5 text-xs">•</span>
+                        <span>Closing the form will <strong className="text-red-700">delete all entered information</strong></span>
+                      </li>
+                      <li className="flex items-start gap-1.5">
+                        <span className="text-red-500 mt-0.5 text-xs">•</span>
+                        <span>You will need to <strong className="text-red-700">start over from the beginning</strong></span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500 p-2.5 rounded-lg shadow-sm">
+                    <p className="text-green-800 font-bold mb-1.5 text-sm flex items-center gap-1.5">
+                      <span className="text-base">✅</span> How to Proceed
+                    </p>
+                    <ul className="text-gray-700 space-y-1 text-xs">
+                      <li className="flex items-start gap-1.5">
+                        <span className="text-green-500 mt-0.5 text-xs">•</span>
+                        <span>Keep all required documents ready before starting</span>
+                      </li>
+                      <li className="flex items-start gap-1.5">
+                        <span className="text-green-500 mt-0.5 text-xs">•</span>
+                        <span>Complete all 5 steps without interruption</span>
+                      </li>
+                      <li className="flex items-start gap-1.5">
+                        <span className="text-green-500 mt-0.5 text-xs">•</span>
+                        <span>Only submit when you've filled everything</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <p className="text-[10px] text-gray-600 text-center italic bg-blue-50/50 p-2 rounded-lg border border-blue-200">
+                    Please ensure you have enough time to complete the entire form before proceeding.
+                  </p>
+                </div>
+
+                <div className="mt-4 flex justify-center">
+                  <button
+                    onClick={() => setShowWarning(false)}
+                    className="px-5 py-2 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white font-bold rounded-lg hover:shadow-xl hover:scale-105 transition-all duration-300 flex items-center gap-2 shadow-lg text-xs"
+                  >
+                    <CheckCircle2 size={16} />
+                    I Understand, Let's Proceed
+                  </button>
+                </div>
               </div>
             </div>
           </div>

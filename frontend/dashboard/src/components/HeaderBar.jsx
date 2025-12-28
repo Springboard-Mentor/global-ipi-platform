@@ -131,33 +131,30 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
   const subscriptionDetails = getSubscriptionDetails();
   
   return (
-    <div className="bg-gradient-to-r from-teal-600 via-blue-600 to-indigo-700 border-b border-teal-500/30 px-3 sm:px-6 py-3 sm:py-4 shadow-lg">
-      <div className="flex items-center gap-2 sm:gap-3 justify-between">
+    <div className="bg-gradient-to-r from-teal-600 via-blue-600 to-indigo-700 border-b border-teal-500/30 px-2 sm:px-4 md:px-6 py-2 sm:py-3 shadow-lg">
+      <div className="flex items-center gap-1 sm:gap-2 md:gap-3 justify-between">
 
         {/* Left Section - Menu, Logo, Subscription */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+        <div className="flex items-center gap-1 sm:gap-2 md:gap-3 flex-shrink-0">
           <button 
             onClick={onMenuClick}
-            className={`p-2 hover:bg-white/20 rounded-xl transition ${sidebarOpen ? 'invisible' : ''}`}
+            className={`p-1.5 sm:p-2 hover:bg-white/20 rounded-xl transition ${sidebarOpen ? 'invisible' : ''}`}
           >
-            <Menu size={24} className="text-white" />
+            <Menu size={20} className="sm:w-6 sm:h-6 text-white" />
           </button>
 
           {/* App Logo and Branding */}
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
-            <Shield className="text-yellow-300" size={20} />
-            <span className="text-white font-bold text-sm sm:text-base hidden sm:inline whitespace-nowrap">
-              Global IP Platform
-            </span>
-            <span className="text-white font-bold text-xs sm:hidden">
+          <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
+            <Shield className="text-yellow-300" size={16} />
+            <span className="text-white font-bold text-xs sm:text-sm md:text-base whitespace-nowrap">
               GIP
             </span>
           </div>
 
           {/* Subscription Badge with Hover Details - Hidden on small/medium screens */}
           {subscriptionDetails ? (
-            <div className="relative group hidden md:block">
-              <div className="flex items-center gap-2 px-3 md:px-4 lg:px-5 py-2 rounded-xl bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 text-white shadow-lg cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 min-w-[120px] md:min-w-[140px] lg:min-w-[180px]">
+            <div className="relative group hidden lg:block">
+              <div className="flex items-center gap-2 px-3 lg:px-4 xl:px-5 py-2 rounded-xl bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 text-white shadow-lg cursor-pointer hover:shadow-xl transition-all duration-300 hover:scale-105 min-w-[140px] xl:min-w-[180px]">
                 <Crown size={18} className="animate-pulse" />
                 <div className="flex flex-col">
                   <span className="text-xs font-bold uppercase leading-tight">
@@ -227,14 +224,14 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
               </div>
             </div>
           ) : (
-            <div className="hidden md:flex items-center gap-2 px-3 md:px-4 lg:px-5 py-2 rounded-xl bg-gradient-to-r from-gray-400 to-gray-600 text-white shadow-lg min-w-[100px] md:min-w-[120px] lg:min-w-[150px]">
+            <div className="hidden lg:flex items-center gap-2 px-3 lg:px-4 xl:px-5 py-2 rounded-xl bg-gradient-to-r from-gray-400 to-gray-600 text-white shadow-lg min-w-[120px] xl:min-w-[150px]">
               <Zap size={16} />
               <span className="text-xs font-bold uppercase">BASIC</span>
             </div>
           )}
 
-          {/* Date and Time Display - Hidden on all smaller screens */}
-          <div className="hidden xl:flex flex-col items-start bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-white/20">
+          {/* Date and Time Display - Hidden on smaller screens */}
+          <div className="hidden 2xl:flex flex-col items-start bg-white/10 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-white/20">
             <div className="flex items-center gap-2 text-sm font-medium text-white">
               <Calendar size={16} className="text-yellow-300" />
               <span>{date}</span>
@@ -247,19 +244,19 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
         </div>
         
         {/* Center Section - Search Bar */}
-        <form onSubmit={handleSearch} className="flex-1 max-w-xs sm:max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl mx-2 sm:mx-3">
+        <form onSubmit={handleSearch} className="flex-1 max-w-[180px] sm:max-w-xs md:max-w-md lg:max-w-lg xl:max-w-xl 2xl:max-w-2xl mx-1 sm:mx-2 md:mx-3">
           <div className="relative">
-            <Search className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 text-blue-600 z-10" size={18} />
+            <Search className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 text-blue-600 z-10" size={16} />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search patents..."
-              className="w-full pl-8 sm:pl-10 pr-12 sm:pr-16 md:pr-20 py-2 sm:py-2.5 text-xs sm:text-sm text-gray-800 bg-white/95 backdrop-blur-sm border-2 border-white/40 rounded-xl focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 shadow-lg placeholder-gray-500"
+              placeholder="Search..."
+              className="w-full pl-7 sm:pl-10 pr-10 sm:pr-16 md:pr-20 py-1.5 sm:py-2 md:py-2.5 text-xs sm:text-sm text-gray-800 bg-white/95 backdrop-blur-sm border-2 border-white/40 rounded-xl focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 shadow-lg placeholder-gray-500"
             />
             <button
               type="submit"
-              className="absolute right-1 sm:right-2 top-1/2 -translate-y-1/2 px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs sm:text-sm rounded-lg hover:shadow-xl transition-all duration-300 font-bold hover:scale-105"
+              className="absolute right-1 top-1/2 -translate-y-1/2 px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs sm:text-sm rounded-lg hover:shadow-xl transition-all duration-300 font-bold hover:scale-105"
             >
               <span className="hidden sm:inline">Search</span>
               <Search className="sm:hidden" size={14} />
@@ -269,13 +266,9 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
 
         {/* Right Section - Date/Time, Notifications, Profile */}
         <div className="flex items-center gap-1 sm:gap-2 md:gap-3 flex-shrink-0">
-          {/* Date/Time Mobile View - Hidden on very small screens */}
-          <div className="hidden sm:flex xl:hidden flex-col items-end bg-white/10 px-2 py-1 rounded-lg">
+          {/* Date/Time Mobile View - Only on medium to xl screens */}
+          <div className="hidden md:flex 2xl:hidden flex-col items-end bg-white/10 px-2 py-1 rounded-lg">
             <div className="flex items-center gap-1 text-xs font-medium text-white">
-              <Calendar size={12} className="text-yellow-300" />
-              <span className="hidden md:inline">{date.split(',')[0]}</span>
-            </div>
-            <div className="flex items-center gap-1 text-xs text-white/90">
               <Clock size={12} className="text-yellow-300" />
               <span>{time}</span>
             </div>
@@ -288,13 +281,13 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
             >
               <Bell size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
               {notifications.length > 0 && (
-                <span className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 w-2 h-2 bg-yellow-400 rounded-full animate-pulse shadow-lg"></span>
+                <span className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 w-2 h-2 bg-yellow-400 rounded-full animate-pulse shadow-lg"></span>
               )}
             </button>
 
             {/* Notification Dropdown */}
             {showNotifications && (
-              <div className="absolute right-0 top-full mt-2 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 max-h-96 overflow-y-auto">
+              <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 max-h-96 overflow-y-auto">
                 <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-3 rounded-t-xl flex items-center justify-between">
                   <h3 className="font-bold">Notifications</h3>
                   <button 
@@ -361,17 +354,17 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
             )}
           </div>
 
-          <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
-            <div className="text-right hidden sm:block">
-              <div className="text-xs sm:text-sm font-bold text-white drop-shadow-md truncate max-w-[120px] sm:max-w-[150px] md:max-w-[200px]">
+          <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2">
+            <div className="text-right hidden md:block">
+              <div className="text-xs md:text-sm font-bold text-white drop-shadow-md truncate max-w-[100px] lg:max-w-[150px] xl:max-w-[200px]">
                 {userProfile.firstName} {userProfile.lastName}
               </div>
-              <div className="text-[10px] sm:text-xs text-white/90 drop-shadow-sm truncate max-w-[120px] sm:max-w-[150px] md:max-w-[200px]">{userProfile.email}</div>
+              <div className="text-[10px] md:text-xs text-white/90 drop-shadow-sm truncate max-w-[100px] lg:max-w-[150px] xl:max-w-[200px]">{userProfile.email}</div>
             </div>
             
             <button 
               onClick={onProfileClick}
-              className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center overflow-hidden shadow-lg ring-2 ring-white/30 hover:ring-white/50 transition flex-shrink-0"
+              className="w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 lg:w-10 lg:h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center overflow-hidden shadow-lg ring-2 ring-white/30 hover:ring-white/50 transition flex-shrink-0"
               title={`${userProfile.firstName} ${userProfile.lastName}`}
             >
               {userProfile.photoURL ? (
@@ -381,7 +374,7 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <span className="text-white text-xs sm:text-sm font-bold drop-shadow-md">
+                <span className="text-white text-[10px] sm:text-xs md:text-sm font-bold drop-shadow-md">
                   {userProfile.firstName.charAt(0)}{userProfile.lastName.charAt(0)}
                 </span>
               )}
