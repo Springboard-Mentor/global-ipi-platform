@@ -63,3 +63,42 @@ mvnw.cmd
 # Markdown documentation files
 *.md
 
+# SQL Files - Database scripts and schemas
+*.sql
+**/*.sql
+
+# Firebase Configuration Files (contain API keys)
+**/firebase.js
+!**/firebase.js.template
+
+# Environment Files (contain API keys and secrets)
+.env*
+!.env.template
+!.env.example
+
+# API Keys and Credentials
+**/apiKeys.js
+**/credentials.json
+**/serviceAccountKey.json
+**/*-credentials.*
+**/*-apikey.*
+**/*-key.json
+
+# Password and Secret Files
+**/passwords.txt
+**/secrets.txt
+**/.secrets/
+**/*password*
+!**/package.json
+!**/package-lock.json
+
+# Spring Boot Application Properties (may contain DB passwords)
+**/application.properties
+**/application.yml
+!**/application.properties.template
+!**/application.yml.template
+
+# Test Credentials (Razorpay, etc.)
+**/*-test-credentials.*
+**/*-credentials.*
+
