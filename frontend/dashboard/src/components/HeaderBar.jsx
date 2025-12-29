@@ -147,7 +147,8 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
           <div className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
             <Shield className="text-yellow-300" size={16} />
             <span className="text-white font-bold text-xs sm:text-sm md:text-base whitespace-nowrap">
-              GIP
+              <span className="lg:hidden">GIP</span>
+              <span className="hidden lg:inline">Global Intellectual Property</span>
             </span>
           </div>
 
