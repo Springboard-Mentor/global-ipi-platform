@@ -131,7 +131,7 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
   const subscriptionDetails = getSubscriptionDetails();
   
   return (
-    <div className="bg-gradient-to-r from-teal-600 via-blue-600 to-indigo-700 border-b border-teal-500/30 px-2 sm:px-4 md:px-6 py-2 sm:py-3 shadow-lg">
+    <div className="bg-gradient-to-r from-teal-600 via-blue-600 to-indigo-700 border-b border-teal-500/30 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 shadow-lg">
       <div className="flex items-center gap-1 sm:gap-2 md:gap-3 justify-between">
 
         {/* Left Section - Menu, Logo, Subscription */}

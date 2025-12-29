@@ -461,7 +461,7 @@ const App = () => {
         />
 
         <div className="flex-1 overflow-auto" onClick={() => sidebarOpen && setSidebarOpen(false)}>
-          <div className="p-4 lg:p-6 w-full">
+          <div className="p-2 lg:p-3 w-full">
 
             {currentPage === 'dashboard' ? (
               <Dashboard 
