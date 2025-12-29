@@ -62,10 +62,28 @@ mvnw.cmd
 
 # Markdown documentation files
 *.md
+# Keep important documentation
+!README.md
+!LICENSE.md
+!CONTRIBUTING.md
+!CHANGELOG.md
+
+# Admin setup and configuration documentation
+**/ADMIN-*.md
+**/EXECUTE-THIS-*.sql
+**/setup-admin-*.ps1
+**/insert-admin-*.sql
+**/verify-admin-*.sql
+**/*-SETUP*.md
+**/*-GUIDE*.md
+**/*-FIX*.md
 
 # SQL Files - Database scripts and schemas
 *.sql
 **/*.sql
+# Keep template/migration SQL files if needed
+!**/migrations/*.sql
+!**/schema/*.sql
 
 # Firebase Configuration Files (contain API keys)
 **/firebase.js
