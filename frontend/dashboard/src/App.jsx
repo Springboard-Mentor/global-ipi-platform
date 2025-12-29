@@ -541,7 +541,12 @@ const App = () => {
                 }} 
               />
             ) : currentPage === 'admin-patents' ? (
-              <AdminPatentManager />
+              <AdminPatentManager 
+                onBack={() => {
+                  setCurrentPage('dashboard');
+                  setActiveItem('dashboard');
+                }}
+              />
             ) : (
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
                 <div className="xl:col-span-2">

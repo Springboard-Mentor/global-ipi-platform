@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, Circle, Mail, RefreshCw, AlertCircle, LogIn, LogOut, User, Shield } from 'lucide-react';
+import { CheckCircle, Circle, Mail, RefreshCw, AlertCircle, LogIn, LogOut, User, Shield, Eye, EyeOff, X, ArrowLeft } from 'lucide-react';
 
-const AdminPatentManager = () => {
+const AdminPatentManager = ({ onBack }) => {
   const [patents, setPatents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -17,6 +17,7 @@ const AdminPatentManager = () => {
   const [adminData, setAdminData] = useState(null);
   const [showAdminTable, setShowAdminTable] = useState(false);
   const [allAdmins, setAllAdmins] = useState([]);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -346,8 +347,30 @@ const AdminPatentManager = () => {
 
             {/* Right Side - Login Form */}
             <div className="w-full">
-              <div className="bg-white rounded-2xl shadow-2xl p-8 md:p-10">
-                <div className="md:hidden flex items-center justify-center mb-6">
+              <div className="relative bg-white/70 backdrop-blur-xl rounded-3xl shadow-[0_8px_32px_0_rgba(31,38,135,0.37)] border border-white/20 overflow-hidden" style={{
+                background: 'rgba(255, 255, 255, 0.85)',
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
+                boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37), 0 0 1px rgba(31, 38, 135, 0.1)',
+              }}>
+                {/* Top Strip with Back to Dashboard Button */}
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 flex items-center justify-between border-b border-blue-700">
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-white" />
+                    <span className="text-white font-semibold">Admin Login</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={onBack || (() => window.history.back())}
+                    className="flex items-center gap-2 px-4 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all backdrop-blur-sm border border-white/30 text-sm font-medium"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back to Dashboard
+                  </button>
+                </div>
+
+                <div className="p-8 md:p-10">
+                  <div className="md:hidden flex items-center justify-center mb-6">
                   <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-3 rounded-xl">
                     <Shield className="w-10 h-10 text-white" />
                   </div>
@@ -356,7 +379,7 @@ const AdminPatentManager = () => {
                 <h2 className="text-3xl font-bold text-center text-gray-900 mb-2">
                   Welcome Back
                 </h2>
-                <p className="text-center text-gray-600 mb-8">
+                <p className="text-center text-gray-700 mb-8 font-medium">
                   Sign in to access the admin dashboard
                 </p>
                 
@@ -372,7 +395,7 @@ const AdminPatentManager = () => {
 
                 <form onSubmit={handleAdminLogin} className="space-y-5">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label className="block text-sm font-bold text-gray-900 mb-2">
                       Admin ID <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
@@ -380,7 +403,7 @@ const AdminPatentManager = () => {
                         type="text"
                         value={loginAdminId}
                         onChange={(e) => setLoginAdminId(e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        className="w-full px-4 py-3 bg-white/60 backdrop-blur-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900 font-medium placeholder:text-gray-500 shadow-sm"
                         placeholder="Enter your admin ID"
                         required
                       />
@@ -388,7 +411,7 @@ const AdminPatentManager = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label className="block text-sm font-bold text-gray-900 mb-2">
                       Admin Name <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
@@ -396,7 +419,7 @@ const AdminPatentManager = () => {
                         type="text"
                         value={loginAdminName}
                         onChange={(e) => setLoginAdminName(e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        className="w-full px-4 py-3 bg-white/60 backdrop-blur-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900 font-medium placeholder:text-gray-500 shadow-sm"
                         placeholder="Enter your full name"
                         required
                       />
@@ -404,7 +427,7 @@ const AdminPatentManager = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label className="block text-sm font-bold text-gray-900 mb-2">
                       Email Address <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
@@ -412,7 +435,7 @@ const AdminPatentManager = () => {
                         type="email"
                         value={loginEmail}
                         onChange={(e) => setLoginEmail(e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        className="w-full px-4 py-3 bg-white/60 backdrop-blur-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900 font-medium placeholder:text-gray-500 shadow-sm"
                         placeholder="admin@example.com"
                         required
                       />
@@ -420,24 +443,36 @@ const AdminPatentManager = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label className="block text-sm font-bold text-gray-900 mb-2">
                       Password <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
                       <input
-                        type="password"
+                        type={showPassword ? "text" : "password"}
                         value={loginPassword}
                         onChange={(e) => setLoginPassword(e.target.value)}
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                        className="w-full px-4 py-3 pr-12 bg-white/60 backdrop-blur-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900 font-medium placeholder:text-gray-500 shadow-sm"
                         placeholder="Enter your password"
                         required
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900 focus:outline-none transition-colors"
+                        tabIndex={-1}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="w-5 h-5" />
+                        ) : (
+                          <Eye className="w-5 h-5" />
+                        )}
+                      </button>
                     </div>
                   </div>
 
                   <button
                     type="submit"
-                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl hover:from-blue-700 hover:to-indigo-700 font-bold text-lg flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5"
+                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl hover:from-blue-700 hover:to-indigo-700 font-bold text-lg flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 border border-blue-700"
                   >
                     <LogIn className="w-5 h-5" />
                     Login to Admin Panel
@@ -445,10 +480,11 @@ const AdminPatentManager = () => {
                 </form>
 
                 <div className="mt-6 text-center">
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-700 font-medium">
                     <Shield className="w-4 h-4 inline mr-1" />
                     Secure admin access • All activities are logged
                   </p>
+                </div>
                 </div>
               </div>
             </div>
