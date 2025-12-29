@@ -343,4 +343,187 @@ public class EmailService {
         }
         return stars.toString();
     }
+    
+    /**
+     * Send patent granted notification email to applicant
+     */
+    public void sendPatentGrantedEmail(String applicantEmail, String applicantName, String inventionTitle, Long filingId) throws MessagingException {
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+        
+        helper.setFrom(fromEmail);
+        helper.setTo(applicantEmail);
+        helper.setSubject("🎉 Congratulations! Your Patent Has Been Granted - " + inventionTitle);
+        
+        String htmlContent = buildPatentGrantedEmail(applicantName, inventionTitle, filingId);
+        helper.setText(htmlContent, true);
+        
+        mailSender.send(message);
+        log.info("Patent granted email sent to: {} for patent: {}", applicantEmail, inventionTitle);
+    }
+    
+    private String buildPatentGrantedEmail(String applicantName, String inventionTitle, Long filingId) {
+        return """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { 
+                        background: linear-gradient(135deg, #10b981 0%%, #059669 100%%); 
+                        color: white; 
+                        padding: 40px; 
+                        text-align: center; 
+                        border-radius: 10px 10px 0 0; 
+                    }
+                    .celebration { font-size: 48px; margin-bottom: 10px; }
+                    .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+                    .success-box { 
+                        background: linear-gradient(135deg, #d1fae5 0%%, #a7f3d0 100%%); 
+                        padding: 25px; 
+                        margin: 20px 0; 
+                        border-left: 4px solid #10b981; 
+                        border-radius: 5px; 
+                    }
+                    .info-box { 
+                        background: white; 
+                        padding: 20px; 
+                        margin: 20px 0; 
+                        border-radius: 5px; 
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    }
+                    .info-row { 
+                        padding: 10px 0; 
+                        border-bottom: 1px solid #e5e7eb; 
+                    }
+                    .info-row:last-child { border-bottom: none; }
+                    .label { font-weight: bold; color: #059669; }
+                    .stages-box { 
+                        background: white; 
+                        padding: 20px; 
+                        margin: 20px 0; 
+                        border-radius: 5px; 
+                    }
+                    .stage { 
+                        display: flex; 
+                        align-items: center; 
+                        padding: 10px; 
+                        margin: 5px 0; 
+                        background: #f0fdf4; 
+                        border-radius: 5px; 
+                    }
+                    .stage-icon { 
+                        color: #10b981; 
+                        margin-right: 10px; 
+                        font-size: 20px; 
+                    }
+                    .footer { 
+                        text-align: center; 
+                        margin-top: 30px; 
+                        color: #666; 
+                        font-size: 12px; 
+                        padding-top: 20px;
+                        border-top: 1px solid #e5e7eb;
+                    }
+                    .cta-button {
+                        display: inline-block;
+                        background: linear-gradient(135deg, #10b981 0%%, #059669 100%%);
+                        color: white;
+                        padding: 15px 30px;
+                        text-decoration: none;
+                        border-radius: 5px;
+                        margin: 20px 0;
+                        font-weight: bold;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <div class="celebration">🎉 🏆 🎊</div>
+                        <h1>Congratulations!</h1>
+                        <h2>Your Patent Has Been Granted!</h2>
+                    </div>
+                    <div class="content">
+                        <p>Dear <strong>%s</strong>,</p>
+                        
+                        <div class="success-box">
+                            <h3 style="margin-top: 0; color: #059669;">🎯 PATENT GRANTED SUCCESSFULLY!</h3>
+                            <p style="margin-bottom: 0;">
+                                We are thrilled to inform you that your patent application has successfully completed 
+                                all stages and has been <strong>GRANTED</strong>!
+                            </p>
+                        </div>
+                        
+                        <div class="info-box">
+                            <h3 style="margin-top: 0; color: #059669;">Patent Details:</h3>
+                            <div class="info-row">
+                                <span class="label">Invention Title:</span><br>
+                                <strong>%s</strong>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Filing ID:</span> #%d
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Status:</span> <span style="color: #10b981; font-weight: bold;">✅ GRANTED</span>
+                            </div>
+                        </div>
+                        
+                        <div class="stages-box">
+                            <h3 style="margin-top: 0; color: #059669;">✅ All Stages Completed:</h3>
+                            <div class="stage">
+                                <span class="stage-icon">✅</span>
+                                <span><strong>Stage 1:</strong> Filed - Application submitted successfully</span>
+                            </div>
+                            <div class="stage">
+                                <span class="stage-icon">✅</span>
+                                <span><strong>Stage 2:</strong> Admin Review - Verified and approved</span>
+                            </div>
+                            <div class="stage">
+                                <span class="stage-icon">✅</span>
+                                <span><strong>Stage 3:</strong> Technical Examination - Passed technical review</span>
+                            </div>
+                            <div class="stage">
+                                <span class="stage-icon">✅</span>
+                                <span><strong>Stage 4:</strong> Verification - All verifications completed</span>
+                            </div>
+                            <div class="stage">
+                                <span class="stage-icon">🏆</span>
+                                <span><strong>Stage 5:</strong> Granted - Patent officially granted!</span>
+                            </div>
+                        </div>
+                        
+                        <p>
+                            <strong>What's Next?</strong><br>
+                            Your patent is now officially granted! You can now protect your intellectual property 
+                            and leverage it for commercial purposes. Official documentation will be sent to you shortly.
+                        </p>
+                        
+                        <p style="text-align: center;">
+                            <a href="http://localhost:5173" class="cta-button">
+                                View Your Patent Details
+                            </a>
+                        </p>
+                        
+                        <p>
+                            If you have any questions or need assistance, please don't hesitate to contact our support team.
+                        </p>
+                        
+                        <p>
+                            Congratulations once again on this significant achievement!
+                        </p>
+                        
+                        <p>Best regards,<br>
+                        <strong>Global Intellectual Property Platform Team</strong></p>
+                    </div>
+                    <div class="footer">
+                        <p>This is an automated notification email from the Global IPI Platform.</p>
+                        <p>© 2025 Global Intellectual Property Platform. All rights reserved.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """.formatted(applicantName, inventionTitle, filingId);
+    }
 }

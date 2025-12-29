@@ -13,6 +13,7 @@ import {
   MessageSquare,
   Mail,
   FileCheck,
+  Shield,
 } from "lucide-react";
 import UpgradeModal from "./UpgradeModal";
 
@@ -30,6 +31,7 @@ const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem, onLogout, userPro
   const isBasicUser = !userProfile?.subscriptionType || userProfile?.subscriptionType.toLowerCase() === 'basic';
 
   const bottomItems = [
+    { id: "admin-patents", icon: Shield, label: "Admin Panel" },
     { id: "contact", icon: Mail, label: "Contact Us" },
     { id: "feedback", icon: MessageSquare, label: "Feedback" },
     { id: "settings", icon: Settings, label: "Settings" },

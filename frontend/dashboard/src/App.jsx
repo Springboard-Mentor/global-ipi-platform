@@ -13,6 +13,7 @@ import ContactForm from './components/ContactForm';
 import FeedbackForm from './components/FeedbackForm';
 import PatentFilingForm from './components/PatentFilingForm';
 import FilingTracker from './components/FilingTracker';
+import AdminPatentManager from './components/AdminPatentManager';
 
 const App = () => {
   // Check URL parameters for auth data
@@ -539,6 +540,8 @@ const App = () => {
                   setActiveItem('dashboard');
                 }} 
               />
+            ) : currentPage === 'admin-patents' ? (
+              <AdminPatentManager />
             ) : (
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
                 <div className="xl:col-span-2">

@@ -2,6 +2,7 @@ package com.example.backend.controller;
 
 import com.example.backend.model.PatentFiling;
 import com.example.backend.repository.PatentFilingRepository;
+import com.example.backend.service.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,9 @@ public class PatentFilingController {
     
     @Autowired
     private PatentFilingRepository patentFilingRepository;
+    
+    @Autowired
+    private EmailService emailService;
     
     // Get total count of patent filings
     @GetMapping("/count")
@@ -144,6 +148,95 @@ public class PatentFilingController {
         } catch (Exception e) {
             response.put("success", false);
             response.put("message", "Failed to update status: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+    
+    // Update patent filing stages with email notification on grant
+    @PutMapping("/{id}/stages")
+    public ResponseEntity<Map<String, Object>> updatePatentFilingStages(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> stageUpdates) {
+        
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            return patentFilingRepository.findById(id)
+                    .map(filing -> {
+                        boolean wasGranted = filing.getStage5Granted() != null && filing.getStage5Granted();
+                        
+                        // Update stages based on request
+                        if (stageUpdates.containsKey("stage1Filed")) {
+                            filing.setStage1Filed((Boolean) stageUpdates.get("stage1Filed"));
+                        }
+                        if (stageUpdates.containsKey("stage2AdminReview")) {
+                            filing.setStage2AdminReview((Boolean) stageUpdates.get("stage2AdminReview"));
+                        }
+                        if (stageUpdates.containsKey("stage3TechnicalReview")) {
+                            filing.setStage3TechnicalReview((Boolean) stageUpdates.get("stage3TechnicalReview"));
+                        }
+                        if (stageUpdates.containsKey("stage4Verification")) {
+                            filing.setStage4Verification((Boolean) stageUpdates.get("stage4Verification"));
+                        }
+                        if (stageUpdates.containsKey("stage5Granted")) {
+                            filing.setStage5Granted((Boolean) stageUpdates.get("stage5Granted"));
+                        }
+                        
+                        // Check if all stages are complete
+                        boolean allStagesComplete = 
+                            filing.getStage1Filed() != null && filing.getStage1Filed() &&
+                            filing.getStage2AdminReview() != null && filing.getStage2AdminReview() &&
+                            filing.getStage3TechnicalReview() != null && filing.getStage3TechnicalReview() &&
+                            filing.getStage4Verification() != null && filing.getStage4Verification() &&
+                            filing.getStage5Granted() != null && filing.getStage5Granted();
+                        
+                        // Update status based on stages
+                        if (allStagesComplete) {
+                            filing.setStatus("Granted");
+                            
+                            // Send email notification if patent just became granted
+                            if (!wasGranted && filing.getStage5Granted()) {
+                                try {
+                                    emailService.sendPatentGrantedEmail(
+                                        filing.getApplicantEmail(),
+                                        filing.getApplicantName(),
+                                        filing.getInventionTitle(),
+                                        filing.getId()
+                                    );
+                                    System.out.println("✅ Patent granted email sent to: " + filing.getApplicantEmail());
+                                } catch (Exception emailException) {
+                                    System.err.println("❌ Failed to send patent granted email: " + emailException.getMessage());
+                                    emailException.printStackTrace();
+                                    // Continue even if email fails
+                                }
+                            }
+                        } else if (filing.getStage4Verification() != null && filing.getStage4Verification()) {
+                            filing.setStatus("Under Verification");
+                        } else if (filing.getStage3TechnicalReview() != null && filing.getStage3TechnicalReview()) {
+                            filing.setStatus("Technical Review");
+                        } else if (filing.getStage2AdminReview() != null && filing.getStage2AdminReview()) {
+                            filing.setStatus("Admin Review");
+                        } else {
+                            filing.setStatus("Filed");
+                        }
+                        
+                        PatentFiling savedFiling = patentFilingRepository.save(filing);
+                        
+                        response.put("success", true);
+                        response.put("message", "Stages updated successfully");
+                        response.put("status", savedFiling.getStatus());
+                        response.put("allStagesComplete", allStagesComplete);
+                        response.put("emailSent", !wasGranted && allStagesComplete);
+                        
+                        return ResponseEntity.ok(response);
+                    })
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            System.err.println("❌ ERROR updating patent filing stages:");
+            e.printStackTrace();
+            
+            response.put("success", false);
+            response.put("message", "Failed to update stages: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
