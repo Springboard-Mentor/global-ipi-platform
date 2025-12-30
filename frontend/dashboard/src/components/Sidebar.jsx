@@ -14,6 +14,7 @@ import {
   Mail,
   FileCheck,
   Shield,
+  Lock,
 } from "lucide-react";
 import UpgradeModal from "./UpgradeModal";
 
@@ -77,6 +78,9 @@ const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem, onLogout, userPro
         <nav className="flex-1 p-4 space-y-2">
           {menuItems.map((item) => {
             const Icon = item.icon;
+            const isFilingTracker = item.id === 'filing';
+            const isLocked = isFilingTracker && isBasicUser;
+            
             return (
               <button
                 key={item.id}
@@ -92,28 +96,28 @@ const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem, onLogout, userPro
               >
                 <Icon size={20} />
                 <span className="font-medium">{item.label}</span>
+                {isLocked && <Lock size={16} className="ml-auto" />}
               </button>
             );
           })}
 
-          {/* Patent Filing - Only for non-basic users */}
-          {!isBasicUser && (
-            <button
-              key={patentFilingItem.id}
-              onClick={() => setActiveItem(patentFilingItem.id)}
-              className={`
-                w-full flex items-center gap-3 px-4 py-3 rounded-xl transition
-                ${
-                  activeItem === patentFilingItem.id
-                    ? "bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg"
-                    : "text-gray-600 hover:bg-gradient-to-br hover:from-blue-50 hover:to-purple-50"
-                }
-              `}
-            >
-              <FileCheck size={20} />
-              <span className="font-medium">{patentFilingItem.label}</span>
-            </button>
-          )}
+          {/* Patent Filing - Visible for all users, locked for basic */}
+          <button
+            key={patentFilingItem.id}
+            onClick={() => setActiveItem(patentFilingItem.id)}
+            className={`
+              w-full flex items-center gap-3 px-4 py-3 rounded-xl transition
+              ${
+                activeItem === patentFilingItem.id
+                  ? "bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg"
+                  : "text-gray-600 hover:bg-gradient-to-br hover:from-blue-50 hover:to-purple-50"
+              }
+            `}
+          >
+            <FileCheck size={20} />
+            <span className="font-medium">{patentFilingItem.label}</span>
+            {isBasicUser && <Lock size={16} className="ml-auto" />}
+          </button>
 
           {/* Upgrade to Pro Button */}
           {userProfile?.subscriptionType !== "pro" && userProfile?.subscriptionType !== "enterprise" && (

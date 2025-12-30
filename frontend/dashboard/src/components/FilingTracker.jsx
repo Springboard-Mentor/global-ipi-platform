@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FileText, Calendar, User, DollarSign, CheckCircle, Clock, Eye, X, ArrowLeft, Download, Share2, Linkedin } from 'lucide-react';
+import { FileText, Calendar, User, DollarSign, CheckCircle, Clock, Eye, X, ArrowLeft, Download, Share2, Linkedin, Lock, Crown, Sparkles } from 'lucide-react';
 import { auth } from '../firebase';
 import PatentProgressTracker from './PatentProgressTracker';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import UpgradeModal from './UpgradeModal';
 
-const FilingTracker = ({ userProfile, onBack }) => {
+const FilingTracker = ({ userProfile, onBack, onAddNotification }) => {
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [filings, setFilings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -295,6 +297,121 @@ Note: PDF document has been downloaded. Please attach it manually to your Linked
           <p>{error}</p>
         </div>
       </div>
+    );
+  }
+
+  // Check if user has basic subscription
+  const isBasicUser = !userProfile?.subscriptionType || userProfile?.subscriptionType.toLowerCase() === 'basic';
+
+  // Show upgrade prompt for basic users
+  if (isBasicUser) {
+    return (
+      <>
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              {onBack && (
+                <button
+                  onClick={onBack}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition flex items-center gap-2 text-gray-600 font-medium"
+                >
+                  <ArrowLeft size={20} />
+                  Back to Dashboard
+                </button>
+              )}
+              <h2 className="text-2xl font-bold text-gray-800">My Patent Filings</h2>
+            </div>
+          </div>
+
+          {/* Upgrade Prompt for Basic Users */}
+          <div className="flex flex-col items-center justify-center py-16 px-4">
+            <div className="relative mb-8">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-600 rounded-full opacity-20 blur-2xl"></div>
+              <div className="relative p-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full shadow-2xl">
+                <Lock size={64} className="text-white" />
+              </div>
+            </div>
+            
+            <h3 className="text-3xl font-bold text-gray-800 mb-4 text-center">
+              Premium Feature
+            </h3>
+            
+            <p className="text-lg text-gray-600 mb-2 text-center max-w-2xl">
+              The Filing Tracker is a powerful tool to monitor and manage your patent applications.
+            </p>
+            
+            <p className="text-md text-gray-500 mb-8 text-center max-w-2xl">
+              Upgrade to <span className="font-semibold text-blue-600">Pro</span> or <span className="font-semibold text-purple-600">Enterprise</span> plan to unlock:
+            </p>
+
+            <div className="grid md:grid-cols-2 gap-6 mb-10 max-w-3xl w-full">
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-blue-500 rounded-lg">
+                    <FileText size={20} className="text-white" />
+                  </div>
+                  <h4 className="font-semibold text-gray-800">Track All Filings</h4>
+                </div>
+                <p className="text-sm text-gray-600">Monitor all your patent applications in one place with real-time updates</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 border border-purple-200">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-purple-500 rounded-lg">
+                    <CheckCircle size={20} className="text-white" />
+                  </div>
+                  <h4 className="font-semibold text-gray-800">Progress Tracking</h4>
+                </div>
+                <p className="text-sm text-gray-600">View detailed progress through each stage of the patent approval process</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border border-green-200">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-green-500 rounded-lg">
+                    <Download size={20} className="text-white" />
+                  </div>
+                  <h4 className="font-semibold text-gray-800">Export Reports</h4>
+                </div>
+                <p className="text-sm text-gray-600">Download comprehensive PDF reports of your patent applications</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-pink-50 to-pink-100 rounded-xl p-6 border border-pink-200">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 bg-pink-500 rounded-lg">
+                    <Share2 size={20} className="text-white" />
+                  </div>
+                  <h4 className="font-semibold text-gray-800">Share on LinkedIn</h4>
+                </div>
+                <p className="text-sm text-gray-600">Showcase your patent achievements on professional networks</p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowUpgradeModal(true)}
+              className="group relative px-8 py-4 bg-gradient-to-r from-blue-500 via-purple-600 to-pink-600 text-white rounded-xl font-bold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-white/20 transform translate-x-full group-hover:translate-x-0 transition-transform duration-500"></div>
+              <div className="relative flex items-center gap-3">
+                <Crown size={24} className="animate-pulse" />
+                <span>Upgrade to Pro Now</span>
+                <Sparkles size={20} />
+              </div>
+            </button>
+
+            <p className="text-sm text-gray-500 mt-6">
+              Start tracking your patent applications with advanced features
+            </p>
+          </div>
+        </div>
+
+        {/* Upgrade Modal */}
+        <UpgradeModal
+          isOpen={showUpgradeModal}
+          onClose={() => setShowUpgradeModal(false)}
+          userProfile={userProfile}
+          onAddNotification={onAddNotification}
+        />
+      </>
     );
   }
 

@@ -499,6 +499,7 @@ const App = () => {
             ) : currentPage === 'filing' ? (
               <FilingTracker 
                 userProfile={userProfile}
+                onAddNotification={addNotification}
                 onBack={() => {
                   setCurrentPage('dashboard');
                   setActiveItem('dashboard');
