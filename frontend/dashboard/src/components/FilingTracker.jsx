@@ -345,6 +345,21 @@ Note: PDF document has been downloaded. Please attach it manually to your Linked
     return count;
   };
 
+  // Count new admin replies (user sent message but admin replied)
+  const getNewRepliesCount = (filing) => {
+    let newReplies = 0;
+    for (let i = 1; i <= 5; i++) {
+      const userMsg = filing[`m${i}`];
+      const adminReply = filing[`r${i}`];
+      
+      // If user sent a message and admin replied
+      if (userMsg && userMsg.trim() !== '' && adminReply && adminReply.trim() !== '') {
+        newReplies++;
+      }
+    }
+    return newReplies;
+  };
+
   const sendMessage = async () => {
     if (!currentMessage.trim()) {
       alert('Please enter a message');
@@ -593,15 +608,6 @@ Note: PDF document has been downloaded. Please attach it manually to your Linked
               {/* Decorative corner accents */}
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-bl-full"></div>
               <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-purple-400/10 to-pink-400/10 rounded-tr-full"></div>
-              
-              {/* Chat Icon Button - Bottom Right */}
-              <button
-                onClick={() => openChatModal(filing)}
-                className="absolute bottom-6 right-6 p-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full shadow-lg hover:shadow-2xl hover:scale-110 transition-all duration-300 z-10 group"
-                title="Chat with Admin"
-              >
-                <MessageCircle size={26} className="group-hover:animate-pulse" />
-              </button>
               
               <div className="relative flex items-start justify-between">
                 <div className="flex-1">
@@ -1052,6 +1058,21 @@ Note: PDF document has been downloaded. Please attach it manually to your Linked
                   </div>
                 </div>
               )}
+              
+              {/* Chat Icon Button - Bottom Right */}
+              <button
+                onClick={() => openChatModal(filing)}
+                className="absolute bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full shadow-lg hover:shadow-2xl hover:scale-110 transition-all duration-300 z-10 group"
+                style={{ bottom: '110px', right: '80px', padding: '10px' }}
+                title="Chat with Admin"
+              >
+                <MessageCircle size={26} className="group-hover:animate-pulse" />
+                {getNewRepliesCount(filing) > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center animate-pulse shadow-lg border-2 border-white">
+                    {getNewRepliesCount(filing)}
+                  </span>
+                )}
+              </button>
             </div>
           ))}
         </div>

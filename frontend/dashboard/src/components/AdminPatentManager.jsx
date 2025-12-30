@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, Circle, Mail, RefreshCw, AlertCircle, LogIn, LogOut, User, Shield, Eye, EyeOff, X, ArrowLeft, Lightbulb, FileCheck, Upload, CreditCard, MessageCircle, Send } from 'lucide-react';
+import { CheckCircle, Circle, Mail, RefreshCw, AlertCircle, LogIn, LogOut, User, Shield, Eye, EyeOff, X, ArrowLeft, Lightbulb, FileCheck, Upload, CreditCard, MessageCircle, Send, Bell } from 'lucide-react';
 
 const AdminPatentManager = ({ onBack }) => {
   const [patents, setPatents] = useState([]);
@@ -533,6 +533,24 @@ const AdminPatentManager = ({ onBack }) => {
       console.error('Error sending reply:', error);
       alert('Error sending reply. Please check your connection.');
     }
+  };
+
+  // Count unread user messages (messages without admin replies)
+  const getUnreadMessagesCount = (patent) => {
+    if (!patent) return 0;
+    let unreadCount = 0;
+    
+    for (let i = 1; i <= 5; i++) {
+      const userMsg = patent[`m${i}`];
+      const adminReply = patent[`r${i}`];
+      
+      // If user sent a message but admin hasn't replied yet
+      if (userMsg && userMsg.trim() !== '' && (!adminReply || adminReply.trim() === '')) {
+        unreadCount++;
+      }
+    }
+    
+    return unreadCount;
   };
 
   return (
@@ -1100,10 +1118,15 @@ const AdminPatentManager = ({ onBack }) => {
                     
                     <button
                       onClick={() => openAdminChat(patent)}
-                      className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl hover:from-purple-600 hover:to-pink-700 font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1"
+                      className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl hover:from-purple-600 hover:to-pink-700 font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 relative"
                     >
                       <MessageCircle className="w-5 h-5" />
                       View Chat
+                      {getUnreadMessagesCount(patent) > 0 && (
+                        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center animate-pulse shadow-lg">
+                          {getUnreadMessagesCount(patent)}
+                        </span>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -1848,20 +1871,20 @@ const AdminPatentManager = ({ onBack }) => {
                 
                 return (
                   <div key={msgField}>
-                    {/* User Message */}
+                    {/* User Message - LEFT side (from user) */}
                     {userMessage && userMessage.trim() !== '' && (
-                      <div className="flex justify-end mb-3">
-                        <div className="max-w-[75%] bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-2xl rounded-tr-sm px-5 py-3 shadow-lg">
+                      <div className="flex justify-start mb-3">
+                        <div className="max-w-[75%] bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-2xl rounded-tl-sm px-5 py-3 shadow-lg">
                           <p className="text-xs font-semibold mb-1 opacity-90">User Message {index + 1}</p>
                           <p className="text-sm leading-relaxed">{userMessage}</p>
                         </div>
                       </div>
                     )}
                     
-                    {/* Admin Reply */}
+                    {/* Admin Reply - RIGHT side (from you) */}
                     {adminReplyMsg && adminReplyMsg.trim() !== '' && (
-                      <div className="flex justify-start mb-3">
-                        <div className="max-w-[75%] bg-gradient-to-r from-purple-100 to-pink-100 text-gray-800 rounded-2xl rounded-tl-sm px-5 py-3 shadow-md border border-purple-200">
+                      <div className="flex justify-end mb-3">
+                        <div className="max-w-[75%] bg-gradient-to-r from-purple-100 to-pink-100 text-gray-800 rounded-2xl rounded-tr-sm px-5 py-3 shadow-md border border-purple-200">
                           <p className="text-xs font-semibold mb-1 text-purple-600">Admin Reply {index + 1}</p>
                           <p className="text-sm leading-relaxed">{adminReplyMsg}</p>
                         </div>
