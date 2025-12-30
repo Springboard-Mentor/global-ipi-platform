@@ -79,7 +79,8 @@ const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem, onLogout, userPro
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isFilingTracker = item.id === 'filing';
-            const isLocked = isFilingTracker && isBasicUser;
+            const isLegalStatus = item.id === 'legal';
+            const isLocked = (isFilingTracker || isLegalStatus) && isBasicUser;
             
             return (
               <button
