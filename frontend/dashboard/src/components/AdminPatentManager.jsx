@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, Circle, Mail, RefreshCw, AlertCircle, LogIn, LogOut, User, Shield, Eye, EyeOff, X, ArrowLeft } from 'lucide-react';
+import { CheckCircle, Circle, Mail, RefreshCw, AlertCircle, LogIn, LogOut, User, Shield, Eye, EyeOff, X, ArrowLeft, Lightbulb, FileCheck, Upload, CreditCard } from 'lucide-react';
 
 const AdminPatentManager = ({ onBack }) => {
   const [patents, setPatents] = useState([]);
@@ -24,6 +24,9 @@ const AdminPatentManager = ({ onBack }) => {
   
   // Track which patents have details section open
   const [showDetailsFor, setShowDetailsFor] = useState({});
+  
+  // Track which patent's full details are being viewed
+  const [viewingPatentDetails, setViewingPatentDetails] = useState(null);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -295,6 +298,15 @@ const AdminPatentManager = ({ onBack }) => {
       if (response.ok) {
         const result = await response.json();
         console.log('Grant result:', result);
+        
+        // Hide the patent details form
+        setShowDetailsFor({
+          ...showDetailsFor,
+          [patent.id]: false
+        });
+        
+        // Scroll to the top of the page
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         
         if (result.emailSent) {
           setMessage(`🎉 Patent "${patent.inventionTitle}" GRANTED! Email sent to ${patent.applicantEmail}`);
@@ -860,28 +872,28 @@ const AdminPatentManager = ({ onBack }) => {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-6 border-t-2 border-indigo-200">
+                  <div className={`grid grid-cols-1 ${patent.stage5Granted ? 'md:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-3'} gap-3 pt-6 border-t-2 border-indigo-200`}>
                     <button
-                      onClick={() => {
-                        alert(`Viewing details for Patent #${patent.id}: ${patent.inventionTitle}`);
-                      }}
+                      onClick={() => setViewingPatentDetails(patent)}
                       className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1"
                     >
                       <Eye className="w-5 h-5" />
                       View Details
                     </button>
                     
-                    <button
-                      onClick={() => {
-                        if (confirm(`Are you sure you want to reject Patent #${patent.id}?`)) {
-                          alert(`Patent #${patent.id} has been rejected`);
-                        }
-                      }}
-                      className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-xl hover:from-red-600 hover:to-rose-700 font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1"
-                    >
-                      <X className="w-5 h-5" />
-                      Reject Patent
-                    </button>
+                    {!patent.stage5Granted && (
+                      <button
+                        onClick={() => {
+                          if (confirm(`Are you sure you want to reject Patent #${patent.id}?`)) {
+                            alert(`Patent #${patent.id} has been rejected`);
+                          }
+                        }}
+                        className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-xl hover:from-red-600 hover:to-rose-700 font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1"
+                      >
+                        <X className="w-5 h-5" />
+                        Reject Patent
+                      </button>
+                    )}
                     
                     <button
                       onClick={() => resetStages(patent.id)}
@@ -895,6 +907,709 @@ const AdminPatentManager = ({ onBack }) => {
               ))}
             </div>
           )}
+        </div>
+      )}
+      
+      {/* Patent Details Modal */}
+      {viewingPatentDetails && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setViewingPatentDetails(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header - Fixed */}
+            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-5 rounded-t-2xl flex items-center justify-between flex-shrink-0 z-10">
+              <div>
+                <h2 className="text-lg font-bold mb-1">Patent Full Details</h2>
+                <p className="text-indigo-100 text-sm">Filing ID: #{viewingPatentDetails.id}</p>
+              </div>
+              <button
+                onClick={() => setViewingPatentDetails(null)}
+                className="text-white hover:text-red-300 hover:rotate-90 transition-all duration-300 transform hover:scale-110"
+                aria-label="Close"
+              >
+                <X className="w-7 h-7" />
+              </button>
+            </div>
+            
+            {/* Modal Content - Scrollable */}
+            <div className="p-6 space-y-6 overflow-y-auto flex-1">
+              {/* Step 1: Applicant Information */}
+              <div className="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-xl p-5 border-2 border-cyan-200">
+                <h3 className="text-xl font-bold text-gray-900 mb-5 flex items-center gap-2">
+                  <User className="w-6 h-6 text-cyan-600" />
+                  Step 1: Applicant Information
+                </h3>
+                
+                {/* Basic Contact Info */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="text-sm font-semibold text-gray-600">Applicant Type</label>
+                    <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.applicantType || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold text-gray-600">Full Name</label>
+                    <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.applicantName || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold text-gray-600">Email Address</label>
+                    <p className="text-blue-600 font-bold mt-1 break-all">{viewingPatentDetails.applicantEmail || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold text-gray-600">Phone Number</label>
+                    <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.applicantPhone || viewingPatentDetails.phoneNumber || 'N/A'}</p>
+                  </div>
+                  {viewingPatentDetails.organizationName && (
+                    <div>
+                      <label className="text-sm font-semibold text-gray-600">Organization Name</label>
+                      <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.organizationName}</p>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Personal Details */}
+                {viewingPatentDetails.applicantType === 'individual' && (
+                  <div className="border-t-2 border-cyan-300 pt-4 mt-4">
+                    <h4 className="text-md font-bold text-gray-800 mb-3">Personal Details</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="text-sm font-semibold text-gray-600">Date of Birth</label>
+                        <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.dateOfBirth ? new Date(viewingPatentDetails.dateOfBirth).toLocaleDateString() : 'Not Provided'}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-semibold text-gray-600">Age</label>
+                        <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.age || 'Not Provided'}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-semibold text-gray-600">Gender</label>
+                        <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.gender || 'Not Provided'}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-semibold text-gray-600">Occupation/Profession</label>
+                        <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.occupation || 'Not Provided'}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-semibold text-gray-600">Educational Qualification</label>
+                        <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.educationalQualification || 'Not Provided'}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-semibold text-gray-600">Designation/Position</label>
+                        <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.designation || 'Not Provided'}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Address Information */}
+                <div className="border-t-2 border-cyan-300 pt-4 mt-4">
+                  <h4 className="text-md font-bold text-gray-800 mb-3">Address Information</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <label className="text-sm font-semibold text-gray-600">Address</label>
+                      <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.applicantAddress || viewingPatentDetails.address || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-gray-600">City</label>
+                      <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.applicantCity || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-gray-600">State</label>
+                      <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.applicantState || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-gray-600">Pincode</label>
+                      <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.applicantPincode || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-gray-600">Country</label>
+                      <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.applicantCountry || viewingPatentDetails.nationality || 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Additional Contact Information */}
+                <div className="border-t-2 border-cyan-300 pt-4 mt-4">
+                  <h4 className="text-md font-bold text-gray-800 mb-3">Additional Contact Information</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-semibold text-gray-600">Alternate Phone Number</label>
+                      <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.alternatePhone || 'Not Provided'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-gray-600">Alternate Email Address</label>
+                      <p className="text-blue-600 font-bold mt-1 break-all">{viewingPatentDetails.alternateEmail || 'Not Provided'}</p>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Identity & Tax Information */}
+                <div className="border-t-2 border-cyan-300 pt-4 mt-4">
+                  <h4 className="text-md font-bold text-gray-800 mb-3">Identity & Tax Information</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-semibold text-gray-600">Government ID Type *</label>
+                      <p className="text-gray-900 font-bold mt-1 capitalize">{viewingPatentDetails.govtIdType || 'Not Provided'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-gray-600">Government ID Number *</label>
+                      <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.govtIdNumber || 'Not Provided'}</p>
+                    </div>
+                    {viewingPatentDetails.govtIdType === 'passport' && (
+                      <div>
+                        <label className="text-sm font-semibold text-gray-600">Passport Country</label>
+                        <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.passportCountry || 'Not Provided'}</p>
+                      </div>
+                    )}
+                    {viewingPatentDetails.govtIdType === 'drivingLicense' && (
+                      <div>
+                        <label className="text-sm font-semibold text-gray-600">Driving License State</label>
+                        <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.drivingLicenseState || 'Not Provided'}</p>
+                      </div>
+                    )}
+                    <div>
+                      <label className="text-sm font-semibold text-gray-600">Aadhaar Number</label>
+                      <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.aadhaarNumber || 'Not Provided'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-gray-600">PAN Number</label>
+                      <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.panNumber || 'Not Provided'}</p>
+                    </div>
+                    {viewingPatentDetails.applicantType === 'organization' && (
+                      <div>
+                        <label className="text-sm font-semibold text-gray-600">GSTIN</label>
+                        <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.gstin || 'Not Provided'}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Correspondence Address */}
+                <div className="border-t-2 border-cyan-300 pt-4 mt-4">
+                  <h4 className="text-md font-bold text-gray-800 mb-3">Correspondence Address</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <label className="text-sm font-semibold text-gray-600">Same as Applicant Address</label>
+                      <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.sameAsApplicantAddress ? '✓ Yes' : '✗ No'}</p>
+                    </div>
+                    {!viewingPatentDetails.sameAsApplicantAddress && (
+                      <>
+                        <div className="md:col-span-2">
+                          <label className="text-sm font-semibold text-gray-600">Correspondence Address</label>
+                          <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.correspondenceAddress || 'Not Provided'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-semibold text-gray-600">City</label>
+                          <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.correspondenceCity || 'Not Provided'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-semibold text-gray-600">State</label>
+                          <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.correspondenceState || 'Not Provided'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-semibold text-gray-600">Pincode</label>
+                          <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.correspondencePincode || 'Not Provided'}</p>
+                        </div>
+                      </>
+                    )}
+                    {viewingPatentDetails.sameAsApplicantAddress && (
+                      <div className="md:col-span-2">
+                        <p className="text-gray-600 italic bg-blue-50 p-3 rounded-lg">ℹ️ Using the same address as applicant address</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Application Date */}
+                <div className="border-t-2 border-cyan-300 pt-4 mt-4">
+                  <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-300 rounded-xl p-4">
+                    <label className="text-sm font-semibold text-gray-600">Application Submission Date *</label>
+                    <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.applicationDate ? new Date(viewingPatentDetails.applicationDate).toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'Not Available'}</p>
+                  </div>
+                </div>
+              </div>
+              
+              
+              {/* Step 2: Invention Details */}
+              <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-5 border-2 border-purple-200">
+                <h3 className="text-xl font-bold text-gray-900 mb-5 flex items-center gap-2">
+                  <Lightbulb className="w-6 h-6 text-purple-600" />
+                  Step 2: Invention Details
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div className="md:col-span-2">
+                    <label className="text-sm font-semibold text-gray-600">Invention Title *</label>
+                    <p className="text-gray-900 font-bold mt-1 text-lg">{viewingPatentDetails.inventionTitle || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold text-gray-600">Field of Invention *</label>
+                    <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.inventionField || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold text-gray-600">Target Industry</label>
+                    <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.targetIndustry || 'Not Provided'}</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-sm font-semibold text-gray-600">Detailed Description of Invention *</label>
+                    <p className="text-gray-900 font-bold mt-1 whitespace-pre-wrap leading-relaxed">{viewingPatentDetails.inventionDescription || 'N/A'}</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-sm font-semibold text-gray-600">Keywords</label>
+                    <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.keywords || 'Not Provided'}</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-sm font-semibold text-gray-600">Technical Problem Addressed *</label>
+                    <p className="text-gray-900 font-bold mt-1 whitespace-pre-wrap">{viewingPatentDetails.technicalProblem || 'N/A'}</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-sm font-semibold text-gray-600">Proposed Solution *</label>
+                    <p className="text-gray-900 font-bold mt-1 whitespace-pre-wrap">{viewingPatentDetails.proposedSolution || 'N/A'}</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-sm font-semibold text-gray-600">Advantages *</label>
+                    <p className="text-gray-900 font-bold mt-1 whitespace-pre-wrap">{viewingPatentDetails.advantages || 'N/A'}</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-sm font-semibold text-gray-600">Prior Art</label>
+                    <p className="text-gray-900 font-bold mt-1 whitespace-pre-wrap">{viewingPatentDetails.priorArt || 'Not Provided'}</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-sm font-semibold text-gray-600">Commercial Application</label>
+                    <p className="text-gray-900 font-bold mt-1 whitespace-pre-wrap">{viewingPatentDetails.commercialApplication || 'Not Provided'}</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Step 3: Patent Details */}
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-5 border-2 border-green-200">
+                <h3 className="text-xl font-bold text-gray-900 mb-5 flex items-center gap-2">
+                  <FileCheck className="w-6 h-6 text-green-600" />
+                  Step 3: Patent Details
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-semibold text-gray-600">Patent Type *</label>
+                    <p className="text-gray-900 font-bold mt-1 capitalize">{viewingPatentDetails.patentType || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold text-gray-600">Filing Type *</label>
+                    <p className="text-gray-900 font-bold mt-1 capitalize">{viewingPatentDetails.filingType || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold text-gray-600">Number of Claims *</label>
+                    <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.numberOfClaims || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold text-gray-600">Number of Drawings</label>
+                    <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.numberOfDrawings !== null && viewingPatentDetails.numberOfDrawings !== undefined ? viewingPatentDetails.numberOfDrawings : 'Not Provided'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold text-gray-600">Claims Priority</label>
+                    <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.claimsPriority ? '✓ Yes' : '✗ No'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold text-gray-600">Priority Date</label>
+                    <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.priorityDate ? new Date(viewingPatentDetails.priorityDate).toLocaleDateString() : 'Not Applicable'}</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-sm font-semibold text-gray-600">Priority Number</label>
+                    <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.priorityNumber || 'Not Applicable'}</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Step 4: Documents Upload */}
+              <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-5 border-2 border-orange-200">
+                <h3 className="text-xl font-bold text-gray-900 mb-5 flex items-center gap-2">
+                  <Upload className="w-6 h-6 text-orange-600" />
+                  Step 4: Documents Upload
+                </h3>
+                
+                <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <label className="text-sm font-semibold text-gray-600 mb-2 block">Description Document *</label>
+                    {viewingPatentDetails.descriptionFileUrl ? (
+                      <div className="flex items-center gap-3 bg-white p-3 rounded-lg border-2 border-orange-200">
+                        <p className="text-blue-600 font-medium flex-1 break-all text-sm">
+                          {viewingPatentDetails.descriptionFileUrl}
+                        </p>
+                        <a 
+                          href={viewingPatentDetails.descriptionFileUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 font-bold shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 whitespace-nowrap"
+                        >
+                          <Eye className="w-4 h-4" />
+                          View
+                        </a>
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 italic bg-gray-100 p-3 rounded-lg">No file provided</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold text-gray-600 mb-2 block">Claims Document *</label>
+                    {viewingPatentDetails.claimsFileUrl ? (
+                      <div className="flex items-center gap-3 bg-white p-3 rounded-lg border-2 border-orange-200">
+                        <p className="text-blue-600 font-medium flex-1 break-all text-sm">
+                          {viewingPatentDetails.claimsFileUrl}
+                        </p>
+                        <a 
+                          href={viewingPatentDetails.claimsFileUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 font-bold shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 whitespace-nowrap"
+                        >
+                          <Eye className="w-4 h-4" />
+                          View
+                        </a>
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 italic bg-gray-100 p-3 rounded-lg">No file provided</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold text-gray-600 mb-2 block">Abstract Document *</label>
+                    {viewingPatentDetails.abstractFileUrl ? (
+                      <div className="flex items-center gap-3 bg-white p-3 rounded-lg border-2 border-orange-200">
+                        <p className="text-blue-600 font-medium flex-1 break-all text-sm">
+                          {viewingPatentDetails.abstractFileUrl}
+                        </p>
+                        <a 
+                          href={viewingPatentDetails.abstractFileUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 font-bold shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 whitespace-nowrap"
+                        >
+                          <Eye className="w-4 h-4" />
+                          View
+                        </a>
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 italic bg-gray-100 p-3 rounded-lg">No file provided</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold text-gray-600 mb-2 block">Drawings Document</label>
+                    {viewingPatentDetails.drawingsFileUrl ? (
+                      <div className="flex items-center gap-3 bg-white p-3 rounded-lg border-2 border-orange-200">
+                        <p className="text-blue-600 font-medium flex-1 break-all text-sm">
+                          {viewingPatentDetails.drawingsFileUrl}
+                        </p>
+                        <a 
+                          href={viewingPatentDetails.drawingsFileUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 font-bold shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 whitespace-nowrap"
+                        >
+                          <Eye className="w-4 h-4" />
+                          View
+                        </a>
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 italic bg-gray-100 p-3 rounded-lg">Not Provided</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Step 5: Review & Payment */}
+              <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl p-5 border-2 border-indigo-200">
+                <h3 className="text-xl font-bold text-gray-900 mb-5 flex items-center gap-2">
+                  <CreditCard className="w-6 h-6 text-indigo-600" />
+                  Step 5: Review & Payment
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  {viewingPatentDetails.paymentAmount && (
+                    <div>
+                      <label className="text-sm font-semibold text-gray-600">Payment Amount</label>
+                      <p className="text-gray-900 font-bold mt-1">
+                        {viewingPatentDetails.paymentCurrency || 'INR'} {viewingPatentDetails.paymentAmount}
+                      </p>
+                    </div>
+                  )}
+                  {viewingPatentDetails.agreedToTerms !== undefined && (
+                    <div>
+                      <label className="text-sm font-semibold text-gray-600">Agreed to Terms</label>
+                      <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.agreedToTerms ? '✓ Yes' : '✗ No'}</p>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Payment Transaction Details */}
+                {(viewingPatentDetails.paymentId || viewingPatentDetails.paymentOrderId || viewingPatentDetails.paymentStatus) && (
+                  <div className="border-t-2 border-indigo-300 pt-4 mt-4">
+                    <h4 className="text-md font-bold text-gray-800 mb-3">Payment Transaction Details</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {viewingPatentDetails.paymentId && (
+                        <div>
+                          <label className="text-sm font-semibold text-gray-600">Payment ID</label>
+                          <p className="text-gray-900 font-bold mt-1 break-all">{viewingPatentDetails.paymentId}</p>
+                        </div>
+                      )}
+                      {viewingPatentDetails.paymentOrderId && (
+                        <div>
+                          <label className="text-sm font-semibold text-gray-600">Payment Order ID</label>
+                          <p className="text-gray-900 font-bold mt-1 break-all">{viewingPatentDetails.paymentOrderId}</p>
+                        </div>
+                      )}
+                      {viewingPatentDetails.paymentStatus && (
+                        <div>
+                          <label className="text-sm font-semibold text-gray-600">Payment Status</label>
+                          <p className={`font-bold mt-1 inline-block px-3 py-1 rounded-full ${
+                            viewingPatentDetails.paymentStatus === 'completed' || viewingPatentDetails.paymentStatus === 'success' 
+                              ? 'bg-green-100 text-green-700' 
+                              : viewingPatentDetails.paymentStatus === 'pending' 
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : 'bg-red-100 text-red-700'
+                          }`}>
+                            {viewingPatentDetails.paymentStatus}
+                          </p>
+                        </div>
+                      )}
+                      {viewingPatentDetails.paymentTimestamp && (
+                        <div>
+                          <label className="text-sm font-semibold text-gray-600">Payment Timestamp</label>
+                          <p className="text-gray-900 font-bold mt-1">{new Date(viewingPatentDetails.paymentTimestamp).toLocaleString()}</p>
+                        </div>
+                      )}
+                      {viewingPatentDetails.paymentSignature && (
+                        <div className="md:col-span-2">
+                          <label className="text-sm font-semibold text-gray-600">Payment Signature</label>
+                          <p className="text-gray-900 font-mono text-xs mt-1 break-all bg-gray-100 p-2 rounded">{viewingPatentDetails.paymentSignature}</p>
+                        </div>
+                      )}
+                      {viewingPatentDetails.paymentCurrency && (
+                        <div>
+                          <label className="text-sm font-semibold text-gray-600">Payment Currency</label>
+                          <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.paymentCurrency}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              {/* User Account Information */}
+              {(viewingPatentDetails.userId || viewingPatentDetails.userEmail || viewingPatentDetails.userName) && (
+                <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-xl p-5 border-2 border-teal-200">
+                  <h3 className="text-xl font-bold text-gray-900 mb-5 flex items-center gap-2">
+                    <User className="w-6 h-6 text-teal-600" />
+                    User Account Information
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {viewingPatentDetails.userId && (
+                      <div>
+                        <label className="text-sm font-semibold text-gray-600">User ID</label>
+                        <p className="text-gray-900 font-bold mt-1 break-all">{viewingPatentDetails.userId}</p>
+                      </div>
+                    )}
+                    {viewingPatentDetails.userEmail && (
+                      <div>
+                        <label className="text-sm font-semibold text-gray-600">User Email</label>
+                        <p className="text-blue-600 font-bold mt-1 break-all">{viewingPatentDetails.userEmail}</p>
+                      </div>
+                    )}
+                    {viewingPatentDetails.userName && (
+                      <div>
+                        <label className="text-sm font-semibold text-gray-600">User Name</label>
+                        <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.userName}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              
+              {/* Admin Processing Information */}
+              <div className="bg-gradient-to-br from-rose-50 to-pink-50 rounded-xl p-5 border-2 border-rose-200">
+                <h3 className="text-xl font-bold text-gray-900 mb-5 flex items-center gap-2">
+                  <Shield className="w-6 h-6 text-rose-600" />
+                  Admin Processing Information
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="text-sm font-semibold text-gray-600">Filing ID</label>
+                    <p className="text-gray-900 font-bold mt-1">#{viewingPatentDetails.id || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold text-gray-600">Current Status</label>
+                    <p className={`font-bold mt-1 inline-block px-3 py-1 rounded-full ${
+                      viewingPatentDetails.status === 'Granted' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                    }`}>
+                      {viewingPatentDetails.status || 'Under Review'}
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Stage Progress */}
+                <div className="border-t-2 border-rose-300 pt-4 mt-4">
+                  <h4 className="text-md font-bold text-gray-800 mb-3">Stage Progress</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    <div className={`p-3 rounded-lg text-center ${viewingPatentDetails.stage1Filed ? 'bg-green-100 border-2 border-green-500' : 'bg-gray-100 border-2 border-gray-300'}`}>
+                      <p className="text-xs font-semibold text-gray-600">Stage 1</p>
+                      <p className="text-sm font-bold mt-1">Filed</p>
+                      <p className="text-lg mt-1">{viewingPatentDetails.stage1Filed ? '✓' : '○'}</p>
+                    </div>
+                    <div className={`p-3 rounded-lg text-center ${viewingPatentDetails.stage2AdminReview ? 'bg-green-100 border-2 border-green-500' : 'bg-gray-100 border-2 border-gray-300'}`}>
+                      <p className="text-xs font-semibold text-gray-600">Stage 2</p>
+                      <p className="text-sm font-bold mt-1">Admin Review</p>
+                      <p className="text-lg mt-1">{viewingPatentDetails.stage2AdminReview ? '✓' : '○'}</p>
+                    </div>
+                    <div className={`p-3 rounded-lg text-center ${viewingPatentDetails.stage3TechnicalReview ? 'bg-green-100 border-2 border-green-500' : 'bg-gray-100 border-2 border-gray-300'}`}>
+                      <p className="text-xs font-semibold text-gray-600">Stage 3</p>
+                      <p className="text-sm font-bold mt-1">Technical Review</p>
+                      <p className="text-lg mt-1">{viewingPatentDetails.stage3TechnicalReview ? '✓' : '○'}</p>
+                    </div>
+                    <div className={`p-3 rounded-lg text-center ${viewingPatentDetails.stage4Verification ? 'bg-green-100 border-2 border-green-500' : 'bg-gray-100 border-2 border-gray-300'}`}>
+                      <p className="text-xs font-semibold text-gray-600">Stage 4</p>
+                      <p className="text-sm font-bold mt-1">Verification</p>
+                      <p className="text-lg mt-1">{viewingPatentDetails.stage4Verification ? '✓' : '○'}</p>
+                    </div>
+                    <div className={`p-3 rounded-lg text-center ${viewingPatentDetails.stage5Granted ? 'bg-green-100 border-2 border-green-500' : 'bg-gray-100 border-2 border-gray-300'}`}>
+                      <p className="text-xs font-semibold text-gray-600">Stage 5</p>
+                      <p className="text-sm font-bold mt-1">Granted</p>
+                      <p className="text-lg mt-1">{viewingPatentDetails.stage5Granted ? '✓' : '○'}</p>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Patent Registration Details (filled by admin during grant) */}
+                {patentDetails[viewingPatentDetails.id] && (
+                  <div className="border-t-2 border-rose-300 pt-4 mt-4">
+                    <h4 className="text-md font-bold text-gray-800 mb-3">Patent Registration Details</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {patentDetails[viewingPatentDetails.id]?.patentNumber && (
+                        <div>
+                          <label className="text-sm font-semibold text-gray-600">Patent Number</label>
+                          <p className="text-gray-900 font-bold mt-1">{patentDetails[viewingPatentDetails.id].patentNumber}</p>
+                        </div>
+                      )}
+                      {patentDetails[viewingPatentDetails.id]?.grantedPersonName && (
+                        <div>
+                          <label className="text-sm font-semibold text-gray-600">Granted to Person Name</label>
+                          <p className="text-gray-900 font-bold mt-1">{patentDetails[viewingPatentDetails.id].grantedPersonName}</p>
+                        </div>
+                      )}
+                      {patentDetails[viewingPatentDetails.id]?.location && (
+                        <div>
+                          <label className="text-sm font-semibold text-gray-600">Grant/Reject Location</label>
+                          <p className="text-gray-900 font-bold mt-1">{patentDetails[viewingPatentDetails.id].location}</p>
+                        </div>
+                      )}
+                      {patentDetails[viewingPatentDetails.id]?.rejectedPatentNumber && (
+                        <div>
+                          <label className="text-sm font-semibold text-gray-600">Rejected Patent Number</label>
+                          <p className="text-gray-900 font-bold mt-1">{patentDetails[viewingPatentDetails.id].rejectedPatentNumber}</p>
+                        </div>
+                      )}
+                      {patentDetails[viewingPatentDetails.id]?.rejectedPersonName && (
+                        <div>
+                          <label className="text-sm font-semibold text-gray-600">Rejected Person Name</label>
+                          <p className="text-gray-900 font-bold mt-1">{patentDetails[viewingPatentDetails.id].rejectedPersonName}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Dates & Timestamps */}
+                <div className="border-t-2 border-rose-300 pt-4 mt-4">
+                  <h4 className="text-md font-bold text-gray-800 mb-3">Dates & Timestamps</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {viewingPatentDetails.filingDate && (
+                      <div>
+                        <label className="text-sm font-semibold text-gray-600">Filing Date</label>
+                        <p className="text-gray-900 font-bold mt-1">{new Date(viewingPatentDetails.filingDate).toLocaleString()}</p>
+                      </div>
+                    )}
+                    {viewingPatentDetails.submittedAt && (
+                      <div>
+                        <label className="text-sm font-semibold text-gray-600">Submitted At</label>
+                        <p className="text-gray-900 font-bold mt-1">{new Date(viewingPatentDetails.submittedAt).toLocaleString()}</p>
+                      </div>
+                    )}
+                    {viewingPatentDetails.createdAt && (
+                      <div>
+                        <label className="text-sm font-semibold text-gray-600">Created At</label>
+                        <p className="text-gray-900 font-bold mt-1">{new Date(viewingPatentDetails.createdAt).toLocaleString()}</p>
+                      </div>
+                    )}
+                    {viewingPatentDetails.updatedAt && (
+                      <div>
+                        <label className="text-sm font-semibold text-gray-600">Last Updated</label>
+                        <p className="text-gray-900 font-bold mt-1">{new Date(viewingPatentDetails.updatedAt).toLocaleString()}</p>
+                      </div>
+                    )}
+                    {viewingPatentDetails.grantedDate && (
+                      <div>
+                        <label className="text-sm font-semibold text-gray-600">Granted Date</label>
+                        <p className="text-gray-900 font-bold mt-1">{new Date(viewingPatentDetails.grantedDate).toLocaleDateString()}</p>
+                      </div>
+                    )}
+                    {viewingPatentDetails.expiryDate && (
+                      <div>
+                        <label className="text-sm font-semibold text-gray-600">Expiry Date</label>
+                        <p className="text-gray-900 font-bold mt-1">{new Date(viewingPatentDetails.expiryDate).toLocaleDateString()}</p>
+                      </div>
+                    )}
+                    {viewingPatentDetails.applicationNumber && (
+                      <div>
+                        <label className="text-sm font-semibold text-gray-600">Application Number</label>
+                        <p className="text-gray-900 font-bold mt-1">{viewingPatentDetails.applicationNumber}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Filing Status Information */}
+                {viewingPatentDetails.filingStatus && (
+                  <div className="border-t-2 border-rose-300 pt-4 mt-4">
+                    <h4 className="text-md font-bold text-gray-800 mb-3">Filing Status Information</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-semibold text-gray-600">Filing Status</label>
+                        <p className={`font-bold mt-1 inline-block px-3 py-1 rounded-full ${
+                          viewingPatentDetails.filingStatus === 'approved' || viewingPatentDetails.filingStatus === 'completed'
+                            ? 'bg-green-100 text-green-700' 
+                            : viewingPatentDetails.filingStatus === 'pending'
+                            ? 'bg-yellow-100 text-yellow-700'
+                            : viewingPatentDetails.filingStatus === 'rejected'
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          {viewingPatentDetails.filingStatus}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Admin Notes */}
+                {(viewingPatentDetails.notes || viewingPatentDetails.adminNotes) && (
+                  <div className="border-t-2 border-rose-300 pt-4 mt-4">
+                    <h4 className="text-md font-bold text-gray-800 mb-3">Notes & Comments</h4>
+                    <div className="space-y-4">
+                      {viewingPatentDetails.notes && (
+                        <div>
+                          <label className="text-sm font-semibold text-gray-600">General Notes</label>
+                          <p className="text-gray-900 font-bold mt-1 whitespace-pre-wrap bg-gray-50 p-3 rounded-lg">{viewingPatentDetails.notes}</p>
+                        </div>
+                      )}
+                      {viewingPatentDetails.adminNotes && (
+                        <div>
+                          <label className="text-sm font-semibold text-gray-600">Admin Notes</label>
+                          <p className="text-gray-900 font-bold mt-1 whitespace-pre-wrap bg-yellow-50 p-3 rounded-lg border-l-4 border-yellow-500">{viewingPatentDetails.adminNotes}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+            </div>
+          </div>
         </div>
       )}
     </div>
