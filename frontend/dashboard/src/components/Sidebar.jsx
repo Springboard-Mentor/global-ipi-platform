@@ -20,6 +20,31 @@ import UpgradeModal from "./UpgradeModal";
 
 const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem, onLogout, userProfile, onAddNotification }) => {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastTimer, setToastTimer] = useState(5);
+  const [lockedFeature, setLockedFeature] = useState('');
+  
+  // Handle toast auto-dismiss with countdown
+  React.useEffect(() => {
+    let interval;
+    if (showToast && toastTimer > 0) {
+      interval = setInterval(() => {
+        setToastTimer(prev => prev - 1);
+      }, 1000);
+    } else if (toastTimer === 0) {
+      setShowToast(false);
+      setToastTimer(5);
+    }
+    return () => clearInterval(interval);
+  }, [showToast, toastTimer]);
+
+  // Handle locked feature click
+  const handleLockedFeatureClick = (featureName) => {
+    setLockedFeature(featureName);
+    setShowToast(true);
+    setToastTimer(5);
+  };
+
   const menuItems = [
     { id: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { id: "search", icon: Search, label: "Search" },
@@ -87,7 +112,13 @@ const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem, onLogout, userPro
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveItem(item.id)}
+                onClick={() => {
+                  if (isLocked) {
+                    handleLockedFeatureClick(item.label);
+                  } else {
+                    setActiveItem(item.id);
+                  }
+                }}
                 className={`
                   w-full flex items-center gap-3 px-4 py-3 rounded-xl transition
                   ${
@@ -107,7 +138,13 @@ const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem, onLogout, userPro
           {/* Patent Filing - Visible for all users, locked for basic */}
           <button
             key={patentFilingItem.id}
-            onClick={() => setActiveItem(patentFilingItem.id)}
+            onClick={() => {
+              if (isBasicUser) {
+                handleLockedFeatureClick(patentFilingItem.label);
+              } else {
+                setActiveItem(patentFilingItem.id);
+              }
+            }}
             className={`
               w-full flex items-center gap-3 px-4 py-3 rounded-xl transition
               ${
@@ -167,6 +204,67 @@ const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem, onLogout, userPro
         </div>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {showToast && (
+        <div className="fixed top-20 right-6 z-[60] animate-slide-in-right">
+          <div className="bg-white rounded-xl shadow-2xl border-2 border-orange-400 overflow-hidden max-w-md">
+            <div className="bg-gradient-to-r from-orange-500 to-red-500 px-4 py-2 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Lock size={18} className="text-white" />
+                <span className="text-white font-bold text-sm">Premium Feature Locked</span>
+              </div>
+              <button
+                onClick={() => {
+                  setShowToast(false);
+                  setToastTimer(5);
+                }}
+                className="text-white hover:bg-white/20 rounded-full p-1 transition"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            
+            <div className="p-4">
+              <p className="text-gray-800 font-semibold mb-2">
+                {lockedFeature} is a premium feature
+              </p>
+              <p className="text-gray-600 text-sm mb-3">
+                Please upgrade to <span className="font-bold text-blue-600">Pro</span> or <span className="font-bold text-purple-600">Enterprise</span> to access this feature.
+              </p>
+              
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => {
+                    setShowToast(false);
+                    setToastTimer(5);
+                    setShowUpgradeModal(true);
+                  }}
+                  className="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-semibold text-sm hover:shadow-lg transition flex items-center gap-2"
+                >
+                  <Crown size={16} />
+                  Upgrade Now
+                </button>
+                
+                <div className="flex items-center gap-2 text-gray-500 text-sm">
+                  <div className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center font-bold">
+                    {toastTimer}
+                  </div>
+                  <span className="text-xs">seconds</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Progress bar */}
+            <div className="h-1 bg-gray-200">
+              <div 
+                className="h-full bg-gradient-to-r from-orange-500 to-red-500 transition-all duration-1000 ease-linear"
+                style={{ width: `${(toastTimer / 5) * 100}%` }}
+              ></div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Upgrade Modal */}
       <UpgradeModal
