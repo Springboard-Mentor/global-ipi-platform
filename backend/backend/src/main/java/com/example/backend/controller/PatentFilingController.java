@@ -240,4 +240,64 @@ public class PatentFilingController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
+    
+    // Reject patent filing with email notification
+    @PutMapping("/{id}/reject")
+    public ResponseEntity<Map<String, Object>> rejectPatentFiling(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> rejectionDetails) {
+        
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            return patentFilingRepository.findById(id)
+                    .map(filing -> {
+                        // Update rejection details
+                        String rejectedPatentNumber = (String) rejectionDetails.get("rejectedPatentNumber");
+                        String rejectedPersonName = (String) rejectionDetails.get("rejectedPersonName");
+                        String location = (String) rejectionDetails.get("location");
+                        String status = (String) rejectionDetails.get("status");
+                        
+                        // Set status to rejected
+                        filing.setStatus(status != null ? status : "Patent is Rejected");
+                        
+                        PatentFiling savedFiling = patentFilingRepository.save(filing);
+                        
+                        // Send rejection email
+                        boolean emailSent = false;
+                        try {
+                            emailService.sendPatentRejectedEmail(
+                                filing.getApplicantEmail(),
+                                filing.getApplicantName(),
+                                filing.getInventionTitle(),
+                                filing.getId(),
+                                rejectedPatentNumber,
+                                rejectedPersonName,
+                                location
+                            );
+                            emailSent = true;
+                            System.out.println("✅ Patent rejection email sent to: " + filing.getApplicantEmail());
+                        } catch (Exception emailException) {
+                            System.err.println("❌ Failed to send patent rejection email: " + emailException.getMessage());
+                            emailException.printStackTrace();
+                            // Continue even if email fails
+                        }
+                        
+                        response.put("success", true);
+                        response.put("message", "Patent rejected successfully");
+                        response.put("status", savedFiling.getStatus());
+                        response.put("emailSent", emailSent);
+                        
+                        return ResponseEntity.ok(response);
+                    })
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            System.err.println("❌ ERROR rejecting patent filing:");
+            e.printStackTrace();
+            
+            response.put("success", false);
+            response.put("message", "Failed to reject patent: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
 }

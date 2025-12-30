@@ -362,6 +362,27 @@ public class EmailService {
         log.info("Patent granted email sent to: {} for patent: {}", applicantEmail, inventionTitle);
     }
     
+    /**
+     * Send patent rejection email to applicant
+     */
+    public void sendPatentRejectedEmail(String applicantEmail, String applicantName, String inventionTitle, 
+                                       Long filingId, String rejectedPatentNumber, String rejectedPersonName, 
+                                       String location) throws MessagingException {
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+        
+        helper.setFrom(fromEmail);
+        helper.setTo(applicantEmail);
+        helper.setSubject("Patent Application Status Update - " + inventionTitle);
+        
+        String htmlContent = buildPatentRejectedEmail(applicantName, inventionTitle, filingId, 
+                                                      rejectedPatentNumber, rejectedPersonName, location);
+        helper.setText(htmlContent, true);
+        
+        mailSender.send(message);
+        log.info("Patent rejection email sent to: {} for patent: {}", applicantEmail, inventionTitle);
+    }
+    
     private String buildPatentGrantedEmail(String applicantName, String inventionTitle, Long filingId) {
         return """
             <!DOCTYPE html>
@@ -525,5 +546,162 @@ public class EmailService {
             </body>
             </html>
             """.formatted(applicantName, inventionTitle, filingId);
+    }
+    
+    private String buildPatentRejectedEmail(String applicantName, String inventionTitle, Long filingId,
+                                           String rejectedPatentNumber, String rejectedPersonName, String location) {
+        return """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { 
+                        background: linear-gradient(135deg, #ef4444 0%%, #dc2626 100%%); 
+                        color: white; 
+                        padding: 40px; 
+                        text-align: center; 
+                        border-radius: 10px 10px 0 0; 
+                    }
+                    .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+                    .rejection-box { 
+                        background: linear-gradient(135deg, #fee2e2 0%%, #fecaca 100%%); 
+                        padding: 25px; 
+                        margin: 20px 0; 
+                        border-left: 4px solid #ef4444; 
+                        border-radius: 5px; 
+                    }
+                    .info-box { 
+                        background: white; 
+                        padding: 20px; 
+                        margin: 20px 0; 
+                        border-radius: 5px; 
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    }
+                    .info-row { 
+                        padding: 10px 0; 
+                        border-bottom: 1px solid #e5e7eb; 
+                    }
+                    .info-row:last-child { border-bottom: none; }
+                    .label { font-weight: bold; color: #dc2626; }
+                    .footer { 
+                        text-align: center; 
+                        margin-top: 30px; 
+                        color: #666; 
+                        font-size: 12px; 
+                        padding-top: 20px;
+                        border-top: 1px solid #e5e7eb;
+                    }
+                    .cta-button {
+                        display: inline-block;
+                        background: linear-gradient(135deg, #3b82f6 0%%, #2563eb 100%%);
+                        color: white;
+                        padding: 15px 30px;
+                        text-decoration: none;
+                        border-radius: 5px;
+                        margin: 20px 0;
+                        font-weight: bold;
+                    }
+                    .support-box {
+                        background: linear-gradient(135deg, #dbeafe 0%%, #bfdbfe 100%%);
+                        padding: 20px;
+                        margin: 20px 0;
+                        border-radius: 5px;
+                        border-left: 4px solid #3b82f6;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>Patent Application Status Update</h1>
+                        <h2>Application Decision Notification</h2>
+                    </div>
+                    <div class="content">
+                        <p>Dear <strong>%s</strong>,</p>
+                        
+                        <div class="rejection-box">
+                            <h3 style="margin-top: 0; color: #dc2626;">⚠️ Patent Application Status</h3>
+                            <p style="margin-bottom: 0;">
+                                We regret to inform you that your patent application has been carefully reviewed 
+                                and unfortunately could not be approved at this time.
+                            </p>
+                        </div>
+                        
+                        <div class="info-box">
+                            <h3 style="margin-top: 0; color: #dc2626;">Application Details:</h3>
+                            <div class="info-row">
+                                <span class="label">Invention Title:</span><br>
+                                <strong>%s</strong>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Filing ID:</span> #%d
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Reference Number:</span> %s
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Reviewed By:</span> %s
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Review Location:</span> %s
+                            </div>
+                            <div class="info-row">
+                                <span class="label">Status:</span> <span style="color: #ef4444; font-weight: bold;">❌ REJECTED</span>
+                            </div>
+                        </div>
+                        
+                        <div class="support-box">
+                            <h3 style="margin-top: 0; color: #2563eb;">💡 Need Assistance?</h3>
+                            <p>
+                                We understand this may be disappointing. Our expert team is here to help you understand 
+                                the reasons for this decision and guide you on possible next steps.
+                            </p>
+                            <ul style="margin: 10px 0;">
+                                <li>Request a detailed review report</li>
+                                <li>Consult with our patent experts</li>
+                                <li>Explore options for resubmission</li>
+                                <li>Get guidance on improving your application</li>
+                            </ul>
+                        </div>
+                        
+                        <p>
+                            <strong>What You Can Do:</strong><br>
+                            • Review the feedback provided by our examination team<br>
+                            • Contact our support team for detailed clarification<br>
+                            • Consider revising and resubmitting your application<br>
+                            • Explore alternative intellectual property protection options
+                        </p>
+                        
+                        <p style="text-align: center;">
+                            <a href="http://localhost:5173" class="cta-button">
+                                View Application Details
+                            </a>
+                        </p>
+                        
+                        <p>
+                            If you have any questions or would like to discuss this decision, please don't hesitate 
+                            to contact our support team. We're committed to helping you protect your intellectual property.
+                        </p>
+                        
+                        <p>
+                            Thank you for your submission and for choosing the Global Intellectual Property Platform.
+                        </p>
+                        
+                        <p>Best regards,<br>
+                        <strong>Global Intellectual Property Platform Team</strong></p>
+                    </div>
+                    <div class="footer">
+                        <p>This is an automated notification email from the Global IPI Platform.</p>
+                        <p>© 2025 Global Intellectual Property Platform. All rights reserved.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """.formatted(applicantName, inventionTitle, filingId, 
+                         rejectedPatentNumber != null ? rejectedPatentNumber : "N/A",
+                         rejectedPersonName != null ? rejectedPersonName : "N/A",
+                         location != null ? location : "N/A");
     }
 }
