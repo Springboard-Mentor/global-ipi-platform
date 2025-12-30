@@ -606,29 +606,35 @@ const AdminPatentManager = ({ onBack }) => {
           ) : (
             <div className="space-y-6">
               {patents.map((patent) => (
-                <div key={patent.id} className="bg-white rounded-xl shadow-lg p-6">
-                  <div className="flex items-start justify-between mb-4">
+                <div key={patent.id} className="bg-gradient-to-br from-white via-blue-50 to-indigo-50 rounded-2xl shadow-2xl p-8 border-2 border-indigo-100 hover:shadow-3xl transition-all duration-300 transform hover:-translate-y-1">
+                  {/* Header Section */}
+                  <div className="flex items-start justify-between mb-6 pb-4 border-b-2 border-indigo-200">
                     <div className="flex-1">
-                      <h3 className="text-xl font-bold text-gray-800 mb-2">
-                        {patent.inventionTitle || 'Untitled Patent'}
-                      </h3>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="text-gray-600">Applicant:</span>{' '}
-                          <span className="font-semibold">{patent.applicantName}</span>
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-3 rounded-xl shadow-lg">
+                          <CheckCircle className="w-6 h-6 text-white" />
                         </div>
-                        <div>
-                          <span className="text-gray-600">Email:</span>{' '}
-                          <span className="font-semibold text-blue-600">{patent.applicantEmail}</span>
+                        <h3 className="text-2xl font-bold text-gray-900">
+                          {patent.inventionTitle || 'Untitled Patent'}
+                        </h3>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mt-4">
+                        <div className="bg-white/60 backdrop-blur-sm p-3 rounded-lg shadow-sm">
+                          <span className="text-gray-600 block mb-1 font-semibold">Applicant:</span>
+                          <span className="font-bold text-gray-900">{patent.applicantName}</span>
                         </div>
-                        <div>
-                          <span className="text-gray-600">Filing ID:</span>{' '}
-                          <span className="font-mono">#{patent.id}</span>
+                        <div className="bg-white/60 backdrop-blur-sm p-3 rounded-lg shadow-sm">
+                          <span className="text-gray-600 block mb-1 font-semibold">Email:</span>
+                          <span className="font-bold text-blue-600">{patent.applicantEmail}</span>
                         </div>
-                        <div>
-                          <span className="text-gray-600">Status:</span>{' '}
-                          <span className={`font-semibold ${
-                            patent.status === 'Granted' ? 'text-green-600' : 'text-orange-600'
+                        <div className="bg-white/60 backdrop-blur-sm p-3 rounded-lg shadow-sm">
+                          <span className="text-gray-600 block mb-1 font-semibold">Filing ID:</span>
+                          <span className="font-mono font-bold text-gray-900">#{patent.id}</span>
+                        </div>
+                        <div className="bg-white/60 backdrop-blur-sm p-3 rounded-lg shadow-sm">
+                          <span className="text-gray-600 block mb-1 font-semibold">Status:</span>
+                          <span className={`font-bold px-3 py-1 rounded-full inline-block ${
+                            patent.status === 'Granted' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
                           }`}>
                             {patent.status}
                           </span>
@@ -637,9 +643,73 @@ const AdminPatentManager = ({ onBack }) => {
                     </div>
                   </div>
 
+                  {/* Additional Patent Details Fields */}
+                  <div className="mb-6 p-6 bg-white/70 backdrop-blur-sm rounded-xl shadow-md border border-indigo-100">
+                    <h4 className="font-bold text-gray-800 mb-4 text-lg flex items-center gap-2">
+                      <Shield className="w-5 h-5 text-indigo-600" />
+                      Patent Details
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">
+                          Patent Number
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Enter patent number"
+                          className="w-full px-4 py-2.5 bg-white border-2 border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-gray-900 font-medium placeholder:text-gray-400 shadow-sm"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">
+                          Rejected Patent Number
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Enter rejected patent number"
+                          className="w-full px-4 py-2.5 bg-white border-2 border-red-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all text-gray-900 font-medium placeholder:text-gray-400 shadow-sm"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">
+                          Rejected Patent Person Name
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Enter person name"
+                          className="w-full px-4 py-2.5 bg-white border-2 border-red-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all text-gray-900 font-medium placeholder:text-gray-400 shadow-sm"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">
+                          Granted Patent Person Name
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Enter person name"
+                          className="w-full px-4 py-2.5 bg-white border-2 border-green-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all text-gray-900 font-medium placeholder:text-gray-400 shadow-sm"
+                        />
+                      </div>
+                      
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-bold text-gray-700 mb-2">
+                          Location (Granted/Rejected)
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Enter location where patent was granted/rejected"
+                          className="w-full px-4 py-2.5 bg-white border-2 border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-gray-900 font-medium placeholder:text-gray-400 shadow-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Stages */}
-                  <div className="border-t pt-4">
-                    <h4 className="font-semibold text-gray-700 mb-3">Patent Stages:</h4>
+                  <div className="border-t-2 border-indigo-200 pt-6 mb-6">
+                    <h4 className="font-bold text-gray-800 mb-4 text-lg">Patent Stages:</h4>
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
                       {[
                         { key: 'stage1Filed', label: '1. Filed', name: 'stage1Filed' },
@@ -651,10 +721,10 @@ const AdminPatentManager = ({ onBack }) => {
                         <button
                           key={stage.key}
                           onClick={() => updateStage(patent.id, stage.name, !patent[stage.key])}
-                          className={`flex items-center gap-2 p-3 rounded-lg border-2 transition-all ${
+                          className={`flex items-center gap-2 p-3 rounded-xl border-2 transition-all transform hover:scale-105 shadow-md ${
                             patent[stage.key]
-                              ? 'bg-green-50 border-green-500 text-green-700'
-                              : 'bg-gray-50 border-gray-300 text-gray-600 hover:border-gray-400'
+                              ? 'bg-gradient-to-br from-green-50 to-emerald-100 border-green-500 text-green-800 shadow-green-200'
+                              : 'bg-white border-gray-300 text-gray-700 hover:border-indigo-400 hover:bg-indigo-50'
                           }`}
                         >
                           {patent[stage.key] ? (
@@ -662,26 +732,49 @@ const AdminPatentManager = ({ onBack }) => {
                           ) : (
                             <Circle className="w-5 h-5 text-gray-400" />
                           )}
-                          <span className="text-sm font-medium">{stage.label}</span>
+                          <span className="text-sm font-bold">{stage.label}</span>
                         </button>
                       ))}
                     </div>
                   </div>
 
-                  {/* Quick Actions */}
-                  <div className="flex gap-3 mt-4 pt-4 border-t">
+                  {/* Action Buttons */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 pt-6 border-t-2 border-indigo-200">
                     <button
                       onClick={() => grantAllStages(patent)}
-                      className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 font-semibold"
+                      className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1"
                     >
-                      <Mail className="w-4 h-4" />
+                      <Mail className="w-5 h-5" />
                       Grant Patent & Send Email
                     </button>
+                    
+                    <button
+                      onClick={() => {
+                        alert(`Viewing details for Patent #${patent.id}: ${patent.inventionTitle}`);
+                      }}
+                      className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1"
+                    >
+                      <Eye className="w-5 h-5" />
+                      View Details
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        if (confirm(`Are you sure you want to reject Patent #${patent.id}?`)) {
+                          alert(`Patent #${patent.id} has been rejected`);
+                        }
+                      }}
+                      className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-xl hover:from-red-600 hover:to-rose-700 font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1"
+                    >
+                      <X className="w-5 h-5" />
+                      Reject Patent
+                    </button>
+                    
                     <button
                       onClick={() => resetStages(patent.id)}
-                      className="flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                      className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-gray-400 to-gray-600 text-white rounded-xl hover:from-gray-500 hover:to-gray-700 font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1"
                     >
-                      <RefreshCw className="w-4 h-4" />
+                      <RefreshCw className="w-5 h-5" />
                       Reset Stages
                     </button>
                   </div>
