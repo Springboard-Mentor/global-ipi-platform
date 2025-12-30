@@ -179,11 +179,23 @@ const AdminPatentManager = ({ onBack }) => {
   const updateStage = async (patentId, stageName, value) => {
     setMessage('Updating stage...');
     try {
+      // If granting a stage, automatically grant all lower stages
       const stageUpdates = {
         [stageName]: value
       };
 
-      console.log('Updating stage:', patentId, stageUpdates);
+      if (value === true) {
+        // Cascade granting: if a higher stage is granted, grant all lower stages
+        const stageOrder = ['stage1Filed', 'stage2AdminReview', 'stage3TechnicalReview', 'stage4Verification', 'stage5Granted'];
+        const currentStageIndex = stageOrder.indexOf(stageName);
+        
+        // Grant all lower stages
+        for (let i = 0; i <= currentStageIndex; i++) {
+          stageUpdates[stageOrder[i]] = true;
+        }
+      }
+
+      console.log('Updating stage with cascade:', patentId, stageUpdates);
 
       const response = await fetch(`http://localhost:8080/api/patent-filing/${patentId}/stages`, {
         method: 'PUT',
@@ -716,7 +728,6 @@ const AdminPatentManager = ({ onBack }) => {
                         { key: 'stage2AdminReview', label: '2. Admin Review', name: 'stage2AdminReview' },
                         { key: 'stage3TechnicalReview', label: '3. Technical', name: 'stage3TechnicalReview' },
                         { key: 'stage4Verification', label: '4. Verification', name: 'stage4Verification' },
-                        { key: 'stage5Granted', label: '5. Granted', name: 'stage5Granted' },
                       ].map((stage) => (
                         <button
                           key={stage.key}
@@ -735,19 +746,33 @@ const AdminPatentManager = ({ onBack }) => {
                           <span className="text-sm font-bold">{stage.label}</span>
                         </button>
                       ))}
+                      
+                      {/* Stage 5: Grant & Send Email Button */}
+                      <button
+                        onClick={() => grantAllStages(patent)}
+                        className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all transform hover:scale-105 shadow-md ${
+                          patent.stage5Granted
+                            ? 'bg-gradient-to-br from-green-50 to-emerald-100 border-green-500 text-green-800 shadow-green-200'
+                            : 'bg-gradient-to-r from-green-500 to-emerald-600 text-white border-green-600 hover:from-green-600 hover:to-emerald-700'
+                        }`}
+                      >
+                        {patent.stage5Granted ? (
+                          <>
+                            <CheckCircle className="w-5 h-5 text-green-600" />
+                            <span className="text-sm font-bold">5. Granted</span>
+                          </>
+                        ) : (
+                          <>
+                            <Mail className="w-5 h-5" />
+                            <span className="text-sm font-bold">Grant & Send Email</span>
+                          </>
+                        )}
+                      </button>
                     </div>
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 pt-6 border-t-2 border-indigo-200">
-                    <button
-                      onClick={() => grantAllStages(patent)}
-                      className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1"
-                    >
-                      <Mail className="w-5 h-5" />
-                      Grant Patent & Send Email
-                    </button>
-                    
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-6 border-t-2 border-indigo-200">
                     <button
                       onClick={() => {
                         alert(`Viewing details for Patent #${patent.id}: ${patent.inventionTitle}`);
