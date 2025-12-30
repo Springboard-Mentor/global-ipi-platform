@@ -594,6 +594,15 @@ Note: PDF document has been downloaded. Please attach it manually to your Linked
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-bl-full"></div>
               <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-purple-400/10 to-pink-400/10 rounded-tr-full"></div>
               
+              {/* Chat Icon Button - Bottom Right */}
+              <button
+                onClick={() => openChatModal(filing)}
+                className="absolute bottom-6 right-6 p-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full shadow-lg hover:shadow-2xl hover:scale-110 transition-all duration-300 z-10 group"
+                title="Chat with Admin"
+              >
+                <MessageCircle size={26} className="group-hover:animate-pulse" />
+              </button>
+              
               <div className="relative flex items-start justify-between">
                 <div className="flex-1">
                   {/* Title with gradient and icon */}
@@ -1039,23 +1048,6 @@ Note: PDF document has been downloaded. Please attach it manually to your Linked
                     {/* Helper text */}
                     <div className="mt-3 text-center text-sm text-gray-600">
                       <p>💡 <strong>Tip:</strong> Download the complete patent details as PDF, share progress on WhatsApp, or showcase your achievement on LinkedIn!</p>
-                    </div>
-                  </div>
-                  
-                  {/* Chat with Admin Section */}
-                  <div className="pt-6 border-t-2 border-gray-300">
-                    <div className="flex items-center justify-center">
-                      <button
-                        onClick={() => openChatModal(filing)}
-                        className="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center gap-3 font-bold group"
-                        title="Chat with Admin about this patent"
-                      >
-                        <MessageCircle size={26} className="group-hover:animate-pulse" />
-                        <span className="text-lg">Chat with Admin</span>
-                      </button>
-                    </div>
-                    <div className="mt-3 text-center text-sm text-gray-600">
-                      <p>💬 Have questions about your patent? Chat directly with our admin team!</p>
                     </div>
                   </div>
                 </div>
