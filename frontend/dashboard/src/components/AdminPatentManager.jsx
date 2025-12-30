@@ -813,10 +813,13 @@ const AdminPatentManager = ({ onBack }) => {
                         <button
                           key={stage.key}
                           onClick={() => updateStage(patent.id, stage.name, !patent[stage.key])}
-                          className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all transform hover:scale-105 shadow-md ${
-                            patent[stage.key]
-                              ? 'bg-gradient-to-br from-green-50 to-emerald-100 border-green-500 text-green-800 shadow-green-200'
-                              : 'bg-white border-gray-300 text-gray-700 hover:border-indigo-400 hover:bg-indigo-50'
+                          disabled={patent.stage5Granted}
+                          className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all transform shadow-md ${
+                            patent.stage5Granted
+                              ? 'bg-gradient-to-br from-green-50 to-emerald-100 border-green-500 text-green-800 shadow-green-200 cursor-not-allowed opacity-75'
+                              : patent[stage.key]
+                              ? 'bg-gradient-to-br from-green-50 to-emerald-100 border-green-500 text-green-800 shadow-green-200 hover:scale-105'
+                              : 'bg-white border-gray-300 text-gray-700 hover:border-indigo-400 hover:bg-indigo-50 hover:scale-105'
                           }`}
                         >
                           {patent[stage.key] ? (
@@ -834,7 +837,7 @@ const AdminPatentManager = ({ onBack }) => {
                         disabled={patent.stage5Granted}
                         className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all duration-300 transform shadow-2xl font-bold ${
                           patent.stage5Granted
-                            ? 'bg-gradient-to-br from-green-50 to-emerald-100 border-green-500 text-green-800 shadow-green-300 cursor-not-allowed'
+                            ? 'bg-gradient-to-br from-green-50 to-emerald-100 border-green-500 text-green-800 shadow-green-300 cursor-not-allowed opacity-75'
                             : 'bg-gradient-to-r from-emerald-500 via-green-500 to-teal-600 text-white border-emerald-400 hover:from-emerald-600 hover:via-green-600 hover:to-teal-700 hover:scale-110 hover:shadow-emerald-400/50 active:scale-95 animate-pulse-slow'
                         }`}
                         style={!patent.stage5Granted ? {
