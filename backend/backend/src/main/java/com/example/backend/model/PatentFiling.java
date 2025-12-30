@@ -231,6 +231,22 @@ public class PatentFiling {
     @Column(name = "stage_5_granted")
     private Boolean stage5Granted = false; // Patent granted/published
     
+    // Admin Processing Details
+    @Column(name = "patent_number", length = 50)
+    private String patentNumber; // Granted patent number
+    
+    @Column(name = "granted_patent_person_name", length = 200)
+    private String grantedPatentPersonName; // Person who granted the patent
+    
+    @Column(name = "rejected_patent_number", length = 50)
+    private String rejectedPatentNumber; // Rejected patent reference number
+    
+    @Column(name = "rejected_patent_person_name", length = 200)
+    private String rejectedPatentPersonName; // Person who rejected the patent
+    
+    @Column(name = "location", length = 200)
+    private String location; // Location where patent was granted/rejected
+    
     // Status and Timestamps
     @Column(name = "status", length = 50)
     private String status = "submitted";
@@ -488,4 +504,20 @@ public class PatentFiling {
     
     public Boolean getStage5Granted() { return stage5Granted; }
     public void setStage5Granted(Boolean stage5Granted) { this.stage5Granted = stage5Granted; }
+    
+    // Getters and Setters for Admin Processing Details
+    public String getPatentNumber() { return patentNumber; }
+    public void setPatentNumber(String patentNumber) { this.patentNumber = patentNumber; }
+    
+    public String getGrantedPatentPersonName() { return grantedPatentPersonName; }
+    public void setGrantedPatentPersonName(String grantedPatentPersonName) { this.grantedPatentPersonName = grantedPatentPersonName; }
+    
+    public String getRejectedPatentNumber() { return rejectedPatentNumber; }
+    public void setRejectedPatentNumber(String rejectedPatentNumber) { this.rejectedPatentNumber = rejectedPatentNumber; }
+    
+    public String getRejectedPatentPersonName() { return rejectedPatentPersonName; }
+    public void setRejectedPatentPersonName(String rejectedPatentPersonName) { this.rejectedPatentPersonName = rejectedPatentPersonName; }
+    
+    public String getLocation() { return location; }
+    public void setLocation(String location) { this.location = location; }
 }

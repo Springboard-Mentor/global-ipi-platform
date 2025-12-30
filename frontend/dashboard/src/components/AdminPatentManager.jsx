@@ -286,7 +286,10 @@ const AdminPatentManager = ({ onBack }) => {
         stage2AdminReview: true,
         stage3TechnicalReview: true,
         stage4Verification: true,
-        stage5Granted: true
+        stage5Granted: true,
+        patentNumber: details.patentNumber,
+        grantedPatentPersonName: details.grantedPersonName,
+        location: details.location
       };
 
       console.log('Granting all stages for patent:', patent.id);

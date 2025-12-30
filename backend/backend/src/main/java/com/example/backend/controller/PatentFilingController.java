@@ -182,6 +182,17 @@ public class PatentFilingController {
                             filing.setStage5Granted((Boolean) stageUpdates.get("stage5Granted"));
                         }
                         
+                        // Save admin processing details if provided
+                        if (stageUpdates.containsKey("patentNumber")) {
+                            filing.setPatentNumber((String) stageUpdates.get("patentNumber"));
+                        }
+                        if (stageUpdates.containsKey("grantedPatentPersonName")) {
+                            filing.setGrantedPatentPersonName((String) stageUpdates.get("grantedPatentPersonName"));
+                        }
+                        if (stageUpdates.containsKey("location")) {
+                            filing.setLocation((String) stageUpdates.get("location"));
+                        }
+                        
                         // Check if all stages are complete
                         boolean allStagesComplete = 
                             filing.getStage1Filed() != null && filing.getStage1Filed() &&
@@ -257,6 +268,11 @@ public class PatentFilingController {
                         String rejectedPersonName = (String) rejectionDetails.get("rejectedPersonName");
                         String location = (String) rejectionDetails.get("location");
                         String status = (String) rejectionDetails.get("status");
+                        
+                        // Save rejection details to database
+                        filing.setRejectedPatentNumber(rejectedPatentNumber);
+                        filing.setRejectedPatentPersonName(rejectedPersonName);
+                        filing.setLocation(location);
                         
                         // Set status to rejected
                         filing.setStatus(status != null ? status : "Patent is Rejected");
