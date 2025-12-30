@@ -61,7 +61,7 @@ const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem, onLogout, userPro
         `}
       >
         {/* Header */}
-        <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+        <div className="p-6 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
           <button
             onClick={onClose}
             className="p-2 rounded-xl hover:bg-gradient-to-br hover:from-blue-50 hover:to-purple-50"
@@ -74,8 +74,10 @@ const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem, onLogout, userPro
           </button>
         </div>
 
-        {/* Main Menu */}
-        <nav className="flex-1 p-4 space-y-2">
+        {/* Scrollable Content Wrapper */}
+        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent hover:scrollbar-thumb-gray-400">
+          {/* Main Menu */}
+          <nav className="p-4 space-y-2">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isFilingTracker = item.id === 'filing';
@@ -135,8 +137,9 @@ const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem, onLogout, userPro
         </nav>
 
         {/* Bottom Menu */}
-        <div className="p-4 border-t border-gray-100 space-y-2">
-          {bottomItems.map((item) => {
+        <div className="p-4 pt-2 space-y-2">
+          <div className="border-t border-gray-100 pt-2">
+            {bottomItems.map((item) => {
             const Icon = item.icon;
             return (
               <button
@@ -160,6 +163,8 @@ const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem, onLogout, userPro
               </button>
             );
           })}
+          </div>
+        </div>
         </div>
       </div>
 
