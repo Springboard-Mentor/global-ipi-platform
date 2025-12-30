@@ -18,6 +18,12 @@ const AdminPatentManager = ({ onBack }) => {
   const [showAdminTable, setShowAdminTable] = useState(false);
   const [allAdmins, setAllAdmins] = useState([]);
   const [showPassword, setShowPassword] = useState(false);
+  
+  // Patent details fields for each patent
+  const [patentDetails, setPatentDetails] = useState({});
+  
+  // Track which patents have details section open
+  const [showDetailsFor, setShowDetailsFor] = useState({});
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -229,6 +235,42 @@ const AdminPatentManager = ({ onBack }) => {
   };
 
   const grantAllStages = async (patent) => {
+    // If details section is not open, open it first
+    if (!showDetailsFor[patent.id]) {
+      setShowDetailsFor({
+        ...showDetailsFor,
+        [patent.id]: true
+      });
+      setMessage('📝 Please fill in the required patent details below before granting the patent.');
+      setTimeout(() => {
+        setMessage('');
+      }, 4000);
+      return;
+    }
+    
+    // Validate required fields
+    const details = patentDetails[patent.id] || {};
+    const missingFields = [];
+    
+    if (!details.patentNumber || details.patentNumber.trim() === '') {
+      missingFields.push('Patent Number');
+    }
+    if (!details.grantedPersonName || details.grantedPersonName.trim() === '') {
+      missingFields.push('Granted Patent Person Name');
+    }
+    if (!details.location || details.location.trim() === '') {
+      missingFields.push('Location');
+    }
+    
+    if (missingFields.length > 0) {
+      setMessage(`❌ Cannot grant patent! Please fill in the following required fields: ${missingFields.join(', ')}`);
+      // Scroll to the patent details section
+      setTimeout(() => {
+        setMessage('');
+      }, 5000);
+      return;
+    }
+    
     setMessage('Granting patent and sending email...');
     try {
       const stageUpdates = {
@@ -240,6 +282,7 @@ const AdminPatentManager = ({ onBack }) => {
       };
 
       console.log('Granting all stages for patent:', patent.id);
+      console.log('Patent details:', details);
 
       const response = await fetch(`http://localhost:8080/api/patent-filing/${patent.id}/stages`, {
         method: 'PUT',
@@ -655,74 +698,112 @@ const AdminPatentManager = ({ onBack }) => {
                     </div>
                   </div>
 
-                  {/* Additional Patent Details Fields */}
-                  <div className="mb-6 p-6 bg-white/70 backdrop-blur-sm rounded-xl shadow-md border border-indigo-100">
-                    <h4 className="font-bold text-gray-800 mb-4 text-lg flex items-center gap-2">
-                      <Shield className="w-5 h-5 text-indigo-600" />
-                      Patent Details
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">
-                          Patent Number
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="Enter patent number"
-                          className="w-full px-4 py-2.5 bg-white border-2 border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-gray-900 font-medium placeholder:text-gray-400 shadow-sm"
-                        />
+                  {/* Additional Patent Details Fields - Only shown when details are being filled */}
+                  {showDetailsFor[patent.id] && (
+                    <div className="mb-6 p-6 bg-white/70 backdrop-blur-sm rounded-xl shadow-md border-2 border-indigo-300 animate-fadeIn">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                          <Shield className="w-5 h-5 text-indigo-600" />
+                          Patent Details <span className="text-sm text-red-600">(Required for granting patent)</span>
+                        </h4>
+                        <button
+                          onClick={() => setShowDetailsFor({
+                            ...showDetailsFor,
+                            [patent.id]: false
+                          })}
+                          className="text-gray-500 hover:text-gray-700 transition-colors"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
                       </div>
-                      
-                      <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">
-                          Rejected Patent Number
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="Enter rejected patent number"
-                          className="w-full px-4 py-2.5 bg-white border-2 border-red-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all text-gray-900 font-medium placeholder:text-gray-400 shadow-sm"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">
-                          Rejected Patent Person Name
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="Enter person name"
-                          className="w-full px-4 py-2.5 bg-white border-2 border-red-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all text-gray-900 font-medium placeholder:text-gray-400 shadow-sm"
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">
-                          Granted Patent Person Name
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="Enter person name"
-                          className="w-full px-4 py-2.5 bg-white border-2 border-green-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all text-gray-900 font-medium placeholder:text-gray-400 shadow-sm"
-                        />
-                      </div>
-                      
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-bold text-gray-700 mb-2">
-                          Location (Granted/Rejected)
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="Enter location where patent was granted/rejected"
-                          className="w-full px-4 py-2.5 bg-white border-2 border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-gray-900 font-medium placeholder:text-gray-400 shadow-sm"
-                        />
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-sm font-bold text-gray-700 mb-2">
+                            Patent Number <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={patentDetails[patent.id]?.patentNumber || ''}
+                            onChange={(e) => setPatentDetails({
+                              ...patentDetails,
+                              [patent.id]: { ...patentDetails[patent.id], patentNumber: e.target.value }
+                            })}
+                            placeholder="Enter patent number"
+                            className="w-full px-4 py-2.5 bg-white border-2 border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-gray-900 font-medium placeholder:text-gray-400 shadow-sm"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-bold text-gray-700 mb-2">
+                            Rejected Patent Number
+                          </label>
+                          <input
+                            type="text"
+                            value={patentDetails[patent.id]?.rejectedPatentNumber || ''}
+                            onChange={(e) => setPatentDetails({
+                              ...patentDetails,
+                              [patent.id]: { ...patentDetails[patent.id], rejectedPatentNumber: e.target.value }
+                            })}
+                            placeholder="Enter rejected patent number"
+                            className="w-full px-4 py-2.5 bg-white border-2 border-red-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all text-gray-900 font-medium placeholder:text-gray-400 shadow-sm"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-bold text-gray-700 mb-2">
+                            Rejected Patent Person Name
+                          </label>
+                          <input
+                            type="text"
+                            value={patentDetails[patent.id]?.rejectedPersonName || ''}
+                            onChange={(e) => setPatentDetails({
+                              ...patentDetails,
+                              [patent.id]: { ...patentDetails[patent.id], rejectedPersonName: e.target.value }
+                            })}
+                            placeholder="Enter person name"
+                            className="w-full px-4 py-2.5 bg-white border-2 border-red-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all text-gray-900 font-medium placeholder:text-gray-400 shadow-sm"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-bold text-gray-700 mb-2">
+                            Granted Patent Person Name <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={patentDetails[patent.id]?.grantedPersonName || ''}
+                            onChange={(e) => setPatentDetails({
+                              ...patentDetails,
+                              [patent.id]: { ...patentDetails[patent.id], grantedPersonName: e.target.value }
+                            })}
+                            placeholder="Enter person name"
+                            className="w-full px-4 py-2.5 bg-white border-2 border-green-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all text-gray-900 font-medium placeholder:text-gray-400 shadow-sm"
+                          />
+                        </div>
+                        
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-bold text-gray-700 mb-2">
+                            Location (Granted/Rejected) <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={patentDetails[patent.id]?.location || ''}
+                            onChange={(e) => setPatentDetails({
+                              ...patentDetails,
+                              [patent.id]: { ...patentDetails[patent.id], location: e.target.value }
+                            })}
+                            placeholder="Enter location where patent was granted/rejected"
+                            className="w-full px-4 py-2.5 bg-white border-2 border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-gray-900 font-medium placeholder:text-gray-400 shadow-sm"
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Stages */}
                   <div className="border-t-2 border-indigo-200 pt-6 mb-6">
                     <h4 className="font-bold text-gray-800 mb-4 text-lg">Patent Stages:</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4 w-full">
                       {[
                         { key: 'stage1Filed', label: '1. Filed', name: 'stage1Filed' },
                         { key: 'stage2AdminReview', label: '2. Admin Review', name: 'stage2AdminReview' },
@@ -732,7 +813,7 @@ const AdminPatentManager = ({ onBack }) => {
                         <button
                           key={stage.key}
                           onClick={() => updateStage(patent.id, stage.name, !patent[stage.key])}
-                          className={`flex items-center gap-2 p-3 rounded-xl border-2 transition-all transform hover:scale-105 shadow-md ${
+                          className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all transform hover:scale-105 shadow-md ${
                             patent[stage.key]
                               ? 'bg-gradient-to-br from-green-50 to-emerald-100 border-green-500 text-green-800 shadow-green-200'
                               : 'bg-white border-gray-300 text-gray-700 hover:border-indigo-400 hover:bg-indigo-50'
@@ -743,28 +824,32 @@ const AdminPatentManager = ({ onBack }) => {
                           ) : (
                             <Circle className="w-5 h-5 text-gray-400" />
                           )}
-                          <span className="text-sm font-bold">{stage.label}</span>
+                          <span className="text-sm font-bold whitespace-nowrap">{stage.label}</span>
                         </button>
                       ))}
                       
                       {/* Stage 5: Grant & Send Email Button */}
                       <button
                         onClick={() => grantAllStages(patent)}
-                        className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all transform hover:scale-105 shadow-md ${
+                        disabled={patent.stage5Granted}
+                        className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all duration-300 transform shadow-2xl font-bold ${
                           patent.stage5Granted
-                            ? 'bg-gradient-to-br from-green-50 to-emerald-100 border-green-500 text-green-800 shadow-green-200'
-                            : 'bg-gradient-to-r from-green-500 to-emerald-600 text-white border-green-600 hover:from-green-600 hover:to-emerald-700'
+                            ? 'bg-gradient-to-br from-green-50 to-emerald-100 border-green-500 text-green-800 shadow-green-300 cursor-not-allowed'
+                            : 'bg-gradient-to-r from-emerald-500 via-green-500 to-teal-600 text-white border-emerald-400 hover:from-emerald-600 hover:via-green-600 hover:to-teal-700 hover:scale-110 hover:shadow-emerald-400/50 active:scale-95 animate-pulse-slow'
                         }`}
+                        style={!patent.stage5Granted ? {
+                          boxShadow: '0 10px 40px rgba(16, 185, 129, 0.4), 0 0 20px rgba(16, 185, 129, 0.3)',
+                        } : {}}
                       >
                         {patent.stage5Granted ? (
                           <>
                             <CheckCircle className="w-5 h-5 text-green-600" />
-                            <span className="text-sm font-bold">5. Granted</span>
+                            <span className="text-sm font-bold whitespace-nowrap">5. Granted</span>
                           </>
                         ) : (
                           <>
-                            <Mail className="w-5 h-5" />
-                            <span className="text-sm font-bold">Grant & Send Email</span>
+                            <Mail className="w-5 h-5 animate-bounce" />
+                            <span className="text-sm font-extrabold tracking-wide whitespace-nowrap">5. Grant & Send Email</span>
                           </>
                         )}
                       </button>
