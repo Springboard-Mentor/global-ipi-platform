@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FileText, Calendar, User, DollarSign, CheckCircle, Clock, Eye, X, ArrowLeft, Download, Share2, Linkedin, Lock, Crown, Sparkles } from 'lucide-react';
+import { FileText, Calendar, User, DollarSign, CheckCircle, Clock, Eye, X, ArrowLeft, Download, Share2, Linkedin, Lock, Crown, Sparkles, MessageCircle, Send } from 'lucide-react';
 import { auth } from '../firebase';
 import PatentProgressTracker from './PatentProgressTracker';
 import html2canvas from 'html2canvas';
@@ -14,6 +14,14 @@ const FilingTracker = ({ userProfile, onBack, onAddNotification }) => {
   const [expandedFilingId, setExpandedFilingId] = useState(null);
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const patentDetailsRef = useRef(null);
+  
+  // Chat modal states
+  const [showChatModal, setShowChatModal] = useState(false);
+  const [selectedPatent, setSelectedPatent] = useState(null);
+  const [currentMessage, setCurrentMessage] = useState('');
+  const [showToast, setShowToast] = useState(false);
+  const [toastTimer, setToastTimer] = useState(4);
+  const [messageLimitReached, setMessageLimitReached] = useState(false);
 
   useEffect(() => {
     if (userProfile?.uid) {
@@ -279,6 +287,133 @@ Note: PDF document has been downloaded. Please attach it manually to your Linked
     window.open(linkedInUrl, '_blank');
   };
 
+  // Chat functions
+  const openChatModal = (filing) => {
+    console.log('Opening chat modal for patent:', filing.inventionTitle);
+    console.log('User profile:', userProfile);
+    console.log('Subscription type:', userProfile?.subscriptionType);
+    
+    setSelectedPatent(filing);
+    setShowChatModal(true);
+    setShowToast(true);
+    setMessageLimitReached(false);
+    
+    // Get message limit based on subscription
+    const messageLimit = getMessageLimit();
+    const messageCount = getMessageCount(filing);
+    
+    console.log('Message limit:', messageLimit);
+    console.log('Current message count:', messageCount);
+    
+    if (messageCount >= messageLimit) {
+      setMessageLimitReached(true);
+    }
+    
+    // Start toast timer
+    setToastTimer(4);
+    const interval = setInterval(() => {
+      setToastTimer(prev => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          setShowToast(false);
+          return 4;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const closeChatModal = () => {
+    setShowChatModal(false);
+    setSelectedPatent(null);
+    setCurrentMessage('');
+    setShowToast(false);
+  };
+
+  const getMessageLimit = () => {
+    const subscriptionType = userProfile?.subscriptionType?.toLowerCase();
+    if (subscriptionType === 'enterprise') return 5;
+    if (subscriptionType === 'pro') return 2;
+    return 0; // basic users can't send messages
+  };
+
+  const getMessageCount = (filing) => {
+    let count = 0;
+    for (let i = 1; i <= 5; i++) {
+      if (filing[`m${i}`]) count++;
+    }
+    return count;
+  };
+
+  const sendMessage = async () => {
+    if (!currentMessage.trim()) {
+      alert('Please enter a message');
+      return;
+    }
+
+    const messageLimit = getMessageLimit();
+    const messageCount = getMessageCount(selectedPatent);
+
+    if (messageCount >= messageLimit) {
+      alert(`You have reached your message limit of ${messageLimit} messages for this patent.`);
+      return;
+    }
+
+    try {
+      // Find the next available message slot
+      let messageField = null;
+      for (let i = 1; i <= 5; i++) {
+        if (!selectedPatent[`m${i}`]) {
+          messageField = `m${i}`;
+          break;
+        }
+      }
+
+      if (!messageField) {
+        alert('Maximum message limit reached');
+        return;
+      }
+
+      // Update the patent filing with the message
+      const response = await fetch(`http://localhost:8080/api/patent-filing/${selectedPatent.id}/message`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messageField: messageField,
+          messageContent: currentMessage,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send message');
+      }
+
+      const updatedFiling = await response.json();
+      
+      // Update the local state
+      setFilings(prevFilings =>
+        prevFilings.map(f => f.id === updatedFiling.id ? updatedFiling : f)
+      );
+      
+      setSelectedPatent(updatedFiling);
+      setCurrentMessage('');
+      
+      // Check if limit reached
+      if (getMessageCount(updatedFiling) >= messageLimit) {
+        setMessageLimitReached(true);
+      }
+
+      if (onAddNotification) {
+        onAddNotification('Message sent successfully! Admin will reply soon.', 'success');
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      alert('Failed to send message. Please try again.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="bg-white rounded-xl shadow-lg p-6">
@@ -528,28 +663,40 @@ Note: PDF document has been downloaded. Please attach it manually to your Linked
                           <span className="text-base">🏆</span>
                           GRANTED
                         </span>
-                      )}
-                    </div>
+                      )}                    {filing.status === 'Patent is Rejected' && (
+                      <span className="px-4 py-1.5 bg-gradient-to-r from-red-500 to-rose-600 text-white text-xs font-bold rounded-full shadow-lg animate-pulse flex items-center gap-1">
+                        <span className="text-base">❌</span>
+                        REJECTED
+                      </span>
+                    )}                    </div>
                     <div className="flex gap-3">
                       {[
                         { completed: filing.stage1Filed, label: 'Filed', color: 'blue' },
                         { completed: filing.stage2AdminReview, label: 'Admin Review', color: 'purple' },
                         { completed: filing.stage3TechnicalReview, label: 'Technical', color: 'indigo' },
                         { completed: filing.stage4Verification, label: 'Verification', color: 'green' },
-                        { completed: filing.stage5Granted, label: 'Granted', color: 'emerald' }
+                        { completed: filing.stage5Granted, label: filing.status === 'Patent is Rejected' ? 'Rejected' : 'Granted', color: filing.status === 'Patent is Rejected' ? 'red' : 'emerald' }
                       ].map((stage, idx) => (
                         <div key={idx} className="flex-1">
                           <div className={`h-3 rounded-full shadow-inner transition-all duration-500 ${
                             stage.completed 
-                              ? `bg-gradient-to-r from-green-400 to-green-600 shadow-green-300` 
+                              ? stage.color === 'red'
+                                ? `bg-gradient-to-r from-red-400 to-red-600 shadow-red-300`
+                                : `bg-gradient-to-r from-green-400 to-green-600 shadow-green-300` 
                               : 'bg-gray-300'
                           }`}>
                             {stage.completed && (
-                              <div className="h-full rounded-full bg-gradient-to-r from-green-300/50 to-green-500/50 animate-pulse"></div>
+                              <div className={`h-full rounded-full animate-pulse ${
+                                stage.color === 'red'
+                                  ? 'bg-gradient-to-r from-red-300/50 to-red-500/50'
+                                  : 'bg-gradient-to-r from-green-300/50 to-green-500/50'
+                              }`}></div>
                             )}
                           </div>
                           <span className={`text-xs block mt-2 text-center font-medium ${
-                            stage.completed ? 'text-green-700' : 'text-gray-500'
+                            stage.completed 
+                              ? stage.color === 'red' ? 'text-red-700' : 'text-green-700' 
+                              : 'text-gray-500'
                           }`}>
                             {stage.label}
                           </span>
@@ -593,6 +740,59 @@ Note: PDF document has been downloaded. Please attach it manually to your Linked
                     </h3>
                     <PatentProgressTracker filing={filing} />
                   </div>
+                  
+                  {/* Grant/Reject Details */}
+                  {filing.stage5Granted && filing.status !== 'Patent is Rejected' && (
+                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border-2 border-green-300 shadow-lg">
+                      <h3 className="text-lg font-bold text-green-800 mb-4 flex items-center gap-2">
+                        <span className="text-2xl">🏆</span>
+                        Patent Granted - Official Details
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="bg-white/70 p-4 rounded-lg border border-green-200">
+                          <label className="text-sm font-semibold text-green-700 block mb-1">📜 Patent Number</label>
+                          <p className="text-gray-900 font-bold">{filing.patentNumber || 'N/A'}</p>
+                        </div>
+                        <div className="bg-white/70 p-4 rounded-lg border border-green-200">
+                          <label className="text-sm font-semibold text-green-700 block mb-1">👤 Granted by</label>
+                          <p className="text-gray-900 font-bold">{filing.grantedPatentPersonName || 'N/A'}</p>
+                        </div>
+                        <div className="bg-white/70 p-4 rounded-lg border border-green-200">
+                          <label className="text-sm font-semibold text-green-700 block mb-1">📍 Location</label>
+                          <p className="text-gray-900 font-bold">{filing.location || 'N/A'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {filing.status === 'Patent is Rejected' && (
+                    <div className="bg-gradient-to-br from-red-50 to-rose-50 rounded-xl p-6 border-2 border-red-300 shadow-lg">
+                      <h3 className="text-lg font-bold text-red-800 mb-4 flex items-center gap-2">
+                        <span className="text-2xl">❌</span>
+                        Patent Rejected - Details
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="bg-white/70 p-4 rounded-lg border border-red-200">
+                          <label className="text-sm font-semibold text-red-700 block mb-1">📜 Rejected Patent Number</label>
+                          <p className="text-gray-900 font-bold">{filing.rejectedPatentNumber || 'N/A'}</p>
+                        </div>
+                        <div className="bg-white/70 p-4 rounded-lg border border-red-200">
+                          <label className="text-sm font-semibold text-red-700 block mb-1">👤 Rejected by</label>
+                          <p className="text-gray-900 font-bold">{filing.rejectedPatentPersonName || 'N/A'}</p>
+                        </div>
+                        <div className="bg-white/70 p-4 rounded-lg border border-red-200">
+                          <label className="text-sm font-semibold text-red-700 block mb-1">📍 Location</label>
+                          <p className="text-gray-900 font-bold">{filing.location || 'N/A'}</p>
+                        </div>
+                      </div>
+                      <div className="mt-4 p-4 bg-red-100 rounded-lg border border-red-200">
+                        <p className="text-red-800 text-sm">
+                          <strong>⚠️ Note:</strong> Your patent application has been reviewed and unfortunately could not be approved at this time. 
+                          Please contact our support team for detailed feedback and guidance on possible next steps.
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Applicant Information */}
                   <div>
@@ -841,10 +1041,158 @@ Note: PDF document has been downloaded. Please attach it manually to your Linked
                       <p>💡 <strong>Tip:</strong> Download the complete patent details as PDF, share progress on WhatsApp, or showcase your achievement on LinkedIn!</p>
                     </div>
                   </div>
+                  
+                  {/* Chat with Admin Section */}
+                  <div className="pt-6 border-t-2 border-gray-300">
+                    <div className="flex items-center justify-center">
+                      <button
+                        onClick={() => openChatModal(filing)}
+                        className="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl shadow-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center gap-3 font-bold group"
+                        title="Chat with Admin about this patent"
+                      >
+                        <MessageCircle size={26} className="group-hover:animate-pulse" />
+                        <span className="text-lg">Chat with Admin</span>
+                      </button>
+                    </div>
+                    <div className="mt-3 text-center text-sm text-gray-600">
+                      <p>💬 Have questions about your patent? Chat directly with our admin team!</p>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Chat Modal - Available for all users */}
+      {showChatModal && selectedPatent && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-[slideIn_0.3s_ease-out]">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 p-6 text-white">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-3">
+                  <MessageCircle size={28} />
+                  <h2 className="text-2xl font-bold">Chat with Admin</h2>
+                </div>
+                <button
+                  onClick={closeChatModal}
+                  className="p-2 hover:bg-white/20 rounded-lg transition"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+              <p className="text-sm bg-white/20 px-4 py-2 rounded-lg font-semibold">
+                📋 Patent: {selectedPatent.inventionTitle}
+              </p>
+            </div>
+
+            {/* Toast Message */}
+            {showToast && (
+              <div className={`mx-6 mt-4 p-4 rounded-lg border-2 ${
+                userProfile?.subscriptionType?.toLowerCase() === 'enterprise'
+                  ? 'bg-purple-50 border-purple-300'
+                  : 'bg-blue-50 border-blue-300'
+              } animate-[slideDown_0.3s_ease-out]`}>
+                <div className="flex items-center justify-between">
+                  <p className={`text-sm font-bold ${
+                    userProfile?.subscriptionType?.toLowerCase() === 'enterprise'
+                      ? 'text-purple-800'
+                      : 'text-blue-800'
+                  }`}>
+                    {userProfile?.subscriptionType?.toLowerCase() === 'enterprise'
+                      ? '💼 You can send maximum 5 messages to enquire about this patent'
+                      : '⭐ You can send only 2 messages to enquire about this patent'}
+                  </p>
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                    userProfile?.subscriptionType?.toLowerCase() === 'enterprise'
+                      ? 'bg-purple-200 text-purple-800'
+                      : 'bg-blue-200 text-blue-800'
+                  }`}>
+                    {toastTimer}s
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Chat Messages Area */}
+            <div className="p-6 max-h-96 overflow-y-auto space-y-4">
+              {[1, 2, 3, 4, 5].map(i => {
+                const userMsg = selectedPatent[`m${i}`];
+                const adminReply = selectedPatent[`r${i}`];
+                
+                return (
+                  <div key={i}>
+                    {userMsg && (
+                      <div className="flex justify-end mb-2">
+                        <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-3 rounded-2xl rounded-tr-none max-w-[80%] shadow-lg">
+                          <p className="text-sm font-medium mb-1">You</p>
+                          <p>{userMsg}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {adminReply && (
+                      <div className="flex justify-start">
+                        <div className="bg-gray-100 text-gray-800 px-4 py-3 rounded-2xl rounded-tl-none max-w-[80%] border border-gray-300 shadow">
+                          <p className="text-sm font-medium mb-1 text-blue-600">Admin</p>
+                          <p>{adminReply}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {!selectedPatent.m1 && (
+                <div className="text-center py-8">
+                  <MessageCircle size={48} className="mx-auto text-gray-300 mb-3" />
+                  <p className="text-gray-500">No messages yet. Start the conversation!</p>
+                </div>
+              )}
+            </div>
+
+            {/* Message Input Area */}
+            <div className="p-6 border-t-2 border-gray-200 bg-gray-50">
+              {messageLimitReached ? (
+                <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4 text-center">
+                  <p className="text-red-800 font-bold">
+                    ⚠️ You have reached your message limit of {getMessageLimit()} messages for this patent.
+                  </p>
+                  <p className="text-red-600 text-sm mt-2">
+                    Please wait for admin replies or upgrade your subscription for more messages.
+                  </p>
+                </div>
+              ) : (
+                <div className="flex gap-3">
+                  <input
+                    type="text"
+                    value={currentMessage}
+                    onChange={(e) => setCurrentMessage(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                    placeholder="Type your message here..."
+                    className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none transition"
+                    maxLength={500}
+                  />
+                  <button
+                    onClick={sendMessage}
+                    disabled={!currentMessage.trim()}
+                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-bold"
+                  >
+                    <Send size={20} />
+                    Send
+                  </button>
+                </div>
+              )}
+              
+              <div className="mt-3 text-center">
+                <span className="text-xs text-gray-600">
+                  Messages sent: <span className="font-bold text-blue-600">{getMessageCount(selectedPatent)}</span> / {getMessageLimit()}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -859,6 +1207,17 @@ Note: PDF document has been downloaded. Please attach it manually to your Linked
             opacity: 1;
             max-height: 5000px;
             transform: translateY(0);
+          }
+        }
+        
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
           }
         }
       `}</style>

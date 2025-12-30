@@ -316,4 +316,53 @@ public class PatentFilingController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
+    
+    // Save user message to patent filing
+    @PutMapping("/{id}/message")
+    public ResponseEntity<?> saveMessage(@PathVariable Long id, @RequestBody Map<String, String> messageData) {
+        try {
+            String messageField = messageData.get("messageField"); // e.g., "m1", "m2", etc.
+            String messageContent = messageData.get("messageContent");
+            
+            System.out.println("=== Saving Message to Patent Filing ===");
+            System.out.println("Patent Filing ID: " + id);
+            System.out.println("Message Field: " + messageField);
+            System.out.println("Message Content: " + messageContent);
+            
+            return patentFilingRepository.findById(id)
+                    .map(filing -> {
+                        // Set the message based on the field name
+                        switch (messageField) {
+                            case "m1":
+                                filing.setM1(messageContent);
+                                break;
+                            case "m2":
+                                filing.setM2(messageContent);
+                                break;
+                            case "m3":
+                                filing.setM3(messageContent);
+                                break;
+                            case "m4":
+                                filing.setM4(messageContent);
+                                break;
+                            case "m5":
+                                filing.setM5(messageContent);
+                                break;
+                            default:
+                                return ResponseEntity.badRequest().body("Invalid message field: " + messageField);
+                        }
+                        
+                        PatentFiling savedFiling = patentFilingRepository.save(filing);
+                        System.out.println("✅ Message saved successfully to field: " + messageField);
+                        
+                        return ResponseEntity.ok(savedFiling);
+                    })
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            System.err.println("❌ ERROR saving message:");
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to save message: " + e.getMessage());
+        }
+    }
 }

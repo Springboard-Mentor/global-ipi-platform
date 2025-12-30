@@ -247,6 +247,34 @@ public class PatentFiling {
     @Column(name = "location", length = 200)
     private String location; // Location where patent was granted/rejected
     
+    // Chat Messages (User Messages: m1-m5, Admin Replies: r1-r4)
+    @Column(name = "m1", columnDefinition = "TEXT")
+    private String m1; // User message 1
+    
+    @Column(name = "m2", columnDefinition = "TEXT")
+    private String m2; // User message 2
+    
+    @Column(name = "m3", columnDefinition = "TEXT")
+    private String m3; // User message 3
+    
+    @Column(name = "m4", columnDefinition = "TEXT")
+    private String m4; // User message 4
+    
+    @Column(name = "m5", columnDefinition = "TEXT")
+    private String m5; // User message 5
+    
+    @Column(name = "r1", columnDefinition = "TEXT")
+    private String r1; // Admin reply 1
+    
+    @Column(name = "r2", columnDefinition = "TEXT")
+    private String r2; // Admin reply 2
+    
+    @Column(name = "r3", columnDefinition = "TEXT")
+    private String r3; // Admin reply 3
+    
+    @Column(name = "r4", columnDefinition = "TEXT")
+    private String r4; // Admin reply 4
+    
     // Status and Timestamps
     @Column(name = "status", length = 50)
     private String status = "submitted";
@@ -520,4 +548,32 @@ public class PatentFiling {
     
     public String getLocation() { return location; }
     public void setLocation(String location) { this.location = location; }
+    
+    // Getters and Setters for Chat Messages
+    public String getM1() { return m1; }
+    public void setM1(String m1) { this.m1 = m1; }
+    
+    public String getM2() { return m2; }
+    public void setM2(String m2) { this.m2 = m2; }
+    
+    public String getM3() { return m3; }
+    public void setM3(String m3) { this.m3 = m3; }
+    
+    public String getM4() { return m4; }
+    public void setM4(String m4) { this.m4 = m4; }
+    
+    public String getM5() { return m5; }
+    public void setM5(String m5) { this.m5 = m5; }
+    
+    public String getR1() { return r1; }
+    public void setR1(String r1) { this.r1 = r1; }
+    
+    public String getR2() { return r2; }
+    public void setR2(String r2) { this.r2 = r2; }
+    
+    public String getR3() { return r3; }
+    public void setR3(String r3) { this.r3 = r3; }
+    
+    public String getR4() { return r4; }
+    public void setR4(String r4) { this.r4 = r4; }
 }
