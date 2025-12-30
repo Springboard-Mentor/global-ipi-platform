@@ -365,4 +365,50 @@ public class PatentFilingController {
                     .body("Failed to save message: " + e.getMessage());
         }
     }
+
+    // Save admin reply to patent filing
+    @PutMapping("/{id}/reply")
+    public ResponseEntity<?> saveAdminReply(@PathVariable Long id, @RequestBody Map<String, String> replyData) {
+        try {
+            String replyField = replyData.get("replyField"); // e.g., "r1", "r2", "r3", "r4"
+            String replyContent = replyData.get("replyContent");
+            
+            System.out.println("=== Saving Admin Reply to Patent Filing ===");
+            System.out.println("Patent Filing ID: " + id);
+            System.out.println("Reply Field: " + replyField);
+            System.out.println("Reply Content: " + replyContent);
+            
+            return patentFilingRepository.findById(id)
+                    .map(filing -> {
+                        // Set the reply based on the field name
+                        switch (replyField) {
+                            case "r1":
+                                filing.setR1(replyContent);
+                                break;
+                            case "r2":
+                                filing.setR2(replyContent);
+                                break;
+                            case "r3":
+                                filing.setR3(replyContent);
+                                break;
+                            case "r4":
+                                filing.setR4(replyContent);
+                                break;
+                            default:
+                                return ResponseEntity.badRequest().body("Invalid reply field: " + replyField);
+                        }
+                        
+                        PatentFiling savedFiling = patentFilingRepository.save(filing);
+                        System.out.println("✅ Admin reply saved successfully to field: " + replyField);
+                        
+                        return ResponseEntity.ok(savedFiling);
+                    })
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            System.err.println("❌ ERROR saving admin reply:");
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to save admin reply: " + e.getMessage());
+        }
+    }
 }

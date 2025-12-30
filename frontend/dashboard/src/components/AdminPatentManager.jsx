@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, Circle, Mail, RefreshCw, AlertCircle, LogIn, LogOut, User, Shield, Eye, EyeOff, X, ArrowLeft, Lightbulb, FileCheck, Upload, CreditCard } from 'lucide-react';
+import { CheckCircle, Circle, Mail, RefreshCw, AlertCircle, LogIn, LogOut, User, Shield, Eye, EyeOff, X, ArrowLeft, Lightbulb, FileCheck, Upload, CreditCard, MessageCircle, Send } from 'lucide-react';
 
 const AdminPatentManager = ({ onBack }) => {
   const [patents, setPatents] = useState([]);
@@ -28,6 +28,11 @@ const AdminPatentManager = ({ onBack }) => {
   
   // Track which patent's full details are being viewed
   const [viewingPatentDetails, setViewingPatentDetails] = useState(null);
+
+  // Admin chat states
+  const [showAdminChat, setShowAdminChat] = useState(false);
+  const [selectedPatentForChat, setSelectedPatentForChat] = useState(null);
+  const [adminReply, setAdminReply] = useState('');
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -456,6 +461,77 @@ const AdminPatentManager = ({ onBack }) => {
     } catch (error) {
       console.error('Error resetting stages:', error);
       setMessage(`❌ Error: ${error.message}. Check if backend is running.`);
+    }
+  };
+
+  // Admin Chat Functions
+  const openAdminChat = (patent) => {
+    console.log('Opening admin chat for patent:', patent);
+    setSelectedPatentForChat(patent);
+    setShowAdminChat(true);
+    setAdminReply('');
+  };
+
+  const closeAdminChat = () => {
+    setShowAdminChat(false);
+    setSelectedPatentForChat(null);
+    setAdminReply('');
+  };
+
+  const getReplyCount = (patent) => {
+    if (!patent) return 0;
+    let count = 0;
+    ['r1', 'r2', 'r3', 'r4'].forEach(field => {
+      if (patent[field] && patent[field].trim() !== '') {
+        count++;
+      }
+    });
+    return count;
+  };
+
+  const sendAdminReply = async () => {
+    if (!adminReply.trim() || !selectedPatentForChat) {
+      return;
+    }
+
+    const replyCount = getReplyCount(selectedPatentForChat);
+    if (replyCount >= 4) {
+      alert('Maximum 4 replies already sent for this patent!');
+      return;
+    }
+
+    try {
+      const replyField = `r${replyCount + 1}`;
+      console.log(`Sending admin reply to ${replyField}:`, adminReply);
+
+      const response = await fetch(`http://localhost:8080/api/patent-filing/${selectedPatentForChat.id}/reply`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          replyField: replyField,
+          replyContent: adminReply.trim()
+        }),
+      });
+
+      if (response.ok) {
+        const updatedPatent = await response.json();
+        console.log('Reply saved successfully:', updatedPatent);
+        
+        // Update patents list
+        setPatents(patents.map(p => p.id === updatedPatent.id ? updatedPatent : p));
+        setSelectedPatentForChat(updatedPatent);
+        setAdminReply('');
+        setMessage('✅ Reply sent successfully!');
+        setTimeout(() => setMessage(''), 3000);
+      } else {
+        console.error('Failed to send reply:', response.status);
+        alert('Failed to send reply. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error sending reply:', error);
+      alert('Error sending reply. Please check your connection.');
     }
   };
 
@@ -995,7 +1071,7 @@ const AdminPatentManager = ({ onBack }) => {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className={`grid grid-cols-1 ${patent.stage5Granted ? 'md:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-3'} gap-3 pt-6 border-t-2 border-indigo-200`}>
+                  <div className={`grid grid-cols-1 ${patent.stage5Granted ? 'md:grid-cols-3' : 'md:grid-cols-2 lg:grid-cols-4'} gap-3 pt-6 border-t-2 border-indigo-200`}>
                     <button
                       onClick={() => setViewingPatentDetails(patent)}
                       className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1"
@@ -1020,6 +1096,14 @@ const AdminPatentManager = ({ onBack }) => {
                     >
                       <RefreshCw className="w-5 h-5" />
                       Reset Stages
+                    </button>
+                    
+                    <button
+                      onClick={() => openAdminChat(patent)}
+                      className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl hover:from-purple-600 hover:to-pink-700 font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1"
+                    >
+                      <MessageCircle className="w-5 h-5" />
+                      View Chat
                     </button>
                   </div>
                 </div>
@@ -1731,8 +1815,137 @@ const AdminPatentManager = ({ onBack }) => {
           </div>
         </div>
       )}
+
+      {/* Admin Chat Modal */}
+      {showAdminChat && selectedPatentForChat && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={closeAdminChat}>
+          <div 
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col animate-slideIn" 
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6 rounded-t-2xl flex items-center justify-between">
+              <div className="flex-1">
+                <h3 className="text-2xl font-bold mb-1">Admin Chat</h3>
+                <p className="text-purple-100 text-sm">Patent: {selectedPatentForChat.inventionTitle}</p>
+                <p className="text-purple-100 text-xs mt-1">Filing ID: #{selectedPatentForChat.id}</p>
+              </div>
+              <button
+                onClick={closeAdminChat}
+                className="text-white hover:bg-white/20 p-2 rounded-full transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Messages Area */}
+            <div className="flex-1 overflow-y-auto p-6 bg-gray-50 space-y-4">
+              {/* Display user messages and admin replies */}
+              {['m1', 'm2', 'm3', 'm4', 'm5'].map((msgField, index) => {
+                const userMessage = selectedPatentForChat[msgField];
+                const replyField = `r${index + 1}`;
+                const adminReplyMsg = selectedPatentForChat[replyField];
+                
+                return (
+                  <div key={msgField}>
+                    {/* User Message */}
+                    {userMessage && userMessage.trim() !== '' && (
+                      <div className="flex justify-end mb-3">
+                        <div className="max-w-[75%] bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-2xl rounded-tr-sm px-5 py-3 shadow-lg">
+                          <p className="text-xs font-semibold mb-1 opacity-90">User Message {index + 1}</p>
+                          <p className="text-sm leading-relaxed">{userMessage}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Admin Reply */}
+                    {adminReplyMsg && adminReplyMsg.trim() !== '' && (
+                      <div className="flex justify-start mb-3">
+                        <div className="max-w-[75%] bg-gradient-to-r from-purple-100 to-pink-100 text-gray-800 rounded-2xl rounded-tl-sm px-5 py-3 shadow-md border border-purple-200">
+                          <p className="text-xs font-semibold mb-1 text-purple-600">Admin Reply {index + 1}</p>
+                          <p className="text-sm leading-relaxed">{adminReplyMsg}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              
+              {/* No messages */}
+              {!['m1', 'm2', 'm3', 'm4', 'm5'].some(field => selectedPatentForChat[field] && selectedPatentForChat[field].trim() !== '') && (
+                <div className="text-center py-12">
+                  <MessageCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500 font-medium">No messages from user yet</p>
+                </div>
+              )}
+            </div>
+
+            {/* Reply Input Area */}
+            <div className="bg-white p-6 rounded-b-2xl border-t-2 border-purple-100">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-sm font-semibold text-gray-700">
+                  Replies: {getReplyCount(selectedPatentForChat)}/4
+                </span>
+                {getReplyCount(selectedPatentForChat) >= 4 && (
+                  <span className="text-xs text-red-600 font-medium">
+                    Maximum replies reached
+                  </span>
+                )}
+              </div>
+              
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  value={adminReply}
+                  onChange={(e) => setAdminReply(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      sendAdminReply();
+                    }
+                  }}
+                  placeholder={getReplyCount(selectedPatentForChat) >= 4 ? "Maximum replies sent" : "Type your reply..."}
+                  disabled={getReplyCount(selectedPatentForChat) >= 4}
+                  className="flex-1 px-4 py-3 bg-gray-50 border-2 border-purple-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all text-gray-900 font-medium placeholder:text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                <button
+                  onClick={sendAdminReply}
+                  disabled={!adminReply.trim() || getReplyCount(selectedPatentForChat) >= 4}
+                  className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2"
+                >
+                  <Send className="w-5 h-5" />
+                  Send
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default AdminPatentManager;
+
+// Add inline styles for animation
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-slideIn {
+    animation: slideIn 0.3s ease-out;
+  }
+`;
+if (!document.querySelector('style[data-admin-animations]')) {
+  style.setAttribute('data-admin-animations', 'true');
+  document.head.appendChild(style);
+}
