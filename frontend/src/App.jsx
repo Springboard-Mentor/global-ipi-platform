@@ -13,7 +13,9 @@ import NewFilingPage from './components/NewFilingPage.jsx';
 import AnalysisPage from './components/AnalysisPage.jsx';
 import SettingsPage from './components/SettingsPage.jsx';
 import SearchResultsPage from './components/SearchResultsPage.jsx'; 
-import PatentDetailsPage from './components/PatentDetailsPage.jsx'; 
+import PatentDetailsPage from './components/PatentDetailsPage.jsx';
+import LegalDashboardPage from './components/LegalDashboardPage.jsx'; // ✅ New Import
+import LandscapeVisualizationPage from './components/LandscapeVisualizationPage.jsx'; // ✅ New Import
 
 // Services & Styles
 import { authAPI } from './services/ai.js';
@@ -32,7 +34,8 @@ const DashboardWithRouter = ({ user, handleLogout, handleUpdateUser }) => {
 
   const getCurrentPageId = () => {
     const path = location.pathname.substring(1); 
-    return path || 'dashboard';
+    // Handle nested routes or query params if necessary, basic split for now
+    return path.split('/')[0] || 'dashboard';
   };
 
   return (
@@ -51,6 +54,11 @@ const DashboardWithRouter = ({ user, handleLogout, handleUpdateUser }) => {
         <Route path="settings" element={<SettingsPage />} />
         <Route path="search" element={<SearchWithNav />} />
         <Route path="patent-details" element={<DetailsWithNav />} />
+        
+        {/* ✅ NEW ANALYTICS ROUTES */}
+        <Route path="legal-dashboard" element={<LegalDashboardPage />} />
+        <Route path="landscape" element={<LandscapeVisualizationPage />} />
+
         <Route path="*" element={<Navigate to="/overview" replace />} />
       </Routes>
     </DashboardLayout>
@@ -129,7 +137,6 @@ const App = () => {
     );
   }
 
-  // NOTE: <Router> tags removed here because they exist in main.jsx
   return (
     <Routes>
       <Route path="/" element={<LandingPage onNavigate={(path) => window.location.href = path} />} />
