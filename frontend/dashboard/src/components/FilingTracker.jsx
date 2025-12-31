@@ -33,19 +33,10 @@ const FilingTracker = ({ userProfile, onBack, onAddNotification }) => {
     setLoading(true);
     setError('');
     try {
-      const userId = userProfile?.uid || auth.currentUser?.uid;
-      console.log('Fetching filings for user ID:', userId);
-      console.log('User profile:', userProfile);
-      console.log('Auth current user:', auth.currentUser);
+      console.log('Fetching all patent filings...');
       
-      if (!userId) {
-        setError('Please log in to view your filings');
-        setLoading(false);
-        return;
-      }
-
-      // First try to get user's filings
-      let response = await fetch(`http://localhost:8080/api/patent-filing/user/${userId}`);
+      // Fetch ALL patent filings instead of filtering by user
+      let response = await fetch(`http://localhost:8080/api/patent-filing/all`);
       console.log('Response status:', response.status);
       
       if (!response.ok) {
@@ -53,28 +44,18 @@ const FilingTracker = ({ userProfile, onBack, onAddNotification }) => {
       }
 
       let data = await response.json();
-      console.log('Fetched filings for user:', data);
+      console.log('Fetched all filings:', data);
       
-      // If no filings found, get all filings to check if any exist
-      if (data.length === 0) {
-        console.log('No filings found for user, fetching all filings to debug...');
-        response = await fetch(`http://localhost:8080/api/patent-filing/all`);
-        if (response.ok) {
-          const allFilings = await response.json();
-          console.log('All filings in database:', allFilings);
-          
-          // Filter by email as fallback
-          const userEmail = userProfile?.email || auth.currentUser?.email;
-          console.log('Trying to filter by email:', userEmail);
-          
-          if (userEmail) {
-            data = allFilings.filter(filing => 
-              filing.userEmail === userEmail || 
-              filing.applicantEmail === userEmail
-            );
-            console.log('Filtered filings by email:', data);
-          }
-        }
+      // Filter by email on frontend (case-insensitive)
+      const userEmail = (userProfile?.email || auth.currentUser?.email)?.toLowerCase();
+      console.log('Filtering by email:', userEmail);
+      
+      if (userEmail) {
+        data = data.filter(filing => 
+          filing.userEmail?.toLowerCase() === userEmail || 
+          filing.applicantEmail?.toLowerCase() === userEmail
+        );
+        console.log('Filtered filings:', data);
       }
       
       setFilings(data);

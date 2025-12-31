@@ -126,14 +126,57 @@ const SearchResultsPage = ({ query, onBack, searchMode = 'api', setSearchMode })
       if (searchMode === 'local' && !query) {
         console.log('Auto-loading all patents from local database...');
         try {
+          let patentResults = [];
+          let patentFilingsResults = [];
+          
+          // Fetch regular patents
           const response = await fetch('http://localhost:8080/api/patents/local');
           if (response.ok) {
             const data = await response.json();
             console.log(`Auto-loaded ${data.length} patents from database`);
-            setResults(data || []);
+            patentResults = data || [];
           } else {
             console.log('Could not auto-load patents, backend may not be running');
           }
+          
+          // Fetch granted/rejected patent filings
+          try {
+            const filingsResponse = await fetch('http://localhost:8080/api/patent-filing/search/granted-rejected');
+            if (filingsResponse.ok) {
+              const filingsData = await filingsResponse.json();
+              console.log(`Auto-loaded ${filingsData.length} granted/rejected patent filings`);
+              
+              // Transform patent filings to match patent structure
+              patentFilingsResults = filingsData.map(filing => ({
+                id: `PF-${filing.id}`,
+                ipRightIdentifier: filing.patentNumber || `FILING-${filing.id}`,
+                title: filing.inventionTitle,
+                abstractText: filing.inventionDescription,
+                assignee: filing.applicantName,
+                inventor: filing.applicantName,
+                jurisdiction: filing.applicantCountry,
+                filingDate: filing.applicationDate,
+                status: filing.status,
+                type: 'Patent Filing',
+                apiSource: 'Patent Filings Database',
+                assetNumber: filing.patentNumber || filing.id,
+                filingSource: 'patent_filings',
+                fullFilingData: filing,
+                applicantEmail: filing.applicantEmail,
+                applicantPhone: filing.applicantPhone,
+                location: filing.location,
+                grantedBy: filing.grantedPatentPersonName,
+                rejectedBy: filing.rejectedPatentPersonName,
+                lastUpdated: filing.updatedAt
+              }));
+            }
+          } catch (filingError) {
+            console.log('Could not auto-load patent filings:', filingError.message);
+          }
+          
+          // Merge both results
+          const mergedResults = [...patentResults, ...patentFilingsResults];
+          setResults(mergedResults);
         } catch (error) {
           console.log('Backend not available for auto-load:', error.message);
         }
@@ -236,20 +279,72 @@ const SearchResultsPage = ({ query, onBack, searchMode = 'api', setSearchMode })
         // Search from local PostgreSQL database (my_project_db)
         console.log('Searching local database (my_project_db) for:', searchQuery || '(all patents)');
         
+        let patentResults = [];
+        let patentFilingsResults = [];
+        
         // If no query, use GET endpoint to fetch all
         if (!searchQuery || searchQuery.trim() === '') {
+          // Fetch regular patents
           const response = await fetch('http://localhost:8080/api/patents/local');
           if (response.ok) {
             const data = await response.json();
             console.log(`Found ${data.length} patents in local database (all records)`);
-            setResults(data || []);
+            patentResults = data || [];
           } else {
             console.error('Failed to fetch all patents. Status:', response.status);
-            alert('⚠️ Backend server error. Please check if the backend is running.');
-            setResults([]);
           }
+          
+          // Fetch granted/rejected patent filings
+          try {
+            console.log('🔍 Fetching granted/rejected patent filings...');
+            const filingsResponse = await fetch('http://localhost:8080/api/patent-filing/search/granted-rejected');
+            console.log('📡 Patent filings response status:', filingsResponse.status);
+            if (filingsResponse.ok) {
+              const filingsData = await filingsResponse.json();
+              console.log(`✅ Found ${filingsData.length} granted/rejected patent filings`);
+              console.log('📄 Patent filings data:', filingsData);
+              
+              // Transform patent filings to match patent structure
+              patentFilingsResults = filingsData.map(filing => ({
+                id: `PF-${filing.id}`,
+                ipRightIdentifier: filing.patentNumber || `FILING-${filing.id}`,
+                title: filing.inventionTitle,
+                abstractText: filing.inventionDescription,
+                assignee: filing.applicantName,
+                inventor: filing.applicantName,
+                jurisdiction: filing.applicantCountry,
+                filingDate: filing.applicationDate,
+                status: filing.status,
+                type: 'Patent Filing',
+                apiSource: 'Patent Filings Database',
+                assetNumber: filing.patentNumber || filing.id,
+                // Store full filing data for detailed view
+                filingSource: 'patent_filings',
+                fullFilingData: filing,
+                // Quick access fields
+                applicantEmail: filing.applicantEmail,
+                applicantPhone: filing.applicantPhone,
+                location: filing.location,
+                grantedBy: filing.grantedPatentPersonName,
+                rejectedBy: filing.rejectedPatentPersonName,
+                lastUpdated: filing.updatedAt
+              }));
+            } else {
+              console.error('❌ Failed to fetch patent filings. Status:', filingsResponse.status);
+              const errorText = await filingsResponse.text();
+              console.error('Error details:', errorText);
+            }
+          } catch (filingError) {
+            console.error('❌ Error fetching patent filings:', filingError);
+            console.error('Full error:', filingError.message, filingError.stack);
+          }
+          
+          // Merge both results
+          const mergedResults = [...patentResults, ...patentFilingsResults];
+          console.log(`📊 Merged results: ${patentResults.length} patents + ${patentFilingsResults.length} filings = ${mergedResults.length} total`);
+          setResults(mergedResults);
         } else {
-          // Search with query
+          // Search with query - search regular patents
           const response = await fetch('http://localhost:8080/api/patents/search/local', {
             method: 'POST',
             headers: {
@@ -260,12 +355,66 @@ const SearchResultsPage = ({ query, onBack, searchMode = 'api', setSearchMode })
           if (response.ok) {
             const data = await response.json();
             console.log(`Found ${data.length} patents in local database`);
-            setResults(data || []);
+            patentResults = data || [];
           } else {
             console.error('Local database search failed. Status:', response.status);
-            alert('⚠️ Backend server error. Please check if the backend is running.');
-            setResults([]);
           }
+          
+          // Also search in patent filings
+          try {
+            console.log('🔍 Searching patent filings with query:', searchQuery);
+            const filingsResponse = await fetch('http://localhost:8080/api/patent-filing/search/granted-rejected');
+            console.log('📡 Patent filings search response status:', filingsResponse.status);
+            if (filingsResponse.ok) {
+              const filingsData = await filingsResponse.json();
+              console.log(`📄 Total patent filings found: ${filingsData.length}`);
+              
+              // Filter patent filings by search query
+              const filteredFilings = filingsData.filter(filing => {
+                const searchLower = searchQuery.toLowerCase();
+                return (
+                  (filing.inventionTitle && filing.inventionTitle.toLowerCase().includes(searchLower)) ||
+                  (filing.inventionDescription && filing.inventionDescription.toLowerCase().includes(searchLower)) ||
+                  (filing.applicantName && filing.applicantName.toLowerCase().includes(searchLower)) ||
+                  (filing.patentNumber && filing.patentNumber.toLowerCase().includes(searchLower))
+                );
+              });
+              
+              console.log(`Found ${filteredFilings.length} matching patent filings`);
+              
+              // Transform patent filings to match patent structure
+              patentFilingsResults = filteredFilings.map(filing => ({
+                id: `PF-${filing.id}`,
+                ipRightIdentifier: filing.patentNumber || `FILING-${filing.id}`,
+                title: filing.inventionTitle,
+                abstractText: filing.inventionDescription,
+                assignee: filing.applicantName,
+                inventor: filing.applicantName,
+                jurisdiction: filing.applicantCountry,
+                filingDate: filing.applicationDate,
+                status: filing.status,
+                type: 'Patent Filing',
+                apiSource: 'Patent Filings Database',
+                assetNumber: filing.patentNumber || filing.id,
+                // Store full filing data for detailed view
+                filingSource: 'patent_filings',
+                fullFilingData: filing,
+                // Quick access fields
+                applicantEmail: filing.applicantEmail,
+                applicantPhone: filing.applicantPhone,
+                location: filing.location,
+                grantedBy: filing.grantedPatentPersonName,
+                rejectedBy: filing.rejectedPatentPersonName,
+                lastUpdated: filing.updatedAt
+              }));
+            }
+          } catch (filingError) {
+            console.error('Error searching patent filings:', filingError);
+          }
+          
+          // Merge both results
+          const mergedResults = [...patentResults, ...patentFilingsResults];
+          setResults(mergedResults);
         }
       } else {
         // Search from API
@@ -349,24 +498,28 @@ const SearchResultsPage = ({ query, onBack, searchMode = 'api', setSearchMode })
   };
 
   const handleViewDetails = async (patent) => {
-    const patentId = patent.ipRightIdentifier || patent.id;
-    
     setDetailsLoading(true);
     setShowModal(true);
     
     try {
-      const response = await fetch(`http://localhost:8080/api/patents/${patentId}`);
-      if (response.ok) {
-        const fullPatent = await response.json();
-        setSelectedPatent(fullPatent);
-      } else {
-        // Fallback: use the patent data we already have
-        console.warn('API failed, using existing patent data');
+      // For patent filings, use the data we already have with fullFilingData
+      if (patent.filingSource === 'patent_filings') {
+        console.log('📋 Displaying patent filing details:', patent);
         setSelectedPatent(patent);
+      } else {
+        // For regular patents, fetch from API
+        const patentId = patent.ipRightIdentifier || patent.id;
+        const response = await fetch(`http://localhost:8080/api/patents/${patentId}`);
+        if (response.ok) {
+          const fullPatent = await response.json();
+          setSelectedPatent(fullPatent);
+        } else {
+          console.warn('API failed, using existing patent data');
+          setSelectedPatent(patent);
+        }
       }
     } catch (error) {
       console.error('Error fetching patent details:', error);
-      // Fallback: use the patent data we already have
       setSelectedPatent(patent);
     } finally {
       setDetailsLoading(false);
@@ -561,6 +714,8 @@ const SearchResultsPage = ({ query, onBack, searchMode = 'api', setSearchMode })
                 <option value="Pending">Pending</option>
                 <option value="Expired">Expired</option>
                 <option value="Abandoned">Abandoned</option>
+                <option value="granted">Granted</option>
+                <option value="rejected">Rejected</option>
               </select>
             </div>
             <div>
@@ -680,7 +835,11 @@ const SearchResultsPage = ({ query, onBack, searchMode = 'api', setSearchMode })
                         </div>
                       </div>
                       <div className="flex flex-col gap-2 items-end">
-                        <span className="px-4 py-1.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm rounded-full font-semibold shadow-md">
+                        <span className={`px-4 py-1.5 text-white text-sm rounded-full font-semibold shadow-md ${
+                          patent.type === 'Patent Filing'
+                            ? 'bg-gradient-to-r from-purple-500 to-purple-600'
+                            : 'bg-gradient-to-r from-blue-500 to-blue-600'
+                        }`}>
                           {patent.type || 'Patent'}
                         </span>
                         {patent.status && (
@@ -689,6 +848,10 @@ const SearchResultsPage = ({ query, onBack, searchMode = 'api', setSearchMode })
                               ? 'bg-green-100 text-green-700 border border-green-300' 
                               : patent.status === 'Pending'
                               ? 'bg-yellow-100 text-yellow-700 border border-yellow-300'
+                              : patent.status.toLowerCase() === 'granted'
+                              ? 'bg-emerald-100 text-emerald-700 border border-emerald-300'
+                              : patent.status.toLowerCase() === 'rejected'
+                              ? 'bg-red-100 text-red-700 border border-red-300'
                               : 'bg-gray-100 text-gray-700 border border-gray-300'
                           }`}>
                             {patent.status}
@@ -747,6 +910,52 @@ const SearchResultsPage = ({ query, onBack, searchMode = 'api', setSearchMode })
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
                             </svg>
                             {patent.apiSource}
+                          </span>
+                        </div>
+                      )}
+                      {/* Patent Filing Specific Fields */}
+                      {patent.filingSource === 'patent_filings' && patent.location && (
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Location</span>
+                          <span className="text-sm text-gray-800 font-semibold flex items-center gap-1">
+                            <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            {patent.location}
+                          </span>
+                        </div>
+                      )}
+                      {patent.filingSource === 'patent_filings' && patent.grantedBy && (
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Granted By</span>
+                          <span className="text-sm text-gray-800 font-semibold flex items-center gap-1">
+                            <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            {patent.grantedBy}
+                          </span>
+                        </div>
+                      )}
+                      {patent.filingSource === 'patent_filings' && patent.rejectedBy && (
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Rejected By</span>
+                          <span className="text-sm text-gray-800 font-semibold flex items-center gap-1">
+                            <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            {patent.rejectedBy}
+                          </span>
+                        </div>
+                      )}
+                      {patent.filingSource === 'patent_filings' && patent.applicantEmail && (
+                        <div className="flex flex-col">
+                          <span className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Applicant Email</span>
+                          <span className="text-sm text-gray-800 font-semibold flex items-center gap-1">
+                            <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                            {patent.applicantEmail}
                           </span>
                         </div>
                       )}
@@ -863,12 +1072,18 @@ const SearchResultsPage = ({ query, onBack, searchMode = 'api', setSearchMode })
                           ? 'bg-gradient-to-br from-green-50 to-green-100 border-green-300' 
                           : selectedPatent.status === 'Pending'
                           ? 'bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-300'
+                          : selectedPatent.status.toLowerCase() === 'granted'
+                          ? 'bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-300'
+                          : selectedPatent.status.toLowerCase() === 'rejected'
+                          ? 'bg-gradient-to-br from-red-50 to-red-100 border-red-300'
                           : 'bg-gradient-to-br from-gray-50 to-gray-100 border-gray-300'
                       }`}>
                         <p className="text-xs font-bold text-gray-600 uppercase tracking-wide mb-1">Status</p>
                         <span className={`inline-block px-3 py-1 rounded-full text-sm font-bold ${
                           selectedPatent.status === 'Active' ? 'bg-green-200 text-green-800' : 
                           selectedPatent.status === 'Pending' ? 'bg-yellow-200 text-yellow-800' :
+                          selectedPatent.status.toLowerCase() === 'granted' ? 'bg-emerald-200 text-emerald-800' :
+                          selectedPatent.status.toLowerCase() === 'rejected' ? 'bg-red-200 text-red-800' :
                           'bg-gray-200 text-gray-800'
                         }`}>
                           {selectedPatent.status}
@@ -881,7 +1096,68 @@ const SearchResultsPage = ({ query, onBack, searchMode = 'api', setSearchMode })
                         <p className="text-sm text-gray-800 font-semibold">{selectedPatent.apiSource}</p>
                       </div>
                     )}
+                    {/* Patent Filing Specific Fields in Modal */}
+                    {selectedPatent.filingSource === 'patent_filings' && selectedPatent.location && (
+                      <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 p-4 rounded-xl border border-indigo-200">
+                        <p className="text-xs font-bold text-indigo-600 uppercase tracking-wide mb-1">Location</p>
+                        <p className="text-sm text-gray-800 font-semibold">{selectedPatent.location}</p>
+                      </div>
+                    )}
+                    {selectedPatent.filingSource === 'patent_filings' && selectedPatent.grantedBy && (
+                      <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 p-4 rounded-xl border border-emerald-200">
+                        <p className="text-xs font-bold text-emerald-600 uppercase tracking-wide mb-1">Granted By</p>
+                        <p className="text-sm text-gray-800 font-semibold">{selectedPatent.grantedBy}</p>
+                      </div>
+                    )}
+                    {selectedPatent.filingSource === 'patent_filings' && selectedPatent.rejectedBy && (
+                      <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-xl border border-red-200">
+                        <p className="text-xs font-bold text-red-600 uppercase tracking-wide mb-1">Rejected By</p>
+                        <p className="text-sm text-gray-800 font-semibold">{selectedPatent.rejectedBy}</p>
+                      </div>
+                    )}
+                    {selectedPatent.filingSource === 'patent_filings' && selectedPatent.applicantEmail && (
+                      <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-xl border border-blue-200">
+                        <p className="text-xs font-bold text-blue-600 uppercase tracking-wide mb-1">Applicant Email</p>
+                        <p className="text-sm text-gray-800 font-semibold">{selectedPatent.applicantEmail}</p>
+                      </div>
+                    )}
+                    {selectedPatent.filingSource === 'patent_filings' && selectedPatent.applicantPhone && (
+                      <div className="bg-gradient-to-br from-cyan-50 to-cyan-100 p-4 rounded-xl border border-cyan-200">
+                        <p className="text-xs font-bold text-cyan-600 uppercase tracking-wide mb-1">Applicant Phone</p>
+                        <p className="text-sm text-gray-800 font-semibold">{selectedPatent.applicantPhone}</p>
+                      </div>
+                    )}
                   </div>
+
+                  {/* Complete Patent Filing Details */}
+                  {selectedPatent.filingSource === 'patent_filings' && selectedPatent.fullFilingData && (
+                    <div className="mb-6 bg-gradient-to-br from-slate-50 to-slate-100 p-6 rounded-xl shadow-lg border border-slate-200">
+                      <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                        <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Complete Filing Information
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {Object.entries(selectedPatent.fullFilingData).map(([key, value]) => {
+                          if (value !== null && value !== undefined && value !== '' && key !== 'id') {
+                            const displayKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim();
+                            return (
+                              <div key={key} className="bg-white p-3 rounded-lg border border-slate-200 hover:shadow-md transition-shadow">
+                                <p className="text-xs font-bold text-slate-600 uppercase tracking-wide mb-1">{displayKey}</p>
+                                <p className="text-sm text-gray-800 font-medium break-words">
+                                  {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : 
+                                   typeof value === 'object' ? JSON.stringify(value) : 
+                                   String(value)}
+                                </p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Abstract Section */}
                   {selectedPatent.abstractText && selectedPatent.abstractText !== 'N/A' && (

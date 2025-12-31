@@ -2,6 +2,7 @@ package com.example.backend.repository;
 
 import com.example.backend.model.PatentFiling;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 
@@ -19,4 +20,8 @@ public interface PatentFilingRepository extends JpaRepository<PatentFiling, Long
     
     // Find by payment status
     List<PatentFiling> findByPaymentStatus(String paymentStatus);
+    
+    // Find granted or rejected patents (case-insensitive)
+    @Query("SELECT p FROM PatentFiling p WHERE LOWER(p.status) IN ('granted', 'rejected')")
+    List<PatentFiling> findGrantedOrRejectedPatents();
 }

@@ -411,4 +411,22 @@ public class PatentFilingController {
                     .body("Failed to save admin reply: " + e.getMessage());
         }
     }
+    
+    // Search granted or rejected patent filings
+    @GetMapping("/search/granted-rejected")
+    public ResponseEntity<List<PatentFiling>> searchGrantedOrRejectedPatents() {
+        try {
+            System.out.println("🔍 Searching for granted or rejected patent filings...");
+            
+            // Find all patent filings with status "granted" or "rejected" (case-insensitive)
+            List<PatentFiling> filings = patentFilingRepository.findGrantedOrRejectedPatents();
+            
+            System.out.println("✅ Found " + filings.size() + " granted or rejected patent filings");
+            return ResponseEntity.ok(filings);
+        } catch (Exception e) {
+            System.err.println("❌ ERROR searching granted/rejected patents:");
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
 }
