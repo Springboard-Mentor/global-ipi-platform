@@ -983,66 +983,125 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification, onFilingSuc
         </div>
       )}
 
-      {/* Fixed Header - Enhanced Modern Design */}
-      <div className="sticky top-0 z-50 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 shadow-2xl border-b-4 border-white/20">
+      {/* Fixed Header with Integrated Progress - Professional Water Drop Theme */}
+      <div className="sticky top-0 z-50 bg-gradient-to-r from-cyan-500 via-blue-500 to-sky-500 shadow-xl border-b-2 border-cyan-200/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 sm:h-20">
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white truncate flex items-center gap-2">
-                <FileText size={28} className="hidden sm:block animate-pulse" />
-                Patent Filing Application
+          {/* Desktop Layout - Single Line */}
+          <div className="hidden lg:flex items-center justify-between gap-4 h-20">
+            {/* Left - Title */}
+            <div className="flex-shrink-0 drop-shadow-lg">
+              <h1 className="text-xl md:text-2xl font-bold text-white flex items-center gap-2 whitespace-nowrap">
+                <FileText size={24} className="drop-shadow-md" />
+                <span className="drop-shadow-md">Patent Filing Application</span>
               </h1>
-              <p className="text-xs sm:text-sm text-white/90 mt-0.5 font-medium">
-                Step {currentStep} of 5: {steps[currentStep - 1].title}
+              <p className="text-xs text-white/90 mt-0.5 font-medium drop-shadow">
+                Step {currentStep} of 5
               </p>
             </div>
+
+            {/* Center - Progress Steps */}
+            <div className="flex-1 max-w-3xl mx-4">
+              <div className="flex items-center justify-between">
+                {steps.map((step, index) => {
+                  const StepIcon = step.icon;
+                  return (
+                    <div key={step.number} className="flex items-center flex-1">
+                      <div className="flex flex-col items-center flex-1">
+                        <div className={`
+                          flex items-center justify-center w-11 h-11 rounded-full border-2 transition-all duration-300
+                          ${currentStep >= step.number 
+                            ? 'bg-white text-cyan-600 border-white shadow-lg drop-shadow-xl scale-110' 
+                            : 'border-white/50 text-white/70 bg-white/20 hover:bg-white/30 hover:border-white/70 hover:scale-105 backdrop-blur-sm'
+                          }
+                          ${currentStep === step.number ? 'ring-4 ring-white/50 animate-pulse shadow-2xl' : ''}
+                        `}>
+                          <StepIcon size={20} className="font-bold" />
+                        </div>
+                        <p className={`
+                          text-[10px] mt-1.5 text-center font-semibold drop-shadow
+                          ${currentStep >= step.number ? 'text-white' : 'text-white/70'}
+                        `}>
+                          {step.title}
+                        </p>
+                      </div>
+                      {index < steps.length - 1 && (
+                        <div className={`
+                          h-1 w-full transition-all duration-500 rounded-full mx-1 shadow-sm
+                          ${currentStep > step.number ? 'bg-white drop-shadow-md' : 'bg-white/30'}
+                        `} />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Right - Close Button */}
             <button
               onClick={onClose}
-              className="ml-4 p-2 rounded-lg bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-all hover:scale-110 flex-shrink-0 border border-white/30"
+              className="flex-shrink-0 p-2.5 rounded-xl bg-white/20 hover:bg-red-500 backdrop-blur-sm transition-all duration-300 hover:scale-110 border border-white/40 hover:border-red-400 shadow-lg hover:shadow-2xl hover:shadow-red-500/50 group"
               title="Close"
             >
-              <X size={24} className="text-white" />
+              <X size={24} className="text-white drop-shadow group-hover:rotate-90 transition-transform duration-300" />
             </button>
           </div>
-        </div>
-      </div>
 
-      {/* Progress Indicator - Enhanced Design */}
-      <div className="bg-gradient-to-b from-white to-blue-50/30 border-b-2 border-blue-200/50 sticky top-16 sm:top-20 z-40 shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-          <div className="flex items-center justify-between">
-            {steps.map((step, index) => {
-              const StepIcon = step.icon;
-              return (
-                <div key={step.number} className="flex-1">
-                  <div className="flex items-center">
-                    <div className={`
-                      flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 transition-all duration-300
-                      ${currentStep >= step.number 
-                        ? 'bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 border-transparent text-white shadow-lg scale-110' 
-                        : 'border-gray-300 text-gray-400 bg-white hover:border-blue-300 hover:scale-105'
-                      }
-                      ${currentStep === step.number ? 'ring-4 ring-blue-300/50 animate-pulse' : ''}
-                    `}>
-                      <StepIcon size={16} className="sm:hidden" />
-                      <StepIcon size={20} className="hidden sm:block" />
+          {/* Mobile/Tablet Layout - Stacked */}
+          <div className="lg:hidden py-4">
+            {/* Top Row - Title and Close */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex-1 drop-shadow-lg">
+                <h1 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+                  <FileText size={20} className="drop-shadow-md" />
+                  <span className="drop-shadow-md">Patent Filing Application</span>
+                </h1>
+                <p className="text-xs text-white/90 mt-0.5 font-medium drop-shadow">
+                  Step {currentStep} of 5: {steps[currentStep - 1].title}
+                </p>
+              </div>
+              <button
+                onClick={onClose}
+                className="flex-shrink-0 ml-3 p-2.5 rounded-xl bg-white/20 hover:bg-red-500 backdrop-blur-sm transition-all duration-300 hover:scale-110 border border-white/40 hover:border-red-400 shadow-lg hover:shadow-2xl hover:shadow-red-500/50 group"
+                title="Close"
+              >
+                <X size={22} className="text-white drop-shadow group-hover:rotate-90 transition-transform duration-300" />
+              </button>
+            </div>
+
+            {/* Bottom Row - Progress Steps */}
+            <div className="flex items-center justify-between px-2">
+              {steps.map((step, index) => {
+                const StepIcon = step.icon;
+                return (
+                  <div key={step.number} className="flex items-center flex-1">
+                    <div className="flex flex-col items-center flex-1">
+                      <div className={`
+                        flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-300
+                        ${currentStep >= step.number 
+                          ? 'bg-white text-cyan-600 border-white shadow-lg drop-shadow-xl scale-110' 
+                          : 'border-white/50 text-white/70 bg-white/20 hover:bg-white/30 hover:border-white/70 backdrop-blur-sm'
+                        }
+                        ${currentStep === step.number ? 'ring-4 ring-white/50 animate-pulse shadow-2xl' : ''}
+                      `}>
+                        <StepIcon size={18} className="font-bold" />
+                      </div>
+                      <p className={`
+                        text-[8px] sm:text-[9px] mt-1 text-center font-semibold drop-shadow
+                        ${currentStep >= step.number ? 'text-white' : 'text-white/70'}
+                      `}>
+                        {step.title}
+                      </p>
                     </div>
                     {index < steps.length - 1 && (
                       <div className={`
-                        flex-1 h-1 mx-1 sm:mx-2 transition-all duration-500 rounded-full
-                        ${currentStep > step.number ? 'bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 shadow-sm' : 'bg-gray-200'}
+                        h-1 w-full transition-all duration-500 rounded-full mx-0.5 sm:mx-1 shadow-sm
+                        ${currentStep > step.number ? 'bg-white drop-shadow-md' : 'bg-white/30'}
                       `} />
                     )}
                   </div>
-                  <p className={`
-                    text-[10px] sm:text-xs mt-1 sm:mt-2 text-center hidden md:block transition-all
-                    ${currentStep >= step.number ? 'text-blue-700 font-bold' : 'text-gray-400'}
-                  `}>
-                    {step.title}
-                  </p>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
