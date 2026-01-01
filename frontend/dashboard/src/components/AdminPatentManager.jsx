@@ -7,6 +7,13 @@ const AdminPatentManager = ({ onBack }) => {
   const [message, setMessage] = useState('');
   const [backendStatus, setBackendStatus] = useState('checking');
   
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  
+  // Quick filter state
+  const [quickFilter, setQuickFilter] = useState('all'); // 'all', 'granted', 'non-granted'
+  
   // Admin authentication states
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loginAdminId, setLoginAdminId] = useState('');
@@ -33,6 +40,30 @@ const AdminPatentManager = ({ onBack }) => {
   const [showAdminChat, setShowAdminChat] = useState(false);
   const [selectedPatentForChat, setSelectedPatentForChat] = useState(null);
   const [adminReply, setAdminReply] = useState('');
+  
+  // Filter patents based on quick filter selection
+  const getFilteredPatents = () => {
+    if (quickFilter === 'granted') {
+      return patents.filter(patent => patent.stage5Granted === true);
+    } else if (quickFilter === 'non-granted') {
+      return patents.filter(patent => patent.stage5Granted !== true);
+    }
+    return patents;
+  };
+  
+  // Get filtered patents
+  const filteredPatents = getFilteredPatents();
+  
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredPatents.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentPatents = filteredPatents.slice(startIndex, endIndex);
+  
+  // Reset to page 1 when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [quickFilter, patents.length]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -851,19 +882,95 @@ const AdminPatentManager = ({ onBack }) => {
             </div>
           )}
 
+          {/* Quick Filter and Stats Section */}
+          {!loading && patents.length > 0 && (
+            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl shadow-md p-6 mb-6 border-2 border-indigo-200">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                {/* Stats */}
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="bg-white px-4 py-2 rounded-lg shadow-sm border border-indigo-200">
+                    <span className="text-sm text-gray-600">Total Patents:</span>
+                    <span className="ml-2 text-lg font-bold text-indigo-600">{patents.length}</span>
+                  </div>
+                  <div className="bg-green-50 px-4 py-2 rounded-lg shadow-sm border border-green-300">
+                    <span className="text-sm text-gray-600">Granted:</span>
+                    <span className="ml-2 text-lg font-bold text-green-600">
+                      {patents.filter(p => p.stage5Granted === true).length}
+                    </span>
+                  </div>
+                  <div className="bg-orange-50 px-4 py-2 rounded-lg shadow-sm border border-orange-300">
+                    <span className="text-sm text-gray-600">Pending:</span>
+                    <span className="ml-2 text-lg font-bold text-orange-600">
+                      {patents.filter(p => p.stage5Granted !== true).length}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Quick Filter Buttons */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-semibold text-gray-700 mr-2">Quick Filter:</span>
+                  <button
+                    onClick={() => setQuickFilter('all')}
+                    className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
+                      quickFilter === 'all'
+                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg scale-105'
+                        : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-indigo-500 hover:text-indigo-600'
+                    }`}
+                  >
+                    All Patents
+                  </button>
+                  <button
+                    onClick={() => setQuickFilter('granted')}
+                    className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
+                      quickFilter === 'granted'
+                        ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg scale-105'
+                        : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-green-500 hover:text-green-600'
+                    }`}
+                  >
+                    ✓ Granted Only
+                  </button>
+                  <button
+                    onClick={() => setQuickFilter('non-granted')}
+                    className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
+                      quickFilter === 'non-granted'
+                        ? 'bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-lg scale-105'
+                        : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-orange-500 hover:text-orange-600'
+                    }`}
+                  >
+                    ⏳ Non-Granted Only
+                  </button>
+                </div>
+              </div>
+              
+              {/* Filter Results Info */}
+              {quickFilter !== 'all' && (
+                <div className="mt-3 text-sm text-gray-600 bg-white px-4 py-2 rounded-lg inline-block">
+                  Showing {filteredPatents.length} of {patents.length} patents
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Patent Management Section */}
           {loading && patents.length === 0 ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
               <p className="mt-4 text-gray-600">Loading patents...</p>
             </div>
-          ) : patents.length === 0 ? (
+          ) : filteredPatents.length === 0 ? (
             <div className="bg-white rounded-xl shadow-lg p-12 text-center">
-              <p className="text-gray-600 text-lg">No patents found in the system.</p>
+              <p className="text-gray-600 text-lg">
+                {quickFilter === 'granted' 
+                  ? 'No granted patents found.' 
+                  : quickFilter === 'non-granted' 
+                  ? 'No non-granted patents found.' 
+                  : 'No patents found in the system.'}
+              </p>
             </div>
           ) : (
+            <>
             <div className="space-y-6">
-              {patents.map((patent) => (
+              {currentPatents.map((patent) => (
                 <div key={patent.id} className="bg-gradient-to-br from-white via-blue-50 to-indigo-50 rounded-2xl shadow-2xl p-8 border-2 border-indigo-100 hover:shadow-3xl transition-all duration-300 transform hover:-translate-y-1">
                   {/* Header Section */}
                   <div className="flex items-start justify-between mb-6 pb-4 border-b-2 border-indigo-200">
@@ -1132,6 +1239,92 @@ const AdminPatentManager = ({ onBack }) => {
                 </div>
               ))}
             </div>
+
+            {/* Pagination Controls */}
+            {filteredPatents.length > 0 && (
+              <div className="mt-8 flex flex-col items-center gap-4 pb-6">
+                {/* Pagination Buttons */}
+                <div className="flex items-center justify-center gap-2">
+                  {/* Previous Button */}
+                  <button
+                    onClick={() => {
+                      setCurrentPage(prev => Math.max(1, prev - 1));
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 rounded-lg font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed bg-white border-2 border-indigo-500 text-indigo-600 hover:bg-indigo-50 hover:shadow-md disabled:hover:bg-white"
+                  >
+                    ← Previous
+                  </button>
+
+                  {/* Page Numbers */}
+                  <div className="flex items-center gap-2">
+                    {[...Array(totalPages)].map((_, index) => {
+                      const pageNumber = index + 1;
+                      
+                      // Show first page, last page, current page, and pages around current
+                      if (
+                        pageNumber === 1 ||
+                        pageNumber === totalPages ||
+                        (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
+                      ) {
+                        return (
+                          <button
+                            key={pageNumber}
+                            onClick={() => {
+                              setCurrentPage(pageNumber);
+                              window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className={`w-10 h-10 rounded-lg font-bold transition-all duration-300 ${
+                              currentPage === pageNumber
+                                ? 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-lg scale-110'
+                                : 'bg-white border-2 border-gray-300 text-gray-700 hover:border-indigo-500 hover:text-indigo-600 hover:shadow-md'
+                            }`}
+                          >
+                            {pageNumber}
+                          </button>
+                        );
+                      }
+                      // Show ellipsis
+                      if (
+                        pageNumber === currentPage - 2 ||
+                        pageNumber === currentPage + 2
+                      ) {
+                        return (
+                          <span key={pageNumber} className="text-gray-400 font-bold">
+                            ...
+                          </span>
+                        );
+                      }
+                      return null;
+                    })}
+                  </div>
+
+                  {/* Next Button */}
+                  <button
+                    onClick={() => {
+                      setCurrentPage(prev => Math.min(totalPages, prev + 1));
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    disabled={currentPage === totalPages}
+                    className="px-4 py-2 rounded-lg font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed bg-white border-2 border-indigo-500 text-indigo-600 hover:bg-indigo-50 hover:shadow-md disabled:hover:bg-white"
+                  >
+                    Next →
+                  </button>
+                </div>
+
+                {/* Results Info */}
+                <div className="text-center text-sm text-gray-600 bg-white px-6 py-2 rounded-lg shadow-sm border border-gray-200">
+                  Showing {startIndex + 1} - {Math.min(endIndex, filteredPatents.length)} of {filteredPatents.length} patent{filteredPatents.length !== 1 ? 's' : ''}
+                  {quickFilter !== 'all' && (
+                    <span className="ml-2 text-indigo-600 font-semibold">
+                      ({quickFilter === 'granted' ? 'Granted' : 'Non-Granted'})
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+            </>
           )}
         </div>
       )}
