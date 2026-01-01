@@ -22,6 +22,10 @@ const FilingTracker = forwardRef(({ userProfile, onBack, onAddNotification }, re
   const [showToast, setShowToast] = useState(false);
   const [toastTimer, setToastTimer] = useState(4);
   const [messageLimitReached, setMessageLimitReached] = useState(false);
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Expose fetchUserFilings to parent via ref
   useImperativeHandle(ref, () => ({
@@ -92,6 +96,7 @@ const FilingTracker = forwardRef(({ userProfile, onBack, onAddNotification }, re
         console.warn('⚠️ No user email found! Showing ALL patents as fallback.');
         console.warn('This should not happen. Check authentication.');
         setFilings(data);
+        setCurrentPage(1); // Reset to first page
         return;
       }
       
@@ -126,6 +131,7 @@ const FilingTracker = forwardRef(({ userProfile, onBack, onAddNotification }, re
       console.log('Filtered data:', filteredFilings);
       
       setFilings(filteredFilings);
+      setCurrentPage(1); // Reset to first page when data changes
       
       if (filteredFilings.length === 0 && data.length > 0) {
         console.warn('⚠️ No filings matched! This might indicate an email mismatch.');
@@ -513,6 +519,30 @@ Note: PDF document has been downloaded. Please attach it manually to your Linked
   // Check if user has basic subscription
   const isBasicUser = !userProfile?.subscriptionType || userProfile?.subscriptionType.toLowerCase() === 'basic';
 
+  // Calculate pagination
+  const totalPages = Math.ceil(filings.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentFilings = filings.slice(startIndex, endIndex);
+
+  // Pagination handlers
+  const goToPage = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      goToPage(currentPage + 1);
+    }
+  };
+
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      goToPage(currentPage - 1);
+    }
+  };
+
   // Show upgrade prompt for basic users
   if (isBasicUser) {
     return (
@@ -655,8 +685,9 @@ Note: PDF document has been downloaded. Please attach it manually to your Linked
           <p className="text-gray-500 text-sm mt-2">Your submitted patents will appear here</p>
         </div>
       ) : (
-        <div className="grid gap-6">
-          {filings.map((filing) => (
+        <>
+          <div className="grid gap-6">
+            {currentFilings.map((filing) => (
             <div
               key={filing.id}
               className="relative bg-gradient-to-br from-white via-blue-50 to-purple-50 border-2 border-transparent rounded-2xl p-6 shadow-lg hover:shadow-2xl hover:scale-[1.01] transition-all duration-300 overflow-hidden"
@@ -1136,6 +1167,76 @@ Note: PDF document has been downloaded. Please attach it manually to your Linked
             </div>
           ))}
         </div>
+
+        {/* Pagination Controls - Only show if there are results */}
+        {filings.length > 0 && (
+          <div className="mt-8 flex items-center justify-center gap-2 pb-4">
+            {/* Previous Button */}
+            <button
+              onClick={goToPreviousPage}
+              disabled={currentPage === 1}
+              className="px-4 py-2 rounded-lg font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed bg-white border-2 border-blue-500 text-blue-600 hover:bg-blue-50 hover:shadow-md disabled:hover:bg-white"
+            >
+              ← Previous
+            </button>
+
+            {/* Page Numbers */}
+            <div className="flex items-center gap-2">
+              {[...Array(totalPages)].map((_, index) => {
+                const pageNumber = index + 1;
+                // Show first page, last page, current page, and pages around current
+                if (
+                  pageNumber === 1 ||
+                  pageNumber === totalPages ||
+                  (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
+                ) {
+                  return (
+                    <button
+                      key={pageNumber}
+                      onClick={() => goToPage(pageNumber)}
+                      className={`w-10 h-10 rounded-lg font-bold transition-all duration-300 ${
+                        currentPage === pageNumber
+                          ? 'bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white shadow-lg scale-110'
+                          : 'bg-white border-2 border-gray-300 text-gray-700 hover:border-blue-500 hover:text-blue-600 hover:shadow-md'
+                      }`}
+                    >
+                      {pageNumber}
+                    </button>
+                  );
+                }
+                // Show ellipsis
+                if (
+                  pageNumber === currentPage - 2 ||
+                  pageNumber === currentPage + 2
+                ) {
+                  return (
+                    <span key={pageNumber} className="text-gray-400 font-bold">
+                      ...
+                    </span>
+                  );
+                }
+                return null;
+              })}
+            </div>
+
+            {/* Next Button */}
+            <button
+              onClick={goToNextPage}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 rounded-lg font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed bg-white border-2 border-blue-500 text-blue-600 hover:bg-blue-50 hover:shadow-md disabled:hover:bg-white"
+            >
+              Next →
+            </button>
+          </div>
+        )}
+
+        {/* Results Info */}
+        {filings.length > 0 && (
+          <div className="mt-4 text-center text-sm text-gray-600">
+            Showing {startIndex + 1} - {Math.min(endIndex, filings.length)} of {filings.length} patent{filings.length !== 1 ? 's' : ''}
+          </div>
+        )}
+        </>
       )}
 
       {/* Chat Modal - Available for all users */}

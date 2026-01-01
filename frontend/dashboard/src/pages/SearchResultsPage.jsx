@@ -23,6 +23,10 @@ const SearchResultsPage = ({ query, onBack, searchMode = 'api', setSearchMode })
   });
   const [showModal, setShowModal] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const handleShareWhatsApp = (patent) => {
     const text = `*PATENT DETAILS*\n\n` +
@@ -196,6 +200,11 @@ const SearchResultsPage = ({ query, onBack, searchMode = 'api', setSearchMode })
   useEffect(() => {
     applyFilters();
   }, [results, filters]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filteredResults.length]);
 
   const applyFilters = () => {
     let filtered = [...results];
@@ -804,8 +813,9 @@ const SearchResultsPage = ({ query, onBack, searchMode = 'api', setSearchMode })
 
       <div>
         {filteredResults.length > 0 ? (
+          <>
           <div className="grid gap-6">
-            {filteredResults.map((patent, index) => {
+            {filteredResults.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((patent, index) => {
               const patentId = patent.id || patent.ipRightIdentifier || index;
               
               return (
@@ -987,6 +997,88 @@ const SearchResultsPage = ({ query, onBack, searchMode = 'api', setSearchMode })
               );
             })}
           </div>
+
+          {/* Pagination Controls */}
+          {filteredResults.length > 0 && (
+            <div className="mt-8 flex flex-col items-center gap-4">
+              {/* Pagination Buttons */}
+              <div className="flex items-center justify-center gap-2">
+                {/* Previous Button */}
+                <button
+                  onClick={() => {
+                    setCurrentPage(prev => Math.max(1, prev - 1));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 rounded-lg font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed bg-white border-2 border-blue-500 text-blue-600 hover:bg-blue-50 hover:shadow-md disabled:hover:bg-white"
+                >
+                  ← Previous
+                </button>
+
+                {/* Page Numbers */}
+                <div className="flex items-center gap-2">
+                  {[...Array(Math.ceil(filteredResults.length / itemsPerPage))].map((_, index) => {
+                    const pageNumber = index + 1;
+                    const totalPages = Math.ceil(filteredResults.length / itemsPerPage);
+                    
+                    // Show first page, last page, current page, and pages around current
+                    if (
+                      pageNumber === 1 ||
+                      pageNumber === totalPages ||
+                      (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
+                    ) {
+                      return (
+                        <button
+                          key={pageNumber}
+                          onClick={() => {
+                            setCurrentPage(pageNumber);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                          className={`w-10 h-10 rounded-lg font-bold transition-all duration-300 ${
+                            currentPage === pageNumber
+                              ? 'bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white shadow-lg scale-110'
+                              : 'bg-white border-2 border-gray-300 text-gray-700 hover:border-blue-500 hover:text-blue-600 hover:shadow-md'
+                          }`}
+                        >
+                          {pageNumber}
+                        </button>
+                      );
+                    }
+                    // Show ellipsis
+                    if (
+                      pageNumber === currentPage - 2 ||
+                      pageNumber === currentPage + 2
+                    ) {
+                      return (
+                        <span key={pageNumber} className="text-gray-400 font-bold">
+                          ...
+                        </span>
+                      );
+                    }
+                    return null;
+                  })}
+                </div>
+
+                {/* Next Button */}
+                <button
+                  onClick={() => {
+                    setCurrentPage(prev => Math.min(Math.ceil(filteredResults.length / itemsPerPage), prev + 1));
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  disabled={currentPage === Math.ceil(filteredResults.length / itemsPerPage)}
+                  className="px-4 py-2 rounded-lg font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed bg-white border-2 border-blue-500 text-blue-600 hover:bg-blue-50 hover:shadow-md disabled:hover:bg-white"
+                >
+                  Next →
+                </button>
+              </div>
+
+              {/* Results Info */}
+              <div className="text-center text-sm text-gray-600">
+                Showing {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, filteredResults.length)} of {filteredResults.length} result{filteredResults.length !== 1 ? 's' : ''}
+              </div>
+            </div>
+          )}
+          </>
         ) : (
           !loading && query && <p className="text-center text-gray-500 py-8">No results found for "{query}"</p>
         )}
