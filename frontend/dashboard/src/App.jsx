@@ -505,6 +505,7 @@ const App = () => {
                   setCurrentPage('dashboard');
                   setActiveItem('dashboard');
                 }}
+                ref={(ref) => window.filingTrackerRef = ref}
               />
             ) : currentPage === 'legal' ? (
               // Legal Status - Show upgrade prompt for basic users
@@ -616,11 +617,18 @@ const App = () => {
             ) : currentPage === 'patent-filing' ? (
               <PatentFilingForm 
                 onClose={() => {
-                  setCurrentPage('dashboard');
-                  setActiveItem('dashboard');
+                  // Navigate to filing tracker page after submission
+                  setCurrentPage('filing');
+                  setActiveItem('filing');
                 }} 
                 userProfile={userProfile}
                 onAddNotification={addNotification}
+                onFilingSuccess={async () => {
+                  // Refresh the filing tracker data if it exists
+                  if (window.filingTrackerRef?.fetchUserFilings) {
+                    await window.filingTrackerRef.fetchUserFilings();
+                  }
+                }}
               />
             ) : currentPage === 'contact' ? (
               <ContactForm onClose={() => {

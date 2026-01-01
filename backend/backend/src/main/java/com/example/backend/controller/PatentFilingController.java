@@ -45,19 +45,29 @@ public class PatentFilingController {
         try {
             System.out.println("=== Received Patent Filing Request ===");
             System.out.println("User ID: " + patentFiling.getUserId());
+            System.out.println("User Email: " + patentFiling.getUserEmail());
             System.out.println("Applicant Name: " + patentFiling.getApplicantName());
+            System.out.println("Applicant Email: " + patentFiling.getApplicantEmail());
             System.out.println("Invention Title: " + patentFiling.getInventionTitle());
             System.out.println("Payment ID: " + patentFiling.getPaymentId());
             
             // Save patent filing to database
             PatentFiling savedFiling = patentFilingRepository.save(patentFiling);
             
-            System.out.println("✅ Patent filing saved with ID: " + savedFiling.getId());
+            System.out.println("✅ Patent filing saved successfully!");
+            System.out.println("   ID: " + savedFiling.getId());
+            System.out.println("   User Email: " + savedFiling.getUserEmail());
+            System.out.println("   Applicant Email: " + savedFiling.getApplicantEmail());
             
             response.put("success", true);
             response.put("message", "Patent filing submitted successfully");
             response.put("id", savedFiling.getId());
             response.put("filingId", savedFiling.getId());
+            response.put("savedData", Map.of(
+                "userEmail", savedFiling.getUserEmail(),
+                "applicantEmail", savedFiling.getApplicantEmail(),
+                "inventionTitle", savedFiling.getInventionTitle()
+            ));
             
             return ResponseEntity.ok(response);
             

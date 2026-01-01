@@ -8,7 +8,7 @@ import {
 import { auth } from "../firebase";
 import UpgradeModal from "./UpgradeModal";
 
-const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
+const PatentFilingForm = ({ onClose, userProfile, onAddNotification, onFilingSuccess }) => {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -476,11 +476,21 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
 
       console.log('Preparing data for PostgreSQL...');
       
+      // Get user email and store it for later use
+      const userEmail = auth.currentUser?.email || formData.applicantEmail;
+      console.log('User email for submission:', userEmail);
+      
+      // Store email in localStorage for persistent access
+      if (userEmail) {
+        localStorage.setItem('userEmail', userEmail);
+        console.log('Stored user email in localStorage');
+      }
+      
       // 2. Prepare data for PostgreSQL
       const filingData = {
         // User info
         userId: auth.currentUser?.uid || 'unknown',
-        userEmail: auth.currentUser?.email || formData.applicantEmail,
+        userEmail: userEmail,
         userName: userProfile?.name || formData.applicantName,
         
         // Applicant Information (flattened for PostgreSQL)
@@ -564,7 +574,11 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
         filingDate: new Date().toISOString(),
       };
 
-      console.log('Sending to backend API...', filingData);
+      console.log('=== SUBMITTING PATENT FILING ===');
+      console.log('User Email:', filingData.userEmail);
+      console.log('Applicant Email:', filingData.applicantEmail);
+      console.log('Invention Title:', filingData.inventionTitle);
+      console.log('Full filing data:', filingData);
       
       // 3. Submit to PostgreSQL via backend API
       const response = await fetch('http://localhost:8080/api/patent-filing/submit', {
@@ -575,20 +589,25 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
         body: JSON.stringify(filingData),
       });
 
+      console.log('API Response status:', response.status);
+
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error response:', errorText);
         throw new Error(`API request failed with status ${response.status}`);
       }
 
       const result = await response.json();
+      console.log('API Response:', result);
       
       if (!result.success) {
         throw new Error(result.message || 'Failed to submit patent filing');
       }
       
-      console.log('✅ Patent filing submitted successfully with ID:', result.filingId);
+      console.log('✅ Patent filing submitted successfully!');
+      console.log('   Filing ID:', result.filingId);
+      console.log('   Saved with emails:', result.savedData);
       
-      // Show success message
-      setShowSuccess(true);
       setIsSubmitting(false);
       
       // Add notification
@@ -600,13 +619,23 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification }) => {
         });
       }
 
-      // Redirect to dashboard after 3 seconds
+      // Immediately refresh the filings list
+      console.log('🔄 Refreshing filings list...');
+      if (onFilingSuccess) {
+        await onFilingSuccess();
+      }
+      
+      // Show success message briefly
+      setShowSuccess(true);
+      
+      // Close the form and navigate to filing tracker after a brief moment
       setTimeout(() => {
         setShowSuccess(false);
+        
         if (onClose) {
           onClose();
         }
-      }, 3000);
+      }, 1500);
 
     } catch (error) {
       console.error('❌ Error submitting patent filing:', error);

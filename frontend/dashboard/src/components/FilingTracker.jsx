@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { FileText, Calendar, User, DollarSign, CheckCircle, Clock, Eye, X, ArrowLeft, Download, Share2, Linkedin, Lock, Crown, Sparkles, MessageCircle, Send } from 'lucide-react';
 import { auth } from '../firebase';
 import PatentProgressTracker from './PatentProgressTracker';
@@ -6,7 +6,7 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import UpgradeModal from './UpgradeModal';
 
-const FilingTracker = ({ userProfile, onBack, onAddNotification }) => {
+const FilingTracker = forwardRef(({ userProfile, onBack, onAddNotification }, ref) => {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [filings, setFilings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,47 +23,126 @@ const FilingTracker = ({ userProfile, onBack, onAddNotification }) => {
   const [toastTimer, setToastTimer] = useState(4);
   const [messageLimitReached, setMessageLimitReached] = useState(false);
 
+  // Expose fetchUserFilings to parent via ref
+  useImperativeHandle(ref, () => ({
+    fetchUserFilings
+  }));
+
   useEffect(() => {
-    if (userProfile?.uid) {
+    // Fetch filings when component mounts
+    fetchUserFilings();
+  }, []);
+
+  // Re-fetch when userProfile changes (user logs in)
+  useEffect(() => {
+    if (userProfile?.email) {
+      console.log('User profile updated, re-fetching filings...');
       fetchUserFilings();
     }
-  }, [userProfile]);
+  }, [userProfile?.email]);
 
   const fetchUserFilings = async () => {
     setLoading(true);
     setError('');
     try {
-      console.log('Fetching all patent filings...');
+      console.log('=== FETCHING PATENT FILINGS ===');
+      console.log('Auth current user:', auth.currentUser);
+      console.log('Auth email:', auth.currentUser?.email);
+      console.log('User profile:', userProfile);
+      console.log('Profile email:', userProfile?.email);
       
-      // Fetch ALL patent filings instead of filtering by user
-      let response = await fetch(`http://localhost:8080/api/patent-filing/all`);
-      console.log('Response status:', response.status);
+      // Fetch ALL patent filings
+      const response = await fetch(`http://localhost:8080/api/patent-filing/all`);
+      console.log('API Response status:', response.status);
       
       if (!response.ok) {
-        throw new Error('Failed to fetch filings');
+        throw new Error(`API request failed with status ${response.status}`);
       }
 
-      let data = await response.json();
-      console.log('Fetched all filings:', data);
+      const data = await response.json();
+      console.log('Total filings from API:', data.length);
+      console.log('All filings data:', data);
       
-      // Filter by email on frontend (case-insensitive)
-      const userEmail = (userProfile?.email || auth.currentUser?.email)?.toLowerCase();
-      console.log('Filtering by email:', userEmail);
+      // Try multiple sources to get user email
+      let userEmail = null;
       
-      if (userEmail) {
-        data = data.filter(filing => 
-          filing.userEmail?.toLowerCase() === userEmail || 
-          filing.applicantEmail?.toLowerCase() === userEmail
-        );
-        console.log('Filtered filings:', data);
+      // Priority 1: Firebase auth current user
+      if (auth.currentUser?.email) {
+        userEmail = auth.currentUser.email;
+        console.log('✅ Got email from auth.currentUser:', userEmail);
+      }
+      // Priority 2: User profile
+      else if (userProfile?.email) {
+        userEmail = userProfile.email;
+        console.log('✅ Got email from userProfile:', userEmail);
+      }
+      // Priority 3: Check localStorage
+      else {
+        const storedEmail = localStorage.getItem('userEmail');
+        if (storedEmail) {
+          userEmail = storedEmail;
+          console.log('✅ Got email from localStorage:', userEmail);
+        }
       }
       
-      setFilings(data);
+      console.log('Final user email for filtering:', userEmail);
+      
+      // If no user email found, show ALL patents as a fallback
+      if (!userEmail) {
+        console.warn('⚠️ No user email found! Showing ALL patents as fallback.');
+        console.warn('This should not happen. Check authentication.');
+        setFilings(data);
+        return;
+      }
+      
+      // Normalize email for comparison
+      const normalizedUserEmail = userEmail.toLowerCase().trim();
+      console.log('Normalized user email:', normalizedUserEmail);
+      
+      // Filter by email (case-insensitive) - check both userEmail and applicantEmail fields
+      const filteredFilings = data.filter(filing => {
+        const filingUserEmail = filing.userEmail?.toLowerCase()?.trim();
+        const filingApplicantEmail = filing.applicantEmail?.toLowerCase()?.trim();
+        
+        console.log(`Checking filing ${filing.id}:`, {
+          title: filing.inventionTitle,
+          filingUserEmail,
+          filingApplicantEmail,
+          currentUserEmail: normalizedUserEmail,
+          userEmailMatch: filingUserEmail === normalizedUserEmail,
+          applicantEmailMatch: filingApplicantEmail === normalizedUserEmail
+        });
+        
+        const matches = filingUserEmail === normalizedUserEmail || filingApplicantEmail === normalizedUserEmail;
+        
+        if (matches) {
+          console.log(`✅ MATCH FOUND: ${filing.inventionTitle} (ID: ${filing.id})`);
+        }
+        
+        return matches;
+      });
+      
+      console.log(`📊 Results: ${filteredFilings.length} of ${data.length} filings match user email: ${normalizedUserEmail}`);
+      console.log('Filtered data:', filteredFilings);
+      
+      setFilings(filteredFilings);
+      
+      if (filteredFilings.length === 0 && data.length > 0) {
+        console.warn('⚠️ No filings matched! This might indicate an email mismatch.');
+        console.warn('Expected email:', normalizedUserEmail);
+        console.warn('Available emails in database:', data.map(f => ({
+          userEmail: f.userEmail,
+          applicantEmail: f.applicantEmail
+        })));
+      }
+      
     } catch (err) {
-      console.error('Error fetching filings:', err);
+      console.error('❌ ERROR fetching filings:', err);
+      console.error('Error details:', err.message);
       setError('Failed to load your patent filings. Please try again.');
     } finally {
       setLoading(false);
+      console.log('=== FETCH COMPLETE ===');
     }
   };
 
@@ -1217,7 +1296,7 @@ Note: PDF document has been downloaded. Please attach it manually to your Linked
       `}</style>
     </div>
   );
-};
+});
 
 const DetailItem = ({ label, value }) => {
   if (!value) return null;
@@ -1244,5 +1323,7 @@ const DocumentLink = ({ label, url }) => {
     </div>
   );
 };
+
+FilingTracker.displayName = 'FilingTracker';
 
 export default FilingTracker;
