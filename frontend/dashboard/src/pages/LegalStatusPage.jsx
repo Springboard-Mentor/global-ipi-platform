@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, CheckCircle, XCircle, TrendingUp, Award, AlertCircle, Users, UserCheck, UserX } from 'lucide-react';
+import { FileText, CheckCircle, XCircle, TrendingUp, Award, AlertCircle, Users, UserCheck, UserX, Filter, X } from 'lucide-react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 
@@ -22,10 +22,35 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
     loading: true
   });
 
+  const [filters, setFilters] = useState({
+    startDate: '',
+    endDate: '',
+    state: '',
+    city: '',
+    country: ''
+  });
+
+  const [showFilters, setShowFilters] = useState(false);
+  const [availableFilters, setAvailableFilters] = useState({
+    states: [],
+    cities: [],
+    countries: []
+  });
+
+  // Initial load to populate filter options
   useEffect(() => {
-    fetchPatentStats();
     fetchUserStats();
+    fetchPatentStats();
   }, []);
+
+  // Reload data when filters change (but not on initial mount)
+  useEffect(() => {
+    const hasFilters = Object.values(filters).some(value => value !== '');
+    if (hasFilters) {
+      fetchUserStats();
+      fetchPatentStats();
+    }
+  }, [filters]);
 
   const fetchUserStats = async () => {
     try {
@@ -43,8 +68,49 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
       let activeUsers = 0;
       let deactivatedUsers = 0;
       
+      const statesSet = new Set();
+      const citiesSet = new Set();
+      const countriesSet = new Set();
+      
       usersSnapshot.forEach((doc) => {
         const userData = doc.data();
+        
+        // Apply filters
+        let matchesFilter = true;
+        
+        // Date filter (check createdAt or registrationDate)
+        if (filters.startDate || filters.endDate) {
+          const userDate = userData.createdAt?.toDate?.() || userData.registrationDate?.toDate?.() || new Date(userData.createdAt || userData.registrationDate);
+          if (filters.startDate && userDate < new Date(filters.startDate)) {
+            matchesFilter = false;
+          }
+          if (filters.endDate && userDate > new Date(filters.endDate)) {
+            matchesFilter = false;
+          }
+        }
+        
+        // State filter
+        if (filters.state && userData.state?.toLowerCase() !== filters.state.toLowerCase()) {
+          matchesFilter = false;
+        }
+        
+        // City filter
+        if (filters.city && userData.city?.toLowerCase() !== filters.city.toLowerCase()) {
+          matchesFilter = false;
+        }
+        
+        // Country filter
+        if (filters.country && userData.country?.toLowerCase() !== filters.country.toLowerCase()) {
+          matchesFilter = false;
+        }
+        
+        // Collect available filter options
+        if (userData.state) statesSet.add(userData.state);
+        if (userData.city) citiesSet.add(userData.city);
+        if (userData.country) countriesSet.add(userData.country);
+        
+        if (!matchesFilter) return;
+        
         totalUsers++;
         
         // Count by subscription type
@@ -70,6 +136,19 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
           // Default to active if unknown
           activeUsers++;
         }
+      });
+      
+      // Update available filter options
+      setAvailableFilters({
+        states: Array.from(statesSet).sort(),
+        cities: Array.from(citiesSet).sort(),
+        countries: Array.from(countriesSet).sort()
+      });
+      
+      console.log('User filter options:', {
+        states: Array.from(statesSet),
+        cities: Array.from(citiesSet),
+        countries: Array.from(countriesSet)
       });
       
       console.log('User Stats:', {
@@ -119,15 +198,88 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
       });
       
       if (response.ok) {
-        const patents = await response.json();
+        let allPatents = await response.json();
         
-        console.log('Legal Status - Fetched patents:', patents);
-        console.log('Legal Status - Total patents:', patents.length);
+        console.log('Legal Status - Fetched patents:', allPatents);
+        console.log('Legal Status - Total patents:', allPatents.length);
+        
+        // Extract available filter options from patent data
+        const patentStates = new Set();
+        const patentCities = new Set();
+        const patentCountries = new Set();
+        
+        allPatents.forEach(patent => {
+          // Check multiple possible field names for location data
+          if (patent.state || patent.applicantState || patent.inventorState) {
+            patentStates.add(patent.state || patent.applicantState || patent.inventorState);
+          }
+          if (patent.city || patent.applicantCity || patent.inventorCity) {
+            patentCities.add(patent.city || patent.applicantCity || patent.inventorCity);
+          }
+          if (patent.country || patent.applicantCountry || patent.inventorCountry) {
+            patentCountries.add(patent.country || patent.applicantCountry || patent.inventorCountry);
+          }
+        });
+        
+        console.log('Patent location data:', {
+          states: Array.from(patentStates),
+          cities: Array.from(patentCities),
+          countries: Array.from(patentCountries)
+        });
+        
+        // Merge with existing filter options from user data
+        setAvailableFilters(prev => ({
+          states: Array.from(new Set([...prev.states, ...patentStates])).sort(),
+          cities: Array.from(new Set([...prev.cities, ...patentCities])).sort(),
+          countries: Array.from(new Set([...prev.countries, ...patentCountries])).sort()
+        }));
+        
+        // Apply filters
+        let filteredPatents = allPatents.filter(patent => {
+          // Date filter (check filing date or createdAt)
+          if (filters.startDate || filters.endDate) {
+            const patentDate = new Date(patent.filingDate || patent.createdAt || patent.timestamp);
+            if (filters.startDate && patentDate < new Date(filters.startDate)) {
+              return false;
+            }
+            if (filters.endDate && patentDate > new Date(filters.endDate)) {
+              return false;
+            }
+          }
+          
+          // State filter - check multiple possible field names
+          if (filters.state) {
+            const patentState = patent.state || patent.applicantState || patent.inventorState;
+            if (!patentState || patentState.toLowerCase() !== filters.state.toLowerCase()) {
+              return false;
+            }
+          }
+          
+          // City filter - check multiple possible field names
+          if (filters.city) {
+            const patentCity = patent.city || patent.applicantCity || patent.inventorCity;
+            if (!patentCity || patentCity.toLowerCase() !== filters.city.toLowerCase()) {
+              return false;
+            }
+          }
+          
+          // Country filter - check multiple possible field names
+          if (filters.country) {
+            const patentCountry = patent.country || patent.applicantCountry || patent.inventorCountry;
+            if (!patentCountry || patentCountry.toLowerCase() !== filters.country.toLowerCase()) {
+              return false;
+            }
+          }
+          
+          return true;
+        });
+        
+        console.log('Filtered patents:', filteredPatents.length);
         
         // Calculate statistics (same logic as Admin Panel)
-        const total = patents.length;
-        const granted = patents.filter(p => p.stage5Granted === true).length;
-        const rejected = patents.filter(p => {
+        const total = filteredPatents.length;
+        const granted = filteredPatents.filter(p => p.stage5Granted === true).length;
+        const rejected = filteredPatents.filter(p => {
           console.log(`Patent ${p.id} status:`, p.status);
           return p.status === 'Patent is Rejected';
         }).length;
@@ -237,6 +389,22 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
     </div>
   );
 
+  const handleFilterChange = (field, value) => {
+    setFilters(prev => ({ ...prev, [field]: value }));
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      startDate: '',
+      endDate: '',
+      state: '',
+      city: '',
+      country: ''
+    });
+  };
+
+  const hasActiveFilters = Object.values(filters).some(value => value !== '');
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 p-6">
       {/* Page Header */}
@@ -257,14 +425,175 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
           </div>
           
           {/* System-wide Badge - Top Right */}
-          <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-md border border-gray-200">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-sm font-semibold text-gray-700">
-              System-wide Patent Statistics
-            </span>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full shadow-md border-2 transition-all duration-300 ${
+                hasActiveFilters 
+                  ? 'bg-indigo-600 border-indigo-600 text-white hover:bg-indigo-700' 
+                  : 'bg-white border-gray-200 text-gray-700 hover:border-indigo-300'
+              }`}
+            >
+              <Filter className="w-4 h-4" />
+              <span className="text-sm font-semibold">
+                Filters {hasActiveFilters && `(${Object.values(filters).filter(v => v !== '').length})`}
+              </span>
+            </button>
+            
+            <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-md border border-gray-200">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="text-sm font-semibold text-gray-700">
+                System-wide Patent Statistics
+              </span>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Filters Panel */}
+      {showFilters && (
+        <div className="mb-8 bg-white rounded-2xl shadow-xl p-6 border-2 border-indigo-100 animate-fadeIn">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Filter className="w-5 h-5 text-indigo-600" />
+              <h3 className="text-lg font-bold text-gray-900">Filter Statistics</h3>
+            </div>
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-all duration-200 font-semibold text-sm"
+              >
+                <X className="w-4 h-4" />
+                Clear All
+              </button>
+            )}
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {/* Date Range Filters */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Start Date
+              </label>
+              <input
+                type="date"
+                value={filters.startDate}
+                onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none transition-all duration-200"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                End Date
+              </label>
+              <input
+                type="date"
+                value={filters.endDate}
+                onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none transition-all duration-200"
+              />
+            </div>
+            
+            {/* State Filter */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                State
+              </label>
+              <select
+                value={filters.state}
+                onChange={(e) => handleFilterChange('state', e.target.value)}
+                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none transition-all duration-200 bg-white"
+              >
+                <option value="">All States</option>
+                {availableFilters.states.map(state => (
+                  <option key={state} value={state}>{state}</option>
+                ))}
+              </select>
+            </div>
+            
+            {/* City Filter */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                City
+              </label>
+              <select
+                value={filters.city}
+                onChange={(e) => handleFilterChange('city', e.target.value)}
+                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none transition-all duration-200 bg-white"
+              >
+                <option value="">All Cities</option>
+                {availableFilters.cities.map(city => (
+                  <option key={city} value={city}>{city}</option>
+                ))}
+              </select>
+            </div>
+            
+            {/* Country Filter */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Country
+              </label>
+              <select
+                value={filters.country}
+                onChange={(e) => handleFilterChange('country', e.target.value)}
+                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none transition-all duration-200 bg-white"
+              >
+                <option value="">All Countries</option>
+                {availableFilters.countries.map(country => (
+                  <option key={country} value={country}>{country}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          
+          {hasActiveFilters && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              <span className="text-sm font-semibold text-gray-600">Active Filters:</span>
+              {filters.startDate && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium">
+                  From: {new Date(filters.startDate).toLocaleDateString()}
+                  <button onClick={() => handleFilterChange('startDate', '')} className="hover:text-indigo-900">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              {filters.endDate && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium">
+                  To: {new Date(filters.endDate).toLocaleDateString()}
+                  <button onClick={() => handleFilterChange('endDate', '')} className="hover:text-indigo-900">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              {filters.state && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
+                  State: {filters.state}
+                  <button onClick={() => handleFilterChange('state', '')} className="hover:text-purple-900">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              {filters.city && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                  City: {filters.city}
+                  <button onClick={() => handleFilterChange('city', '')} className="hover:text-blue-900">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              {filters.country && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                  Country: {filters.country}
+                  <button onClick={() => handleFilterChange('country', '')} className="hover:text-green-900">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Stats Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
