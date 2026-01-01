@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, CheckCircle, XCircle, TrendingUp, Award, AlertCircle } from 'lucide-react';
+import { FileText, CheckCircle, XCircle, TrendingUp, Award, AlertCircle, Users, UserCheck, UserX } from 'lucide-react';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../firebase';
 
 const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
   const [stats, setStats] = useState({
@@ -10,9 +12,97 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
     loading: true
   });
 
+  const [userStats, setUserStats] = useState({
+    totalUsers: 0,
+    basicUsers: 0,
+    proUsers: 0,
+    enterpriseUsers: 0,
+    activeUsers: 0,
+    deactivatedUsers: 0,
+    loading: true
+  });
+
   useEffect(() => {
     fetchPatentStats();
+    fetchUserStats();
   }, []);
+
+  const fetchUserStats = async () => {
+    try {
+      setUserStats(prev => ({ ...prev, loading: true }));
+      
+      console.log('Fetching user statistics from Firestore...');
+      
+      const usersCollection = collection(db, 'users');
+      const usersSnapshot = await getDocs(usersCollection);
+      
+      let totalUsers = 0;
+      let basicUsers = 0;
+      let proUsers = 0;
+      let enterpriseUsers = 0;
+      let activeUsers = 0;
+      let deactivatedUsers = 0;
+      
+      usersSnapshot.forEach((doc) => {
+        const userData = doc.data();
+        totalUsers++;
+        
+        // Count by subscription type
+        const subscription = (userData.subscriptionType || 'basic').toLowerCase();
+        if (subscription === 'basic') {
+          basicUsers++;
+        } else if (subscription === 'pro') {
+          proUsers++;
+        } else if (subscription === 'enterprise') {
+          enterpriseUsers++;
+        } else {
+          // Default to basic if unknown
+          basicUsers++;
+        }
+        
+        // Count by account status
+        const accountStatus = (userData.accountStatus || 'active').toLowerCase();
+        if (accountStatus === 'active') {
+          activeUsers++;
+        } else if (accountStatus === 'deactivated') {
+          deactivatedUsers++;
+        } else {
+          // Default to active if unknown
+          activeUsers++;
+        }
+      });
+      
+      console.log('User Stats:', {
+        totalUsers,
+        basicUsers,
+        proUsers,
+        enterpriseUsers,
+        activeUsers,
+        deactivatedUsers
+      });
+      
+      setUserStats({
+        totalUsers,
+        basicUsers,
+        proUsers,
+        enterpriseUsers,
+        activeUsers,
+        deactivatedUsers,
+        loading: false
+      });
+    } catch (error) {
+      console.error('Error fetching user statistics:', error);
+      setUserStats({
+        totalUsers: 0,
+        basicUsers: 0,
+        proUsers: 0,
+        enterpriseUsers: 0,
+        activeUsers: 0,
+        deactivatedUsers: 0,
+        loading: false
+      });
+    }
+  };
 
   const fetchPatentStats = async () => {
     try {
@@ -217,6 +307,182 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
           iconColor="text-yellow-600"
           description="Patent applications currently under review and pending decision"
         />
+      </div>
+
+      {/* Subscription Details Card */}
+      <div className="mb-8">
+        <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-gray-100 hover:shadow-2xl transition-all duration-300">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="bg-gradient-to-br from-blue-100 to-cyan-100 p-3 rounded-xl">
+              <Users className="w-6 h-6 text-blue-600" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900">Subscription Details</h3>
+          </div>
+
+          {userStats.loading ? (
+            <div className="animate-pulse space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="h-24 bg-gray-200 rounded-xl"></div>
+                <div className="h-24 bg-gray-200 rounded-xl"></div>
+                <div className="h-24 bg-gray-200 rounded-xl"></div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="h-24 bg-gray-200 rounded-xl"></div>
+                <div className="h-24 bg-gray-200 rounded-xl"></div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Total Users and Subscription Breakdown */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {/* Total Users */}
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border-2 border-blue-100 hover:border-blue-300 transition-all duration-300 transform hover:scale-105">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="bg-blue-100 p-2 rounded-lg">
+                      <Users className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-semibold text-blue-600 uppercase">Total Users</p>
+                      <h4 className="text-3xl font-black text-blue-900">{userStats.totalUsers}</h4>
+                    </div>
+                  </div>
+                  <div className="w-full bg-blue-200 rounded-full h-2">
+                    <div className="h-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full" style={{ width: '100%' }}></div>
+                  </div>
+                </div>
+
+                {/* Basic Users */}
+                <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-6 border-2 border-gray-200 hover:border-gray-400 transition-all duration-300 transform hover:scale-105">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="bg-gray-100 p-2 rounded-lg">
+                      <Users className="w-5 h-5 text-gray-600" />
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-semibold text-gray-600 uppercase">Basic</p>
+                      <h4 className="text-3xl font-black text-gray-900">{userStats.basicUsers}</h4>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-500 font-medium">
+                      {userStats.totalUsers > 0 ? Math.round((userStats.basicUsers / userStats.totalUsers) * 100) : 0}%
+                    </span>
+                    <div className="w-2/3 bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="h-2 bg-gradient-to-r from-gray-400 to-gray-600 rounded-full transition-all duration-1000" 
+                        style={{ width: `${userStats.totalUsers > 0 ? (userStats.basicUsers / userStats.totalUsers) * 100 : 0}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pro Users */}
+                <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border-2 border-purple-200 hover:border-purple-400 transition-all duration-300 transform hover:scale-105">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="bg-purple-100 p-2 rounded-lg">
+                      <Award className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-semibold text-purple-600 uppercase">Pro</p>
+                      <h4 className="text-3xl font-black text-purple-900">{userStats.proUsers}</h4>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-purple-500 font-medium">
+                      {userStats.totalUsers > 0 ? Math.round((userStats.proUsers / userStats.totalUsers) * 100) : 0}%
+                    </span>
+                    <div className="w-2/3 bg-purple-200 rounded-full h-2">
+                      <div 
+                        className="h-2 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full transition-all duration-1000" 
+                        style={{ width: `${userStats.totalUsers > 0 ? (userStats.proUsers / userStats.totalUsers) * 100 : 0}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Enterprise Users */}
+                <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-6 border-2 border-amber-200 hover:border-amber-400 transition-all duration-300 transform hover:scale-105">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="bg-amber-100 p-2 rounded-lg">
+                      <Award className="w-5 h-5 text-amber-600" />
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-semibold text-amber-600 uppercase">Enterprise</p>
+                      <h4 className="text-3xl font-black text-amber-900">{userStats.enterpriseUsers}</h4>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-amber-600 font-medium">
+                      {userStats.totalUsers > 0 ? Math.round((userStats.enterpriseUsers / userStats.totalUsers) * 100) : 0}%
+                    </span>
+                    <div className="w-2/3 bg-amber-200 rounded-full h-2">
+                      <div 
+                        className="h-2 bg-gradient-to-r from-amber-500 to-orange-600 rounded-full transition-all duration-1000" 
+                        style={{ width: `${userStats.totalUsers > 0 ? (userStats.enterpriseUsers / userStats.totalUsers) * 100 : 0}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Account Status Section */}
+              <div className="border-t-2 border-gray-100 pt-6">
+                <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <AlertCircle className="w-5 h-5 text-gray-600" />
+                  Account Status Overview
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Active Users */}
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border-2 border-green-200 hover:border-green-400 transition-all duration-300">
+                    <div className="flex items-center gap-4">
+                      <div className="bg-green-100 p-3 rounded-xl">
+                        <UserCheck className="w-7 h-7 text-green-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-green-600 uppercase mb-1">Active Users</p>
+                        <div className="flex items-baseline gap-2">
+                          <h4 className="text-4xl font-black text-green-900">{userStats.activeUsers}</h4>
+                          <span className="text-lg font-bold text-green-600">
+                            ({userStats.totalUsers > 0 ? Math.round((userStats.activeUsers / userStats.totalUsers) * 100) : 0}%)
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-4 w-full bg-green-200 rounded-full h-3">
+                      <div 
+                        className="h-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full transition-all duration-1000 shadow-sm" 
+                        style={{ width: `${userStats.totalUsers > 0 ? (userStats.activeUsers / userStats.totalUsers) * 100 : 0}%` }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  {/* Deactivated Users */}
+                  <div className="bg-gradient-to-br from-red-50 to-rose-50 rounded-xl p-6 border-2 border-red-200 hover:border-red-400 transition-all duration-300">
+                    <div className="flex items-center gap-4">
+                      <div className="bg-red-100 p-3 rounded-xl">
+                        <UserX className="w-7 h-7 text-red-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-semibold text-red-600 uppercase mb-1">Deactivated Users</p>
+                        <div className="flex items-baseline gap-2">
+                          <h4 className="text-4xl font-black text-red-900">{userStats.deactivatedUsers}</h4>
+                          <span className="text-lg font-bold text-red-600">
+                            ({userStats.totalUsers > 0 ? Math.round((userStats.deactivatedUsers / userStats.totalUsers) * 100) : 0}%)
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-4 w-full bg-red-200 rounded-full h-3">
+                      <div 
+                        className="h-3 bg-gradient-to-r from-red-500 to-rose-600 rounded-full transition-all duration-1000 shadow-sm" 
+                        style={{ width: `${userStats.totalUsers > 0 ? (userStats.deactivatedUsers / userStats.totalUsers) * 100 : 0}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Additional Info Section */}
