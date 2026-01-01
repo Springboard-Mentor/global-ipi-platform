@@ -610,7 +610,13 @@ const App = () => {
                   </div>
                 </div>
               ) : (
-                <LegalStatusPage userProfile={userProfile} />
+                <LegalStatusPage 
+                  userProfile={userProfile} 
+                  onNavigateToPatentFiling={() => {
+                    setCurrentPage('patent-filing');
+                    setActiveItem('patent-filing');
+                  }}
+                />
               )
             ) : currentPage === 'patent-filing' ? (
               <PatentFilingForm 

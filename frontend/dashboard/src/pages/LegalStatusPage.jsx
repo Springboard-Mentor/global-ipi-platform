@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, CheckCircle, XCircle, TrendingUp, Award, AlertCircle } from 'lucide-react';
 
-const LegalStatusPage = ({ userProfile }) => {
+const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
   const [stats, setStats] = useState({
     total: 0,
     granted: 0,
@@ -331,7 +331,10 @@ const LegalStatusPage = ({ userProfile }) => {
               Track the legal status of your patents in real-time. Monitor approvals, rejections, and pending applications 
               all in one comprehensive dashboard.
             </p>
-            <button className="bg-white text-indigo-600 px-6 py-3 rounded-xl font-bold hover:bg-indigo-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1">
+            <button 
+              onClick={onNavigateToPatentFiling}
+              className="bg-white text-indigo-600 px-6 py-3 rounded-xl font-bold hover:bg-indigo-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+            >
               File New Patent Application
             </button>
           </div>
