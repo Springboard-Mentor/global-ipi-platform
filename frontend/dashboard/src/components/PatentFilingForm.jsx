@@ -48,7 +48,7 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification, onFilingSuc
   const [formData, setFormData] = useState({
     // Step 1: Applicant Information
     applicantName: "",
-    applicantEmail: "",
+    applicantEmail: auth.currentUser?.email || userProfile?.email || "", // Auto-fill with user's email
     applicantPhone: "",
     applicantAddress: "",
     applicantCity: "",
@@ -1109,22 +1109,24 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification, onFilingSuc
                     <Mail size={16} className="inline mr-1" />
                     Email Address *
                   </label>
-                  <input
-                    type="email"
-                    name="applicantEmail"
-                    value={formData.applicantEmail}
-                    onChange={handleInputChange}
-                    className={`w-full px-4 py-3 rounded-xl border-2 bg-white text-gray-800 transition ${
-                      errors.applicantEmail ? 'border-red-400 bg-red-50' : 'border-gray-400 focus:border-blue-600'
-                    } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
-                    placeholder="your.email@example.com"
-                  />
-                  {errors.applicantEmail && (
-                    <p className="text-red-500 text-xs mt-1 flex items-center">
-                      <AlertCircle size={12} className="mr-1" />
-                      {errors.applicantEmail}
-                    </p>
-                  )}
+                  <div className="relative">
+                    <input
+                      type="email"
+                      name="applicantEmail"
+                      value={formData.applicantEmail}
+                      readOnly
+                      disabled
+                      className="w-full px-4 py-3 rounded-xl border-2 bg-gray-100 text-gray-700 cursor-not-allowed border-gray-300"
+                      placeholder="your.email@example.com"
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <Lock size={16} className="text-gray-500" />
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1 flex items-center">
+                    <Lock size={10} className="mr-1" />
+                    Email is automatically set from your account and cannot be changed
+                  </p>
                 </div>
               </div>
 
