@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { TrendingUp, CheckCircle, Database, Globe, Crown, Zap, Calendar, Info } from "lucide-react";
-import { doc, getDoc, collection, getDocs } from "firebase/firestore";
+import { TrendingUp, CheckCircle, Database, Globe } from "lucide-react";
+import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 
 import {
@@ -23,87 +23,12 @@ import OverviewGrid from "../components/OverviewGrid";
 import IPAssetPanel from "../components/IPAssetPanel";
 
 const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
-
-  const [dbPatentCount, setDbPatentCount] = React.useState(0);
-  const [dbConnectionStatus, setDbConnectionStatus] = React.useState('checking'); // 'checking', 'connected', 'error'
-  const [dbError, setDbError] = React.useState('');
-  
-  // State for total registered users
-  const [totalUsers, setTotalUsers] = React.useState(0);
-  const [usersStatus, setUsersStatus] = React.useState('checking'); // 'checking', 'connected', 'error'
-  const [usersError, setUsersError] = React.useState('');
-
-  // Fetch patent count from database on component mount
-  React.useEffect(() => {
-    const fetchPatentCount = async () => {
-      setDbConnectionStatus('checking');
-      try {
-        console.log('Fetching patent count from backend...');
-        const response = await fetch('http://localhost:8080/api/patents/count');
-        if (response.ok) {
-          const count = await response.json();
-          console.log('Patent count received:', count, 'Type:', typeof count);
-          // Ensure we set a number, not an object
-          const finalCount = typeof count === 'number' ? count : parseInt(count, 10) || 0;
-          setDbPatentCount(finalCount);
-          setDbConnectionStatus('connected');
-          setDbError('');
-          console.log('✓ Database connected. Patents found:', finalCount);
-        } else {
-          console.error('Failed to fetch patent count. Status:', response.status);
-          setDbConnectionStatus('error');
-          setDbError(`HTTP ${response.status}: ${response.statusText}`);
-        }
-      } catch (error) {
-        console.error('Error fetching patent count:', error);
-        setDbPatentCount(0);
-        setDbConnectionStatus('error');
-        setDbError(error.message || 'Cannot connect to backend server');
-      }
-    };
-    fetchPatentCount();
-    
-    // Refresh count every 30 seconds
-    const interval = setInterval(fetchPatentCount, 30000);
-    return () => clearInterval(interval);
-  }, []);
-  
-  // Fetch total users count from Firestore
-  React.useEffect(() => {
-    const fetchUsersCount = async () => {
-      setUsersStatus('checking');
-      try {
-        console.log('Fetching users count from Firestore...');
-        const usersCollection = collection(db, 'users');
-        const usersSnapshot = await getDocs(usersCollection);
-        const count = usersSnapshot.size;
-        console.log('Users count received:', count);
-        setTotalUsers(count);
-        setUsersStatus('connected');
-        setUsersError('');
-        console.log('✓ Firestore connected. Users found:', count);
-      } catch (error) {
-        console.error('Error fetching users count:', error);
-        setTotalUsers(0);
-        setUsersStatus('error');
-        setUsersError(error.message || 'Cannot connect to Firestore');
-      }
-    };
-    fetchUsersCount();
-    
-    // Refresh count every 30 seconds
-    const interval = setInterval(fetchUsersCount, 30000);
-    return () => clearInterval(interval);
-  }, []);
-  
-
   const [dashboardData, setDashboardData] = useState({
     portfolioValue: "$0",
     portfolioGrowth: "0%",
     activeSubscriptions: 0,
     recentFilings: 0,
     openAlerts: 0,
-    geoDistribution: [],
     loading: true,
   });
 
@@ -153,7 +78,6 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
             activeSubscriptions: data.activeSubscriptions || 0,
             recentFilings: data.recentFilings || 0,
             openAlerts: data.openAlerts || 0,
-            geoDistribution: data.geoDistribution || [], // Fetch geo data or default to empty
             loading: false,
           });
         } else {
@@ -163,13 +87,6 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
             activeSubscriptions: 12,
             recentFilings: 45,
             openAlerts: 3,
-            geoDistribution: [ // Fallback mock data for map
-              { name: "United States", value: 100 },
-              { name: "China", value: 50 },
-              { name: "Germany", value: 30 },
-              { name: "Brazil", value: 20 },
-              { name: "India", value: 80 }
-            ],
             loading: false,
           });
         }
@@ -188,39 +105,13 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
     return "Good Evening";
   };
 
-  const calculateDaysRemaining = (endDate) => {
-    if (!endDate) return null;
-
-    try {
-      let end;
-      if (endDate instanceof Date) {
-        end = endDate;
-      } else if (endDate?.toDate) {
-        end = endDate.toDate();
-      } else if (typeof endDate === 'string') {
-        end = new Date(endDate);
-      } else {
-        return null;
-      }
-
-      const now = new Date();
-      const diffTime = end - now;
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-      return diffDays > 0 ? diffDays : 0;
-    } catch (error) {
-      console.error('Error calculating days remaining:', error);
-      return null;
-    }
-  };
-
   /* ======================= UI ======================= */
   return (
-    <div className="w-full min-h-screen grid grid-cols-1 xl:grid-cols-5 gap-1.5 p-1.5">
-      {/* LEFT SECTION - Takes more space */}
-      <div className="xl:col-span-4 space-y-1.5">
+    <div className="w-full grid grid-cols-1 xl:grid-cols-4 gap-4 p-4 overflow-hidden">
+      {/* LEFT SECTION */}
+      <div className="xl:col-span-3 space-y-4">
         {/* Welcome Card */}
-        <div className="bg-white rounded-xl p-5 shadow-sm">
+        <div className="bg-white rounded-2xl p-6 shadow overflow-hidden">
           <p className="text-sm text-gray-500">Welcome back,</p>
           <h1 className="text-3xl font-bold">
             {getTimeGreeting()}, {userProfile?.firstName || "User"}.
@@ -239,142 +130,108 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
           )}
 
           {/* Search Mode Toggle */}
-          <div className="mt-3 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
-            <p className="text-xs font-medium text-gray-700 mb-2">Search Mode</p>
-            <div className="flex gap-2">
+          <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
+            <p className="text-sm font-medium text-gray-700 mb-2">Search Mode</p>
+            <div className="flex gap-3">
               <button
                 onClick={() => setSearchMode('api')}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm ${searchMode === 'api'
-                  ? 'bg-blue-500 text-white shadow-md'
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
-                  }`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                  searchMode === 'api'
+                    ? 'bg-blue-500 text-white shadow-md'
+                    : 'bg-white text-gray-700 hover:bg-gray-100'
+                }`}
               >
-                <Globe size={14} />
+                <Globe size={16} />
                 <span className="font-medium">API Search</span>
               </button>
               <button
                 onClick={() => setSearchMode('local')}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all text-sm ${searchMode === 'local'
-                  ? 'bg-purple-500 text-white shadow-md'
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
-                  }`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                  searchMode === 'local'
+                    ? 'bg-purple-500 text-white shadow-md'
+                    : 'bg-white text-gray-700 hover:bg-gray-100'
+                }`}
               >
-                <Database size={14} />
+                <Database size={16} />
                 <span className="font-medium">Local Database</span>
               </button>
             </div>
             <p className="text-xs text-gray-500 mt-2">
-              {searchMode === 'api'
-                ? 'Searching from external patent database API'
+              {searchMode === 'api' 
+                ? 'Searching from external patent database API' 
                 : `Searching from local database (${JSON.parse(localStorage.getItem('patentDatabase') || '[]').length} patents stored)`}
             </p>
           </div>
         </div>
 
         {/* Filters + Overview */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-1.5">
-          <div className="bg-white rounded-xl p-4 shadow-sm">
-            <h2 className="font-bold mb-2 text-sm">Quick Filters</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="bg-white rounded-2xl p-4 shadow overflow-hidden">
+            <h2 className="font-bold mb-2">Quick Filters</h2>
             <Filters />
           </div>
 
-          <div className="bg-white rounded-xl p-4 shadow-sm">
-            <h2 className="font-bold mb-2 text-sm">Overview</h2>
+          <div className="bg-white rounded-2xl p-4 shadow overflow-hidden">
+            <h2 className="font-bold mb-2">Overview</h2>
             <OverviewGrid dashboardData={dashboardData} />
           </div>
         </div>
 
+        {/* Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="bg-white rounded-2xl p-4 shadow overflow-hidden">
+            <h3 className="font-bold mb-3">Portfolio Growth</h3>
+            <div className="h-[260px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={portfolioGrowthData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip />
+                  <Line dataKey="value" stroke="#6366f1" strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
 
+          <div className="bg-white rounded-2xl p-4 shadow overflow-hidden">
+            <h3 className="font-bold mb-3">Monthly Filings</h3>
+            <div className="h-[260px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={filingsData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="filings" fill="#ad46ff" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* RIGHT SECTION */}
-      <div className="xl:col-span-1 space-y-1.5">
-        {/* Total Registered Users Card */}
-        <div className="bg-white rounded-xl p-4 shadow-sm">
+      <div className="xl:col-span-1 space-y-4">
+        {/* Portfolio Card */}
+        <div className="bg-white rounded-2xl p-4 shadow overflow-hidden">
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-gray-600 text-sm">Total Registered Users</h3>
-            <div className="p-2 bg-purple-50 rounded-lg">
-              <Database size={16} className="text-purple-600" />
+            <h3 className="font-semibold text-gray-600">Portfolio Value</h3>
+            <div className="p-2 bg-blue-50 rounded-xl">
+              <TrendingUp size={16} className="text-blue-600" />
             </div>
           </div>
 
-          <div className="flex items-baseline gap-2 mt-2">
-            <p className="text-3xl font-bold">
-              {usersStatus === 'checking' ? (
-                <span className="text-gray-400">Loading...</span>
-              ) : usersStatus === 'error' ? (
-                <span className="text-red-500">Error</span>
-              ) : (
-                totalUsers.toLocaleString()
-              )}
-            </p>
-            {usersStatus === 'connected' && (
-              <CheckCircle size={20} className="text-green-500 mb-1" />
-            )}
-          </div>
-          
-          <div className="flex items-center gap-1 mt-1">
-            {usersStatus === 'connected' ? (
-              <>
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <p className="text-sm text-green-600 font-medium">
-                  Live from Database
-                </p>
-              </>
-            ) : usersStatus === 'checking' ? (
-              <p className="text-sm text-gray-500">Connecting...</p>
-            ) : (
-              <p className="text-sm text-red-500">
-                {usersError || 'Connection failed'}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Total Patents Card */}
-        <div className="bg-white rounded-xl p-4 shadow-sm">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-gray-600 text-sm">Total Patents</h3>
-            <div className="p-2 bg-indigo-50 rounded-lg">
-              <Database size={16} className="text-indigo-600" />
-            </div>
-          </div>
-
-          <div className="flex items-baseline gap-2 mt-2">
-            <p className="text-3xl font-bold">
-              {dbConnectionStatus === 'checking' ? (
-                <span className="text-gray-400">Loading...</span>
-              ) : dbConnectionStatus === 'error' ? (
-                <span className="text-red-500">Error</span>
-              ) : (
-                dbPatentCount.toLocaleString()
-              )}
-            </p>
-            {dbConnectionStatus === 'connected' && (
-              <CheckCircle size={20} className="text-green-500 mb-1" />
-            )}
-          </div>
-          
-          <div className="flex items-center gap-1 mt-1">
-            {dbConnectionStatus === 'connected' ? (
-              <>
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <p className="text-sm text-green-600 font-medium">
-                  Live from Database
-                </p>
-              </>
-            ) : dbConnectionStatus === 'checking' ? (
-              <p className="text-sm text-gray-500">Connecting...</p>
-            ) : (
-              <p className="text-sm text-red-500">
-                {dbError || 'Connection failed'}
-              </p>
-            )}
-          </div>
+          <p className="text-3xl font-bold mt-2">
+            {dashboardData.portfolioValue}
+          </p>
+          <p className="text-sm text-green-600 font-medium">
+            {dashboardData.portfolioGrowth}
+          </p>
         </div>
 
         {/* Asset Distribution */}
-        <div className="bg-white rounded-xl p-4 shadow-sm">
+        <div className="bg-white rounded-2xl p-4 shadow overflow-hidden">
           <h3 className="font-bold mb-3">Asset Distribution</h3>
           <div className="h-[220px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -390,41 +247,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
           </div>
         </div>
 
-      </div>
-
-      {/* FULL WIDTH CHARTS SECTION */}
-      <div className="xl:col-span-5 grid grid-cols-1 lg:grid-cols-3 gap-1.5">
-        <div className="bg-white rounded-xl p-4 shadow-sm">
-          <h3 className="font-bold mb-3 text-sm">Portfolio Growth</h3>
-          <div className="h-[280px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={portfolioGrowthData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Line dataKey="value" stroke="#6366f1" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-4 shadow-sm">
-          <h3 className="font-bold mb-3 text-sm">Monthly Filings</h3>
-          <div className="h-[280px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={filingsData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="filings" fill="#22c55e" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <IPAssetPanel geoData={dashboardData.geoDistribution} />
+        <IPAssetPanel />
       </div>
     </div>
   );
