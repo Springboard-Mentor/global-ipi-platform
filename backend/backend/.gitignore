@@ -34,6 +34,7 @@ build/
 
 ### Sensitive Configuration Files ###
 **/application-secrets.properties
+!**/application-secrets.properties.example
 **/application.properties
 !**/application.properties.template
 
@@ -41,4 +42,5 @@ build/
 .env
 .env.local
 .env.*.local
+!.env.example
 

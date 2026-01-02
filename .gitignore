@@ -24,6 +24,9 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
+.env.*.local
+!.env.example
+!.env.template
 
 # Java/Maven/Spring Boot
 target/
@@ -37,8 +40,13 @@ mvnw.cmd
 
 # Sensitive configuration files
 **/application-secrets.properties
+!**/application-secrets.properties.example
 **/application.properties
 !**/application.properties.template
+
+# Firebase actual config files (use templates/examples instead)
+**/firebase.js
+!**/firebase.js.template
 
 # Database
 *.db

@@ -3,6 +3,8 @@ import { FileText, CheckCircle, XCircle, TrendingUp, Award, AlertCircle, Users, 
 import { collection, getDocs, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
 import { getSearchCounters, getGlobalSearchStats } from '../utils/searchCounters';
+import IndiaPatentPanel from '../components/IndiaPatentPanel';
+import StatePatentCount from '../components/StatePatentCount';
 
 const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -1135,6 +1137,16 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
             </div>
           )}
         </div>
+      </div>
+
+      {/* India Patent Distribution Map */}
+      <div className="mb-8">
+        <IndiaPatentPanel />
+      </div>
+
+      {/* State-wise Patent Count Card */}
+      <div className="mb-8">
+        <StatePatentCount />
       </div>
 
       {/* Additional Info Section */}

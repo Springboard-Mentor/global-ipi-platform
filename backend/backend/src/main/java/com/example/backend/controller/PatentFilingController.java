@@ -439,4 +439,28 @@ public class PatentFilingController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
+    
+    // Get patent count by state
+    @GetMapping("/count-by-state")
+    public ResponseEntity<Map<String, Long>> getPatentCountByState() {
+        try {
+            System.out.println("📊 Getting patent count by state...");
+            
+            List<Object[]> results = patentFilingRepository.countPatentsByState();
+            Map<String, Long> stateCountMap = new HashMap<>();
+            
+            for (Object[] result : results) {
+                String state = (String) result[0];
+                Long count = (Long) result[1];
+                stateCountMap.put(state, count);
+            }
+            
+            System.out.println("✅ State-wise patent count retrieved: " + stateCountMap.size() + " states");
+            return ResponseEntity.ok(stateCountMap);
+        } catch (Exception e) {
+            System.err.println("❌ ERROR getting state-wise patent count:");
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new HashMap<>());
+        }
+    }
 }

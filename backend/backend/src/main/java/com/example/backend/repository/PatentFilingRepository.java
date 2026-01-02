@@ -24,4 +24,8 @@ public interface PatentFilingRepository extends JpaRepository<PatentFiling, Long
     // Find granted or rejected patents (case-insensitive)
     @Query("SELECT p FROM PatentFiling p WHERE LOWER(p.status) IN ('granted', 'rejected')")
     List<PatentFiling> findGrantedOrRejectedPatents();
+    
+    // Count patents by state
+    @Query("SELECT p.applicantState, COUNT(p) FROM PatentFiling p GROUP BY p.applicantState")
+    List<Object[]> countPatentsByState();
 }
