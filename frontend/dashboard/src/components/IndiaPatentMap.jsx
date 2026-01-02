@@ -551,8 +551,31 @@ const IndiaPatentMap = ({ selectedState = null, showHeatMap = false }) => {
                 <span className="text-xs text-gray-700 font-medium">Very Low (&lt;15%)</span>
               </div>
             </div>
-            <div className="text-xs text-purple-600 font-semibold italic">
-              💡 Click circles to explore districts
+            <div className="mt-3 pt-3 border-t border-purple-200">
+              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-3 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <h3 className="text-xs font-semibold text-purple-800 mb-1.5">
+                      📊 Patent Coverage Statistics
+                    </h3>
+                    <div className="flex items-center space-x-2">
+                      <div className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                        {stateData.length}
+                      </div>
+                      <div className="text-xs text-gray-600">
+                        <span className="font-semibold">out of 36</span>
+                        <div className="text-[10px] text-gray-500">states/UTs with patents</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-center justify-center bg-white rounded-lg px-3 py-2 shadow-sm border border-purple-100">
+                    <div className="text-lg font-bold text-purple-600">
+                      {stateData.length > 0 ? Math.round((stateData.length / 36) * 100) : 0}%
+                    </div>
+                    <div className="text-[9px] text-gray-500 font-medium">Coverage</div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
