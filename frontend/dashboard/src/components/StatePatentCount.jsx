@@ -36,7 +36,7 @@ const INDIAN_STATES = [
 ].sort();
 
 const StatePatentCount = ({ onStateChange }) => {
-  const [selectedState, setSelectedState] = useState('');
+  const [selectedState, setSelectedState] = useState('Uttar Pradesh');
   const [patentCount, setPatentCount] = useState(0);
   const [stateData, setStateData] = useState({});
   const [cities, setCities] = useState([]);
@@ -47,6 +47,19 @@ const StatePatentCount = ({ onStateChange }) => {
   useEffect(() => {
     fetchStateData();
   }, []);
+
+  // Set initial data when stateData is loaded
+  useEffect(() => {
+    if (Object.keys(stateData).length > 0 && selectedState === 'Uttar Pradesh') {
+      setPatentCount(stateData['Uttar Pradesh'] || 0);
+      fetchCitiesByState('Uttar Pradesh');
+      
+      // Notify parent component about default state
+      if (onStateChange) {
+        onStateChange('Uttar Pradesh');
+      }
+    }
+  }, [stateData]);
 
   const fetchStateData = async () => {
     try {
