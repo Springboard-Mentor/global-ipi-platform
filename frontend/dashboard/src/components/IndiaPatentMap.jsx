@@ -12,6 +12,18 @@ const IndiaPatentMap = ({ selectedState = null, showHeatMap = false }) => {
   const markersRef = useRef([]);
   const pulseIntervalsRef = useRef([]);
 
+  // Union Territories list
+  const unionTerritories = [
+    'Delhi',
+    'Puducherry',
+    'Chandigarh',
+    'Dadra and Nagar Haveli and Daman and Diu',
+    'Lakshadweep',
+    'Andaman and Nicobar Islands',
+    'Jammu and Kashmir',
+    'Ladakh'
+  ];
+
   // State coordinates mapping
   const stateCoordinates = {
     'Maharashtra': { lat: 19.7515, lng: 75.7139 },
@@ -535,6 +547,107 @@ const IndiaPatentMap = ({ selectedState = null, showHeatMap = false }) => {
               <span className="text-xs font-semibold text-purple-400">
                 {stateData.length > 0 ? stateData.filter(s => s.patents / Math.max(...stateData.map(d => d.patents)) <= 0.15).reduce((sum, s) => sum + s.patents, 0) : 0}
               </span>
+            </div>
+          </div>
+
+          {/* Speedometer Meters Section */}
+          <div className="py-4 space-y-3">
+            {/* States Meter */}
+            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-3 border border-blue-200">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold text-blue-800">States with Patents</span>
+                <span className="text-lg font-bold text-blue-600">
+                  {stateData.filter(s => !unionTerritories.includes(s.name)).length}/28
+                </span>
+              </div>
+              <div className="relative pt-1">
+                <div className="flex mb-2 items-center justify-between">
+                  <div className="text-xs font-semibold text-blue-600">
+                    {Math.round((stateData.filter(s => !unionTerritories.includes(s.name)).length / 28) * 100)}%
+                  </div>
+                </div>
+                <div className="relative w-full">
+                  <svg viewBox="0 0 100 50" className="w-full h-16">
+                    {/* Background arc */}
+                    <path
+                      d="M 10 45 A 40 40 0 0 1 90 45"
+                      fill="none"
+                      stroke="#E5E7EB"
+                      strokeWidth="8"
+                      strokeLinecap="round"
+                    />
+                    {/* Progress arc */}
+                    <path
+                      d="M 10 45 A 40 40 0 0 1 90 45"
+                      fill="none"
+                      stroke="url(#blueGradient)"
+                      strokeWidth="8"
+                      strokeLinecap="round"
+                      strokeDasharray={`${(stateData.filter(s => !unionTerritories.includes(s.name)).length / 28) * 126} 126`}
+                    />
+                    {/* Needle */}
+                    <g transform={`rotate(${-90 + (stateData.filter(s => !unionTerritories.includes(s.name)).length / 28) * 180} 50 45)`}>
+                      <line x1="50" y1="45" x2="50" y2="15" stroke="#1e40af" strokeWidth="2" strokeLinecap="round"/>
+                      <circle cx="50" cy="45" r="3" fill="#1e40af"/>
+                    </g>
+                    <defs>
+                      <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#3b82f6"/>
+                        <stop offset="100%" stopColor="#06b6d4"/>
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* UTs Meter */}
+            <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-lg p-3 border border-orange-200">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold text-orange-800">UTs with Patents</span>
+                <span className="text-lg font-bold text-orange-600">
+                  {stateData.filter(s => unionTerritories.includes(s.name)).length}/8
+                </span>
+              </div>
+              <div className="relative pt-1">
+                <div className="flex mb-2 items-center justify-between">
+                  <div className="text-xs font-semibold text-orange-600">
+                    {Math.round((stateData.filter(s => unionTerritories.includes(s.name)).length / 8) * 100)}%
+                  </div>
+                </div>
+                <div className="relative w-full">
+                  <svg viewBox="0 0 100 50" className="w-full h-16">
+                    {/* Background arc */}
+                    <path
+                      d="M 10 45 A 40 40 0 0 1 90 45"
+                      fill="none"
+                      stroke="#E5E7EB"
+                      strokeWidth="8"
+                      strokeLinecap="round"
+                    />
+                    {/* Progress arc */}
+                    <path
+                      d="M 10 45 A 40 40 0 0 1 90 45"
+                      fill="none"
+                      stroke="url(#orangeGradient)"
+                      strokeWidth="8"
+                      strokeLinecap="round"
+                      strokeDasharray={`${(stateData.filter(s => unionTerritories.includes(s.name)).length / 8) * 126} 126`}
+                    />
+                    {/* Needle */}
+                    <g transform={`rotate(${-90 + (stateData.filter(s => unionTerritories.includes(s.name)).length / 8) * 180} 50 45)`}>
+                      <line x1="50" y1="45" x2="50" y2="15" stroke="#c2410c" strokeWidth="2" strokeLinecap="round"/>
+                      <circle cx="50" cy="45" r="3" fill="#c2410c"/>
+                    </g>
+                    <defs>
+                      <linearGradient id="orangeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#f97316"/>
+                        <stop offset="100%" stopColor="#f59e0b"/>
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                </div>
+              </div>
             </div>
           </div>
 
