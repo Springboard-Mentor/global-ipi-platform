@@ -4,7 +4,6 @@ import { collection, getDocs, onSnapshot, query, where } from 'firebase/firestor
 import { db } from '../firebase';
 import { getSearchCounters, getGlobalSearchStats } from '../utils/searchCounters';
 import IndiaPatentPanel from '../components/IndiaPatentPanel';
-import StatePatentCount from '../components/StatePatentCount';
 
 const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -1142,11 +1141,6 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
       {/* India Patent Distribution Map */}
       <div className="mb-8">
         <IndiaPatentPanel />
-      </div>
-
-      {/* State-wise Patent Count Card */}
-      <div className="mb-8">
-        <StatePatentCount />
       </div>
 
       {/* Additional Info Section */}

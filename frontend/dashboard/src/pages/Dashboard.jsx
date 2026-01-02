@@ -21,6 +21,7 @@ import {
 import Filters from "../components/Filters";
 import OverviewGrid from "../components/OverviewGrid";
 import IPAssetPanel from "../components/IPAssetPanel";
+import StatePatentCount from "../components/StatePatentCount";
 
 const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
   const [dbPatentCount, setDbPatentCount] = React.useState(0);
@@ -546,6 +547,11 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
         </div>
 
         <IPAssetPanel />
+      </div>
+
+      {/* State-wise Patent Count */}
+      <div className="mt-6">
+        <StatePatentCount />
       </div>
     </div>
   );
