@@ -504,21 +504,37 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
             </button>
             
             <button
-              onClick={async () => {
-                // Reset all filters
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Immediately close filters and reset them
+                setShowFilters(false);
                 setFilters({
                   startDate: '',
                   endDate: '',
                   year: ''
                 });
-                setShowFilters(false);
                 
-                // Reset stats to loading
+                // Set all data to loading state immediately
                 setStats(prev => ({ ...prev, loading: true }));
                 setUserStats(prev => ({ ...prev, loading: true }));
+                setSearchCounters(prev => ({ ...prev, loading: true }));
+                setGlobalSearchCounters(prev => ({ ...prev, loading: true }));
                 
-                // Immediately fetch fresh data
-                await Promise.all([fetchUserStats(), fetchPatentStats()]);
+                // Use setTimeout to ensure state updates process, then fetch fresh data
+                setTimeout(async () => {
+                  try {
+                    await Promise.all([
+                      fetchUserStats(),
+                      fetchPatentStats(),
+                      fetchSearchCounters(),
+                      fetchGlobalSearchCounters()
+                    ]);
+                  } catch (error) {
+                    console.error('Error refreshing data:', error);
+                  }
+                }, 0);
               }}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full shadow-md border-2 bg-red-500 border-red-500 text-white hover:bg-red-600 transition-all duration-300"
             >
@@ -696,7 +712,7 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
               </div>
               
               {/* Right Side - Two Circles */}
-              <div className="flex flex-row lg:flex-row gap-6 lg:gap-8 items-center justify-center">
+              <div className="flex flex-row lg:flex-row gap-8 lg:gap-12 items-center justify-end flex-1 lg:ml-8">
               
               {/* Personal Search Counter Circle */}
               <div className="flex flex-col items-center">
@@ -705,37 +721,37 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
                   <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full opacity-0 group-hover/circle:opacity-40 blur-xl transition-all duration-500"></div>
                   
                   {/* Circle */}
-                  <div className="relative bg-white/90 backdrop-blur-md rounded-full p-6 w-44 h-44 lg:w-48 lg:h-48 flex flex-col items-center justify-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border-2 border-blue-200/50">
+                  <div className="relative bg-white/90 backdrop-blur-md rounded-full p-8 w-56 h-56 sm:w-64 sm:h-64 lg:w-72 lg:h-72 xl:w-80 xl:h-80 flex flex-col items-center justify-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border-2 border-blue-200/50">
                     {/* Icon */}
-                    <div className="mb-2 bg-gradient-to-br from-blue-500 to-purple-600 p-2.5 rounded-full shadow-lg">
-                      <Search className="w-5 h-5 text-white" strokeWidth={2.5} />
+                    <div className="mb-3 bg-gradient-to-br from-blue-500 to-purple-600 p-3 lg:p-4 rounded-full shadow-lg">
+                      <Search className="w-6 h-6 lg:w-8 lg:h-8 text-white" strokeWidth={2.5} />
                     </div>
                     
                     {/* Counter */}
                     {searchCounters.loading ? (
                       <div className="flex flex-col items-center gap-2">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-3 border-purple-500"></div>
-                        <span className="text-xs text-gray-500 font-medium">Loading...</span>
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-purple-500"></div>
+                        <span className="text-sm text-gray-500 font-medium">Loading...</span>
                       </div>
                     ) : (
                       <>
-                        <h3 className="text-4xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-1">
+                        <h3 className="text-5xl sm:text-6xl lg:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-2">
                           {searchCounters.totalSearchCount}
                         </h3>
-                        <p className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">Your Searches</p>
+                        <p className="text-xs lg:text-sm font-bold text-gray-600 uppercase tracking-wider mb-3">Your Searches</p>
                         
                         {/* Breakdown */}
-                        <div className="space-y-1 w-full px-3">
-                          <div className="flex items-center justify-between text-xs">
-                            <div className="flex items-center gap-1">
-                              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                        <div className="space-y-1.5 w-full px-4 lg:px-6">
+                          <div className="flex items-center justify-between text-sm lg:text-base">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                               <span className="font-semibold text-blue-600">API</span>
                             </div>
                             <span className="font-bold text-blue-700">{searchCounters.apiSearchCount}</span>
                           </div>
-                          <div className="flex items-center justify-between text-xs">
-                            <div className="flex items-center gap-1">
-                              <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
+                          <div className="flex items-center justify-between text-sm lg:text-base">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
                               <span className="font-semibold text-purple-600">Local</span>
                             </div>
                             <span className="font-bold text-purple-700">{searchCounters.localSearchCount}</span>
@@ -768,8 +784,8 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
                 </div>
                 
                 {/* Label */}
-                <div className="mt-3 bg-gradient-to-r from-blue-100/80 to-purple-100/80 px-3 py-1.5 rounded-full border border-blue-200/50">
-                  <p className="text-xs font-bold text-blue-700">Personal Activity</p>
+                <div className="mt-4 bg-gradient-to-r from-blue-100/80 to-purple-100/80 px-4 py-2 rounded-full border border-blue-200/50">
+                  <p className="text-sm font-bold text-blue-700">Personal Activity</p>
                 </div>
               </div>
 
@@ -780,37 +796,37 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
                   <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full opacity-0 group-hover/circle:opacity-40 blur-xl transition-all duration-500"></div>
                   
                   {/* Circle */}
-                  <div className="relative bg-white/90 backdrop-blur-md rounded-full p-6 w-44 h-44 lg:w-48 lg:h-48 flex flex-col items-center justify-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border-2 border-purple-200/50">
+                  <div className="relative bg-white/90 backdrop-blur-md rounded-full p-8 w-56 h-56 sm:w-64 sm:h-64 lg:w-72 lg:h-72 xl:w-80 xl:h-80 flex flex-col items-center justify-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border-2 border-purple-200/50">
                     {/* Icon */}
-                    <div className="mb-2 bg-gradient-to-br from-purple-500 to-pink-600 p-2.5 rounded-full shadow-lg">
-                      <Globe className="w-5 h-5 text-white" strokeWidth={2.5} />
+                    <div className="mb-3 bg-gradient-to-br from-purple-500 to-pink-600 p-3 lg:p-4 rounded-full shadow-lg">
+                      <Globe className="w-6 h-6 lg:w-8 lg:h-8 text-white" strokeWidth={2.5} />
                     </div>
                     
                     {/* Counter */}
                     {globalSearchCounters.loading ? (
                       <div className="flex flex-col items-center gap-2">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-3 border-pink-500"></div>
-                        <span className="text-xs text-gray-500 font-medium">Loading...</span>
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-pink-500"></div>
+                        <span className="text-sm text-gray-500 font-medium">Loading...</span>
                       </div>
                     ) : (
                       <>
-                        <h3 className="text-4xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 mb-1">
+                        <h3 className="text-5xl sm:text-6xl lg:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 mb-2">
                           {globalSearchCounters.totalSearchCount}
                         </h3>
-                        <p className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">Global Searches</p>
+                        <p className="text-xs lg:text-sm font-bold text-gray-600 uppercase tracking-wider mb-3">Global Searches</p>
                         
                         {/* Breakdown */}
-                        <div className="space-y-1 w-full px-3">
-                          <div className="flex items-center justify-between text-xs">
-                            <div className="flex items-center gap-1">
-                              <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
+                        <div className="space-y-1.5 w-full px-4 lg:px-6">
+                          <div className="flex items-center justify-between text-sm lg:text-base">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
                               <span className="font-semibold text-purple-600">API</span>
                             </div>
                             <span className="font-bold text-purple-700">{globalSearchCounters.apiSearchCount}</span>
                           </div>
-                          <div className="flex items-center justify-between text-xs">
-                            <div className="flex items-center gap-1">
-                              <div className="w-1.5 h-1.5 bg-pink-500 rounded-full"></div>
+                          <div className="flex items-center justify-between text-sm lg:text-base">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 bg-pink-500 rounded-full"></div>
                               <span className="font-semibold text-pink-600">Local</span>
                             </div>
                             <span className="font-bold text-pink-700">{globalSearchCounters.localSearchCount}</span>
@@ -843,8 +859,8 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
                 </div>
                 
                 {/* Label */}
-                <div className="mt-3 bg-gradient-to-r from-purple-100/80 to-pink-100/80 px-3 py-1.5 rounded-full border border-purple-200/50">
-                  <p className="text-xs font-bold text-purple-700">Platform Wide</p>
+                <div className="mt-4 bg-gradient-to-r from-purple-100/80 to-pink-100/80 px-4 py-2 rounded-full border border-purple-200/50">
+                  <p className="text-sm font-bold text-purple-700">Platform Wide</p>
                 </div>
               </div>
             </div>
