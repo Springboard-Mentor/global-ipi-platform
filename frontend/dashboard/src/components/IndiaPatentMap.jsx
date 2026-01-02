@@ -413,48 +413,6 @@ const IndiaPatentMap = ({ selectedState = null, showHeatMap = false }) => {
         setMapLoaded(true);
         setLoading(false);
 
-        // Add custom blinking overlay in top-right corner when heat map is enabled
-        if (showHeatMap) {
-          const overlayDiv = document.createElement('div');
-          overlayDiv.style.cssText = `
-            background: rgba(220, 38, 38, 0.9);
-            color: white;
-            padding: 10px 16px;
-            border-radius: 8px;
-            box-shadow: 0 2px 12px rgba(220, 38, 38, 0.4);
-            font-family: system-ui, -apple-system, sans-serif;
-            font-weight: 700;
-            font-size: 14px;
-            margin: 10px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            backdrop-filter: blur(12px);
-            border: 2px solid rgba(255, 255, 255, 0.8);
-            animation: blink 2s ease-in-out infinite;
-          `;
-          
-          // Add blinking animation keyframes
-          const styleSheet = document.createElement('style');
-          styleSheet.textContent = `
-            @keyframes blink {
-              0%, 100% { opacity: 1; box-shadow: 0 2px 12px rgba(220, 38, 38, 0.4); transform: scale(1); }
-              50% { opacity: 0.85; box-shadow: 0 4px 20px rgba(220, 38, 38, 0.7); transform: scale(1.05); }
-            }
-          `;
-          document.head.appendChild(styleSheet);
-          
-          overlayDiv.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="2" y1="12" x2="22" y2="12"></line>
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-            </svg>
-            <span>All Indian States Patents</span>
-          `;
-          map.controls[google.maps.ControlPosition.TOP_RIGHT].push(overlayDiv);
-        }
-
         // Load heat map data if enabled
         if (showHeatMap) {
           const data = await fetchPatentData();
@@ -533,25 +491,50 @@ const IndiaPatentMap = ({ selectedState = null, showHeatMap = false }) => {
           
           {/* Legend Items */}
           <div className="flex flex-col space-y-2.5 mb-4">
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 rounded-full bg-[#581c87] flex-shrink-0"></div>
-              <span className="text-xs text-gray-700 font-medium">Very High (75%+)</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 rounded-full bg-[#581c87] flex-shrink-0"></div>
+                <span className="text-xs text-gray-700 font-medium">Very High (75%+)</span>
+              </div>
+              <span className="text-xs font-semibold text-purple-700">
+                {stateData.length > 0 ? stateData.filter(s => s.patents / Math.max(...stateData.map(d => d.patents)) > 0.75).reduce((sum, s) => sum + s.patents, 0) : 0}
+              </span>
             </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 rounded-full bg-[#7c3aed] flex-shrink-0"></div>
-              <span className="text-xs text-gray-700 font-medium">High (45-75%)</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 rounded-full bg-[#7c3aed] flex-shrink-0"></div>
+                <span className="text-xs text-gray-700 font-medium">High (45-75%)</span>
+              </div>
+              <span className="text-xs font-semibold text-purple-600">
+                {stateData.length > 0 ? stateData.filter(s => { const ratio = s.patents / Math.max(...stateData.map(d => d.patents)); return ratio > 0.45 && ratio <= 0.75; }).reduce((sum, s) => sum + s.patents, 0) : 0}
+              </span>
             </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 rounded-full bg-[#9333ea] flex-shrink-0"></div>
-              <span className="text-xs text-gray-700 font-medium">Medium (30-45%)</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 rounded-full bg-[#9333ea] flex-shrink-0"></div>
+                <span className="text-xs text-gray-700 font-medium">Medium (30-45%)</span>
+              </div>
+              <span className="text-xs font-semibold text-purple-600">
+                {stateData.length > 0 ? stateData.filter(s => { const ratio = s.patents / Math.max(...stateData.map(d => d.patents)); return ratio > 0.30 && ratio <= 0.45; }).reduce((sum, s) => sum + s.patents, 0) : 0}
+              </span>
             </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 rounded-full bg-[#a855f7] flex-shrink-0"></div>
-              <span className="text-xs text-gray-700 font-medium">Low (15-30%)</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 rounded-full bg-[#a855f7] flex-shrink-0"></div>
+                <span className="text-xs text-gray-700 font-medium">Low (15-30%)</span>
+              </div>
+              <span className="text-xs font-semibold text-purple-500">
+                {stateData.length > 0 ? stateData.filter(s => { const ratio = s.patents / Math.max(...stateData.map(d => d.patents)); return ratio > 0.15 && ratio <= 0.30; }).reduce((sum, s) => sum + s.patents, 0) : 0}
+              </span>
             </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 rounded-full bg-[#c084fc] flex-shrink-0"></div>
-              <span className="text-xs text-gray-700 font-medium">Very Low (&lt;15%)</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 rounded-full bg-[#c084fc] flex-shrink-0"></div>
+                <span className="text-xs text-gray-700 font-medium">Very Low (&lt;15%)</span>
+              </div>
+              <span className="text-xs font-semibold text-purple-400">
+                {stateData.length > 0 ? stateData.filter(s => s.patents / Math.max(...stateData.map(d => d.patents)) <= 0.15).reduce((sum, s) => sum + s.patents, 0) : 0}
+              </span>
             </div>
           </div>
 
@@ -561,7 +544,7 @@ const IndiaPatentMap = ({ selectedState = null, showHeatMap = false }) => {
               <h3 className="text-xs font-semibold text-purple-800 mb-2">
                 📊 Patent Coverage Statistics
               </h3>
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-3">
                 <div className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
                   {stateData.length}
                 </div>
@@ -570,11 +553,20 @@ const IndiaPatentMap = ({ selectedState = null, showHeatMap = false }) => {
                   <div className="text-[10px] text-gray-500">states/UTs</div>
                 </div>
               </div>
-              <div className="bg-purple-100 rounded-lg px-3 py-2 text-center">
-                <div className="text-lg font-bold text-purple-600">
-                  {stateData.length > 0 ? Math.round((stateData.length / 36) * 100) : 0}%
+              {/* Coverage Progress Indicator */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-gray-500 font-medium">Coverage</span>
+                  <span className="text-sm font-bold text-green-600">
+                    {stateData.length > 0 ? Math.round((stateData.length / 36) * 100) : 0}%
+                  </span>
                 </div>
-                <div className="text-[9px] text-gray-500 font-medium">Coverage</div>
+                <div className="w-full bg-gray-200 rounded-full h-6 overflow-hidden">
+                  <div 
+                    className="bg-gradient-to-r from-green-500 to-green-600 h-6 rounded-full transition-all duration-500 ease-out shadow-sm"
+                    style={{ width: `${stateData.length > 0 ? Math.round((stateData.length / 36) * 100) : 0}%` }}
+                  ></div>
+                </div>
               </div>
             </div>
           </div>
