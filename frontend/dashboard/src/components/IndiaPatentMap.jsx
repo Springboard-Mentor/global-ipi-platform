@@ -1,14 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { MapPin, TrendingUp } from 'lucide-react';
 
-const IndiaPatentMap = () => {
+const IndiaPatentMap = ({ selectedState = null }) => {
   const mapRef = useRef(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [stateData, setStateData] = useState([]);
-  const markersRef = useRef([]);
   const mapInstanceRef = useRef(null);
+  const selectedMarkerRef = useRef(null);
 
   // State coordinates mapping
   const stateCoordinates = {
@@ -45,149 +44,71 @@ const IndiaPatentMap = () => {
     'Arunachal Pradesh': { lat: 28.2180, lng: 94.7278 }
   };
 
-  // Fetch patent data from backend
-  const fetchPatentData = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('http://localhost:8080/api/patent-filing/all', {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        mode: 'cors',
-      });
-
-      if (response.ok) {
-        const patents = await response.json();
-        
-        // Aggregate patents by state
-        const stateCount = {};
-        
-        patents.forEach(patent => {
-          const state = patent.state || patent.applicantState || 'Unknown';
-          if (state && state !== 'Unknown') {
-            stateCount[state] = (stateCount[state] || 0) + 1;
-          }
-        });
-
-        // Create state data array with coordinates
-        const stateDataArray = Object.keys(stateCount).map(stateName => {
-          const coords = stateCoordinates[stateName] || { lat: 20.5937, lng: 78.9629 };
-          return {
-            name: stateName,
-            lat: coords.lat,
-            lng: coords.lng,
-            patents: stateCount[stateName]
-          };
-        });
-
-        setStateData(stateDataArray);
-        setLoading(false);
-        return stateDataArray;
-      } else {
-        throw new Error('Failed to fetch patent data');
-      }
-    } catch (err) {
-      console.error('Error fetching patent data:', err);
-      setError('Failed to load patent data');
-      setLoading(false);
-      return [];
+  const clearSelectedMarker = () => {
+    if (selectedMarkerRef.current) {
+      selectedMarkerRef.current.setMap(null);
+      selectedMarkerRef.current = null;
     }
   };
 
-  const getColorByPatentCount = (count, maxCount) => {
-    const intensity = count / maxCount;
-    if (intensity > 0.75) return '#581c87'; // purple-900
-    if (intensity > 0.5) return '#7c3aed'; // purple-600
-    if (intensity > 0.25) return '#a855f7'; // purple-500
-    return '#e9d5ff'; // purple-200
-  };
+  // Highlight selected state with red location pin marker
+  const highlightLocation = async (map, stateName) => {
+    clearSelectedMarker();
 
-  const getMarkerSize = (count, maxCount) => {
-    const intensity = count / maxCount;
-    return 8 + (intensity * 20); // Size from 8 to 28
-  };
+    const coordinates = stateCoordinates[stateName];
+    const locationName = stateName;
+    const zoomLevel = 7;
 
-  const clearMarkers = () => {
-    markersRef.current.forEach(marker => marker.setMap(null));
-    markersRef.current = [];
-  };
-
-  const showStateView = (map, data) => {
-    clearMarkers();
-
-    if (!data || data.length === 0) {
-      console.log('No patent data available to display');
+    if (!coordinates) {
+      console.warn(`Coordinates not found for ${locationName}`);
       return;
     }
 
-    const maxPatents = Math.max(...data.map(s => s.patents));
+    // Center and zoom map to location
+    map.setCenter(coordinates);
+    map.setZoom(zoomLevel);
 
-    map.setCenter({ lat: 22.5, lng: 78.5 });
-    map.setZoom(5);
+    // Custom location pin SVG path (teardrop/pin shape)
+    const pinPath = 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z';
 
-    data.forEach(state => {
-      const color = getColorByPatentCount(state.patents, maxPatents);
-      const size = getMarkerSize(state.patents, maxPatents);
-
-      const marker = new google.maps.Marker({
-        position: { lat: state.lat, lng: state.lng },
-        map: map,
-        title: state.name,
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: size,
-          fillColor: color,
-          fillOpacity: 0.85,
-          strokeColor: '#ffffff',
-          strokeWeight: 3
-        }
-      });
-
-      const infoWindow = new google.maps.InfoWindow({
-        content: `
-          <div style="padding: 12px; font-family: system-ui, -apple-system, sans-serif; min-width: 180px;">
-            <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: bold; color: #1f2937;">
-              ${state.name}
-            </h3>
-            <p style="margin: 0 0 8px 0; font-size: 16px; color: #6b7280;">
-              <strong style="color: #7c3aed; font-size: 24px;">${state.patents}</strong> Patents
-            </p>
-          </div>
-        `
-      });
-
-      marker.addListener('click', () => {
-        infoWindow.open(map, marker);
-      });
-
-      marker.addListener('mouseover', () => {
-        infoWindow.open(map, marker);
-        marker.setIcon({
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: size + 4,
-          fillColor: '#c084fc',
-          fillOpacity: 1,
-          strokeColor: '#ffffff',
-          strokeWeight: 4
-        });
-      });
-
-      marker.addListener('mouseout', () => {
-        infoWindow.close();
-        marker.setIcon({
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: size,
-          fillColor: color,
-          fillOpacity: 0.85,
-          strokeColor: '#ffffff',
-          strokeWeight: 3
-        });
-      });
-
-      markersRef.current.push(marker);
+    // Create red location pin marker for selected state
+    const marker = new google.maps.Marker({
+      position: coordinates,
+      map: map,
+      title: locationName,
+      animation: google.maps.Animation.DROP,
+      icon: {
+        path: pinPath,
+        fillColor: '#dc2626', // Red color
+        fillOpacity: 1,
+        strokeColor: '#ffffff',
+        strokeWeight: 2,
+        scale: 2,
+        anchor: new google.maps.Point(12, 22)
+      }
     });
+
+    const infoWindow = new google.maps.InfoWindow({
+      content: `
+        <div style="padding: 12px; font-family: system-ui, -apple-system, sans-serif; min-width: 200px;">
+          <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: bold; color: #dc2626;">
+            📍 ${locationName}
+          </h3>
+          <p style="margin: 0; font-size: 14px; color: #6b7280;">
+            Selected State
+          </p>
+        </div>
+      `
+    });
+
+    // Show info window immediately
+    infoWindow.open(map, marker);
+
+    marker.addListener('click', () => {
+      infoWindow.open(map, marker);
+    });
+
+    selectedMarkerRef.current = marker;
   };
 
   useEffect(() => {
@@ -286,33 +207,32 @@ const IndiaPatentMap = () => {
 
         mapInstanceRef.current = map;
         setMapLoaded(true);
-
-        // Fetch patent data and display markers
-        const data = await fetchPatentData();
-        if (data && data.length > 0) {
-          showStateView(map, data);
-        }
+        setLoading(false);
       } catch (err) {
         console.error('Error loading Google Maps:', err);
         setError(err.message);
+        setLoading(false);
       }
     };
 
     initMap();
 
     return () => {
-      clearMarkers();
+      clearSelectedMarker();
     };
   }, []);
 
-  const handleRefreshData = async () => {
-    if (mapInstanceRef.current) {
-      const data = await fetchPatentData();
-      if (data && data.length > 0) {
-        showStateView(mapInstanceRef.current, data);
-      }
+  // Effect to handle selected state changes
+  useEffect(() => {
+    if (mapInstanceRef.current && mapLoaded && selectedState) {
+      highlightLocation(mapInstanceRef.current, selectedState);
+    } else if (mapInstanceRef.current && mapLoaded && !selectedState) {
+      // Reset to India view when no state is selected
+      clearSelectedMarker();
+      mapInstanceRef.current.setCenter({ lat: 22.5, lng: 78.5 });
+      mapInstanceRef.current.setZoom(5);
     }
-  };
+  }, [selectedState, mapLoaded]);
 
   if (error) {
     return (
@@ -361,56 +281,6 @@ const IndiaPatentMap = () => {
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Legend */}
-          <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-4 border-2 border-purple-200/50 z-10">
-            <div className="flex items-center gap-2 mb-3">
-              <TrendingUp className="w-4 h-4 text-purple-600" />
-              <div className="text-xs font-bold text-gray-700">Patent Density</div>
-            </div>
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full" style={{ backgroundColor: '#581c87' }}></div>
-                <span className="text-xs text-gray-600 font-medium">Very High (75%+)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-full" style={{ backgroundColor: '#7c3aed' }}></div>
-                <span className="text-xs text-gray-600 font-medium">High (50-75%)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-full" style={{ backgroundColor: '#a855f7' }}></div>
-                <span className="text-xs text-gray-600 font-medium">Medium (25-50%)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#e9d5ff' }}></div>
-                <span className="text-xs text-gray-600 font-medium">Low (0-25%)</span>
-              </div>
-            </div>
-            <div className="mt-3 pt-3 border-t border-gray-200">
-              <p className="text-xs text-gray-500 italic">
-                Hover/Click for details
-              </p>
-            </div>
-          </div>
-
-          {/* Stats Summary */}
-          <div className="absolute bottom-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-4 border-2 border-purple-200/50 z-10">
-            <div className="text-xs font-semibold text-gray-500 uppercase mb-1">
-              States with Patents
-            </div>
-            <div className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600">
-              {stateData.length}
-            </div>
-            <div className="text-xs text-gray-600 mt-1">
-              {stateData.reduce((sum, s) => sum + s.patents, 0)} Total Patents
-            </div>
-            <button
-              onClick={handleRefreshData}
-              className="mt-3 w-full px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded transition-colors"
-            >
-              Refresh Data
-            </button>
           </div>
         </>
       )}

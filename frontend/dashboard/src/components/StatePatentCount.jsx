@@ -40,7 +40,7 @@ const INDIAN_STATES = [
   'Puducherry'
 ].sort();
 
-const StatePatentCount = () => {
+const StatePatentCount = ({ onStateChange }) => {
   const [selectedState, setSelectedState] = useState('');
   const [patentCount, setPatentCount] = useState(0);
   const [stateData, setStateData] = useState({});
@@ -126,6 +126,11 @@ const StatePatentCount = () => {
     setSelectedState(state);
     setPatentCount(stateData[state] || 0);
     fetchCitiesByState(state);
+    
+    // Notify parent component about state change
+    if (onStateChange) {
+      onStateChange(state);
+    }
   };
 
   return (
@@ -223,7 +228,7 @@ const StatePatentCount = () => {
                         {cities.map((city, index) => (
                           <span
                             key={index}
-                            className="px-3 py-1.5 bg-white border border-blue-300 rounded-lg text-sm font-medium text-gray-700 shadow-sm hover:shadow-md hover:border-blue-400 transition-all"
+                            className="px-3 py-1.5 bg-white border border-blue-300 rounded-lg text-sm font-medium text-gray-700 shadow-sm"
                           >
                             {city}
                           </span>

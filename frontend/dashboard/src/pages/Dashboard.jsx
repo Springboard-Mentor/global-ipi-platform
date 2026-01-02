@@ -22,11 +22,15 @@ import Filters from "../components/Filters";
 import OverviewGrid from "../components/OverviewGrid";
 import IPAssetPanel from "../components/IPAssetPanel";
 import StatePatentCount from "../components/StatePatentCount";
+import IndiaPatentPanel from "../components/IndiaPatentPanel";
 
 const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
   const [dbPatentCount, setDbPatentCount] = React.useState(0);
   const [dbConnectionStatus, setDbConnectionStatus] = React.useState('checking'); // 'checking', 'connected', 'error'
   const [dbError, setDbError] = React.useState('');
+  
+  // State for map location selection
+  const [selectedMapState, setSelectedMapState] = React.useState(null);
   
   // State for total registered users
   const [totalUsers, setTotalUsers] = React.useState(0);
@@ -241,6 +245,12 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
       console.error('Error calculating days remaining:', error);
       return null;
     }
+  };
+
+  // Handlers for map location selection
+  const handleStateChange = (state) => {
+    console.log('🗺️ Map: State selected -', state);
+    setSelectedMapState(state || null);
   };
 
   /* ======================= UI ======================= */
@@ -546,12 +556,16 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
           </div>
         </div>
 
-        <IPAssetPanel />
+        <IndiaPatentPanel 
+          selectedState={selectedMapState}
+        />
       </div>
 
       {/* State-wise Patent Count */}
       <div className="mt-6">
-        <StatePatentCount />
+        <StatePatentCount 
+          onStateChange={handleStateChange}
+        />
       </div>
     </div>
   );
