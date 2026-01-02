@@ -187,65 +187,69 @@ const StatePatentCount = () => {
 
           {/* Patent Count Display */}
           <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-6 border-2 border-blue-100">
-            <div className="flex items-center gap-3 mb-2">
-              <TrendingUp className="w-5 h-5 text-blue-600" />
-              <h3 className="text-lg font-bold text-gray-800">Total Patents</h3>
-            </div>
-            
             {selectedState ? (
-              <div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-600">
-                    {patentCount.toLocaleString()}
-                  </span>
-                  <span className="text-lg text-gray-600 font-medium">patents</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Left Side - Total Patents */}
+                <div>
+                  <div className="flex items-center gap-3 mb-2">
+                    <TrendingUp className="w-5 h-5 text-blue-600" />
+                    <h3 className="text-lg font-bold text-gray-800">Total Patents</h3>
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-600">
+                      {patentCount.toLocaleString()}
+                    </span>
+                    <span className="text-lg text-gray-600 font-medium">patents</span>
+                  </div>
+                  <p className="text-sm text-gray-600 mt-2">
+                    in <span className="font-semibold text-blue-700">{selectedState}</span>
+                  </p>
                 </div>
-                <p className="text-sm text-gray-600 mt-2">
-                  in <span className="font-semibold text-blue-700">{selectedState}</span>
-                </p>
+
+                {/* Right Side - Cities */}
+                <div className="border-l-2 border-blue-200 pl-6">
+                  <div className="flex items-center gap-3 mb-3">
+                    <MapPin className="w-5 h-5 text-blue-600" />
+                    <h4 className="text-lg font-bold text-gray-800">Cities in {selectedState}</h4>
+                  </div>
+                  
+                  {loadingCities ? (
+                    <div className="flex items-center justify-center py-3">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                    </div>
+                  ) : cities.length > 0 ? (
+                    <div>
+                      <div className="flex flex-wrap gap-2">
+                        {cities.map((city, index) => (
+                          <span
+                            key={index}
+                            className="px-3 py-1.5 bg-white border border-blue-300 rounded-lg text-sm font-medium text-gray-700 shadow-sm hover:shadow-md hover:border-blue-400 transition-all"
+                          >
+                            {city}
+                          </span>
+                        ))}
+                      </div>
+                      <p className="text-xs text-gray-600 mt-3">
+                        <span className="font-semibold text-blue-700">{cities.length}</span> unique {cities.length === 1 ? 'city' : 'cities'} found
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="text-gray-500 text-center py-2">
+                      <p className="text-sm">No cities found</p>
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="text-gray-500 text-center py-4">
+                <div className="flex items-center gap-3 mb-2 justify-center">
+                  <TrendingUp className="w-5 h-5 text-gray-400" />
+                  <h3 className="text-lg font-bold text-gray-600">Total Patents</h3>
+                </div>
                 <p className="text-lg font-medium">Please select a state to view patent count</p>
               </div>
             )}
           </div>
-
-          {/* Cities List */}
-          {selectedState && (
-            <div className="bg-gradient-to-br from-green-50 to-teal-50 rounded-xl p-6 border-2 border-green-100">
-              <div className="flex items-center gap-3 mb-4">
-                <MapPin className="w-5 h-5 text-green-600" />
-                <h3 className="text-lg font-bold text-gray-800">Cities in {selectedState}</h3>
-              </div>
-              
-              {loadingCities ? (
-                <div className="flex items-center justify-center py-4">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-                </div>
-              ) : cities.length > 0 ? (
-                <div>
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {cities.map((city, index) => (
-                      <span
-                        key={index}
-                        className="px-3 py-1.5 bg-white border-2 border-green-200 rounded-lg text-sm font-medium text-gray-700 shadow-sm hover:shadow-md transition-shadow"
-                      >
-                        {city}
-                      </span>
-                    ))}
-                  </div>
-                  <p className="text-xs text-gray-600 mt-3 pt-3 border-t border-green-200">
-                    <span className="font-semibold text-green-700">{cities.length}</span> unique {cities.length === 1 ? 'city' : 'cities'} found
-                  </p>
-                </div>
-              ) : (
-                <div className="text-gray-500 text-center py-4">
-                  <p className="text-sm">No cities found for this state</p>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Summary Statistics */}
           {Object.keys(stateData).length > 0 && (
