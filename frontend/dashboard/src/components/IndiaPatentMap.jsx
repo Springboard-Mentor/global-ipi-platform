@@ -503,8 +503,9 @@ const IndiaPatentMap = ({ selectedState = null, showHeatMap = false }) => {
   }
 
   return (
-    <div className="relative w-full h-full flex flex-col">
-      <div className="relative w-full flex-1 min-h-[480px] rounded-xl overflow-hidden">
+    <div className="relative w-full h-full flex gap-4">
+      {/* Map Container - 70% width */}
+      <div className="relative flex-1 max-w-[70%] min-h-[480px] rounded-xl overflow-hidden">
         {(!mapLoaded || loading) && (
           <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-50 to-indigo-50 z-10">
             <div className="text-center">
@@ -522,59 +523,58 @@ const IndiaPatentMap = ({ selectedState = null, showHeatMap = false }) => {
         />
       </div>
 
+      {/* Legend Container - 30% width on the right */}
       {showHeatMap && mapLoaded && !loading && (
-        <div className="mt-3 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-3 border border-purple-200">
-          <div className="flex items-center space-x-2 pb-2 mb-2 border-b border-purple-300">
+        <div className="w-[30%] bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-4 border border-purple-200 flex flex-col">
+          <div className="flex items-center space-x-2 pb-3 mb-3 border-b border-purple-300">
             <Globe className="w-4 h-4 text-purple-600" />
             <h3 className="text-sm font-bold text-gray-800">Heat Map Legend</h3>
           </div>
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center flex-wrap gap-3">
-              <div className="flex items-center space-x-1.5">
-                <div className="w-3 h-3 rounded-full bg-[#581c87]"></div>
-                <span className="text-xs text-gray-700 font-medium">Very High (75%+)</span>
-              </div>
-              <div className="flex items-center space-x-1.5">
-                <div className="w-3 h-3 rounded-full bg-[#7c3aed]"></div>
-                <span className="text-xs text-gray-700 font-medium">High (45-75%)</span>
-              </div>
-              <div className="flex items-center space-x-1.5">
-                <div className="w-3 h-3 rounded-full bg-[#9333ea]"></div>
-                <span className="text-xs text-gray-700 font-medium">Medium (30-45%)</span>
-              </div>
-              <div className="flex items-center space-x-1.5">
-                <div className="w-3 h-3 rounded-full bg-[#a855f7]"></div>
-                <span className="text-xs text-gray-700 font-medium">Low (15-30%)</span>
-              </div>
-              <div className="flex items-center space-x-1.5">
-                <div className="w-3 h-3 rounded-full bg-[#c084fc]"></div>
-                <span className="text-xs text-gray-700 font-medium">Very Low (&lt;15%)</span>
-              </div>
+          
+          {/* Legend Items */}
+          <div className="flex flex-col space-y-2.5 mb-4">
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 rounded-full bg-[#581c87] flex-shrink-0"></div>
+              <span className="text-xs text-gray-700 font-medium">Very High (75%+)</span>
             </div>
-            <div className="mt-3 pt-3 border-t border-purple-200">
-              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-3 shadow-sm">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <h3 className="text-xs font-semibold text-purple-800 mb-1.5">
-                      📊 Patent Coverage Statistics
-                    </h3>
-                    <div className="flex items-center space-x-2">
-                      <div className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                        {stateData.length}
-                      </div>
-                      <div className="text-xs text-gray-600">
-                        <span className="font-semibold">out of 36</span>
-                        <div className="text-[10px] text-gray-500">states/UTs with patents</div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-center justify-center bg-white rounded-lg px-3 py-2 shadow-sm border border-purple-100">
-                    <div className="text-lg font-bold text-purple-600">
-                      {stateData.length > 0 ? Math.round((stateData.length / 36) * 100) : 0}%
-                    </div>
-                    <div className="text-[9px] text-gray-500 font-medium">Coverage</div>
-                  </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 rounded-full bg-[#7c3aed] flex-shrink-0"></div>
+              <span className="text-xs text-gray-700 font-medium">High (45-75%)</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 rounded-full bg-[#9333ea] flex-shrink-0"></div>
+              <span className="text-xs text-gray-700 font-medium">Medium (30-45%)</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 rounded-full bg-[#a855f7] flex-shrink-0"></div>
+              <span className="text-xs text-gray-700 font-medium">Low (15-30%)</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 rounded-full bg-[#c084fc] flex-shrink-0"></div>
+              <span className="text-xs text-gray-700 font-medium">Very Low (&lt;15%)</span>
+            </div>
+          </div>
+
+          {/* Statistics Section */}
+          <div className="mt-auto pt-3 border-t border-purple-200">
+            <div className="bg-white rounded-lg p-3 shadow-sm border border-purple-100">
+              <h3 className="text-xs font-semibold text-purple-800 mb-2">
+                📊 Patent Coverage Statistics
+              </h3>
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                  {stateData.length}
                 </div>
+                <div className="text-xs text-gray-600 text-right">
+                  <span className="font-semibold">out of 36</span>
+                  <div className="text-[10px] text-gray-500">states/UTs</div>
+                </div>
+              </div>
+              <div className="bg-purple-100 rounded-lg px-3 py-2 text-center">
+                <div className="text-lg font-bold text-purple-600">
+                  {stateData.length > 0 ? Math.round((stateData.length / 36) * 100) : 0}%
+                </div>
+                <div className="text-[9px] text-gray-500 font-medium">Coverage</div>
               </div>
             </div>
           </div>
