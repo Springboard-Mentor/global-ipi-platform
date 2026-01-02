@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, CheckCircle, XCircle, TrendingUp, Award, AlertCircle, Users, UserCheck, UserX, Filter, X } from 'lucide-react';
+import { FileText, CheckCircle, XCircle, TrendingUp, Award, AlertCircle, Users, UserCheck, UserX, Filter, X, Search, Globe } from 'lucide-react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
+import { getSearchCounters, getGlobalSearchStats } from '../utils/searchCounters';
 
 const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
+  const [refreshKey, setRefreshKey] = useState(0);
   const [stats, setStats] = useState({
     total: 0,
     granted: 0,
@@ -25,22 +27,34 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
   const [filters, setFilters] = useState({
     startDate: '',
     endDate: '',
-    state: '',
-    city: '',
-    country: ''
+    year: ''
   });
 
   const [showFilters, setShowFilters] = useState(false);
   const [availableFilters, setAvailableFilters] = useState({
-    states: [],
-    cities: [],
-    countries: []
+    years: []
+  });
+
+  const [searchCounters, setSearchCounters] = useState({
+    apiSearchCount: 0,
+    localSearchCount: 0,
+    totalSearchCount: 0,
+    loading: true
+  });
+
+  const [globalSearchCounters, setGlobalSearchCounters] = useState({
+    apiSearchCount: 0,
+    localSearchCount: 0,
+    totalSearchCount: 0,
+    loading: true
   });
 
   // Initial load to populate filter options
   useEffect(() => {
     fetchUserStats();
     fetchPatentStats();
+    fetchSearchCounters();
+    fetchGlobalSearchCounters();
   }, []);
 
   // Reload data when filters change (but not on initial mount)
@@ -51,6 +65,63 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
       fetchPatentStats();
     }
   }, [filters]);
+
+  const fetchSearchCounters = async () => {
+    try {
+      setSearchCounters(prev => ({ ...prev, loading: true }));
+      
+      if (userProfile?.uid) {
+        console.log('Fetching search counters from Firestore for user:', userProfile.uid);
+        const counters = await getSearchCounters(userProfile.uid);
+        setSearchCounters({
+          apiSearchCount: counters.apiSearchCount || 0,
+          localSearchCount: counters.localSearchCount || 0,
+          totalSearchCount: counters.totalSearchCount || 0,
+          loading: false
+        });
+        console.log('✅ Search counters loaded:', counters);
+      } else {
+        console.warn('⚠️ No user profile available for search counters');
+        setSearchCounters({
+          apiSearchCount: 0,
+          localSearchCount: 0,
+          totalSearchCount: 0,
+          loading: false
+        });
+      }
+    } catch (error) {
+      console.error('❌ Error fetching search counters:', error);
+      setSearchCounters({
+        apiSearchCount: 0,
+        localSearchCount: 0,
+        totalSearchCount: 0,
+        loading: false
+      });
+    }
+  };
+
+  const fetchGlobalSearchCounters = async () => {
+    try {
+      setGlobalSearchCounters(prev => ({ ...prev, loading: true }));
+      console.log('Fetching global search statistics from Firestore...');
+      const globalStats = await getGlobalSearchStats();
+      setGlobalSearchCounters({
+        apiSearchCount: globalStats.apiSearchCount || 0,
+        localSearchCount: globalStats.localSearchCount || 0,
+        totalSearchCount: globalStats.totalSearchCount || 0,
+        loading: false
+      });
+      console.log('✅ Global search counters loaded:', globalStats);
+    } catch (error) {
+      console.error('❌ Error fetching global search counters:', error);
+      setGlobalSearchCounters({
+        apiSearchCount: 0,
+        localSearchCount: 0,
+        totalSearchCount: 0,
+        loading: false
+      });
+    }
+  };
 
   const fetchUserStats = async () => {
     try {
@@ -68,9 +139,7 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
       let activeUsers = 0;
       let deactivatedUsers = 0;
       
-      const statesSet = new Set();
-      const citiesSet = new Set();
-      const countriesSet = new Set();
+      const yearsSet = new Set();
       
       usersSnapshot.forEach((doc) => {
         const userData = doc.data();
@@ -79,35 +148,29 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
         let matchesFilter = true;
         
         // Date filter (check createdAt or registrationDate)
-        if (filters.startDate || filters.endDate) {
-          const userDate = userData.createdAt?.toDate?.() || userData.registrationDate?.toDate?.() || new Date(userData.createdAt || userData.registrationDate);
-          if (filters.startDate && userDate < new Date(filters.startDate)) {
-            matchesFilter = false;
-          }
-          if (filters.endDate && userDate > new Date(filters.endDate)) {
-            matchesFilter = false;
-          }
-        }
+        const userDate = userData.createdAt?.toDate?.() || userData.registrationDate?.toDate?.() || new Date(userData.createdAt || userData.registrationDate);
+        const userYear = userDate.getFullYear();
         
-        // State filter
-        if (filters.state && userData.state?.toLowerCase() !== filters.state.toLowerCase()) {
+        if (filters.startDate && userDate < new Date(filters.startDate)) {
+          matchesFilter = false;
+        }
+        if (filters.endDate && userDate > new Date(filters.endDate)) {
           matchesFilter = false;
         }
         
-        // City filter
-        if (filters.city && userData.city?.toLowerCase() !== filters.city.toLowerCase()) {
+        // Year filter
+        if (filters.year && userYear !== parseInt(filters.year)) {
           matchesFilter = false;
         }
         
-        // Country filter
-        if (filters.country && userData.country?.toLowerCase() !== filters.country.toLowerCase()) {
-          matchesFilter = false;
-        }
+        // Collect available years
+        yearsSet.add(userYear);
         
-        // Collect available filter options
-        if (userData.state) statesSet.add(userData.state);
-        if (userData.city) citiesSet.add(userData.city);
-        if (userData.country) countriesSet.add(userData.country);
+        // Debug: Log first user to see structure
+        if (totalUsers === 0) {
+          console.log('Sample user data structure:', userData);
+          console.log('User year:', userYear);
+        }
         
         if (!matchesFilter) return;
         
@@ -140,15 +203,17 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
       
       // Update available filter options
       setAvailableFilters({
-        states: Array.from(statesSet).sort(),
-        cities: Array.from(citiesSet).sort(),
-        countries: Array.from(countriesSet).sort()
+        years: Array.from(yearsSet).sort((a, b) => b - a)
       });
       
       console.log('User filter options:', {
-        states: Array.from(statesSet),
-        cities: Array.from(citiesSet),
-        countries: Array.from(countriesSet)
+        years: Array.from(yearsSet)
+      });
+      console.log('User filter counts:', {
+        yearsCount: yearsSet.size
+      });
+      console.log('Final availableFilters state will be:', {
+        years: Array.from(yearsSet).sort((a, b) => b - a)
       });
       
       console.log('User Stats:', {
@@ -204,71 +269,57 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
         console.log('Legal Status - Total patents:', allPatents.length);
         
         // Extract available filter options from patent data
-        const patentStates = new Set();
-        const patentCities = new Set();
-        const patentCountries = new Set();
+        const patentYears = new Set();
         
         allPatents.forEach(patent => {
-          // Check multiple possible field names for location data
-          if (patent.state || patent.applicantState || patent.inventorState) {
-            patentStates.add(patent.state || patent.applicantState || patent.inventorState);
-          }
-          if (patent.city || patent.applicantCity || patent.inventorCity) {
-            patentCities.add(patent.city || patent.applicantCity || patent.inventorCity);
-          }
-          if (patent.country || patent.applicantCountry || patent.inventorCountry) {
-            patentCountries.add(patent.country || patent.applicantCountry || patent.inventorCountry);
+          // Extract year from filing date
+          const patentDate = new Date(patent.filingDate || patent.createdAt || patent.timestamp);
+          const patentYear = patentDate.getFullYear();
+          patentYears.add(patentYear);
+          
+          // Debug: Log first patent to see structure
+          if (allPatents.indexOf(patent) === 0) {
+            console.log('Sample patent data structure:', patent);
+            console.log('Patent year:', patentYear);
           }
         });
         
-        console.log('Patent location data:', {
-          states: Array.from(patentStates),
-          cities: Array.from(patentCities),
-          countries: Array.from(patentCountries)
+        console.log('Patent year data extracted:', {
+          years: Array.from(patentYears)
+        });
+        console.log('Patent filter counts:', {
+          yearsCount: patentYears.size
         });
         
         // Merge with existing filter options from user data
-        setAvailableFilters(prev => ({
-          states: Array.from(new Set([...prev.states, ...patentStates])).sort(),
-          cities: Array.from(new Set([...prev.cities, ...patentCities])).sort(),
-          countries: Array.from(new Set([...prev.countries, ...patentCountries])).sort()
-        }));
+        setAvailableFilters(prev => {
+          const merged = {
+            years: Array.from(new Set([...prev.years, ...patentYears])).sort((a, b) => b - a)
+          };
+          console.log('Merging filters - Previous:', prev);
+          console.log('Merging filters - Patent data:', {
+            years: Array.from(patentYears)
+          });
+          console.log('Merging filters - Final merged:', merged);
+          return merged;
+        });
         
         // Apply filters
         let filteredPatents = allPatents.filter(patent => {
           // Date filter (check filing date or createdAt)
-          if (filters.startDate || filters.endDate) {
-            const patentDate = new Date(patent.filingDate || patent.createdAt || patent.timestamp);
-            if (filters.startDate && patentDate < new Date(filters.startDate)) {
-              return false;
-            }
-            if (filters.endDate && patentDate > new Date(filters.endDate)) {
-              return false;
-            }
+          const patentDate = new Date(patent.filingDate || patent.createdAt || patent.timestamp);
+          const patentYear = patentDate.getFullYear();
+          
+          if (filters.startDate && patentDate < new Date(filters.startDate)) {
+            return false;
+          }
+          if (filters.endDate && patentDate > new Date(filters.endDate)) {
+            return false;
           }
           
-          // State filter - check multiple possible field names
-          if (filters.state) {
-            const patentState = patent.state || patent.applicantState || patent.inventorState;
-            if (!patentState || patentState.toLowerCase() !== filters.state.toLowerCase()) {
-              return false;
-            }
-          }
-          
-          // City filter - check multiple possible field names
-          if (filters.city) {
-            const patentCity = patent.city || patent.applicantCity || patent.inventorCity;
-            if (!patentCity || patentCity.toLowerCase() !== filters.city.toLowerCase()) {
-              return false;
-            }
-          }
-          
-          // Country filter - check multiple possible field names
-          if (filters.country) {
-            const patentCountry = patent.country || patent.applicantCountry || patent.inventorCountry;
-            if (!patentCountry || patentCountry.toLowerCase() !== filters.country.toLowerCase()) {
-              return false;
-            }
+          // Year filter
+          if (filters.year && patentYear !== parseInt(filters.year)) {
+            return false;
           }
           
           return true;
@@ -394,19 +445,27 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
   };
 
   const clearFilters = () => {
+    // Reset filters
     setFilters({
       startDate: '',
       endDate: '',
-      state: '',
-      city: '',
-      country: ''
+      year: ''
     });
+    setShowFilters(false);
+    
+    // Reset stats to loading state
+    setStats(prev => ({ ...prev, loading: true }));
+    setUserStats(prev => ({ ...prev, loading: true }));
+    
+    // Immediately fetch fresh data
+    fetchUserStats();
+    fetchPatentStats();
   };
 
   const hasActiveFilters = Object.values(filters).some(value => value !== '');
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 p-6">
+    <div key={refreshKey} className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 p-6">
       {/* Page Header */}
       <div className="mb-10">
         <div className="flex items-center justify-between mb-3">
@@ -440,6 +499,30 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
               </span>
             </button>
             
+            <button
+              onClick={async () => {
+                // Reset all filters
+                setFilters({
+                  startDate: '',
+                  endDate: '',
+                  year: ''
+                });
+                setShowFilters(false);
+                
+                // Reset stats to loading
+                setStats(prev => ({ ...prev, loading: true }));
+                setUserStats(prev => ({ ...prev, loading: true }));
+                
+                // Immediately fetch fresh data
+                await Promise.all([fetchUserStats(), fetchPatentStats()]);
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full shadow-md border-2 bg-red-500 border-red-500 text-white hover:bg-red-600 transition-all duration-300"
+            >
+              <span className="text-sm font-semibold">
+                don't click here
+              </span>
+            </button>
+            
             <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-md border border-gray-200">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
               <span className="text-sm font-semibold text-gray-700">
@@ -452,7 +535,7 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
 
       {/* Filters Panel */}
       {showFilters && (
-        <div className="mb-8 bg-white rounded-2xl shadow-xl p-6 border-2 border-indigo-100 animate-fadeIn">
+        <div className="mb-8 bg-white rounded-2xl shadow-xl p-6 border-2 border-indigo-100 animate-fadeIn relative z-50">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Filter className="w-5 h-5 text-indigo-600" />
@@ -469,7 +552,7 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
             )}
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 relative">
             {/* Date Range Filters */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -495,55 +578,37 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
               />
             </div>
             
-            {/* State Filter */}
-            <div>
+            {/* Year Filter */}
+            <div className="relative">
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                State
+                Year
               </label>
               <select
-                value={filters.state}
-                onChange={(e) => handleFilterChange('state', e.target.value)}
-                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none transition-all duration-200 bg-white"
+                value={filters.year}
+                onChange={(e) => handleFilterChange('year', e.target.value)}
+                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none transition-all duration-200 bg-white relative z-10 appearance-auto"
               >
-                <option value="">All States</option>
-                {availableFilters.states.map(state => (
-                  <option key={state} value={state}>{state}</option>
+                <option value="">All Years</option>
+                {availableFilters.years.length === 0 && (
+                  <option disabled>No years available</option>
+                )}
+                {availableFilters.years.map(year => (
+                  <option key={year} value={year}>{year}</option>
                 ))}
               </select>
+              {availableFilters.years.length === 0 && (
+                <p className="text-xs text-gray-500 mt-1">No year data found in database</p>
+              )}
             </div>
             
-            {/* City Filter */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                City
-              </label>
-              <select
-                value={filters.city}
-                onChange={(e) => handleFilterChange('city', e.target.value)}
-                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none transition-all duration-200 bg-white"
+            {/* Reset Filter Button */}
+            <div className="relative flex items-end">
+              <button
+                onClick={clearFilters}
+                className="w-full px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 font-semibold"
               >
-                <option value="">All Cities</option>
-                {availableFilters.cities.map(city => (
-                  <option key={city} value={city}>{city}</option>
-                ))}
-              </select>
-            </div>
-            
-            {/* Country Filter */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Country
-              </label>
-              <select
-                value={filters.country}
-                onChange={(e) => handleFilterChange('country', e.target.value)}
-                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:border-indigo-500 focus:outline-none transition-all duration-200 bg-white"
-              >
-                <option value="">All Countries</option>
-                {availableFilters.countries.map(country => (
-                  <option key={country} value={country}>{country}</option>
-                ))}
-              </select>
+                Reset and Close Filter
+              </button>
             </div>
           </div>
           
@@ -566,26 +631,10 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
                   </button>
                 </span>
               )}
-              {filters.state && (
+              {filters.year && (
                 <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
-                  State: {filters.state}
-                  <button onClick={() => handleFilterChange('state', '')} className="hover:text-purple-900">
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              )}
-              {filters.city && (
-                <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
-                  City: {filters.city}
-                  <button onClick={() => handleFilterChange('city', '')} className="hover:text-blue-900">
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              )}
-              {filters.country && (
-                <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
-                  Country: {filters.country}
-                  <button onClick={() => handleFilterChange('country', '')} className="hover:text-green-900">
+                  Year: {filters.year}
+                  <button onClick={() => handleFilterChange('year', '')} className="hover:text-purple-900">
                     <X className="w-3 h-3" />
                   </button>
                 </span>
@@ -594,6 +643,204 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
           )}
         </div>
       )}
+
+      {/* Search Statistics Card with Two Circles */}
+      <div className="mb-8">
+        <div className="relative group bg-white rounded-3xl shadow-2xl hover:shadow-3xl transition-all duration-500 border-2 border-gray-100 hover:border-purple-200 overflow-hidden">
+          {/* Background Gradient Animation */}
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-50 via-purple-50 to-pink-50 opacity-50"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-400/10 via-purple-400/10 to-pink-400/10 opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+          
+          {/* Decorative Background Elements */}
+          <div className="absolute top-0 left-0 w-64 h-64 bg-blue-200 rounded-full blur-3xl opacity-20 -translate-x-1/2 -translate-y-1/2"></div>
+          <div className="absolute bottom-0 right-0 w-64 h-64 bg-purple-200 rounded-full blur-3xl opacity-20 translate-x-1/2 translate-y-1/2"></div>
+          
+          <div className="relative p-8">
+            {/* Header */}
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 mb-2">
+                Search Analytics Dashboard
+              </h2>
+              <p className="text-gray-600 font-medium">Track your search activity and global platform usage</p>
+            </div>
+
+            {/* Two Circles Container */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+              
+              {/* Personal Search Counter Circle */}
+              <div className="flex flex-col items-center">
+                <div className="relative group/circle">
+                  {/* Glow Effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full opacity-0 group-hover/circle:opacity-30 blur-2xl transition-all duration-500"></div>
+                  
+                  {/* Circle */}
+                  <div className="relative bg-gradient-to-br from-blue-50 to-purple-50 rounded-full p-8 w-56 h-56 flex flex-col items-center justify-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border-4 border-white">
+                    {/* Icon */}
+                    <div className="mb-3 bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-full shadow-lg">
+                      <Search className="w-7 h-7 text-white" strokeWidth={2.5} />
+                    </div>
+                    
+                    {/* Counter */}
+                    {searchCounters.loading ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-purple-500"></div>
+                        <span className="text-xs text-gray-500 font-medium">Loading...</span>
+                      </div>
+                    ) : (
+                      <>
+                        <h3 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-1">
+                          {searchCounters.totalSearchCount}
+                        </h3>
+                        <p className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-3">Your Searches</p>
+                        
+                        {/* Breakdown */}
+                        <div className="space-y-1 w-full px-4">
+                          <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-1">
+                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                              <span className="font-semibold text-blue-600">API</span>
+                            </div>
+                            <span className="font-bold text-blue-700">{searchCounters.apiSearchCount}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-1">
+                              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                              <span className="font-semibold text-purple-600">Local</span>
+                            </div>
+                            <span className="font-bold text-purple-700">{searchCounters.localSearchCount}</span>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                    
+                    {/* Decorative Ring */}
+                    <svg className="absolute inset-0 w-full h-full -rotate-90">
+                      <circle
+                        cx="50%"
+                        cy="50%"
+                        r="48%"
+                        fill="none"
+                        stroke="url(#personalGradient)"
+                        strokeWidth="3"
+                        strokeDasharray={`${searchCounters.totalSearchCount > 0 ? 100 * 3.14 : 0} 314`}
+                        className="transition-all duration-1000"
+                        opacity="0.3"
+                      />
+                      <defs>
+                        <linearGradient id="personalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" style={{ stopColor: '#3b82f6', stopOpacity: 1 }} />
+                          <stop offset="100%" style={{ stopColor: '#9333ea', stopOpacity: 1 }} />
+                        </linearGradient>
+                      </defs>
+                    </svg>
+                  </div>
+                </div>
+                
+                {/* Label */}
+                <div className="mt-4 bg-gradient-to-r from-blue-100 to-purple-100 px-4 py-2 rounded-full border-2 border-blue-200">
+                  <p className="text-xs font-bold text-blue-700">Personal Activity</p>
+                </div>
+              </div>
+
+              {/* Global Search Counter Circle */}
+              <div className="flex flex-col items-center">
+                <div className="relative group/circle">
+                  {/* Glow Effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full opacity-0 group-hover/circle:opacity-30 blur-2xl transition-all duration-500"></div>
+                  
+                  {/* Circle */}
+                  <div className="relative bg-gradient-to-br from-purple-50 to-pink-50 rounded-full p-8 w-56 h-56 flex flex-col items-center justify-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border-4 border-white">
+                    {/* Icon */}
+                    <div className="mb-3 bg-gradient-to-br from-purple-500 to-pink-600 p-3 rounded-full shadow-lg">
+                      <Globe className="w-7 h-7 text-white" strokeWidth={2.5} />
+                    </div>
+                    
+                    {/* Counter */}
+                    {globalSearchCounters.loading ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-pink-500"></div>
+                        <span className="text-xs text-gray-500 font-medium">Loading...</span>
+                      </div>
+                    ) : (
+                      <>
+                        <h3 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 mb-1">
+                          {globalSearchCounters.totalSearchCount}
+                        </h3>
+                        <p className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-3">Global Searches</p>
+                        
+                        {/* Breakdown */}
+                        <div className="space-y-1 w-full px-4">
+                          <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-1">
+                              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                              <span className="font-semibold text-purple-600">API</span>
+                            </div>
+                            <span className="font-bold text-purple-700">{globalSearchCounters.apiSearchCount}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-1">
+                              <div className="w-2 h-2 bg-pink-500 rounded-full"></div>
+                              <span className="font-semibold text-pink-600">Local</span>
+                            </div>
+                            <span className="font-bold text-pink-700">{globalSearchCounters.localSearchCount}</span>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                    
+                    {/* Decorative Ring */}
+                    <svg className="absolute inset-0 w-full h-full -rotate-90">
+                      <circle
+                        cx="50%"
+                        cy="50%"
+                        r="48%"
+                        fill="none"
+                        stroke="url(#globalGradient)"
+                        strokeWidth="3"
+                        strokeDasharray={`${globalSearchCounters.totalSearchCount > 0 ? 100 * 3.14 : 0} 314`}
+                        className="transition-all duration-1000"
+                        opacity="0.3"
+                      />
+                      <defs>
+                        <linearGradient id="globalGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" style={{ stopColor: '#9333ea', stopOpacity: 1 }} />
+                          <stop offset="100%" style={{ stopColor: '#ec4899', stopOpacity: 1 }} />
+                        </linearGradient>
+                      </defs>
+                    </svg>
+                  </div>
+                </div>
+                
+                {/* Label */}
+                <div className="mt-4 bg-gradient-to-r from-purple-100 to-pink-100 px-4 py-2 rounded-full border-2 border-purple-200">
+                  <p className="text-xs font-bold text-purple-700">Platform Wide</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer Stats */}
+            <div className="mt-8 pt-6 border-t-2 border-gray-100">
+              <div className="flex items-center justify-center gap-8 text-sm">
+                <div className="text-center">
+                  <p className="text-gray-500 font-medium mb-1">Your Contribution</p>
+                  <p className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+                    {globalSearchCounters.totalSearchCount > 0 
+                      ? ((searchCounters.totalSearchCount / globalSearchCounters.totalSearchCount) * 100).toFixed(1)
+                      : 0}%
+                  </p>
+                </div>
+                <div className="w-px h-12 bg-gray-300"></div>
+                <div className="text-center">
+                  <p className="text-gray-500 font-medium mb-1">Total Users</p>
+                  <p className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
+                    {userStats.totalUsers}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Stats Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">

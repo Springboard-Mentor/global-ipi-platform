@@ -492,6 +492,7 @@ const App = () => {
                   setSearchMode(mode);
                   localStorage.setItem('searchMode', mode);
                 }}
+                userProfile={userProfile}
                 onBack={() => {
                   setCurrentPage('dashboard');
                   setActiveItem('dashboard');
