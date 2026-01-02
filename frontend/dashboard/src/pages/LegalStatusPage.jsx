@@ -1140,7 +1140,7 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
 
       {/* India Patent Distribution Map */}
       <div className="mb-8">
-        <IndiaPatentPanel />
+        <IndiaPatentPanel showHeatMap={true} />
       </div>
 
       {/* Additional Info Section */}

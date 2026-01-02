@@ -142,7 +142,7 @@ const StatePatentCount = ({ onStateChange }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl p-4 shadow-lg border border-gray-100">
+    <div className="bg-white rounded-xl p-4 shadow-lg border border-gray-100 w-full h-full flex flex-col">
       <div className="flex items-center gap-2 mb-4">
         <div className="bg-gradient-to-br from-blue-100 to-cyan-100 p-2 rounded-lg">
           <MapPin className="w-5 h-5 text-blue-600" />
@@ -268,7 +268,7 @@ const StatePatentCount = ({ onStateChange }) => {
           {Object.keys(stateData).length > 0 && (
             <div className="grid grid-cols-2 gap-4 pt-4 border-t-2 border-gray-100">
               <div className="text-center">
-                <p className="text-sm text-gray-600 font-medium">Total States</p>
+                <p className="text-sm text-gray-600 font-medium">Total States with Patents</p>
                 <p className="text-2xl font-bold text-blue-600">{Object.keys(stateData).length}</p>
               </div>
               <div className="text-center">

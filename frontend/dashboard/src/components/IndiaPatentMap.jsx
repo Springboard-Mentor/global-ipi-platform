@@ -1,13 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { MapPin, TrendingUp } from 'lucide-react';
+import { MapPin, TrendingUp, Globe } from 'lucide-react';
 
-const IndiaPatentMap = ({ selectedState = null }) => {
+const IndiaPatentMap = ({ selectedState = null, showHeatMap = false }) => {
   const mapRef = useRef(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [stateData, setStateData] = useState([]);
   const mapInstanceRef = useRef(null);
   const selectedMarkerRef = useRef(null);
+  const markersRef = useRef([]);
 
   // State coordinates mapping
   const stateCoordinates = {
@@ -42,6 +44,71 @@ const IndiaPatentMap = ({ selectedState = null }) => {
     'Sikkim': { lat: 27.5330, lng: 88.5122 },
     'Tripura': { lat: 23.9408, lng: 91.9882 },
     'Arunachal Pradesh': { lat: 28.2180, lng: 94.7278 }
+  };
+
+  // Fetch patent data from backend
+  const fetchPatentData = async () => {
+    try {
+      const response = await fetch('http://localhost:8080/api/patent-filing/all', {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        mode: 'cors',
+      });
+
+      if (response.ok) {
+        const patents = await response.json();
+        
+        // Aggregate patents by state
+        const stateCount = {};
+        
+        patents.forEach(patent => {
+          const state = patent.state || patent.applicantState || 'Unknown';
+          if (state && state !== 'Unknown') {
+            stateCount[state] = (stateCount[state] || 0) + 1;
+          }
+        });
+
+        // Create state data array with coordinates
+        const stateDataArray = Object.keys(stateCount).map(stateName => {
+          const coords = stateCoordinates[stateName] || { lat: 20.5937, lng: 78.9629 };
+          return {
+            name: stateName,
+            lat: coords.lat,
+            lng: coords.lng,
+            patents: stateCount[stateName]
+          };
+        });
+
+        setStateData(stateDataArray);
+        return stateDataArray;
+      } else {
+        throw new Error('Failed to fetch patent data');
+      }
+    } catch (err) {
+      console.error('Error fetching patent data:', err);
+      return [];
+    }
+  };
+
+  const getColorByPatentCount = (count, maxCount) => {
+    const intensity = count / maxCount;
+    if (intensity > 0.75) return '#581c87'; // purple-900
+    if (intensity > 0.5) return '#7c3aed'; // purple-600
+    if (intensity > 0.25) return '#a855f7'; // purple-500
+    return '#e9d5ff'; // purple-200
+  };
+
+  const getMarkerSize = (count, maxCount) => {
+    const intensity = count / maxCount;
+    return 8 + (intensity * 20); // Size from 8 to 28
+  };
+
+  const clearMarkers = () => {
+    markersRef.current.forEach(marker => marker.setMap(null));
+    markersRef.current = [];
   };
 
   const clearSelectedMarker = () => {
@@ -109,6 +176,110 @@ const IndiaPatentMap = ({ selectedState = null }) => {
     });
 
     selectedMarkerRef.current = marker;
+  };
+
+  const showStateView = (map, data) => {
+    clearMarkers();
+
+    if (!data || data.length === 0) {
+      console.log('No patent data available to display');
+      return;
+    }
+
+    const maxPatents = Math.max(...data.map(s => s.patents));
+
+    map.setCenter({ lat: 22.5, lng: 78.5 });
+    map.setZoom(5);
+
+    data.forEach(state => {
+      const color = getColorByPatentCount(state.patents, maxPatents);
+      const size = getMarkerSize(state.patents, maxPatents);
+
+      const marker = new google.maps.Marker({
+        position: { lat: state.lat, lng: state.lng },
+        map: map,
+        title: state.name,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: size,
+          fillColor: color,
+          fillOpacity: 0.85,
+          strokeColor: '#ffffff',
+          strokeWeight: 3
+        }
+      });
+
+      const infoWindow = new google.maps.InfoWindow({
+        content: `
+          <div style="padding: 12px; font-family: system-ui, -apple-system, sans-serif; min-width: 180px;">
+            <h3 style="margin: 0 0 8px 0; font-size: 18px; font-weight: bold; color: #1f2937;">
+              ${state.name}
+            </h3>
+            <p style="margin: 0 0 8px 0; font-size: 16px; color: #6b7280;">
+              <strong style="color: #7c3aed; font-size: 24px;">${state.patents}</strong> Patents
+            </p>
+          </div>
+        `
+      });
+
+      marker.addListener('click', () => {
+        // Expand circle animation
+        const expandedSize = size + 12;
+        marker.setIcon({
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: expandedSize,
+          fillColor: '#c084fc',
+          fillOpacity: 1,
+          strokeColor: '#ffffff',
+          strokeWeight: 5
+        });
+        
+        // Zoom to state
+        map.setZoom(7);
+        map.panTo({ lat: state.lat, lng: state.lng });
+        
+        // Open info window
+        infoWindow.open(map, marker);
+        
+        // Reset size after animation
+        setTimeout(() => {
+          marker.setIcon({
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: size + 6,
+            fillColor: color,
+            fillOpacity: 0.9,
+            strokeColor: '#ffffff',
+            strokeWeight: 4
+          });
+        }, 500);
+      });
+
+      marker.addListener('mouseover', () => {
+        infoWindow.open(map, marker);
+        marker.setIcon({
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: size + 4,
+          fillColor: '#c084fc',
+          fillOpacity: 1,
+          strokeColor: '#ffffff',
+          strokeWeight: 4
+        });
+      });
+
+      marker.addListener('mouseout', () => {
+        infoWindow.close();
+        marker.setIcon({
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: size,
+          fillColor: color,
+          fillOpacity: 0.85,
+          strokeColor: '#ffffff',
+          strokeWeight: 3
+        });
+      });
+
+      markersRef.current.push(marker);
+    });
   };
 
   useEffect(() => {
@@ -208,6 +379,56 @@ const IndiaPatentMap = ({ selectedState = null }) => {
         mapInstanceRef.current = map;
         setMapLoaded(true);
         setLoading(false);
+
+        // Add custom blinking overlay in top-right corner when heat map is enabled
+        if (showHeatMap) {
+          const overlayDiv = document.createElement('div');
+          overlayDiv.style.cssText = `
+            background: rgba(220, 38, 38, 0.9);
+            color: white;
+            padding: 10px 16px;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(220, 38, 38, 0.4);
+            font-family: system-ui, -apple-system, sans-serif;
+            font-weight: 700;
+            font-size: 14px;
+            margin: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(12px);
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            animation: blink 2s ease-in-out infinite;
+          `;
+          
+          // Add blinking animation keyframes
+          const styleSheet = document.createElement('style');
+          styleSheet.textContent = `
+            @keyframes blink {
+              0%, 100% { opacity: 1; box-shadow: 0 2px 12px rgba(220, 38, 38, 0.4); transform: scale(1); }
+              50% { opacity: 0.85; box-shadow: 0 4px 20px rgba(220, 38, 38, 0.7); transform: scale(1.05); }
+            }
+          `;
+          document.head.appendChild(styleSheet);
+          
+          overlayDiv.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+            </svg>
+            <span>All Indian States Patents</span>
+          `;
+          map.controls[google.maps.ControlPosition.TOP_RIGHT].push(overlayDiv);
+        }
+
+        // Load heat map data if enabled
+        if (showHeatMap) {
+          const data = await fetchPatentData();
+          if (data && data.length > 0) {
+            showStateView(map, data);
+          }
+        }
       } catch (err) {
         console.error('Error loading Google Maps:', err);
         setError(err.message);
@@ -218,9 +439,10 @@ const IndiaPatentMap = ({ selectedState = null }) => {
     initMap();
 
     return () => {
+      clearMarkers();
       clearSelectedMarker();
     };
-  }, []);
+  }, [showHeatMap]);
 
   // Effect to handle selected state changes
   useEffect(() => {
@@ -248,22 +470,60 @@ const IndiaPatentMap = ({ selectedState = null }) => {
   }
 
   return (
-    <div className="relative w-full h-full min-h-[380px] rounded-xl overflow-hidden">
-      {(!mapLoaded || loading) && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-50 to-indigo-50 z-10">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-purple-600 mx-auto mb-4"></div>
-            <p className="text-gray-600 font-medium text-lg">
-              {loading ? 'Loading Patent Data...' : 'Loading India Map...'}
-            </p>
+    <div className="relative w-full h-full flex flex-col">
+      <div className="relative w-full flex-1 min-h-[340px] rounded-xl overflow-hidden">
+        {(!mapLoaded || loading) && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-50 to-indigo-50 z-10">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-purple-600 mx-auto mb-4"></div>
+              <p className="text-gray-600 font-medium text-lg">
+                {loading ? 'Loading Patent Data...' : 'Loading India Map...'}
+              </p>
+            </div>
+          </div>
+        )}
+        
+        <div 
+          ref={mapRef} 
+          className="w-full h-full min-h-[340px] rounded-xl"
+        />
+      </div>
+
+      {showHeatMap && mapLoaded && !loading && (
+        <div className="mt-3 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg p-3 border border-purple-200">
+          <div className="flex items-center space-x-2 pb-2 mb-2 border-b border-purple-300">
+            <Globe className="w-4 h-4 text-purple-600" />
+            <h3 className="text-sm font-bold text-gray-800">Heat Map Legend</h3>
+          </div>
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center flex-wrap gap-3">
+              <div className="flex items-center space-x-1.5">
+                <div className="w-3 h-3 rounded-full bg-[#581c87]"></div>
+                <span className="text-xs text-gray-700 font-medium">Very High (75%+)</span>
+              </div>
+              <div className="flex items-center space-x-1.5">
+                <div className="w-3 h-3 rounded-full bg-[#7c3aed]"></div>
+                <span className="text-xs text-gray-700 font-medium">High (45-75%)</span>
+              </div>
+              <div className="flex items-center space-x-1.5">
+                <div className="w-3 h-3 rounded-full bg-[#9333ea]"></div>
+                <span className="text-xs text-gray-700 font-medium">Medium (30-45%)</span>
+              </div>
+              <div className="flex items-center space-x-1.5">
+                <div className="w-3 h-3 rounded-full bg-[#a855f7]"></div>
+                <span className="text-xs text-gray-700 font-medium">Low (15-30%)</span>
+              </div>
+              <div className="flex items-center space-x-1.5">
+                <div className="w-3 h-3 rounded-full bg-[#c084fc]"></div>
+                <span className="text-xs text-gray-700 font-medium">Very Low (&lt;15%)</span>
+              </div>
+            </div>
+            <div className="text-xs text-purple-600 font-semibold italic">
+              💡 Click circles to explore districts
+            </div>
           </div>
         </div>
       )}
-      
-      <div 
-        ref={mapRef} 
-        className="w-full h-full min-h-[380px] rounded-xl"
-      />
     </div>
   );
 };

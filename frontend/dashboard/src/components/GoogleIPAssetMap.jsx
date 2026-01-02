@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, MapPin } from 'lucide-react';
+import { ArrowLeft, MapPin, Globe } from 'lucide-react';
 
 const GoogleIPAssetMap = () => {
   const mapRef = useRef(null);
@@ -473,6 +473,34 @@ const GoogleIPAssetMap = () => {
         mapInstanceRef.current = map;
         setMapLoaded(true);
 
+        // Add custom overlay in top-right corner
+        const overlayDiv = document.createElement('div');
+        overlayDiv.style.cssText = `
+          background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+          color: white;
+          padding: 12px 20px;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+          font-family: system-ui, -apple-system, sans-serif;
+          font-weight: 600;
+          font-size: 14px;
+          margin: 10px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+        `;
+        overlayDiv.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="2" y1="12" x2="22" y2="12"></line>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+          </svg>
+          <span>All Indian States Patents</span>
+        `;
+        map.controls[google.maps.ControlPosition.TOP_RIGHT].push(overlayDiv);
+
         // Fetch patent data and display markers
         const data = await fetchPatentData();
         if (data && data.length > 0) {
@@ -552,31 +580,37 @@ const GoogleIPAssetMap = () => {
       />
       
       {!loading && !error && mapLoaded && (
-        <div className="mt-4 flex items-center justify-between">
-          <div className="flex items-center space-x-6">
-            <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 rounded-full bg-[#581c87]"></div>
-              <span className="text-sm text-gray-600">Very High (75%+)</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 rounded-full bg-[#7c3aed]"></div>
-              <span className="text-sm text-gray-600">High (45-75%)</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 rounded-full bg-[#9333ea]"></div>
-              <span className="text-sm text-gray-600">Medium (30-45%)</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 rounded-full bg-[#a855f7]"></div>
-              <span className="text-sm text-gray-600">Low (15-30%)</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-4 h-4 rounded-full bg-[#c084fc]"></div>
-              <span className="text-sm text-gray-600">Very Low (&lt;15%)</span>
-            </div>
+        <div className="mt-4 space-y-3">
+          <div className="flex items-center space-x-2 pb-2 border-b border-gray-200">
+            <Globe className="w-5 h-5 text-purple-600" />
+            <h3 className="text-lg font-bold text-gray-800">Heat Map</h3>
           </div>
-          <div className="text-sm text-gray-500">
-            {view === 'state' ? 'Numbers show patent count • Click to explore districts' : `Viewing districts in ${selectedState}`}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 rounded-full bg-[#581c87]"></div>
+                <span className="text-sm text-gray-600">Very High (75%+)</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 rounded-full bg-[#7c3aed]"></div>
+                <span className="text-sm text-gray-600">High (45-75%)</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 rounded-full bg-[#9333ea]"></div>
+                <span className="text-sm text-gray-600">Medium (30-45%)</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 rounded-full bg-[#a855f7]"></div>
+                <span className="text-sm text-gray-600">Low (15-30%)</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 rounded-full bg-[#c084fc]"></div>
+                <span className="text-sm text-gray-600">Very Low (&lt;15%)</span>
+              </div>
+            </div>
+            <div className="text-sm text-gray-500">
+              {view === 'state' ? 'Numbers show patent count • Click to explore districts' : `Viewing districts in ${selectedState}`}
+            </div>
           </div>
         </div>
       )}
