@@ -28,4 +28,8 @@ public interface PatentFilingRepository extends JpaRepository<PatentFiling, Long
     // Count patents by state
     @Query("SELECT p.applicantState, COUNT(p) FROM PatentFiling p GROUP BY p.applicantState")
     List<Object[]> countPatentsByState();
+    
+    // Get distinct cities by state (case-insensitive, excluding nulls and empty strings)
+    @Query("SELECT DISTINCT p.applicantCity FROM PatentFiling p WHERE LOWER(p.applicantState) = LOWER(:state) AND p.applicantCity IS NOT NULL AND p.applicantCity != '' ORDER BY p.applicantCity")
+    List<String> findDistinctCitiesByState(@org.springframework.data.repository.query.Param("state") String state);
 }

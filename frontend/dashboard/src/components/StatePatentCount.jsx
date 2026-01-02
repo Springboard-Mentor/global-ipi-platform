@@ -44,6 +44,8 @@ const StatePatentCount = () => {
   const [selectedState, setSelectedState] = useState('');
   const [patentCount, setPatentCount] = useState(0);
   const [stateData, setStateData] = useState({});
+  const [cities, setCities] = useState([]);
+  const [loadingCities, setLoadingCities] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -79,10 +81,51 @@ const StatePatentCount = () => {
     }
   };
 
+  const fetchCitiesByState = async (state) => {
+    if (!state) {
+      setCities([]);
+      return;
+    }
+    
+    try {
+      setLoadingCities(true);
+      console.log('🔄 Fetching cities for state:', state);
+      
+      const url = `http://localhost:8080/api/patent-filing/cities-by-state?state=${encodeURIComponent(state)}`;
+      console.log('🔗 Request URL:', url);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      console.log('📡 Response status:', response.status);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('✅ Cities received:', data);
+      console.log('📊 Number of cities:', data.length);
+      
+      setCities(data);
+      setLoadingCities(false);
+    } catch (err) {
+      console.error('❌ Error fetching cities:', err);
+      console.error('❌ Error details:', err.message);
+      setCities([]);
+      setLoadingCities(false);
+    }
+  };
+
   const handleStateChange = (e) => {
     const state = e.target.value;
     setSelectedState(state);
     setPatentCount(stateData[state] || 0);
+    fetchCitiesByState(state);
   };
 
   return (
@@ -167,6 +210,42 @@ const StatePatentCount = () => {
               </div>
             )}
           </div>
+
+          {/* Cities List */}
+          {selectedState && (
+            <div className="bg-gradient-to-br from-green-50 to-teal-50 rounded-xl p-6 border-2 border-green-100">
+              <div className="flex items-center gap-3 mb-4">
+                <MapPin className="w-5 h-5 text-green-600" />
+                <h3 className="text-lg font-bold text-gray-800">Cities in {selectedState}</h3>
+              </div>
+              
+              {loadingCities ? (
+                <div className="flex items-center justify-center py-4">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+                </div>
+              ) : cities.length > 0 ? (
+                <div>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {cities.map((city, index) => (
+                      <span
+                        key={index}
+                        className="px-3 py-1.5 bg-white border-2 border-green-200 rounded-lg text-sm font-medium text-gray-700 shadow-sm hover:shadow-md transition-shadow"
+                      >
+                        {city}
+                      </span>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-600 mt-3 pt-3 border-t border-green-200">
+                    <span className="font-semibold text-green-700">{cities.length}</span> unique {cities.length === 1 ? 'city' : 'cities'} found
+                  </p>
+                </div>
+              ) : (
+                <div className="text-gray-500 text-center py-4">
+                  <p className="text-sm">No cities found for this state</p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Summary Statistics */}
           {Object.keys(stateData).length > 0 && (

@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -461,6 +462,34 @@ public class PatentFilingController {
             System.err.println("❌ ERROR getting state-wise patent count:");
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new HashMap<>());
+        }
+    }
+    
+    // Get distinct cities by state
+    @GetMapping("/cities-by-state")
+    public ResponseEntity<List<String>> getCitiesByState(@RequestParam("state") String state) {
+        try {
+            System.out.println("🏙️ Getting cities for state: '" + state + "'");
+            
+            if (state == null || state.trim().isEmpty()) {
+                System.err.println("❌ ERROR: State parameter is null or empty");
+                return ResponseEntity.badRequest().body(new ArrayList<>());
+            }
+            
+            List<String> cities = patentFilingRepository.findDistinctCitiesByState(state.trim());
+            
+            System.out.println("✅ Found " + cities.size() + " unique cities in '" + state + "'");
+            if (cities.size() > 0) {
+                System.out.println("🌆 Cities: " + cities);
+            } else {
+                System.out.println("⚠️ No cities found - checking if state exists in database...");
+            }
+            
+            return ResponseEntity.ok(cities);
+        } catch (Exception e) {
+            System.err.println("❌ ERROR getting cities by state:");
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ArrayList<>());
         }
     }
 }
