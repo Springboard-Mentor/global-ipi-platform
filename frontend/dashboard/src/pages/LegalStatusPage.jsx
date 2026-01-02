@@ -191,13 +191,17 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
         
         // Count by account status
         const accountStatus = (userData.accountStatus || 'active').toLowerCase();
-        if (accountStatus === 'active') {
+        
+        // Count currently logged in users (check if user has a recent lastLogin within last 30 minutes)
+        const lastLogin = userData.lastLogin?.toDate?.() || (userData.lastLogin ? new Date(userData.lastLogin) : null);
+        const isCurrentlyLoggedIn = userData.isOnline || (lastLogin && (new Date() - lastLogin) < 30 * 60 * 1000);
+        
+        if (isCurrentlyLoggedIn) {
           activeUsers++;
-        } else if (accountStatus === 'deactivated') {
+        }
+        
+        if (accountStatus === 'deactivated') {
           deactivatedUsers++;
-        } else {
-          // Default to active if unknown
-          activeUsers++;
         }
       });
       
@@ -645,66 +649,93 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
       )}
 
       {/* Search Statistics Card with Two Circles */}
-      <div className="mb-8">
-        <div className="relative group bg-white rounded-3xl shadow-2xl hover:shadow-3xl transition-all duration-500 border-2 border-gray-100 hover:border-purple-200 overflow-hidden">
+      <div className="mb-8 w-full">
+        <div className="relative group bg-gradient-to-br from-blue-50/80 via-purple-50/60 to-pink-50/80 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-purple-100/50 hover:border-purple-200 overflow-hidden">
           {/* Background Gradient Animation */}
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-50 via-purple-50 to-pink-50 opacity-50"></div>
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-400/10 via-purple-400/10 to-pink-400/10 opacity-0 group-hover:opacity-100 transition-all duration-500"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-white/40 via-purple-100/20 to-pink-100/30 opacity-60"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-200/10 via-purple-200/10 to-pink-200/10 opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
           
           {/* Decorative Background Elements */}
-          <div className="absolute top-0 left-0 w-64 h-64 bg-blue-200 rounded-full blur-3xl opacity-20 -translate-x-1/2 -translate-y-1/2"></div>
-          <div className="absolute bottom-0 right-0 w-64 h-64 bg-purple-200 rounded-full blur-3xl opacity-20 translate-x-1/2 translate-y-1/2"></div>
+          <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-blue-200/30 to-purple-200/20 rounded-full blur-3xl opacity-40 -translate-x-1/3 -translate-y-1/3"></div>
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tl from-pink-200/30 to-purple-200/20 rounded-full blur-3xl opacity-40 translate-x-1/3 translate-y-1/3"></div>
           
-          <div className="relative p-8">
-            {/* Header */}
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 mb-2">
-                Search Analytics Dashboard
-              </h2>
-              <p className="text-gray-600 font-medium">Track your search activity and global platform usage</p>
-            </div>
-
-            {/* Two Circles Container */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div className="relative p-10">
+            {/* Flex Container - Text Left, Circles Right */}
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
+              
+              {/* Left Side - Text Content */}
+              <div className="flex-1 lg:max-w-md space-y-6">
+                {/* Header */}
+                <div className="text-left">
+                  <h2 className="text-4xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 mb-3 leading-tight">
+                    Search Analytics Dashboard
+                  </h2>
+                  <p className="text-gray-600 text-lg font-medium leading-relaxed">Track your search activity and global platform usage</p>
+                </div>
+                
+                {/* Stats Summary */}
+                <div className="space-y-4 bg-white/60 backdrop-blur-sm rounded-xl p-6 border border-purple-100/50 shadow-sm">
+                  <div className="flex items-center justify-between pb-3 border-b border-gray-200">
+                    <span className="text-gray-600 font-semibold">Your Contribution</span>
+                    <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+                      {globalSearchCounters.totalSearchCount > 0 
+                        ? ((searchCounters.totalSearchCount / globalSearchCounters.totalSearchCount) * 100).toFixed(1)
+                        : 0}%
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-lg shadow-green-500/50"></div>
+                      <span className="text-gray-600 font-semibold">Active Users (Online Now)</span>
+                    </div>
+                    <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-emerald-600">
+                      {userStats.activeUsers}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Right Side - Two Circles */}
+              <div className="flex flex-row lg:flex-row gap-6 lg:gap-8 items-center justify-center">
               
               {/* Personal Search Counter Circle */}
               <div className="flex flex-col items-center">
                 <div className="relative group/circle">
                   {/* Glow Effect */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full opacity-0 group-hover/circle:opacity-30 blur-2xl transition-all duration-500"></div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full opacity-0 group-hover/circle:opacity-40 blur-xl transition-all duration-500"></div>
                   
                   {/* Circle */}
-                  <div className="relative bg-gradient-to-br from-blue-50 to-purple-50 rounded-full p-8 w-56 h-56 flex flex-col items-center justify-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border-4 border-white">
+                  <div className="relative bg-white/90 backdrop-blur-md rounded-full p-6 w-44 h-44 lg:w-48 lg:h-48 flex flex-col items-center justify-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border-2 border-blue-200/50">
                     {/* Icon */}
-                    <div className="mb-3 bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-full shadow-lg">
-                      <Search className="w-7 h-7 text-white" strokeWidth={2.5} />
+                    <div className="mb-2 bg-gradient-to-br from-blue-500 to-purple-600 p-2.5 rounded-full shadow-lg">
+                      <Search className="w-5 h-5 text-white" strokeWidth={2.5} />
                     </div>
                     
                     {/* Counter */}
                     {searchCounters.loading ? (
                       <div className="flex flex-col items-center gap-2">
-                        <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-purple-500"></div>
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-3 border-purple-500"></div>
                         <span className="text-xs text-gray-500 font-medium">Loading...</span>
                       </div>
                     ) : (
                       <>
-                        <h3 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-1">
+                        <h3 className="text-4xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-1">
                           {searchCounters.totalSearchCount}
                         </h3>
-                        <p className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-3">Your Searches</p>
+                        <p className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">Your Searches</p>
                         
                         {/* Breakdown */}
-                        <div className="space-y-1 w-full px-4">
+                        <div className="space-y-1 w-full px-3">
                           <div className="flex items-center justify-between text-xs">
                             <div className="flex items-center gap-1">
-                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
                               <span className="font-semibold text-blue-600">API</span>
                             </div>
                             <span className="font-bold text-blue-700">{searchCounters.apiSearchCount}</span>
                           </div>
                           <div className="flex items-center justify-between text-xs">
                             <div className="flex items-center gap-1">
-                              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                              <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
                               <span className="font-semibold text-purple-600">Local</span>
                             </div>
                             <span className="font-bold text-purple-700">{searchCounters.localSearchCount}</span>
@@ -737,7 +768,7 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
                 </div>
                 
                 {/* Label */}
-                <div className="mt-4 bg-gradient-to-r from-blue-100 to-purple-100 px-4 py-2 rounded-full border-2 border-blue-200">
+                <div className="mt-3 bg-gradient-to-r from-blue-100/80 to-purple-100/80 px-3 py-1.5 rounded-full border border-blue-200/50">
                   <p className="text-xs font-bold text-blue-700">Personal Activity</p>
                 </div>
               </div>
@@ -746,40 +777,40 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
               <div className="flex flex-col items-center">
                 <div className="relative group/circle">
                   {/* Glow Effect */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full opacity-0 group-hover/circle:opacity-30 blur-2xl transition-all duration-500"></div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full opacity-0 group-hover/circle:opacity-40 blur-xl transition-all duration-500"></div>
                   
                   {/* Circle */}
-                  <div className="relative bg-gradient-to-br from-purple-50 to-pink-50 rounded-full p-8 w-56 h-56 flex flex-col items-center justify-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border-4 border-white">
+                  <div className="relative bg-white/90 backdrop-blur-md rounded-full p-6 w-44 h-44 lg:w-48 lg:h-48 flex flex-col items-center justify-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border-2 border-purple-200/50">
                     {/* Icon */}
-                    <div className="mb-3 bg-gradient-to-br from-purple-500 to-pink-600 p-3 rounded-full shadow-lg">
-                      <Globe className="w-7 h-7 text-white" strokeWidth={2.5} />
+                    <div className="mb-2 bg-gradient-to-br from-purple-500 to-pink-600 p-2.5 rounded-full shadow-lg">
+                      <Globe className="w-5 h-5 text-white" strokeWidth={2.5} />
                     </div>
                     
                     {/* Counter */}
                     {globalSearchCounters.loading ? (
                       <div className="flex flex-col items-center gap-2">
-                        <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-pink-500"></div>
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-3 border-pink-500"></div>
                         <span className="text-xs text-gray-500 font-medium">Loading...</span>
                       </div>
                     ) : (
                       <>
-                        <h3 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 mb-1">
+                        <h3 className="text-4xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 mb-1">
                           {globalSearchCounters.totalSearchCount}
                         </h3>
-                        <p className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-3">Global Searches</p>
+                        <p className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">Global Searches</p>
                         
                         {/* Breakdown */}
-                        <div className="space-y-1 w-full px-4">
+                        <div className="space-y-1 w-full px-3">
                           <div className="flex items-center justify-between text-xs">
                             <div className="flex items-center gap-1">
-                              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                              <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
                               <span className="font-semibold text-purple-600">API</span>
                             </div>
                             <span className="font-bold text-purple-700">{globalSearchCounters.apiSearchCount}</span>
                           </div>
                           <div className="flex items-center justify-between text-xs">
                             <div className="flex items-center gap-1">
-                              <div className="w-2 h-2 bg-pink-500 rounded-full"></div>
+                              <div className="w-1.5 h-1.5 bg-pink-500 rounded-full"></div>
                               <span className="font-semibold text-pink-600">Local</span>
                             </div>
                             <span className="font-bold text-pink-700">{globalSearchCounters.localSearchCount}</span>
@@ -812,31 +843,12 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
                 </div>
                 
                 {/* Label */}
-                <div className="mt-4 bg-gradient-to-r from-purple-100 to-pink-100 px-4 py-2 rounded-full border-2 border-purple-200">
+                <div className="mt-3 bg-gradient-to-r from-purple-100/80 to-pink-100/80 px-3 py-1.5 rounded-full border border-purple-200/50">
                   <p className="text-xs font-bold text-purple-700">Platform Wide</p>
                 </div>
               </div>
             </div>
-
-            {/* Footer Stats */}
-            <div className="mt-8 pt-6 border-t-2 border-gray-100">
-              <div className="flex items-center justify-center gap-8 text-sm">
-                <div className="text-center">
-                  <p className="text-gray-500 font-medium mb-1">Your Contribution</p>
-                  <p className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-                    {globalSearchCounters.totalSearchCount > 0 
-                      ? ((searchCounters.totalSearchCount / globalSearchCounters.totalSearchCount) * 100).toFixed(1)
-                      : 0}%
-                  </p>
-                </div>
-                <div className="w-px h-12 bg-gray-300"></div>
-                <div className="text-center">
-                  <p className="text-gray-500 font-medium mb-1">Active Users</p>
-                  <p className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
-                    {userStats.activeUsers}
-                  </p>
-                </div>
-              </div>
+            
             </div>
           </div>
         </div>
