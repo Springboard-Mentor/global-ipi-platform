@@ -21,6 +21,7 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
     enterpriseUsers: 0,
     activeUsers: 0,
     deactivatedUsers: 0,
+    onlineUsers: 0,
     loading: true
   });
 
@@ -138,6 +139,7 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
       let enterpriseUsers = 0;
       let activeUsers = 0;
       let deactivatedUsers = 0;
+      let onlineUsers = 0;
       
       const yearsSet = new Set();
       
@@ -192,16 +194,21 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
         // Count by account status
         const accountStatus = (userData.accountStatus || 'active').toLowerCase();
         
+        if (accountStatus === 'active') {
+          activeUsers++;
+        } else if (accountStatus === 'deactivated') {
+          deactivatedUsers++;
+        } else {
+          // Default to active if unknown
+          activeUsers++;
+        }
+        
         // Count currently logged in users (check if user has a recent lastLogin within last 30 minutes)
         const lastLogin = userData.lastLogin?.toDate?.() || (userData.lastLogin ? new Date(userData.lastLogin) : null);
         const isCurrentlyLoggedIn = userData.isOnline || (lastLogin && (new Date() - lastLogin) < 30 * 60 * 1000);
         
         if (isCurrentlyLoggedIn) {
-          activeUsers++;
-        }
-        
-        if (accountStatus === 'deactivated') {
-          deactivatedUsers++;
+          onlineUsers++;
         }
       });
       
@@ -236,6 +243,7 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
         enterpriseUsers,
         activeUsers,
         deactivatedUsers,
+        onlineUsers,
         loading: false
       });
     } catch (error) {
@@ -247,6 +255,7 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
         enterpriseUsers: 0,
         activeUsers: 0,
         deactivatedUsers: 0,
+        onlineUsers: 0,
         loading: false
       });
     }
@@ -702,10 +711,10 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-lg shadow-green-500/50"></div>
-                      <span className="text-gray-600 font-semibold">Active Users (Online Now)</span>
+                      <span className="text-gray-600 font-semibold">Online Users</span>
                     </div>
                     <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-emerald-600">
-                      {userStats.activeUsers}
+                      {userStats.onlineUsers}
                     </span>
                   </div>
                 </div>
@@ -937,17 +946,17 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
             </div>
           ) : (
             <div className="space-y-6">
-              {/* Active Users and Subscription Breakdown */}
+              {/* Total Registered Users and Subscription Breakdown */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                {/* Active Users */}
+                {/* Total Registered Users */}
                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border-2 border-blue-100 hover:border-blue-300 transition-all duration-300 transform hover:scale-105">
                   <div className="flex items-center justify-between mb-3">
                     <div className="bg-blue-100 p-2 rounded-lg">
                       <Users className="w-5 h-5 text-blue-600" />
                     </div>
                     <div className="text-right">
-                      <p className="text-xs font-semibold text-blue-600 uppercase">Active Users</p>
-                      <h4 className="text-3xl font-black text-blue-900">{userStats.activeUsers}</h4>
+                      <p className="text-xs font-semibold text-blue-600 uppercase">Total Registered Users</p>
+                      <h4 className="text-3xl font-black text-blue-900">{userStats.totalUsers}</h4>
                     </div>
                   </div>
                   <div className="w-full bg-blue-200 rounded-full h-2">
