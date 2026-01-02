@@ -10,6 +10,7 @@ const IndiaPatentMap = ({ selectedState = null, showHeatMap = false }) => {
   const mapInstanceRef = useRef(null);
   const selectedMarkerRef = useRef(null);
   const markersRef = useRef([]);
+  const pulseIntervalsRef = useRef([]);
 
   // State coordinates mapping
   const stateCoordinates = {
@@ -107,6 +108,11 @@ const IndiaPatentMap = ({ selectedState = null, showHeatMap = false }) => {
   };
 
   const clearMarkers = () => {
+    // Clear all pulse intervals
+    pulseIntervalsRef.current.forEach(interval => clearInterval(interval));
+    pulseIntervalsRef.current = [];
+    
+    // Clear all markers
     markersRef.current.forEach(marker => marker.setMap(null));
     markersRef.current = [];
   };
@@ -206,8 +212,35 @@ const IndiaPatentMap = ({ selectedState = null, showHeatMap = false }) => {
           fillOpacity: 0.85,
           strokeColor: '#ffffff',
           strokeWeight: 3
-        }
+        },
+        animation: google.maps.Animation.DROP
       });
+
+      // Apply continuous pulsing animation
+      const pulseInterval = setInterval(() => {
+        marker.setIcon({
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: size * 1.15,
+          fillColor: color,
+          fillOpacity: 1,
+          strokeColor: '#ffffff',
+          strokeWeight: 4
+        });
+        
+        setTimeout(() => {
+          marker.setIcon({
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: size,
+            fillColor: color,
+            fillOpacity: 0.85,
+            strokeColor: '#ffffff',
+            strokeWeight: 3
+          });
+        }, 500);
+      }, 1500);
+
+      // Store interval for cleanup
+      pulseIntervalsRef.current.push(pulseInterval);
 
       const infoWindow = new google.maps.InfoWindow({
         content: `
@@ -471,7 +504,7 @@ const IndiaPatentMap = ({ selectedState = null, showHeatMap = false }) => {
 
   return (
     <div className="relative w-full h-full flex flex-col">
-      <div className="relative w-full flex-1 min-h-[340px] rounded-xl overflow-hidden">
+      <div className="relative w-full flex-1 min-h-[480px] rounded-xl overflow-hidden">
         {(!mapLoaded || loading) && (
           <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-50 to-indigo-50 z-10">
             <div className="text-center">
@@ -485,7 +518,7 @@ const IndiaPatentMap = ({ selectedState = null, showHeatMap = false }) => {
         
         <div 
           ref={mapRef} 
-          className="w-full h-full min-h-[340px] rounded-xl"
+          className="w-full h-full min-h-[480px] rounded-xl"
         />
       </div>
 
