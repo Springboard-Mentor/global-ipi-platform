@@ -502,7 +502,7 @@ const IndiaPatentMap = ({ selectedState = null, showHeatMap = false }) => {
           </div>
           
           {/* Legend Items */}
-          <div className="flex flex-col space-y-2.5 mb-4">
+          <div className="flex flex-col space-y-1.5 mb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 rounded-full bg-[#581c87] flex-shrink-0"></div>
@@ -551,109 +551,105 @@ const IndiaPatentMap = ({ selectedState = null, showHeatMap = false }) => {
           </div>
 
           {/* Speedometer Meters Section */}
-          <div className="py-4 space-y-3">
+          <div className="py-2 space-y-2">
             {/* States Meter */}
-            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-3 border border-blue-200">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-blue-800">States with Patents</span>
-                <span className="text-lg font-bold text-blue-600">
+            <div className="bg-gradient-to-br from-blue-100 to-cyan-100 rounded-lg p-2.5 border-2 border-blue-400 shadow-md">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] font-bold text-blue-900">States with Patents</span>
+                <span className="text-base font-black text-blue-700">
                   {stateData.filter(s => !unionTerritories.includes(s.name)).length}/28
                 </span>
               </div>
-              <div className="relative pt-1">
-                <div className="flex mb-2 items-center justify-between">
-                  <div className="text-xs font-semibold text-blue-600">
-                    {Math.round((stateData.filter(s => !unionTerritories.includes(s.name)).length / 28) * 100)}%
-                  </div>
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-xs font-bold text-blue-700">
+                  {Math.round((stateData.filter(s => !unionTerritories.includes(s.name)).length / 28) * 100)}%
                 </div>
-                <div className="relative w-full">
-                  <svg viewBox="0 0 100 50" className="w-full h-16">
-                    {/* Background arc */}
-                    <path
-                      d="M 10 45 A 40 40 0 0 1 90 45"
-                      fill="none"
-                      stroke="#E5E7EB"
-                      strokeWidth="8"
-                      strokeLinecap="round"
-                    />
-                    {/* Progress arc */}
-                    <path
-                      d="M 10 45 A 40 40 0 0 1 90 45"
-                      fill="none"
-                      stroke="url(#blueGradient)"
-                      strokeWidth="8"
-                      strokeLinecap="round"
-                      strokeDasharray={`${(stateData.filter(s => !unionTerritories.includes(s.name)).length / 28) * 126} 126`}
-                    />
-                    {/* Needle */}
-                    <g transform={`rotate(${-90 + (stateData.filter(s => !unionTerritories.includes(s.name)).length / 28) * 180} 50 45)`}>
-                      <line x1="50" y1="45" x2="50" y2="15" stroke="#1e40af" strokeWidth="2" strokeLinecap="round"/>
-                      <circle cx="50" cy="45" r="3" fill="#1e40af"/>
-                    </g>
-                    <defs>
-                      <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#3b82f6"/>
-                        <stop offset="100%" stopColor="#06b6d4"/>
-                      </linearGradient>
-                    </defs>
-                  </svg>
-                </div>
+              </div>
+              <div className="relative w-full">
+                <svg viewBox="0 0 100 50" className="w-full h-12">
+                  {/* Background arc */}
+                  <path
+                    d="M 10 45 A 40 40 0 0 1 90 45"
+                    fill="none"
+                    stroke="#cbd5e1"
+                    strokeWidth="10"
+                    strokeLinecap="round"
+                  />
+                  {/* Progress arc */}
+                  <path
+                    d="M 10 45 A 40 40 0 0 1 90 45"
+                    fill="none"
+                    stroke="url(#blueGradient)"
+                    strokeWidth="10"
+                    strokeLinecap="round"
+                    strokeDasharray={`${(stateData.filter(s => !unionTerritories.includes(s.name)).length / 28) * 126} 126`}
+                  />
+                  {/* Needle */}
+                  <g transform={`rotate(${-90 + (stateData.filter(s => !unionTerritories.includes(s.name)).length / 28) * 180} 50 45)`}>
+                    <line x1="50" y1="45" x2="50" y2="12" stroke="#1e3a8a" strokeWidth="3" strokeLinecap="round"/>
+                    <circle cx="50" cy="45" r="4" fill="#1e3a8a" stroke="white" strokeWidth="1"/>
+                  </g>
+                  <defs>
+                    <linearGradient id="blueGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#2563eb"/>
+                      <stop offset="100%" stopColor="#0891b2"/>
+                    </linearGradient>
+                  </defs>
+                </svg>
               </div>
             </div>
 
             {/* UTs Meter */}
-            <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-lg p-3 border border-orange-200">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-orange-800">UTs with Patents</span>
-                <span className="text-lg font-bold text-orange-600">
+            <div className="bg-gradient-to-br from-orange-100 to-amber-100 rounded-lg p-2.5 border-2 border-orange-400 shadow-md">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] font-bold text-orange-900">UTs with Patents</span>
+                <span className="text-base font-black text-orange-700">
                   {stateData.filter(s => unionTerritories.includes(s.name)).length}/8
                 </span>
               </div>
-              <div className="relative pt-1">
-                <div className="flex mb-2 items-center justify-between">
-                  <div className="text-xs font-semibold text-orange-600">
-                    {Math.round((stateData.filter(s => unionTerritories.includes(s.name)).length / 8) * 100)}%
-                  </div>
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-xs font-bold text-orange-700">
+                  {Math.round((stateData.filter(s => unionTerritories.includes(s.name)).length / 8) * 100)}%
                 </div>
-                <div className="relative w-full">
-                  <svg viewBox="0 0 100 50" className="w-full h-16">
-                    {/* Background arc */}
-                    <path
-                      d="M 10 45 A 40 40 0 0 1 90 45"
-                      fill="none"
-                      stroke="#E5E7EB"
-                      strokeWidth="8"
-                      strokeLinecap="round"
-                    />
-                    {/* Progress arc */}
-                    <path
-                      d="M 10 45 A 40 40 0 0 1 90 45"
-                      fill="none"
-                      stroke="url(#orangeGradient)"
-                      strokeWidth="8"
-                      strokeLinecap="round"
-                      strokeDasharray={`${(stateData.filter(s => unionTerritories.includes(s.name)).length / 8) * 126} 126`}
-                    />
-                    {/* Needle */}
-                    <g transform={`rotate(${-90 + (stateData.filter(s => unionTerritories.includes(s.name)).length / 8) * 180} 50 45)`}>
-                      <line x1="50" y1="45" x2="50" y2="15" stroke="#c2410c" strokeWidth="2" strokeLinecap="round"/>
-                      <circle cx="50" cy="45" r="3" fill="#c2410c"/>
-                    </g>
-                    <defs>
-                      <linearGradient id="orangeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#f97316"/>
-                        <stop offset="100%" stopColor="#f59e0b"/>
-                      </linearGradient>
-                    </defs>
-                  </svg>
-                </div>
+              </div>
+              <div className="relative w-full">
+                <svg viewBox="0 0 100 50" className="w-full h-12">
+                  {/* Background arc */}
+                  <path
+                    d="M 10 45 A 40 40 0 0 1 90 45"
+                    fill="none"
+                    stroke="#cbd5e1"
+                    strokeWidth="10"
+                    strokeLinecap="round"
+                  />
+                  {/* Progress arc */}
+                  <path
+                    d="M 10 45 A 40 40 0 0 1 90 45"
+                    fill="none"
+                    stroke="url(#orangeGradient)"
+                    strokeWidth="10"
+                    strokeLinecap="round"
+                    strokeDasharray={`${(stateData.filter(s => unionTerritories.includes(s.name)).length / 8) * 126} 126`}
+                  />
+                  {/* Needle */}
+                  <g transform={`rotate(${-90 + (stateData.filter(s => unionTerritories.includes(s.name)).length / 8) * 180} 50 45)`}>
+                    <line x1="50" y1="45" x2="50" y2="12" stroke="#7c2d12" strokeWidth="3" strokeLinecap="round"/>
+                    <circle cx="50" cy="45" r="4" fill="#7c2d12" stroke="white" strokeWidth="1"/>
+                  </g>
+                  <defs>
+                    <linearGradient id="orangeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#ea580c"/>
+                      <stop offset="100%" stopColor="#d97706"/>
+                    </linearGradient>
+                  </defs>
+                </svg>
               </div>
             </div>
           </div>
 
           {/* Statistics Section */}
-          <div className="mt-auto pt-3 border-t border-purple-200">
-            <div className="bg-white rounded-lg p-3 shadow-sm border border-purple-100">
+          <div className="mt-auto pt-2 border-t border-purple-200">
+            <div className="bg-white rounded-lg p-2.5 shadow-sm border border-purple-100">
               <h3 className="text-xs font-semibold text-purple-800 mb-2">
                 📊 Patent Coverage Statistics
               </h3>
