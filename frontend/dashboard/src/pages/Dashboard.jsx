@@ -555,16 +555,18 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
             </ResponsiveContainer>
           </div>
         </div>
-
-        <IndiaPatentPanel 
-          selectedState={selectedMapState}
-        />
       </div>
 
-      {/* State-wise Patent Count */}
-      <div className="mt-6">
+      {/* Map and State Patent Count in Single Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+        {/* State-wise Patent Count */}
         <StatePatentCount 
           onStateChange={handleStateChange}
+        />
+        
+        {/* India Patent Map */}
+        <IndiaPatentPanel 
+          selectedState={selectedMapState}
         />
       </div>
     </div>

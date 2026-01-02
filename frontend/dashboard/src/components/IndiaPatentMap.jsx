@@ -57,15 +57,15 @@ const IndiaPatentMap = ({ selectedState = null }) => {
 
     const coordinates = stateCoordinates[stateName];
     const locationName = stateName;
-    const zoomLevel = 7;
+    const zoomLevel = 6.5;
 
     if (!coordinates) {
       console.warn(`Coordinates not found for ${locationName}`);
       return;
     }
 
-    // Center and zoom map to location
-    map.setCenter(coordinates);
+    // Center map on the selected location with smooth pan
+    map.panTo(coordinates);
     map.setZoom(zoomLevel);
 
     // Custom location pin SVG path (teardrop/pin shape)
@@ -248,7 +248,7 @@ const IndiaPatentMap = ({ selectedState = null }) => {
   }
 
   return (
-    <div className="relative w-full h-full min-h-[400px] rounded-xl overflow-hidden">
+    <div className="relative w-full h-full min-h-[380px] rounded-xl overflow-hidden">
       {(!mapLoaded || loading) && (
         <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-50 to-indigo-50 z-10">
           <div className="text-center">
@@ -262,28 +262,8 @@ const IndiaPatentMap = ({ selectedState = null }) => {
       
       <div 
         ref={mapRef} 
-        className="w-full h-full min-h-[400px] rounded-xl"
+        className="w-full h-full min-h-[380px] rounded-xl"
       />
-      
-      {/* Controls Overlay */}
-      {mapLoaded && !loading && (
-        <>
-          {/* Current View Info */}
-          <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm rounded-lg shadow-lg p-4 border-2 border-purple-200 z-10">
-            <div className="flex items-center gap-3">
-              <div className="bg-gradient-to-br from-purple-500 to-indigo-600 p-2 rounded-lg">
-                <MapPin className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <div className="text-xs font-semibold text-gray-500 uppercase">Patent Distribution</div>
-                <div className="text-lg font-bold text-gray-900">
-                  India - All States
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
     </div>
   );
 };

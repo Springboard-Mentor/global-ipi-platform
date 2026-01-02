@@ -134,14 +134,14 @@ const StatePatentCount = ({ onStateChange }) => {
   };
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-xl border-2 border-gray-100 hover:shadow-2xl transition-all duration-300">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="bg-gradient-to-br from-blue-100 to-cyan-100 p-3 rounded-xl">
-          <MapPin className="w-6 h-6 text-blue-600" />
+    <div className="bg-white rounded-xl p-4 shadow-lg border border-gray-100">
+      <div className="flex items-center gap-2 mb-4">
+        <div className="bg-gradient-to-br from-blue-100 to-cyan-100 p-2 rounded-lg">
+          <MapPin className="w-5 h-5 text-blue-600" />
         </div>
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">State-wise Patent Count</h2>
-          <p className="text-sm text-gray-600">Select a state to view patent statistics</p>
+          <h2 className="text-lg font-bold text-gray-800">State-wise Patent Count</h2>
+          <p className="text-xs text-gray-600">Select a state to view patent statistics</p>
         </div>
       </div>
 
