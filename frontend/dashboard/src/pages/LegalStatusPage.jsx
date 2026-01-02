@@ -831,9 +831,9 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
                 </div>
                 <div className="w-px h-12 bg-gray-300"></div>
                 <div className="text-center">
-                  <p className="text-gray-500 font-medium mb-1">Total Users</p>
+                  <p className="text-gray-500 font-medium mb-1">Active Users</p>
                   <p className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
-                    {userStats.totalUsers}
+                    {userStats.activeUsers}
                   </p>
                 </div>
               </div>
@@ -909,17 +909,17 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
             </div>
           ) : (
             <div className="space-y-6">
-              {/* Total Users and Subscription Breakdown */}
+              {/* Active Users and Subscription Breakdown */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                {/* Total Users */}
+                {/* Active Users */}
                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border-2 border-blue-100 hover:border-blue-300 transition-all duration-300 transform hover:scale-105">
                   <div className="flex items-center justify-between mb-3">
                     <div className="bg-blue-100 p-2 rounded-lg">
                       <Users className="w-5 h-5 text-blue-600" />
                     </div>
                     <div className="text-right">
-                      <p className="text-xs font-semibold text-blue-600 uppercase">Total Users</p>
-                      <h4 className="text-3xl font-black text-blue-900">{userStats.totalUsers}</h4>
+                      <p className="text-xs font-semibold text-blue-600 uppercase">Active Users</p>
+                      <h4 className="text-3xl font-black text-blue-900">{userStats.activeUsers}</h4>
                     </div>
                   </div>
                   <div className="w-full bg-blue-200 rounded-full h-2">

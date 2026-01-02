@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, History, Filter, Globe, Database, Share2, Copy, Download, X } from 'lucide-react';
 import { getSearchCounters, incrementSearchCounter } from '../utils/searchCounters';
 
@@ -23,6 +23,8 @@ const SearchResultsPage = ({ query, onBack, searchMode = 'api', setSearchMode, u
     jurisdiction: ''
   });
   const [showModal, setShowModal] = useState(false);
+  // Ref to track if search has already been processed to prevent duplicate increments
+  const searchProcessedRef = useRef(null);
   const [copySuccess, setCopySuccess] = useState(false);
   
   // Pagination states
@@ -148,6 +150,8 @@ const SearchResultsPage = ({ query, onBack, searchMode = 'api', setSearchMode, u
     setSearchHistory(history);
 
     if (query) {
+      // Reset the search processed ref when query changes
+      searchProcessedRef.current = null;
       handleSearch(query);
     }
   }, [query, userProfile?.uid]);
@@ -516,27 +520,45 @@ const SearchResultsPage = ({ query, onBack, searchMode = 'api', setSearchMode, u
     localStorage.setItem('searchHistory', JSON.stringify(searchHistoryData));
 
     // Increment and store the appropriate counter in Firestore
-    if (userProfile?.uid) {
-      try {
-        await incrementSearchCounter(userProfile.uid, searchMode);
-        
-        // Update local state immediately
-        if (searchMode === 'api') {
-          const newApiCounter = apiSearchCounter + 1;
-          setApiSearchCounter(newApiCounter);
-          // Also update localStorage as backup
-          localStorage.setItem('apiSearchCounter', newApiCounter.toString());
-        } else {
-          const newLocalCounter = localSearchCounter + 1;
-          setLocalSearchCounter(newLocalCounter);
-          // Also update localStorage as backup
-          localStorage.setItem('localSearchCounter', newLocalCounter.toString());
+    // Only increment if this search hasn't been processed yet (prevent double counting)
+    const searchKey = `${searchQuery}_${searchMode}`;
+    if (searchProcessedRef.current !== searchKey) {
+      searchProcessedRef.current = searchKey;
+      
+      if (userProfile?.uid) {
+        try {
+          await incrementSearchCounter(userProfile.uid, searchMode);
+          
+          // Update local state immediately
+          if (searchMode === 'api') {
+            const newApiCounter = apiSearchCounter + 1;
+            setApiSearchCounter(newApiCounter);
+            // Also update localStorage as backup
+            localStorage.setItem('apiSearchCounter', newApiCounter.toString());
+          } else {
+            const newLocalCounter = localSearchCounter + 1;
+            setLocalSearchCounter(newLocalCounter);
+            // Also update localStorage as backup
+            localStorage.setItem('localSearchCounter', newLocalCounter.toString());
+          }
+          
+          console.log(`✅ ${searchMode} search counter incremented in Firestore`);
+        } catch (error) {
+          console.error('❌ Error incrementing search counter in Firestore:', error);
+          // Fallback to localStorage only
+          if (searchMode === 'api') {
+            const newApiCounter = apiSearchCounter + 1;
+            setApiSearchCounter(newApiCounter);
+            localStorage.setItem('apiSearchCounter', newApiCounter.toString());
+          } else {
+            const newLocalCounter = localSearchCounter + 1;
+            setLocalSearchCounter(newLocalCounter);
+            localStorage.setItem('localSearchCounter', newLocalCounter.toString());
+          }
         }
-        
-        console.log(`✅ ${searchMode} search counter incremented in Firestore`);
-      } catch (error) {
-        console.error('❌ Error incrementing search counter in Firestore:', error);
-        // Fallback to localStorage only
+      } else {
+        console.warn('⚠️ No user profile, using localStorage only for counters');
+        // Fallback to localStorage if no user profile
         if (searchMode === 'api') {
           const newApiCounter = apiSearchCounter + 1;
           setApiSearchCounter(newApiCounter);
@@ -548,17 +570,7 @@ const SearchResultsPage = ({ query, onBack, searchMode = 'api', setSearchMode, u
         }
       }
     } else {
-      console.warn('⚠️ No user profile, using localStorage only for counters');
-      // Fallback to localStorage if no user profile
-      if (searchMode === 'api') {
-        const newApiCounter = apiSearchCounter + 1;
-        setApiSearchCounter(newApiCounter);
-        localStorage.setItem('apiSearchCounter', newApiCounter.toString());
-      } else {
-        const newLocalCounter = localSearchCounter + 1;
-        setLocalSearchCounter(newLocalCounter);
-        localStorage.setItem('localSearchCounter', newLocalCounter.toString());
-      }
+      console.log(`⚠️ Search already processed: ${searchKey}`);
     }
   };
 
