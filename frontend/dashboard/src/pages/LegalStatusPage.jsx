@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, CheckCircle, XCircle, TrendingUp, Award, AlertCircle, Users, UserCheck, UserX, Filter, X, Search, Globe } from 'lucide-react';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
 import { getSearchCounters, getGlobalSearchStats } from '../utils/searchCounters';
 
@@ -56,6 +56,45 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
     fetchPatentStats();
     fetchSearchCounters();
     fetchGlobalSearchCounters();
+  }, []);
+
+  // Real-time listener for online users
+  useEffect(() => {
+    console.log('Setting up real-time listener for online users...');
+    
+    // Set up real-time listener for users collection
+    const usersCollection = collection(db, 'users');
+    const unsubscribe = onSnapshot(usersCollection, (snapshot) => {
+      let onlineCount = 0;
+      
+      snapshot.forEach((doc) => {
+        const userData = doc.data();
+        
+        // Count currently logged in users (check if user has a recent lastLogin within last 5 minutes for real-time accuracy)
+        const lastLogin = userData.lastLogin?.toDate?.() || (userData.lastLogin ? new Date(userData.lastLogin) : null);
+        const isCurrentlyLoggedIn = userData.isOnline || (lastLogin && (new Date() - lastLogin) < 5 * 60 * 1000);
+        
+        if (isCurrentlyLoggedIn) {
+          onlineCount++;
+        }
+      });
+      
+      console.log('Real-time online users update:', onlineCount);
+      
+      // Update only the onlineUsers count without affecting loading state
+      setUserStats(prev => ({
+        ...prev,
+        onlineUsers: onlineCount
+      }));
+    }, (error) => {
+      console.error('Error in real-time listener:', error);
+    });
+
+    // Cleanup listener on unmount
+    return () => {
+      console.log('Cleaning up real-time listener for online users');
+      unsubscribe();
+    };
   }, []);
 
   // Reload data when filters change (but not on initial mount)
@@ -203,9 +242,9 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
           activeUsers++;
         }
         
-        // Count currently logged in users (check if user has a recent lastLogin within last 30 minutes)
+        // Count currently logged in users (check if user has a recent lastLogin within last 5 minutes for real-time accuracy)
         const lastLogin = userData.lastLogin?.toDate?.() || (userData.lastLogin ? new Date(userData.lastLogin) : null);
-        const isCurrentlyLoggedIn = userData.isOnline || (lastLogin && (new Date() - lastLogin) < 30 * 60 * 1000);
+        const isCurrentlyLoggedIn = userData.isOnline || (lastLogin && (new Date() - lastLogin) < 5 * 60 * 1000);
         
         if (isCurrentlyLoggedIn) {
           onlineUsers++;
