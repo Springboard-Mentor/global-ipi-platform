@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { auth } from "../firebase";
 import UpgradeModal from "./UpgradeModal";
+import { getAllStatesAndUTs, getDistricts } from "../data/indianStatesDistricts";
 
 const PatentFilingForm = ({ onClose, userProfile, onAddNotification, onFilingSuccess }) => {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -19,22 +20,11 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification, onFilingSuc
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   
-  // Indian States and Countries
-  const indianStates = [
-    "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
-    "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
-    "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
-    "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
-    "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
-    "Andaman and Nicobar Islands", "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu",
-    "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry"
-  ];
-
-  const countries = [
-    "India", "United States", "United Kingdom", "Canada", "Australia",
-    "Germany", "France", "Japan", "China", "Singapore", "UAE",
-    "Saudi Arabia", "South Korea", "Malaysia", "Indonesia", "Other"
-  ];
+  // Get Indian States and UTs from data file
+  const indianStatesAndUTs = getAllStatesAndUTs();
+  
+  // State for districts based on selected state
+  const [availableDistricts, setAvailableDistricts] = useState([]);
 
   const inventionFields = [
     "Computer Science & IT", "Electronics & Communication", "Mechanical Engineering",
@@ -51,10 +41,11 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification, onFilingSuc
     applicantEmail: auth.currentUser?.email || userProfile?.email || "", // Auto-fill with user's email
     applicantPhone: "",
     applicantAddress: "",
-    applicantCity: "",
-    applicantState: "",
-    applicantPincode: "",
     applicantCountry: "India",
+    applicantState: "",
+    applicantDistrict: "",
+    applicantCity: "",
+    applicantPincode: "",
     organizationName: "",
     applicantType: "individual", // individual, organization, joint
     
@@ -136,10 +127,32 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification, onFilingSuc
   // Handle input changes
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    
+    // If state is changed, update available districts
+    if (name === 'applicantState') {
+      const districts = getDistricts(value);
+      setAvailableDistricts(districts);
+      // Reset district and city when state changes
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        applicantDistrict: '', // Clear district selection
+        applicantCity: '' // Clear city
+      }));
+    } else if (name === 'applicantDistrict') {
+      // Auto-fill city with district value
+      setFormData(prev => ({
+        ...prev,
+        applicantDistrict: value,
+        applicantCity: value // Set city to district name
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      }));
+    }
+    
     // Clear error for this field
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: null }));
@@ -172,8 +185,9 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification, onFilingSuc
       newErrors.applicantPhone = "Invalid phone number (10 digits required)";
     }
     if (!formData.applicantAddress.trim()) newErrors.applicantAddress = "Address is required";
+    if (!formData.applicantState.trim()) newErrors.applicantState = "State/UT is required";
+    if (!formData.applicantDistrict.trim()) newErrors.applicantDistrict = "District is required";
     if (!formData.applicantCity.trim()) newErrors.applicantCity = "City is required";
-    if (!formData.applicantState.trim()) newErrors.applicantState = "State is required";
     if (!formData.applicantPincode.trim()) {
       newErrors.applicantPincode = "Pincode is required";
     } else if (!/^\d{6}$/.test(formData.applicantPincode)) {
@@ -1392,7 +1406,87 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification, onFilingSuc
                 )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {/* Address and Location Details - Reordered */}
+              {/* Country - Fixed to India */}
+              <div>
+                <label className="block text-sm font-bold text-gray-800 mb-2">
+                  <Globe size={16} className="inline mr-1" />
+                  Country *
+                </label>
+                <div className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 bg-gray-100 text-gray-700 font-semibold">
+                  🇮🇳 India
+                </div>
+                <input type="hidden" name="applicantCountry" value="India" />
+              </div>
+
+              {/* State/UT and District in same row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* State/UT Dropdown */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-800 mb-2">
+                    State / Union Territory *
+                  </label>
+                  <select
+                    name="applicantState"
+                    value={formData.applicantState}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-3 rounded-xl border-2 bg-white text-gray-800 transition ${
+                      errors.applicantState ? 'border-red-400 bg-red-50' : 'border-gray-400 focus:border-blue-600'
+                    } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+                  >
+                    <option value="">-- Select State / UT --</option>
+                    {indianStatesAndUTs.map(state => (
+                      <option key={state} value={state}>{state}</option>
+                    ))}
+                  </select>
+                  {errors.applicantState && (
+                    <p className="text-red-500 text-xs mt-1 flex items-center">
+                      <AlertCircle size={12} className="mr-1" />
+                      {errors.applicantState}
+                    </p>
+                  )}
+                </div>
+
+                {/* District Dropdown - Shows only when state is selected */}
+                <div>
+                  <label className="block text-sm font-bold text-gray-800 mb-2">
+                    District *
+                  </label>
+                  <select
+                    name="applicantDistrict"
+                    value={formData.applicantDistrict}
+                    onChange={handleInputChange}
+                    disabled={!formData.applicantState || availableDistricts.length === 0}
+                    className={`w-full px-4 py-3 rounded-xl border-2 bg-white text-gray-800 transition ${
+                      errors.applicantDistrict ? 'border-red-400 bg-red-50' : 
+                      !formData.applicantState ? 'border-gray-300 bg-gray-100 cursor-not-allowed' : 
+                      'border-gray-400 focus:border-blue-600'
+                    } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+                  >
+                    <option value="">
+                      {!formData.applicantState ? '-- Select State First --' : '-- Select District --'}
+                    </option>
+                    {availableDistricts.map(district => (
+                      <option key={district} value={district}>{district}</option>
+                    ))}
+                  </select>
+                  {errors.applicantDistrict && (
+                    <p className="text-red-500 text-xs mt-1 flex items-center">
+                      <AlertCircle size={12} className="mr-1" />
+                      {errors.applicantDistrict}
+                    </p>
+                  )}
+                  {!formData.applicantState && (
+                    <p className="text-blue-600 text-xs mt-1 flex items-center">
+                      <AlertCircle size={12} className="mr-1" />
+                      Please select a State/UT first to see districts
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* City and Pincode */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-sm font-bold text-gray-800 mb-2">
                     City *
@@ -1401,11 +1495,9 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification, onFilingSuc
                     type="text"
                     name="applicantCity"
                     value={formData.applicantCity}
-                    onChange={handleInputChange}
-                    className={`w-full px-4 py-3 rounded-xl border-2 bg-white text-gray-800 transition ${
-                      errors.applicantCity ? 'border-red-400 bg-red-50' : 'border-gray-400 focus:border-blue-600'
-                    } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
-                    placeholder="City"
+                    readOnly
+                    className="w-full px-4 py-3 rounded-xl border-2 border-gray-300 bg-gray-100 text-gray-700 font-semibold cursor-not-allowed"
+                    placeholder="City will auto-fill from district"
                   />
                   {errors.applicantCity && (
                     <p className="text-red-500 text-xs mt-1 flex items-center">
@@ -1413,28 +1505,10 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification, onFilingSuc
                       {errors.applicantCity}
                     </p>
                   )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-gray-800 mb-2">
-                    State *
-                  </label>
-                  <input
-                    type="text"
-                    name="applicantState"
-                    value={formData.applicantState}
-                    onChange={handleInputChange}
-                    className={`w-full px-4 py-3 rounded-xl border-2 bg-white text-gray-800 transition ${
-                      errors.applicantState ? 'border-red-400 bg-red-50' : 'border-gray-400 focus:border-blue-600'
-                    } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
-                    placeholder="Enter State"
-                  />
-                  {errors.applicantState && (
-                    <p className="text-red-500 text-xs mt-1 flex items-center">
-                      <AlertCircle size={12} className="mr-1" />
-                      {errors.applicantState}
-                    </p>
-                  )}
+                  <p className="text-blue-600 text-xs mt-1 flex items-center">
+                    <AlertCircle size={12} className="mr-1" />
+                    City is automatically set to district name
+                  </p>
                 </div>
 
                 <div>
@@ -1459,23 +1533,6 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification, onFilingSuc
                     </p>
                   )}
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-gray-800 mb-2">
-                  <Globe size={16} className="inline mr-1" />
-                  Country *
-                </label>
-                <select
-                  name="applicantCountry"
-                  value={formData.applicantCountry}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-400 bg-white text-gray-800 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                >
-                  {countries.map(country => (
-                    <option key={country} value={country}>{country}</option>
-                  ))}
-                </select>
               </div>
 
               {/* Additional Contact Details */}
@@ -2445,7 +2502,8 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification, onFilingSuc
                     <div className="bg-white p-3 rounded-lg border border-gray-200 md:col-span-2">
                       <span className="font-bold text-gray-800">Address:</span>
                       <p className="text-gray-700 mt-1">{formData.applicantAddress}</p>
-                      <p className="text-gray-700">{formData.applicantCity}, {formData.applicantState} - {formData.applicantPincode}</p>
+                      <p className="text-gray-700">{formData.applicantCity}, {formData.applicantDistrict}</p>
+                      <p className="text-gray-700">{formData.applicantState} - {formData.applicantPincode}</p>
                       <p className="text-gray-700">{formData.applicantCountry}</p>
                     </div>
                     {formData.govtIdType && (
