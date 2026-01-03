@@ -24,6 +24,7 @@ import IPAssetPanel from "../components/IPAssetPanel";
 import StatePatentCount from "../components/StatePatentCount";
 import IndiaPatentPanel from "../components/IndiaPatentPanel";
 import QuickSearchKeywords from "../components/QuickSearchKeywords";
+import GrowthTrendChart from "../components/GrowthTrendChart";
 
 const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurrentPage }) => {
   const [dbPatentCount, setDbPatentCount] = React.useState(0);
@@ -382,7 +383,16 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
         />
       </div>
 
-      {/* STATS CARDS ROW */}
+      {/* GROWTH TREND CHART */}
+      <div className="w-full">
+        <GrowthTrendChart
+          totalUsers={totalUsers}
+          dbPatentCount={dbPatentCount}
+          totalPatentFilings={totalPatentFilings}
+        />
+      </div>
+
+      {/* STATS CARDS ROW - Keeping for quick reference */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-1.5">
         {/* Total Registered Users Card */}
         <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-5 shadow-lg hover:shadow-xl transition-shadow">
