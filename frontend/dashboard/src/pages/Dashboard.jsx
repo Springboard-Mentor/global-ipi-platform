@@ -43,6 +43,10 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
   const [totalPatentFilings, setTotalPatentFilings] = React.useState(0);
   const [filingsStatus, setFilingsStatus] = React.useState('checking');
   const [filingsError, setFilingsError] = React.useState('');
+  
+  // State for yearly patent data
+  const [yearlyPatentData, setYearlyPatentData] = React.useState([]);
+  const [yearlyDataStatus, setYearlyDataStatus] = React.useState('loading');
 
   // Fetch patent count from database on component mount
   React.useEffect(() => {
@@ -141,6 +145,56 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
     return () => clearInterval(interval);
   }, []);
   
+  // Fetch yearly patent counts for chart
+  React.useEffect(() => {
+    const fetchYearlyPatentData = async () => {
+      setYearlyDataStatus('loading');
+      try {
+        console.log('Fetching yearly patent data from backend...');
+        const response = await fetch('http://localhost:8080/api/patents/yearly-counts');
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Yearly patent data received:', data);
+          
+          // Get current year
+          const currentYear = new Date().getFullYear();
+          
+          // Create a map from the backend data
+          const dataMap = {};
+          data.forEach(item => {
+            dataMap[item.year] = item.count;
+          });
+          
+          // Generate data for last 7 years (current year + previous 6 years)
+          const yearlyData = [];
+          for (let i = 6; i >= 0; i--) {
+            const year = currentYear - i;
+            yearlyData.push({
+              year: year.toString(),
+              patents: dataMap[year] || 0
+            });
+          }
+          
+          console.log('Processed yearly data:', yearlyData);
+          setYearlyPatentData(yearlyData);
+          setYearlyDataStatus('success');
+        } else {
+          console.error('Failed to fetch yearly patent data. Status:', response.status);
+          setYearlyDataStatus('error');
+        }
+      } catch (error) {
+        console.error('Error fetching yearly patent data:', error);
+        setYearlyDataStatus('error');
+      }
+    };
+    
+    fetchYearlyPatentData();
+    
+    // Refresh every 60 seconds
+    const interval = setInterval(fetchYearlyPatentData, 60000);
+    return () => clearInterval(interval);
+  }, []);
+  
   const [dashboardData, setDashboardData] = useState({
     portfolioValue: "$0",
     portfolioGrowth: "0%",
@@ -158,15 +212,6 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
     { month: "Apr", value: 1080000 },
     { month: "May", value: 1150000 },
     { month: "Jun", value: 1200000 },
-  ];
-
-  const filingsData = [
-    { month: "Jan", filings: 12 },
-    { month: "Feb", filings: 15 },
-    { month: "Mar", filings: 18 },
-    { month: "Apr", filings: 22 },
-    { month: "May", filings: 20 },
-    { month: "Jun", filings: 25 },
   ];
 
   const assetData = [
@@ -393,165 +438,6 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
         />
       </div>
 
-      {/* STATS CARDS ROW - Keeping for quick reference */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-1.5">
-        {/* Total Registered Users Card */}
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-5 shadow-lg hover:shadow-xl transition-shadow">
-          <div className="flex items-center justify-between mb-3">
-            <div className="p-3 bg-white/20 rounded-lg backdrop-blur-sm">
-              <Database size={24} className="text-white" />
-            </div>
-            <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-          </div>
-
-          <div className="flex items-baseline gap-2">
-            <p className="text-4xl font-bold text-white">
-              {usersStatus === 'checking' ? (
-                <span className="text-white/70">...</span>
-              ) : usersStatus === 'error' ? (
-                <span className="text-white/70">--</span>
-              ) : (
-                totalUsers.toLocaleString()
-              )}
-            </p>
-            {usersStatus === 'connected' && (
-              <CheckCircle size={20} className="text-white/90" />
-            )}
-          </div>
-          
-          <h3 className="text-purple-100 text-sm font-medium mt-1">Total Registered Users</h3>
-          
-          <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-white/20">
-            {usersStatus === 'connected' ? (
-              <p className="text-xs text-white/80 font-medium">
-                ● Live from Firestore
-              </p>
-            ) : usersStatus === 'checking' ? (
-              <p className="text-xs text-white/60">Connecting...</p>
-            ) : (
-              <p className="text-xs text-white/60">
-                {usersError || 'Connection failed'}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Total Patents Card */}
-        <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-5 shadow-lg hover:shadow-xl transition-shadow">
-          <div className="flex items-center justify-between mb-3">
-            <div className="p-3 bg-white/20 rounded-lg backdrop-blur-sm">
-              <Database size={24} className="text-white" />
-            </div>
-            <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-          </div>
-
-          <div className="flex items-baseline gap-2">
-            <p className="text-4xl font-bold text-white">
-              {dbConnectionStatus === 'checking' ? (
-                <span className="text-white/70">...</span>
-              ) : dbConnectionStatus === 'error' ? (
-                <span className="text-white/70">--</span>
-              ) : (
-                dbPatentCount.toLocaleString()
-              )}
-            </p>
-            {dbConnectionStatus === 'connected' && (
-              <CheckCircle size={20} className="text-white/90" />
-            )}
-          </div>
-          
-          <h3 className="text-indigo-100 text-sm font-medium mt-1">Total Patents</h3>
-          
-          <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-white/20">
-            {dbConnectionStatus === 'connected' ? (
-              <p className="text-xs text-white/80 font-medium">
-                ● Live from Database
-              </p>
-            ) : dbConnectionStatus === 'checking' ? (
-              <p className="text-xs text-white/60">Connecting...</p>
-            ) : (
-              <p className="text-xs text-white/60">
-                {dbError || 'Connection failed'}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Patent Filings Card */}
-        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-5 shadow-lg hover:shadow-xl transition-shadow">
-          <div className="flex items-center justify-between mb-3">
-            <div className="p-3 bg-white/20 rounded-lg backdrop-blur-sm">
-              <CheckCircle size={24} className="text-white" />
-            </div>
-            <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-          </div>
-
-          <div className="flex items-baseline gap-2">
-            <p className="text-4xl font-bold text-white">
-              {filingsStatus === 'checking' ? (
-                <span className="text-white/70">...</span>
-              ) : filingsStatus === 'error' ? (
-                <span className="text-white/70">--</span>
-              ) : (
-                totalPatentFilings.toLocaleString()
-              )}
-            </p>
-            {filingsStatus === 'connected' && (
-              <CheckCircle size={20} className="text-white/90" />
-            )}
-          </div>
-          
-          <h3 className="text-emerald-100 text-sm font-medium mt-1">Patent Filings</h3>
-          
-          <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-white/20">
-            {filingsStatus === 'connected' ? (
-              <p className="text-xs text-white/80 font-medium">
-                ● Live from PostgreSQL
-              </p>
-            ) : filingsStatus === 'checking' ? (
-              <p className="text-xs text-white/60">Connecting...</p>
-            ) : (
-              <p className="text-xs text-white/60">
-                {filingsError || 'Connection failed'}
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* CONTENT GRID */}
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-1.5">
-        {/* Filters + Overview */}
-        <div className="xl:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-1.5">
-          <div className="bg-white rounded-xl p-4 shadow-sm">
-            <h2 className="font-bold mb-2 text-sm">Quick Filters</h2>
-            <Filters />
-          </div>
-
-          <div className="bg-white rounded-xl p-4 shadow-sm">
-            <h2 className="font-bold mb-2 text-sm">Overview</h2>
-            <OverviewGrid dashboardData={dashboardData} />
-          </div>
-        </div>
-
-        {/* Asset Distribution */}
-        <div className="bg-white rounded-xl p-4 shadow-sm">
-          <h3 className="font-bold mb-3">Asset Distribution</h3>
-          <div className="h-[220px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={assetData} dataKey="value" outerRadius={75}>
-                  {assetData.map((e, i) => (
-                    <Cell key={i} fill={e.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
-
       {/* FULL WIDTH CHARTS SECTION */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-1.5">
         <div className="bg-white rounded-xl p-4 shadow-sm">
@@ -569,18 +455,63 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-4 shadow-sm">
-          <h3 className="font-bold mb-3 text-sm">Monthly Filings</h3>
+        <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-5 shadow-lg border border-emerald-100">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-lg text-emerald-900">Yearly Patent Trends</h3>
+            {yearlyDataStatus === 'loading' && (
+              <div className="text-xs text-emerald-600 animate-pulse">Loading...</div>
+            )}
+            {yearlyDataStatus === 'success' && (
+              <div className="text-xs text-emerald-700 font-medium">● Live Data</div>
+            )}
+          </div>
+          <p className="text-sm text-emerald-700 mb-4">Patent count by year (Last 7 years)</p>
           <div className="h-[280px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={filingsData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="filings" fill="#22c55e" />
-              </BarChart>
-            </ResponsiveContainer>
+            {yearlyDataStatus === 'loading' ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-emerald-600">Loading yearly data...</div>
+              </div>
+            ) : yearlyPatentData.length === 0 ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-emerald-600">No patent data available</div>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={yearlyPatentData}>
+                  <defs>
+                    <linearGradient id="patentGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#10b981" stopOpacity={0.9} />
+                      <stop offset="100%" stopColor="#059669" stopOpacity={0.7} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#d1fae5" />
+                  <XAxis 
+                    dataKey="year" 
+                    stroke="#047857"
+                    style={{ fontSize: '12px', fontWeight: '600' }}
+                  />
+                  <YAxis 
+                    stroke="#047857"
+                    style={{ fontSize: '12px', fontWeight: '600' }}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: '#ecfdf5',
+                      border: '2px solid #10b981',
+                      borderRadius: '8px',
+                      fontWeight: '600'
+                    }}
+                    labelStyle={{ color: '#047857' }}
+                  />
+                  <Bar 
+                    dataKey="patents" 
+                    fill="url(#patentGradient)"
+                    radius={[8, 8, 0, 0]}
+                    name="Patents"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
       </div>

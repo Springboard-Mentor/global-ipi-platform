@@ -68,23 +68,39 @@ mvnw.cmd
 **/*.secret
 .credentials/
 
-# Markdown documentation files
+# Documentation files (Markdown and HTML guides)
 *.md
-# Keep important documentation
+*.html
+# Keep only root README
 !README.md
 !LICENSE.md
+!LICENSE
 !CONTRIBUTING.md
 !CHANGELOG.md
 
-# Admin setup and configuration documentation
-**/ADMIN-*.md
-**/EXECUTE-THIS-*.sql
-**/setup-admin-*.ps1
-**/insert-admin-*.sql
-**/verify-admin-*.sql
-**/*-SETUP*.md
+# All documentation patterns
+**/*-README.md
+**/*-SETUP.md
 **/*-GUIDE*.md
 **/*-FIX*.md
+**/*-SUMMARY.md
+**/*-CHECKLIST.md
+**/ADMIN-*.md
+**/QUICK-*.md
+**/PATENT-*.md
+**/IMPLEMENTATION-*.md
+**/MIGRATION-*.md
+**/DEPLOYMENT-*.md
+**/SECURITY-*.md
+**/EMAIL-*.md
+**/FIRESTORE-*.md
+**/ACCOUNT-*.md
+**/SEARCH-*.md
+**/UI-*.md
+**/*-STARTUP-*.html
+**/START-*.html
+**/START-*.md
+**/test-api.html
 
 # SQL Files - Database scripts and schemas
 *.sql
@@ -92,6 +108,27 @@ mvnw.cmd
 # Keep template/migration SQL files if needed
 !**/migrations/*.sql
 !**/schema/*.sql
+
+# PowerShell and batch script files (setup, admin, test scripts)
+**/setup-*.ps1
+**/start-*.ps1
+**/restart-*.ps1
+**/check-*.ps1
+**/test-*.ps1
+**/insert-*.ps1
+**/deploy-*.ps1
+**/database-*.ps1
+**/clear-*.ps1
+**/view-*.ps1
+**/update-*.ps1
+**/reinitialize-*.ps1
+**/*.bat
+!**/mvnw.cmd
+
+# Text documentation files
+**/temp-*.txt
+**/*-details.txt
+**/*-credentials.txt
 
 # Firebase Configuration Files (contain API keys)
 **/firebase.js

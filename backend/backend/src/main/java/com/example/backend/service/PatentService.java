@@ -2,6 +2,7 @@ package com.example.backend.service;
 
 import com.example.backend.model.Patent;
 import com.example.backend.model.SearchRequest;
+import com.example.backend.model.YearlyPatentCount;
 import com.example.backend.repository.PatentRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -258,5 +260,26 @@ public class PatentService {
         long count = patentRepository.count();
         logger.info("Total patents in database (my_project_db): {}", count);
         return count;
+    }
+    
+    /**
+     * Get yearly patent counts for the last 7 years
+     */
+    public List<YearlyPatentCount> getYearlyPatentCounts() {
+        logger.info("Fetching yearly patent counts from database");
+        List<Object[]> results = patentRepository.getYearlyPatentCounts();
+        
+        return results.stream()
+            .map(row -> {
+                int year;
+                if (row[0] instanceof String) {
+                    year = Integer.parseInt((String) row[0]);
+                } else {
+                    year = ((Number) row[0]).intValue();
+                }
+                long count = ((Number) row[1]).longValue();
+                return new YearlyPatentCount(year, count);
+            })
+            .collect(Collectors.toList());
     }
 }

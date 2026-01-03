@@ -2,6 +2,7 @@ package com.example.backend.controller;
 
 import com.example.backend.model.Patent;
 import com.example.backend.model.SearchRequest;
+import com.example.backend.model.YearlyPatentCount;
 import com.example.backend.service.PatentService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -29,6 +30,13 @@ public class PatentController {
         // Get total count of patents in local database
         long count = patentService.getPatentCount();
         return ResponseEntity.ok(count);
+    }
+    
+    @GetMapping("/yearly-counts")
+    public ResponseEntity<List<YearlyPatentCount>> getYearlyPatentCounts() {
+        // Get yearly patent counts for chart display
+        List<YearlyPatentCount> yearlyCounts = patentService.getYearlyPatentCounts();
+        return ResponseEntity.ok(yearlyCounts);
     }
 
     @GetMapping("/local")
