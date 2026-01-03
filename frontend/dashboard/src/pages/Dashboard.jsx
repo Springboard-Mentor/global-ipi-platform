@@ -266,6 +266,12 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
   /* ======================= UI ======================= */
   return (
     <div className="w-full min-h-screen space-y-1.5 p-1.5">
+      {/* QUICK SEARCH KEYWORDS - Top of page */}
+      <QuickSearchKeywords 
+        onSearch={handleSearch}
+        setSearchMode={setSearchMode}
+      />
+      
       {/* FULL WIDTH WELCOME CARD */}
       <div className="w-full">
         {/* Welcome Card */}
@@ -373,14 +379,6 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
             </div>
           </div>
         </div>
-      </div>
-
-      {/* QUICK SEARCH KEYWORDS */}
-      <div className="w-full">
-        <QuickSearchKeywords 
-          onSearch={handleSearch}
-          setSearchMode={setSearchMode}
-        />
       </div>
 
       {/* GROWTH TREND CHART */}
