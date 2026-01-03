@@ -1,65 +1,41 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { TrendingUp, Database, Users, FileCheck } from 'lucide-react';
+import { TrendingUp, CheckCircle2 } from 'lucide-react';
 
-const GrowthTrendChart = ({ totalUsers, dbPatentCount, totalPatentFilings }) => {
+const GrowthTrendChart = ({ 
+  totalUsers, 
+  dbPatentCount, 
+  totalPatentFilings,
+  usersStatus,
+  dbConnectionStatus,
+  filingsStatus 
+}) => {
   const [chartData, setChartData] = useState([]);
   const [timeRange, setTimeRange] = useState('7days'); // '7days', '30days', '90days'
 
   useEffect(() => {
-    // Generate growth data based on current values
-    // In production, this should fetch from backend API
+    // Only show data from today (when data actually exists)
+    // In production, this should fetch historical data from backend API
     const generateGrowthData = () => {
-      const dataPoints = timeRange === '7days' ? 7 : timeRange === '30days' ? 30 : 90;
       const data = [];
-      
-      // Total growth rates over the entire period
-      const totalUserGrowth = 0.15; // 15% total growth over period
-      const totalPatentGrowth = 0.20; // 20% total growth over period
-      const totalFilingGrowth = 0.10; // 10% total growth over period
-      
-      // Calculate starting values (what we had at the beginning of the period)
-      const startUsers = Math.round(totalUsers / (1 + totalUserGrowth));
-      const startPatents = Math.round(dbPatentCount / (1 + totalPatentGrowth));
-      const startFilings = Math.round(totalPatentFilings / (1 + totalFilingGrowth));
-      
       const today = new Date();
       
-      for (let i = 0; i < dataPoints; i++) {
-        const date = new Date(today);
-        date.setDate(date.getDate() - (dataPoints - 1 - i));
-        
-        // Calculate progress ratio (0 at start, 1 at end)
-        const progress = i / (dataPoints - 1);
-        
-        // Calculate values for this point using linear interpolation with slight randomness
-        const randomFactor = 0.95 + Math.random() * 0.1; // 0.95 to 1.05
-        
-        const currentUsers = Math.round((startUsers + (totalUsers - startUsers) * progress) * randomFactor);
-        const currentPatents = Math.round((startPatents + (dbPatentCount - startPatents) * progress) * randomFactor);
-        const currentFilings = Math.round((startFilings + (totalPatentFilings - startFilings) * progress) * randomFactor);
-        
-        data.push({
-          date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-          users: Math.max(startUsers, currentUsers), // Ensure we don't go below start value
-          patents: Math.max(startPatents, currentPatents),
-          filings: Math.max(startFilings, currentFilings),
-          fullDate: date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-        });
-      }
-      
-      // Ensure the last data point matches current values exactly
-      if (data.length > 0) {
-        data[data.length - 1].users = totalUsers;
-        data[data.length - 1].patents = dbPatentCount;
-        data[data.length - 1].filings = totalPatentFilings;
-      }
+      // Only add today's data point (no simulated historical data)
+      data.push({
+        date: today.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        users: totalUsers,
+        patents: dbPatentCount,
+        filings: totalPatentFilings,
+        fullDate: today.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+      });
       
       return data;
     };
 
     if (totalUsers > 0 || dbPatentCount > 0 || totalPatentFilings > 0) {
       setChartData(generateGrowthData());
+    } else {
+      setChartData([]);
     }
   }, [totalUsers, dbPatentCount, totalPatentFilings, timeRange]);
 
@@ -150,42 +126,99 @@ const GrowthTrendChart = ({ totalUsers, dbPatentCount, totalPatentFilings }) => 
 
       {/* Growth Indicators */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 shadow-lg">
-          <div className="flex items-center gap-2 mb-2">
-            <Users className="w-5 h-5 text-white/90" />
-            <span className="text-sm font-semibold text-white/90">Users</span>
+        <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 shadow-lg relative">
+          {/* Data Source Indicator - Top Right */}
+          {usersStatus === 'connected' && (
+            <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full">
+              <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
+              <span className="text-[10px] font-bold text-white/90">Firestore</span>
+            </div>
+          )}
+          
+          {/* Value Display */}
+          <div className="flex items-baseline gap-2 mb-3">
+            <span className="text-4xl font-bold text-white">{totalUsers.toLocaleString()}</span>
+            <CheckCircle2 className="w-6 h-6 text-white/90" />
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-white">{totalUsers.toLocaleString()}</span>
-            <span className={`text-sm font-bold ${parseFloat(userGrowth) >= 0 ? 'text-green-200' : 'text-red-200'}`}>
-              {parseFloat(userGrowth) >= 0 ? '↑' : '↓'} {Math.abs(userGrowth)}%
-            </span>
+          
+          {/* Label */}
+          <h3 className="text-white/90 text-sm font-medium mb-2">Total Registered Users</h3>
+          
+          {/* Data Source */}
+          <div className="flex items-center gap-1.5 pt-2 border-t border-white/20">
+            {usersStatus === 'connected' ? (
+              <p className="text-xs text-white/80 font-medium">
+                ● Live from Firestore
+              </p>
+            ) : usersStatus === 'checking' ? (
+              <p className="text-xs text-white/60">Connecting...</p>
+            ) : (
+              <p className="text-xs text-white/60">Connection failed</p>
+            )}
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-4 shadow-lg">
-          <div className="flex items-center gap-2 mb-2">
-            <Database className="w-5 h-5 text-white/90" />
-            <span className="text-sm font-semibold text-white/90">Patents</span>
+        <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl p-4 shadow-lg relative">
+          {/* Data Source Indicator - Top Right */}
+          {dbConnectionStatus === 'connected' && (
+            <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full">
+              <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
+              <span className="text-[10px] font-bold text-white/90">PostgreSQL</span>
+            </div>
+          )}
+          
+          {/* Value Display */}
+          <div className="flex items-baseline gap-2 mb-3">
+            <span className="text-4xl font-bold text-white">{dbPatentCount.toLocaleString()}</span>
+            <CheckCircle2 className="w-6 h-6 text-white/90" />
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-white">{dbPatentCount.toLocaleString()}</span>
-            <span className={`text-sm font-bold ${parseFloat(patentGrowth) >= 0 ? 'text-green-200' : 'text-red-200'}`}>
-              {parseFloat(patentGrowth) >= 0 ? '↑' : '↓'} {Math.abs(patentGrowth)}%
-            </span>
+          
+          {/* Label */}
+          <h3 className="text-white/90 text-sm font-medium mb-2">Total Patents</h3>
+          
+          {/* Data Source */}
+          <div className="flex items-center gap-1.5 pt-2 border-t border-white/20">
+            {dbConnectionStatus === 'connected' ? (
+              <p className="text-xs text-white/80 font-medium">
+                ● Live from PostgreSQL
+              </p>
+            ) : dbConnectionStatus === 'checking' ? (
+              <p className="text-xs text-white/60">Connecting...</p>
+            ) : (
+              <p className="text-xs text-white/60">Connection failed</p>
+            )}
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-4 shadow-lg">
-          <div className="flex items-center gap-2 mb-2">
-            <FileCheck className="w-5 h-5 text-white/90" />
-            <span className="text-sm font-semibold text-white/90">Filings</span>
+        <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-4 shadow-lg relative">
+          {/* Data Source Indicator - Top Right */}
+          {filingsStatus === 'connected' && (
+            <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full">
+              <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
+              <span className="text-[10px] font-bold text-white/90">PostgreSQL</span>
+            </div>
+          )}
+          
+          {/* Value Display */}
+          <div className="flex items-baseline gap-2 mb-3">
+            <span className="text-4xl font-bold text-white">{totalPatentFilings.toLocaleString()}</span>
+            <CheckCircle2 className="w-6 h-6 text-white/90" />
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-white">{totalPatentFilings.toLocaleString()}</span>
-            <span className={`text-sm font-bold ${parseFloat(filingGrowth) >= 0 ? 'text-green-200' : 'text-red-200'}`}>
-              {parseFloat(filingGrowth) >= 0 ? '↑' : '↓'} {Math.abs(filingGrowth)}%
-            </span>
+          
+          {/* Label */}
+          <h3 className="text-white/90 text-sm font-medium mb-2">Patent Filings</h3>
+          
+          {/* Data Source */}
+          <div className="flex items-center gap-1.5 pt-2 border-t border-white/20">
+            {filingsStatus === 'connected' ? (
+              <p className="text-xs text-white/80 font-medium">
+                ● Live from PostgreSQL
+              </p>
+            ) : filingsStatus === 'checking' ? (
+              <p className="text-xs text-white/60">Connecting...</p>
+            ) : (
+              <p className="text-xs text-white/60">Connection failed</p>
+            )}
           </div>
         </div>
       </div>

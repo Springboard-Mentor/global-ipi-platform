@@ -389,6 +389,9 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
           totalUsers={totalUsers}
           dbPatentCount={dbPatentCount}
           totalPatentFilings={totalPatentFilings}
+          usersStatus={usersStatus}
+          dbConnectionStatus={dbConnectionStatus}
+          filingsStatus={filingsStatus}
         />
       </div>
 
