@@ -525,7 +525,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
       </div>
 
       {/* FULL WIDTH CHARTS SECTION */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-1.5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-1.5">
         <div className="bg-white rounded-xl p-4 shadow-sm">
           <h3 className="font-bold mb-3 text-sm">Portfolio Growth</h3>
           <div className="h-[280px]">
@@ -558,7 +558,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
       </div>
 
       {/* Map and State Patent Count in Single Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mt-2">
         {/* State-wise Patent Count */}
         <div className="flex">
           <StatePatentCount 

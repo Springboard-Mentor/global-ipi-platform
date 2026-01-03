@@ -474,8 +474,8 @@ const IndiaPatentMap = ({ selectedState = null, showHeatMap = false }) => {
 
   return (
     <div className="relative w-full h-full flex gap-4">
-      {/* Map Container - 70% width */}
-      <div className="relative flex-1 max-w-[70%] min-h-[480px] rounded-xl overflow-hidden">
+      {/* Map Container - Full width */}
+      <div className="relative flex-1 w-full min-h-[480px] rounded-xl overflow-hidden">
         {(!mapLoaded || loading) && (
           <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-50 to-indigo-50 z-10">
             <div className="text-center">
