@@ -474,6 +474,8 @@ const App = () => {
                   setSearchMode(mode);
                   localStorage.setItem('searchMode', mode);
                 }}
+                onSearch={setSearchQuery}
+                setCurrentPage={setCurrentPage}
               />
             ) : currentPage === 'profile' ? (
               <ProfilePage

@@ -23,8 +23,9 @@ import OverviewGrid from "../components/OverviewGrid";
 import IPAssetPanel from "../components/IPAssetPanel";
 import StatePatentCount from "../components/StatePatentCount";
 import IndiaPatentPanel from "../components/IndiaPatentPanel";
+import QuickSearchKeywords from "../components/QuickSearchKeywords";
 
-const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
+const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurrentPage }) => {
   const [dbPatentCount, setDbPatentCount] = React.useState(0);
   const [dbConnectionStatus, setDbConnectionStatus] = React.useState('checking'); // 'checking', 'connected', 'error'
   const [dbError, setDbError] = React.useState('');
@@ -253,6 +254,14 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
     setSelectedMapState(state || null);
   };
 
+  // Handler for quick search keywords
+  const handleSearch = (keyword) => {
+    if (onSearch && setCurrentPage) {
+      onSearch(keyword);
+      setCurrentPage('search');
+    }
+  };
+
   /* ======================= UI ======================= */
   return (
     <div className="w-full min-h-screen space-y-1.5 p-1.5">
@@ -363,6 +372,14 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode }) => {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* QUICK SEARCH KEYWORDS */}
+      <div className="w-full">
+        <QuickSearchKeywords 
+          onSearch={handleSearch}
+          setSearchMode={setSearchMode}
+        />
       </div>
 
       {/* STATS CARDS ROW */}
