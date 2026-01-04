@@ -25,26 +25,63 @@ public class ChatbotService {
     
     // @Transactional // Temporarily removed for debugging
     public ChatbotResponse processMessage(ChatbotRequest request) {
-        String userMessage = request.getMessage().trim().toLowerCase();
-        ChatbotResponse response;
-        
-        // Determine query type and generate response
-        if (isPatentCountQuery(userMessage)) {
-            response = handlePatentCountQuery(userMessage);
-        } else if (isStatePatentQuery(userMessage)) {
-            response = handleStatePatentQuery(userMessage);
-        } else if (isCityPatentQuery(userMessage)) {
-            response = handleCityPatentQuery(userMessage);
-        } else if (isStatusQuery(userMessage)) {
-            response = handleStatusQuery(userMessage);
-        } else {
-            response = handleGeneralQuery(userMessage);
+        try {
+            if (request == null || request.getMessage() == null || request.getMessage().trim().isEmpty()) {
+                ChatbotResponse errorResponse = new ChatbotResponse(
+                    "I didn't receive a message. Please type something and try again."
+                );
+                errorResponse.setQueryType("error");
+                return errorResponse;
+            }
+            
+            String userMessage = request.getMessage().trim().toLowerCase();
+            ChatbotResponse response;
+            
+            // Determine query type and generate response
+            if (isPatentCountQuery(userMessage)) {
+                response = handlePatentCountQuery(userMessage);
+            } else if (isStatePatentQuery(userMessage)) {
+                response = handleStatePatentQuery(userMessage);
+            } else if (isCityPatentQuery(userMessage)) {
+                response = handleCityPatentQuery(userMessage);
+            } else if (isStatusQuery(userMessage)) {
+                response = handleStatusQuery(userMessage);
+            } else {
+                response = handleGeneralQuery(userMessage);
+            }
+            
+            // Ensure response is never null
+            if (response == null) {
+                response = new ChatbotResponse(
+                    "I apologize, but I couldn't generate a response. Please try rephrasing your question."
+                );
+                response.setQueryType("error");
+            }
+            
+            // Save conversation history (non-blocking)
+            try {
+                saveConversation(request, response);
+            } catch (Exception e) {
+                // Log error but don't fail the response
+                System.err.println("Error saving conversation: " + e.getMessage());
+            }
+            
+            return response;
+        } catch (Exception e) {
+            System.err.println("Error processing message: " + e.getMessage());
+            e.printStackTrace();
+            
+            ChatbotResponse errorResponse = new ChatbotResponse(
+                "I apologize, but I encountered an unexpected error. Please try again or contact support if the issue persists."
+            );
+            errorResponse.setQueryType("error");
+            errorResponse.setSuggestions(Arrays.asList(
+                "How many patents are there?",
+                "Show subscription plans",
+                "What features are available?"
+            ));
+            return errorResponse;
         }
-        
-        // Save conversation history
-        saveConversation(request, response);
-        
-        return response;
     }
     
     private boolean isPatentCountQuery(String message) {
@@ -276,33 +313,56 @@ public class ChatbotService {
     }
     
     private ChatbotResponse handleGeneralQuery(String message) {
-        // Search knowledge base
-        List<ChatbotKnowledgeBase> allKnowledge = knowledgeBaseRepository.findByIsActiveTrueOrderByPriorityDesc();
-        
-        // Find best match based on keywords
-        ChatbotKnowledgeBase bestMatch = null;
-        int highestScore = 0;
-        
-        for (ChatbotKnowledgeBase kb : allKnowledge) {
-            int score = calculateMatchScore(message, kb);
-            if (score > highestScore) {
-                highestScore = score;
-                bestMatch = kb;
+        try {
+            // Search knowledge base
+            List<ChatbotKnowledgeBase> allKnowledge = knowledgeBaseRepository.findByIsActiveTrueOrderByPriorityDesc();
+            
+            // Find best match based on keywords
+            ChatbotKnowledgeBase bestMatch = null;
+            int highestScore = 0;
+            
+            for (ChatbotKnowledgeBase kb : allKnowledge) {
+                int score = calculateMatchScore(message, kb);
+                if (score > highestScore) {
+                    highestScore = score;
+                    bestMatch = kb;
+                }
             }
-        }
-        
-        if (bestMatch != null && highestScore > 0) {
-            ChatbotResponse response = new ChatbotResponse(bestMatch.getAnswer());
-            response.setQueryType("knowledge_base");
             
-            // Add related suggestions
-            List<String> suggestions = getRelatedSuggestions(bestMatch.getCategory());
-            response.setSuggestions(suggestions);
-            
-            return response;
-        } else {
-            // Default response
-            String defaultMessage = "I'm here to help! I can assist you with:\n\n" +
+            if (bestMatch != null && highestScore > 0) {
+                ChatbotResponse response = new ChatbotResponse(bestMatch.getAnswer());
+                response.setQueryType("knowledge_base");
+                
+                // Add related suggestions
+                List<String> suggestions = getRelatedSuggestions(bestMatch.getCategory());
+                if (suggestions != null && !suggestions.isEmpty()) {
+                    response.setSuggestions(suggestions);
+                }
+                
+                return response;
+            } else {
+                // Default response
+                String defaultMessage = "I'm here to help! I can assist you with:\n\n" +
+                    "- **Patent Information**: Total patents, patents by state/city\n" +
+                    "- **Payment & Subscriptions**: Plans, pricing, payment methods\n" +
+                    "- **Dashboard Features**: Charts, filters, analytics\n" +
+                    "- **Patent Filing**: How to file, track status\n" +
+                    "- **Platform Help**: Navigation, features, support\n\n" +
+                    "What would you like to know?";
+                
+                ChatbotResponse response = new ChatbotResponse(defaultMessage);
+                response.setQueryType("general_help");
+                response.setSuggestions(Arrays.asList(
+                    "How many patents are there?",
+                    "Show subscription plans",
+                    "How do I file a patent?",
+                    "What features are available?"
+                ));
+                return response;
+            }
+        } catch (Exception e) {
+            // Return default help message on any error
+            String errorMessage = "I'm here to help! I can assist you with:\n\n" +
                 "- **Patent Information**: Total patents, patents by state/city\n" +
                 "- **Payment & Subscriptions**: Plans, pricing, payment methods\n" +
                 "- **Dashboard Features**: Charts, filters, analytics\n" +
@@ -310,30 +370,34 @@ public class ChatbotService {
                 "- **Platform Help**: Navigation, features, support\n\n" +
                 "What would you like to know?";
             
-            ChatbotResponse response = new ChatbotResponse(defaultMessage);
+            ChatbotResponse response = new ChatbotResponse(errorMessage);
+            response.setQueryType("general_help");
             response.setSuggestions(Arrays.asList(
                 "How many patents are there?",
                 "Show subscription plans",
-                "How do I file a patent?",
-                "What features are available?"
+                "How do I file a patent?"
             ));
             return response;
         }
     }
     
     private int calculateMatchScore(String message, ChatbotKnowledgeBase kb) {
+        if (kb == null || message == null || message.isEmpty()) {
+            return 0;
+        }
+        
         int score = 0;
         String lowerMessage = message.toLowerCase();
         
         // Check if question matches
-        if (lowerMessage.contains(kb.getQuestion().toLowerCase())) {
+        if (kb.getQuestion() != null && lowerMessage.contains(kb.getQuestion().toLowerCase())) {
             score += 50;
         }
         
         // Check keywords
-        if (kb.getKeywords() != null) {
+        if (kb.getKeywords() != null && kb.getKeywords().length > 0) {
             for (String keyword : kb.getKeywords()) {
-                if (lowerMessage.contains(keyword.toLowerCase())) {
+                if (keyword != null && !keyword.isEmpty() && lowerMessage.contains(keyword.toLowerCase())) {
                     score += 10;
                 }
             }
@@ -346,43 +410,106 @@ public class ChatbotService {
     }
     
     private List<String> getRelatedSuggestions(String category) {
-        List<ChatbotKnowledgeBase> relatedKb = knowledgeBaseRepository.findByCategoryAndIsActiveTrue(category);
-        
-        return relatedKb.stream()
-            .limit(3)
-            .map(ChatbotKnowledgeBase::getQuestion)
-            .collect(Collectors.toList());
+        try {
+            if (category == null || category.isEmpty()) {
+                return new ArrayList<>();
+            }
+            
+            List<ChatbotKnowledgeBase> relatedKb = knowledgeBaseRepository.findByCategoryAndIsActiveTrue(category);
+            
+            if (relatedKb == null || relatedKb.isEmpty()) {
+                return new ArrayList<>();
+            }
+            
+            return relatedKb.stream()
+                .filter(kb -> kb != null && kb.getQuestion() != null)
+                .limit(3)
+                .map(ChatbotKnowledgeBase::getQuestion)
+                .collect(Collectors.toList());
+        } catch (Exception e) {
+            return new ArrayList<>();
+        }
     }
     
     private String extractStateName(String message) {
-        // Common Indian states
-        String[] states = {
-            "Maharashtra", "Karnataka", "Tamil Nadu", "Delhi", "Gujarat", 
-            "West Bengal", "Rajasthan", "Uttar Pradesh", "Kerala", "Telangana",
-            "Andhra Pradesh", "Madhya Pradesh", "Haryana", "Punjab", "Goa"
-        };
+        if (message == null || message.isEmpty()) {
+            return null;
+        }
         
-        for (String state : states) {
-            if (message.toLowerCase().contains(state.toLowerCase())) {
-                return state;
+        // Common Indian states with variations
+        Map<String, String[]> stateVariations = new HashMap<>();
+        stateVariations.put("Maharashtra", new String[]{"maharashtra", "mh"});
+        stateVariations.put("Karnataka", new String[]{"karnataka", "ka"});
+        stateVariations.put("Tamil Nadu", new String[]{"tamil nadu", "tamilnadu", "tn"});
+        stateVariations.put("Delhi", new String[]{"delhi", "new delhi", "dl"});
+        stateVariations.put("Gujarat", new String[]{"gujarat", "gj"});
+        stateVariations.put("West Bengal", new String[]{"west bengal", "westbengal", "bengal", "wb"});
+        stateVariations.put("Rajasthan", new String[]{"rajasthan", "rj"});
+        stateVariations.put("Uttar Pradesh", new String[]{"uttar pradesh", "uttarpradesh", "up"});
+        stateVariations.put("Kerala", new String[]{"kerala", "kl"});
+        stateVariations.put("Telangana", new String[]{"telangana", "ts"});
+        stateVariations.put("Andhra Pradesh", new String[]{"andhra pradesh", "andhrapradesh", "ap"});
+        stateVariations.put("Madhya Pradesh", new String[]{"madhya pradesh", "madhyapradesh", "mp"});
+        stateVariations.put("Haryana", new String[]{"haryana", "hr"});
+        stateVariations.put("Punjab", new String[]{"punjab", "pb"});
+        stateVariations.put("Goa", new String[]{"goa", "ga"});
+        stateVariations.put("Odisha", new String[]{"odisha", "orissa", "or"});
+        stateVariations.put("Bihar", new String[]{"bihar", "br"});
+        stateVariations.put("Assam", new String[]{"assam", "as"});
+        stateVariations.put("Jharkhand", new String[]{"jharkhand", "jh"});
+        stateVariations.put("Chhattisgarh", new String[]{"chhattisgarh", "chattisgarh", "cg"});
+        
+        String lowerMessage = message.toLowerCase();
+        
+        for (Map.Entry<String, String[]> entry : stateVariations.entrySet()) {
+            for (String variation : entry.getValue()) {
+                if (lowerMessage.contains(variation)) {
+                    return entry.getKey();
+                }
             }
         }
+        
         return null;
     }
     
     private String extractCityName(String message) {
-        // Common Indian cities
-        String[] cities = {
-            "Mumbai", "Bangalore", "Delhi", "Hyderabad", "Chennai", "Kolkata",
-            "Pune", "Ahmedabad", "Surat", "Jaipur", "Lucknow", "Kanpur",
-            "Nagpur", "Indore", "Thane", "Bhopal", "Visakhapatnam", "Kochi"
-        };
+        if (message == null || message.isEmpty()) {
+            return null;
+        }
         
-        for (String city : cities) {
-            if (message.toLowerCase().contains(city.toLowerCase())) {
-                return city;
+        // Common Indian cities with variations
+        Map<String, String[]> cityVariations = new HashMap<>();
+        cityVariations.put("Mumbai", new String[]{"mumbai", "bombay"});
+        cityVariations.put("Bangalore", new String[]{"bangalore", "bengaluru"});
+        cityVariations.put("Delhi", new String[]{"delhi", "new delhi"});
+        cityVariations.put("Hyderabad", new String[]{"hyderabad", "hyd"});
+        cityVariations.put("Chennai", new String[]{"chennai", "madras"});
+        cityVariations.put("Kolkata", new String[]{"kolkata", "calcutta"});
+        cityVariations.put("Pune", new String[]{"pune", "poona"});
+        cityVariations.put("Ahmedabad", new String[]{"ahmedabad", "amdavad"});
+        cityVariations.put("Surat", new String[]{"surat"});
+        cityVariations.put("Jaipur", new String[]{"jaipur"});
+        cityVariations.put("Lucknow", new String[]{"lucknow"});
+        cityVariations.put("Kanpur", new String[]{"kanpur", "cawnpore"});
+        cityVariations.put("Nagpur", new String[]{"nagpur"});
+        cityVariations.put("Indore", new String[]{"indore"});
+        cityVariations.put("Thane", new String[]{"thane"});
+        cityVariations.put("Bhopal", new String[]{"bhopal"});
+        cityVariations.put("Visakhapatnam", new String[]{"visakhapatnam", "vizag", "vishakhapatnam"});
+        cityVariations.put("Kochi", new String[]{"kochi", "cochin"});
+        cityVariations.put("Gurgaon", new String[]{"gurgaon", "gurugram"});
+        cityVariations.put("Noida", new String[]{"noida"});
+        
+        String lowerMessage = message.toLowerCase();
+        
+        for (Map.Entry<String, String[]> entry : cityVariations.entrySet()) {
+            for (String variation : entry.getValue()) {
+                if (lowerMessage.contains(variation)) {
+                    return entry.getKey();
+                }
             }
         }
+        
         return null;
     }
     
