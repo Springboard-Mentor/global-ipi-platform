@@ -479,6 +479,24 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification, onFilingSuc
     try {
       console.log('Starting patent filing submission...');
       
+      // Get userId from multiple sources (auth.currentUser has priority, then userProfile as fallback)
+      const userId = auth.currentUser?.uid || userProfile?.uid || userProfile?.id;
+      console.log('User ID sources:', {
+        fromAuth: auth.currentUser?.uid,
+        fromProfileUid: userProfile?.uid,
+        fromProfileId: userProfile?.id,
+        finalUserId: userId
+      });
+      
+      if (!userId) {
+        console.error('❌ Cannot determine user ID from any source');
+        alert('⚠️ Authentication Error!\n\nCannot determine your user ID. Please:\n1. Logout from dashboard\n2. Login again\n3. Try submitting the patent filing again.\n\nIf the problem persists, clear browser cache and cookies.');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      console.log('✅ Using User ID for submission:', userId);
+      
       // 1. Initiate payment
       console.log('Initiating payment...');
       const paymentResult = await initiatePayment();
@@ -490,8 +508,8 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification, onFilingSuc
 
       console.log('Preparing data for PostgreSQL...');
       
-      // Get user email and store it for later use
-      const userEmail = auth.currentUser?.email || formData.applicantEmail;
+      // Get user email from multiple sources
+      const userEmail = auth.currentUser?.email || userProfile?.email || formData.applicantEmail;
       console.log('User email for submission:', userEmail);
       
       // Store email in localStorage for persistent access
@@ -502,8 +520,8 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification, onFilingSuc
       
       // 2. Prepare data for PostgreSQL
       const filingData = {
-        // User info
-        userId: auth.currentUser?.uid || 'unknown',
+        // User info - Using validated userId from above
+        userId: userId,  // Always valid - checked above
         userEmail: userEmail,
         userName: userProfile?.name || formData.applicantName,
         
@@ -661,7 +679,9 @@ const PatentFilingForm = ({ onClose, userProfile, onAddNotification, onFilingSuc
       
       let errorMessage = 'Failed to submit patent filing. ';
       
-      if (error.message.includes('Payment cancelled')) {
+      if (error.message.includes('Authentication required')) {
+        errorMessage = 'Authentication Error! Please logout and login again to submit patent filing.';
+      } else if (error.message.includes('Payment cancelled')) {
         errorMessage = 'Payment was cancelled. Please try again.';
       } else if (error.message.includes('permission')) {
         errorMessage = 'Database permission error. Please contact support.';

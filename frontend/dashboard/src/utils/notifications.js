@@ -75,8 +75,10 @@ export const addUserNotification = async (userId, notification) => {
     }
 
     console.log('➕ Adding notification for user:', userId);
+    console.log('Notification data:', notification);
     
     const notificationsRef = collection(db, 'users', userId, 'notifications');
+    console.log('Firestore path:', `users/${userId}/notifications`);
     
     // Create notification document
     const notificationData = {
@@ -87,8 +89,11 @@ export const addUserNotification = async (userId, notification) => {
       read: false
     };
     
+    console.log('Notification document to save:', notificationData);
+    
     const docRef = await addDoc(notificationsRef, notificationData);
     console.log('✅ Notification added with ID:', docRef.id);
+    console.log('Full Firestore path:', `users/${userId}/notifications/${docRef.id}`);
     
     // Maintain only last 3 notifications - delete older ones
     await maintainNotificationLimit(userId);
@@ -102,6 +107,9 @@ export const addUserNotification = async (userId, notification) => {
     
   } catch (error) {
     console.error('❌ Error adding notification:', error);
+    console.error('Error code:', error.code);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
     return null;
   }
 };

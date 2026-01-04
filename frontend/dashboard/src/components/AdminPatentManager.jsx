@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, Circle, Mail, RefreshCw, AlertCircle, LogIn, LogOut, User, Shield, Eye, EyeOff, X, ArrowLeft, Lightbulb, FileCheck, Upload, CreditCard, MessageCircle, Send, Bell } from 'lucide-react';
+import { addUserNotification } from '../utils/notifications';
 
 const AdminPatentManager = ({ onBack }) => {
   const [patents, setPatents] = useState([]);
@@ -209,6 +210,7 @@ const AdminPatentManager = ({ onBack }) => {
         setPatents(data);
         setMessage('');
         console.log('Fetched patents:', data);
+        console.log('First patent userId check:', data.length > 0 ? data[0].userId : 'No patents');
       } else {
         const errorText = await response.text();
         setMessage(`❌ Failed to fetch patents: ${response.status} ${response.statusText}`);
@@ -342,6 +344,39 @@ const AdminPatentManager = ({ onBack }) => {
       if (response.ok) {
         const result = await response.json();
         console.log('Grant result:', result);
+        console.log('Patent object:', patent);
+        console.log('Patent userId:', patent.userId);
+        console.log('Patent details:', details);
+        
+        // Extract userId - try multiple possible field names
+        const userId = patent.userId || patent.user_id || patent.UserId;
+        console.log('Extracted userId:', userId);
+        
+        // Add Firestore notification for the user
+        if (userId) {
+          try {
+            console.log('🔔 Attempting to add notification for userId:', userId);
+            const notificationResult = await addUserNotification(userId, {
+              title: "🎉 Patent Granted!",
+              message: `Congratulations! Your patent "${patent.inventionTitle}" has been granted.`,
+              details: {
+                patentNumber: details.patentNumber,
+                grantedTo: details.grantedPersonName,
+                location: details.location,
+                status: 'Granted',
+                filingId: patent.id
+              }
+            });
+            console.log('✅ Firestore notification added for patent grant:', notificationResult);
+          } catch (notifError) {
+            console.error('❌ Failed to add Firestore notification:', notifError);
+            console.error('Error details:', notifError.message, notifError.stack);
+          }
+        } else {
+          console.warn('⚠️ No userId found in patent object - cannot send notification');
+          console.log('Available patent fields:', Object.keys(patent));
+          console.log('Full patent object:', JSON.stringify(patent, null, 2));
+        }
         
         // Hide the patent details form
         setShowDetailsFor({
@@ -433,6 +468,39 @@ const AdminPatentManager = ({ onBack }) => {
       if (response.ok) {
         const result = await response.json();
         console.log('Rejection result:', result);
+        console.log('Patent object:', patent);
+        console.log('Patent userId:', patent.userId);
+        console.log('Rejection details:', details);
+        
+        // Extract userId - try multiple possible field names
+        const userId = patent.userId || patent.user_id || patent.UserId;
+        console.log('Extracted userId:', userId);
+        
+        // Add Firestore notification for the user
+        if (userId) {
+          try {
+            console.log('🔔 Attempting to add rejection notification for userId:', userId);
+            const notificationResult = await addUserNotification(userId, {
+              title: "❌ Patent Rejected",
+              message: `Your patent application "${patent.inventionTitle}" has been rejected.`,
+              details: {
+                rejectedPatentNumber: details.rejectedPatentNumber,
+                rejectedBy: details.rejectedPersonName,
+                location: details.location,
+                status: 'Rejected',
+                filingId: patent.id
+              }
+            });
+            console.log('✅ Firestore notification added for patent rejection:', notificationResult);
+          } catch (notifError) {
+            console.error('❌ Failed to add Firestore notification:', notifError);
+            console.error('Error details:', notifError.message, notifError.stack);
+          }
+        } else {
+          console.warn('⚠️ No userId found in patent object - cannot send notification');
+          console.log('Available patent fields:', Object.keys(patent));
+          console.log('Full patent object:', JSON.stringify(patent, null, 2));
+        }
         
         // Hide the patent details form
         setShowDetailsFor({
