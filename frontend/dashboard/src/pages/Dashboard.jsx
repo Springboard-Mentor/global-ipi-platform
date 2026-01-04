@@ -25,6 +25,7 @@ import StatePatentCount from "../components/StatePatentCount";
 import IndiaPatentPanel from "../components/IndiaPatentPanel";
 import QuickSearchKeywords from "../components/QuickSearchKeywords";
 import GrowthTrendChart from "../components/GrowthTrendChart";
+import Chatbot from "../components/Chatbot";
 
 const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurrentPage }) => {
   const [dbPatentCount, setDbPatentCount] = React.useState(0);
@@ -1053,6 +1054,9 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
           </div>
         </div>
       )}
+      
+      {/* Chatbot Component */}
+      <Chatbot userId={userProfile?.uid} />
     </div>
   );
 };
