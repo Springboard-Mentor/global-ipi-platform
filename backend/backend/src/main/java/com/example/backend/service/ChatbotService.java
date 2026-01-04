@@ -189,7 +189,6 @@ public class ChatbotService {
     private ChatbotResponse handleCityPatentQuery(String message) {
         try {
             String cityName = extractCityName(message);
-            String stateName = extractStateName(message);
             
             if (cityName != null && !cityName.isEmpty()) {
                 // Search for patents in specific city
