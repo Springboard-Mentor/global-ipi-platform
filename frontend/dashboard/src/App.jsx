@@ -243,7 +243,7 @@ const App = () => {
           uid: uid,
           photoURL: firestoreData.photoURL || authenticatedUser?.photoURL || '',
           phoneNumber: firestoreData.phoneNumber || authenticatedUser?.phoneNumber || '',
-          emailVerified: authenticatedUser?.emailVerified || false,
+          emailVerified: firestoreData.emailVerified ?? authenticatedUser?.emailVerified ?? false,
           creationTime: authenticatedUser?.metadata?.creationTime || '',
           lastSignInTime: authenticatedUser?.metadata?.lastSignInTime || '',
           authProvider: firestoreData.authProvider || '',
@@ -257,6 +257,7 @@ const App = () => {
         };
         
         console.log('📝 Setting profile data:', profileData);
+        console.log('✅ EmailVerified status:', profileData.emailVerified, '(from Firestore:', firestoreData.emailVerified, ', from Auth:', authenticatedUser?.emailVerified, ')');
         setUserProfile(profileData);
       } else {
         console.log('⚠️ No Firestore document found for UID:', uid);

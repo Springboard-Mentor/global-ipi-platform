@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { TrendingUp, CheckCircle, Database, Globe, Crown, Zap, Calendar, Info } from "lucide-react";
-import { doc, getDoc, collection, getDocs } from "firebase/firestore";
-import { db } from "../firebase";
+import { doc, getDoc, collection, getDocs, onSnapshot } from "firebase/firestore";
+import { db, auth } from "../firebase";
 
 import {
   LineChart,
@@ -56,6 +56,75 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
   const [feedbackStats, setFeedbackStats] = React.useState(null);
   const [feedbackStatus, setFeedbackStatus] = React.useState('loading');
   const [allFeedbacks, setAllFeedbacks] = React.useState([]);
+  
+  // State for online users
+  const [onlineUsers, setOnlineUsers] = React.useState(0);
+  
+  // Local state for user profile to ensure emailVerified is loaded immediately
+  const [localUserProfile, setLocalUserProfile] = React.useState(userProfile);
+  
+  // Update local profile whenever userProfile prop changes
+  React.useEffect(() => {
+    if (userProfile) {
+      setLocalUserProfile(userProfile);
+    }
+  }, [userProfile]);
+  
+  // Fetch emailVerified status immediately on mount
+  React.useEffect(() => {
+    const fetchEmailVerifiedStatus = async () => {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        console.log('🔍 Fetching emailVerified status for user:', currentUser.uid);
+        
+        // Force reload user to get latest emailVerified status
+        await currentUser.reload();
+        const emailVerified = currentUser.emailVerified;
+        
+        console.log('✅ EmailVerified status from Firebase Auth:', emailVerified);
+        
+        // Also check Firestore for emailVerified
+        try {
+          const userDocRef = doc(db, 'users', currentUser.uid);
+          const userDocSnap = await getDoc(userDocRef);
+          
+          if (userDocSnap.exists()) {
+            const firestoreData = userDocSnap.data();
+            const firestoreEmailVerified = firestoreData.emailVerified ?? emailVerified;
+            
+            console.log('✅ EmailVerified status from Firestore:', firestoreEmailVerified);
+            
+            // Update local user profile with emailVerified status
+            setLocalUserProfile(prev => ({
+              ...prev,
+              emailVerified: firestoreEmailVerified,
+              uid: currentUser.uid,
+              email: currentUser.email || prev?.email
+            }));
+          } else {
+            // Use Firebase Auth emailVerified if Firestore doc doesn't exist
+            setLocalUserProfile(prev => ({
+              ...prev,
+              emailVerified: emailVerified,
+              uid: currentUser.uid,
+              email: currentUser.email || prev?.email
+            }));
+          }
+        } catch (error) {
+          console.error('❌ Error fetching emailVerified from Firestore:', error);
+          // Fallback to Firebase Auth emailVerified
+          setLocalUserProfile(prev => ({
+            ...prev,
+            emailVerified: emailVerified,
+            uid: currentUser.uid,
+            email: currentUser.email || prev?.email
+          }));
+        }
+      }
+    };
+    
+    fetchEmailVerifiedStatus();
+  }, []);
 
   // Fetch patent count from database on component mount
   React.useEffect(() => {
@@ -234,6 +303,38 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
     // Refresh count every 30 seconds
     const interval = setInterval(fetchPatentFilingsCount, 30000);
     return () => clearInterval(interval);
+  }, []);
+  
+  // Real-time listener for online users
+  React.useEffect(() => {
+    console.log('Setting up real-time listener for online users...');
+    
+    const usersCollection = collection(db, 'users');
+    const unsubscribe = onSnapshot(usersCollection, (snapshot) => {
+      let onlineCount = 0;
+      
+      snapshot.forEach((doc) => {
+        const userData = doc.data();
+        
+        // Count currently logged in users (check if user has a recent lastLogin within last 5 minutes)
+        const lastLogin = userData.lastLogin?.toDate?.() || (userData.lastLogin ? new Date(userData.lastLogin) : null);
+        const isCurrentlyLoggedIn = userData.isOnline || (lastLogin && (new Date() - lastLogin) < 5 * 60 * 1000);
+        
+        if (isCurrentlyLoggedIn) {
+          onlineCount++;
+        }
+      });
+      
+      console.log('Real-time online users update:', onlineCount);
+      setOnlineUsers(onlineCount);
+    }, (error) => {
+      console.error('Error in real-time listener:', error);
+    });
+
+    return () => {
+      console.log('Cleaning up real-time listener for online users');
+      unsubscribe();
+    };
   }, []);
   
   // Fetch feedback analytics
@@ -447,20 +548,30 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
             <div className="flex-1 min-w-0 w-full lg:w-auto">
               <p className="text-base font-semibold text-gray-700">Welcome back,</p>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                {getTimeGreeting()}, {userProfile?.firstName || "User"}.
+                {getTimeGreeting()}, {localUserProfile?.firstName || userProfile?.firstName || "User"}.
               </h1>
               <p className="text-gray-600 mt-2">
-                {userProfile?.email} • {userProfile?.company || "IP Platform"}
+                {localUserProfile?.email || userProfile?.email} • {localUserProfile?.company || userProfile?.company || "IP Platform"}
               </p>
 
-              {userProfile?.emailVerified && (
-                <div className="flex items-center gap-2 mt-3 px-3 py-2 bg-green-50 rounded-lg border border-green-200 inline-flex">
-                  <CheckCircle size={16} className="text-green-600" />
-                  <span className="text-sm text-green-700 font-semibold">
-                    Verified Account
+              <div className="flex flex-wrap items-center gap-3 mt-3">
+                {localUserProfile?.emailVerified && (
+                  <div className="flex items-center gap-2 px-3 py-2 bg-green-50 rounded-lg border border-green-200">
+                    <CheckCircle size={16} className="text-green-600" />
+                    <span className="text-sm text-green-700 font-semibold">
+                      Verified Account
+                    </span>
+                  </div>
+                )}
+                
+                {/* Online Users Count */}
+                <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200 shadow-sm">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm text-gray-700 font-medium">
+                    <span className="font-bold text-green-600">{onlineUsers}</span> Online {onlineUsers === 1 ? 'User' : 'Users'}
                   </span>
                 </div>
-              )}
+              </div>
             </div>
 
             {/* Right Side - Search Mode - Water Drop Color */}
