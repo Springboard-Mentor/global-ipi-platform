@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { auth } from "../firebase";
+import { auth, db } from "../firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
+import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import "../App.css";
 
@@ -43,6 +44,17 @@ function Verification() {
 
   const handleContinueToDashboard = async () => {
     try {
+      // Update Firestore with current email verification status
+      if (user.uid) {
+        const userDocRef = doc(db, 'users', user.uid);
+        await updateDoc(userDocRef, {
+          emailVerified: user.emailVerified,
+          lastLogin: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+        console.log('✅ Updated emailVerified status in Firestore:', user.emailVerified);
+      }
+
       const userProfile = {
         uid: user.uid,
         email: user.email,

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged, signOut, signInWithCustomToken, getIdToken } from 'firebase/auth';
 import { auth, db } from './firebase';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, collection, query, orderBy, limit, serverTimestamp, updateDoc, addDoc, getDocs, deleteDoc } from 'firebase/firestore';
 import { Lock, Crown, Sparkles, Bell, Shield, BarChart3, X, FileText } from 'lucide-react';
+import { fetchUserNotifications, addUserNotification, clearUserNotification } from './utils/notifications';
 import Sidebar from './components/Sidebar';
 import HeaderBar from './components/HeaderBar';
 import Dashboard from './pages/Dashboard';
@@ -223,6 +224,155 @@ const App = () => {
     return () => unsubscribe();
   }, [userProfile?.uid]);
 
+  // Real-time notification listener
+  useEffect(() => {
+    if (!userProfile?.uid) {
+      console.log('⏸️ Notification listener skipped - no user ID');
+      return;
+    }
+
+    console.log('📡 Setting up real-time notification listener for:', userProfile.uid);
+    
+    try {
+      const notificationsRef = collection(db, 'users', userProfile.uid, 'notifications');
+      const q = query(notificationsRef, orderBy('createdAt', 'desc'), limit(3));
+      
+      const unsubscribe = onSnapshot(q, 
+        (querySnapshot) => {
+          const notificationsData = [];
+          querySnapshot.forEach((docSnapshot) => {
+            const data = docSnapshot.data();
+            console.log('📄 Notification doc:', docSnapshot.id, data);
+            notificationsData.push({
+              id: docSnapshot.id,
+              ...data,
+              timestamp: data.createdAt?.toDate ? 
+                data.createdAt.toDate().toLocaleString() : 
+                new Date().toLocaleString()
+            });
+          });
+          
+          console.log(`🔔 Real-time update: ${notificationsData.length} notifications received`);
+          console.log('Notifications data:', notificationsData);
+          setNotifications(notificationsData);
+        }, 
+        (error) => {
+          console.error('❌ Error listening to notifications:', error);
+          console.error('Error code:', error.code);
+          console.error('Error message:', error.message);
+        }
+      );
+
+      return () => {
+        console.log('🔌 Cleaning up notification listener');
+        unsubscribe();
+      };
+    } catch (error) {
+      console.error('❌ Error setting up notification listener:', error);
+    }
+  }, [userProfile?.uid]);
+
+  // Email verification monitoring and notification
+  useEffect(() => {
+    if (!user || !userProfile?.uid) {
+      console.log('⏸️ Email verification monitor skipped - no user or profile');
+      return;
+    }
+
+    console.log('🔍 Email verification monitor starting');
+    console.log('Current user.emailVerified:', user.emailVerified);
+    console.log('Current userProfile.emailVerified:', userProfile.emailVerified);
+
+    // Check if email was just verified
+    const checkEmailVerification = async () => {
+      try {
+        console.log('⏰ Checking email verification...');
+        await user.reload();
+        const isNowVerified = user.emailVerified;
+        const wasVerified = userProfile.emailVerified;
+
+        console.log(`Email status check - Now: ${isNowVerified}, Was: ${wasVerified}`);
+
+        // If email was just verified (changed from false to true)
+        if (isNowVerified && !wasVerified) {
+          console.log('✉️ Email just verified! Adding notification...');
+          
+          try {
+            // Update Firestore with verified status
+            const userDocRef = doc(db, 'users', userProfile.uid);
+            await updateDoc(userDocRef, {
+              emailVerified: true,
+              updatedAt: serverTimestamp()
+            });
+            console.log('✅ Updated user document with emailVerified: true');
+
+            // Add notification directly to Firestore (will be picked up by listener)
+            const notificationsRef = collection(db, 'users', userProfile.uid, 'notifications');
+            const notificationData = {
+              title: "✉️ Email Verified Successfully",
+              message: `Your email address ${user.email} has been verified. You now have full access to all features.`,
+              details: {
+                verifiedEmail: user.email,
+                verificationDate: new Date().toLocaleString('en-US', { 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })
+              },
+              createdAt: serverTimestamp(),
+              read: false
+            };
+            console.log('📝 Creating notification:', notificationData);
+            const docRef = await addDoc(notificationsRef, notificationData);
+            console.log('✅ Notification document created with ID:', docRef.id);
+
+            console.log('✅ Notification document created with ID:', docRef.id);
+
+            // Maintain notification limit
+            console.log('🧹 Maintaining notification limit (max 3)...');
+            const allNotificationsRef = collection(db, 'users', userProfile.uid, 'notifications');
+            const allNotificationsQuery = query(allNotificationsRef, orderBy('createdAt', 'desc'));
+            const querySnapshot = await getDocs(allNotificationsQuery);
+            const allDocs = [];
+            querySnapshot.forEach((doc) => allDocs.push(doc));
+            
+            console.log(`Found ${allDocs.length} total notifications`);
+            if (allDocs.length > 3) {
+              const docsToDelete = allDocs.slice(3);
+              console.log(`Deleting ${docsToDelete.length} old notifications`);
+              const deletePromises = docsToDelete.map((doc) => deleteDoc(doc.ref));
+              await Promise.all(deletePromises);
+              console.log('✅ Old notifications deleted');
+            }
+
+            // Update local profile state
+            setUserProfile(prev => ({ ...prev, emailVerified: true }));
+            
+            console.log('✅ Email verification notification added successfully');
+          } catch (error) {
+            console.error('❌ Error creating verification notification:', error);
+            console.error('Error code:', error.code);
+            console.error('Error message:', error.message);
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error checking email verification:', error);
+      }
+    };
+
+    // Check immediately and then every 5 seconds
+    console.log('✅ Starting email verification checks (every 5 seconds)');
+    checkEmailVerification();
+    const interval = setInterval(checkEmailVerification, 5000);
+
+    return () => {
+      console.log('🔌 Cleaning up email verification monitor');
+      clearInterval(interval);
+    };
+  }, [user, userProfile?.uid, userProfile?.emailVerified]);
+
   // Fetch user data from Firestore - works with or without authenticated user
   const fetchUserDataWithUID = async (uid, authenticatedUser = null) => {
     try {
@@ -259,6 +409,8 @@ const App = () => {
         console.log('📝 Setting profile data:', profileData);
         console.log('✅ EmailVerified status:', profileData.emailVerified, '(from Firestore:', firestoreData.emailVerified, ', from Auth:', authenticatedUser?.emailVerified, ')');
         setUserProfile(profileData);
+        
+        // Note: Real-time notification listener is set up in separate useEffect
       } else {
         console.log('⚠️ No Firestore document found for UID:', uid);
         
@@ -369,17 +521,35 @@ const App = () => {
   };
 
   // Add notification
-  const addNotification = (notification) => {
-    const newNotification = {
-      ...notification,
-      timestamp: new Date().toLocaleString()
-    };
-    setNotifications(prev => [newNotification, ...prev]);
+  const addNotification = async (notification) => {
+    // Save to Firestore only - real-time listener will update UI
+    if (userProfile?.uid) {
+      console.log('➕ Adding notification to Firestore for user:', userProfile.uid);
+      const savedNotification = await addUserNotification(userProfile.uid, notification);
+      if (savedNotification) {
+        console.log('✅ Notification saved to Firestore - real-time listener will update UI');
+      } else {
+        console.error('❌ Failed to save notification to Firestore');
+      }
+    } else {
+      console.warn('⚠️ Cannot add notification - user not authenticated');
+    }
   };
 
   // Dismiss notification
-  const dismissNotification = (index) => {
+  const dismissNotification = async (index) => {
+    const notificationToRemove = notifications[index];
+    
+    // Remove from local state
     setNotifications(prev => prev.filter((_, i) => i !== index));
+    
+    // Remove from Firestore if it has an ID
+    if (notificationToRemove?.id && userProfile?.uid) {
+      const success = await clearUserNotification(userProfile.uid, notificationToRemove.id);
+      if (success) {
+        console.log('✅ Notification cleared from Firestore');
+      }
+    }
   };
 
   // Show loading screen while checking authentication

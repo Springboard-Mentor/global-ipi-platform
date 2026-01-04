@@ -2,6 +2,7 @@ import { useState } from "react";
 import { auth, googleProvider, db } from "../firebase";
 import { createUserWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { addDoc, collection } from "firebase/firestore";
 import { useNavigate, Link } from "react-router-dom";
 import "../App.css";
 
@@ -123,6 +124,24 @@ function Register() {
       
       console.log("User data saved to Firestore");
       
+      // Add welcome notification for new user
+      try {
+        await addDoc(collection(db, "users", userCredential.user.uid, "notifications"), {
+          title: "🎉 Welcome to Global IP Platform!",
+          message: `Hi ${trimmedFirstName}! Your account has been successfully created. Start exploring our patent search and filing services.`,
+          details: {
+            accountType: "Basic",
+            registeredEmail: trimmedEmail,
+            registrationDate: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+          },
+          createdAt: serverTimestamp(),
+          read: false
+        });
+        console.log("Welcome notification added");
+      } catch (notifError) {
+        console.error("Error adding welcome notification:", notifError);
+      }
+      
       // Get ID token and save to localStorage for dashboard
       const idToken = await userCredential.user.getIdToken();
       localStorage.setItem('firebaseAuthToken', idToken);
@@ -174,6 +193,25 @@ function Register() {
       }, { merge: true }); // merge: true will update existing data or create new
       
       console.log("Google user data saved to Firestore");
+      
+      // Add welcome notification for new user
+      try {
+        await addDoc(collection(db, "users", result.user.uid, "notifications"), {
+          title: "🎉 Welcome to Global IP Platform!",
+          message: `Hi ${firstName}! Your account has been successfully created with Google. Start exploring our patent search and filing services.`,
+          details: {
+            accountType: "Basic",
+            registeredEmail: result.user.email,
+            registrationDate: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
+            loginMethod: "Google"
+          },
+          createdAt: serverTimestamp(),
+          read: false
+        });
+        console.log("Welcome notification added");
+      } catch (notifError) {
+        console.error("Error adding welcome notification:", notifError);
+      }
       
       // Get ID token and save to localStorage for dashboard
       const idToken = await result.user.getIdToken();
