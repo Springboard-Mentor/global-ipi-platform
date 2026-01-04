@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, Circle, Mail, RefreshCw, AlertCircle, LogIn, LogOut, User, Shield, Eye, EyeOff, X, ArrowLeft, Lightbulb, FileCheck, Upload, CreditCard, MessageCircle, Send, Bell } from 'lucide-react';
 import { addUserNotification } from '../utils/notifications';
+import { db } from '../firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 const AdminPatentManager = ({ onBack }) => {
   const [patents, setPatents] = useState([]);
@@ -356,6 +358,72 @@ const AdminPatentManager = ({ onBack }) => {
         if (userId) {
           try {
             console.log('🔔 Attempting to add notification for userId:', userId);
+            
+            // Fetch user profile to get subscription details
+            let userSubscriptionDetails = {
+              plan: 'Basic',
+              amount: '₹0',
+              validUntil: 'N/A'
+            };
+            
+            try {
+              const userDocRef = doc(db, 'users', userId);
+              const userDocSnap = await getDoc(userDocRef);
+              
+              if (userDocSnap.exists()) {
+                const userData = userDocSnap.data();
+                console.log('User subscription data:', userData);
+                
+                // Get subscription type (basic, pro, enterprise)
+                const subType = userData.subscriptionType || 'basic';
+                
+                // Get amount from subscriptionPrice field (correct field name in Firestore)
+                let amountDisplay = '₹0';  // Default for basic plan
+                if (userData.subscriptionPrice) {
+                  const price = userData.subscriptionPrice;
+                  // Handle number or string format
+                  if (typeof price === 'number') {
+                    amountDisplay = `₹${price}`;
+                  } else {
+                    // String format - check if ₹ symbol already exists
+                    amountDisplay = price.toString().includes('₹') ? price : `₹${price}`;
+                  }
+                }
+                console.log('Subscription details:', { type: subType, price: amountDisplay });
+                
+                // Get expiry date - handle Firestore Timestamp and string formats
+                let expiryDisplay = 'N/A';
+                if (userData.subscriptionEndDate) {
+                  const endDate = userData.subscriptionEndDate;
+                  if (endDate.toDate && typeof endDate.toDate === 'function') {
+                    // Firestore Timestamp
+                    expiryDisplay = endDate.toDate().toLocaleDateString('en-IN');
+                  } else if (endDate.seconds) {
+                    // Firestore Timestamp object format
+                    expiryDisplay = new Date(endDate.seconds * 1000).toLocaleDateString('en-IN');
+                  } else if (typeof endDate === 'string') {
+                    // String date
+                    const dateObj = new Date(endDate);
+                    if (!isNaN(dateObj.getTime())) {
+                      expiryDisplay = dateObj.toLocaleDateString('en-IN');
+                    }
+                  } else if (endDate instanceof Date) {
+                    expiryDisplay = endDate.toLocaleDateString('en-IN');
+                  }
+                }
+                
+                userSubscriptionDetails = {
+                  plan: subType,
+                  amount: amountDisplay,
+                  validUntil: expiryDisplay
+                };
+                
+                console.log('Processed subscription details:', userSubscriptionDetails);
+              }
+            } catch (profileError) {
+              console.warn('Could not fetch user profile, using defaults:', profileError);
+            }
+            
             const notificationResult = await addUserNotification(userId, {
               title: "🎉 Patent Granted!",
               message: `Congratulations! Your patent "${patent.inventionTitle}" has been granted.`,
@@ -364,7 +432,10 @@ const AdminPatentManager = ({ onBack }) => {
                 grantedTo: details.grantedPersonName,
                 location: details.location,
                 status: 'Granted',
-                filingId: patent.id
+                filingId: patent.id,
+                plan: userSubscriptionDetails.plan,
+                amount: userSubscriptionDetails.amount,
+                validUntil: userSubscriptionDetails.validUntil
               }
             });
             console.log('✅ Firestore notification added for patent grant:', notificationResult);
@@ -480,6 +551,72 @@ const AdminPatentManager = ({ onBack }) => {
         if (userId) {
           try {
             console.log('🔔 Attempting to add rejection notification for userId:', userId);
+            
+            // Fetch user profile to get subscription details
+            let userSubscriptionDetails = {
+              plan: 'Basic',
+              amount: '₹0',
+              validUntil: 'N/A'
+            };
+            
+            try {
+              const userDocRef = doc(db, 'users', userId);
+              const userDocSnap = await getDoc(userDocRef);
+              
+              if (userDocSnap.exists()) {
+                const userData = userDocSnap.data();
+                console.log('User subscription data:', userData);
+                
+                // Get subscription type (basic, pro, enterprise)
+                const subType = userData.subscriptionType || 'basic';
+                
+                // Get amount from subscriptionPrice field (correct field name in Firestore)
+                let amountDisplay = '₹0';  // Default for basic plan
+                if (userData.subscriptionPrice) {
+                  const price = userData.subscriptionPrice;
+                  // Handle number or string format
+                  if (typeof price === 'number') {
+                    amountDisplay = `₹${price}`;
+                  } else {
+                    // String format - check if ₹ symbol already exists
+                    amountDisplay = price.toString().includes('₹') ? price : `₹${price}`;
+                  }
+                }
+                console.log('Subscription details for rejection:', { type: subType, price: amountDisplay });
+                
+                // Get expiry date - handle Firestore Timestamp and string formats
+                let expiryDisplay = 'N/A';
+                if (userData.subscriptionEndDate) {
+                  const endDate = userData.subscriptionEndDate;
+                  if (endDate.toDate && typeof endDate.toDate === 'function') {
+                    // Firestore Timestamp
+                    expiryDisplay = endDate.toDate().toLocaleDateString('en-IN');
+                  } else if (endDate.seconds) {
+                    // Firestore Timestamp object format
+                    expiryDisplay = new Date(endDate.seconds * 1000).toLocaleDateString('en-IN');
+                  } else if (typeof endDate === 'string') {
+                    // String date
+                    const dateObj = new Date(endDate);
+                    if (!isNaN(dateObj.getTime())) {
+                      expiryDisplay = dateObj.toLocaleDateString('en-IN');
+                    }
+                  } else if (endDate instanceof Date) {
+                    expiryDisplay = endDate.toLocaleDateString('en-IN');
+                  }
+                }
+                
+                userSubscriptionDetails = {
+                  plan: subType,
+                  amount: amountDisplay,
+                  validUntil: expiryDisplay
+                };
+                
+                console.log('Processed subscription details for rejection:', userSubscriptionDetails);
+              }
+            } catch (profileError) {
+              console.warn('Could not fetch user profile, using defaults:', profileError);
+            }
+            
             const notificationResult = await addUserNotification(userId, {
               title: "❌ Patent Rejected",
               message: `Your patent application "${patent.inventionTitle}" has been rejected.`,
@@ -488,7 +625,10 @@ const AdminPatentManager = ({ onBack }) => {
                 rejectedBy: details.rejectedPersonName,
                 location: details.location,
                 status: 'Rejected',
-                filingId: patent.id
+                filingId: patent.id,
+                plan: userSubscriptionDetails.plan,
+                amount: userSubscriptionDetails.amount,
+                validUntil: userSubscriptionDetails.validUntil
               }
             });
             console.log('✅ Firestore notification added for patent rejection:', notificationResult);
