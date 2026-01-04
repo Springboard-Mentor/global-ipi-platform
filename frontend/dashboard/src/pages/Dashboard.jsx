@@ -709,10 +709,27 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
         </div>
       </div>
 
-      {/* FEEDBACK ANALYTICS SECTION */}
+      {/* Map and State Patent Count in Single Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mt-2">
+        {/* State-wise Patent Count */}
+        <div className="flex">
+          <StatePatentCount 
+            onStateChange={handleStateChange}
+          />
+        </div>
+        
+        {/* India Patent Map */}
+        <div className="flex">
+          <IndiaPatentPanel 
+            selectedState={selectedMapState}
+          />
+        </div>
+      </div>
+
+      {/* FEEDBACK ANALYTICS SECTION - Moved to bottom */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-1.5 mt-1.5">
-        {/* Average Ratings by Category */}
-        <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-5 shadow-lg border border-blue-100 lg:col-span-2">
+        {/* Average Ratings by Category - Left Side (2/3 width) */}
+        <div className="lg:col-span-2 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-5 shadow-lg border border-blue-100">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-bold text-lg text-blue-900">User Feedback Ratings</h3>
             {feedbackStatus === 'loading' && (
@@ -723,7 +740,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
             )}
           </div>
           <p className="text-sm text-blue-700 mb-4">Average ratings across all categories (Scale: 0-5)</p>
-          <div className="h-[280px]">
+          <div className="h-[320px] px-4">
             {feedbackStatus === 'loading' ? (
               <div className="flex items-center justify-center h-full">
                 <div className="text-blue-600">Loading feedback data...</div>
@@ -754,14 +771,16 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
                     stroke="#1e40af"
                     style={{ fontSize: '13px', fontWeight: '700' }}
                     tick={{ fill: '#1e3a8a' }}
+                    tickCount={6}
                   />
                   <YAxis 
                     type="category"
                     dataKey="category" 
                     stroke="#1e40af"
-                    width={100}
-                    style={{ fontSize: '13px', fontWeight: '700' }}
+                    width={110}
+                    style={{ fontSize: '14px', fontWeight: '700' }}
                     tick={{ fill: '#1e3a8a' }}
+                    orientation="left"
                   />
                   <Tooltip 
                     contentStyle={{
@@ -795,18 +814,10 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
           </div>
         </div>
 
-        {/* Feedback Summary Stats */}
-        <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-5 shadow-lg border border-purple-100">
-          <h3 className="font-bold text-lg text-purple-900 mb-4">Feedback Overview</h3>
-          {feedbackStatus === 'loading' ? (
-            <div className="flex items-center justify-center h-48">
-              <div className="text-purple-600">Loading...</div>
-            </div>
-          ) : !feedbackStats ? (
-            <div className="flex items-center justify-center h-48">
-              <div className="text-purple-600">No data</div>
-            </div>
-          ) : (
+        {/* Feedback Overview - Right Side (1/3 width) */}
+        {feedbackStatus === 'success' && feedbackStats && (
+          <div className="lg:col-span-1 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-5 shadow-lg border border-purple-100">
+            <h3 className="font-bold text-lg text-purple-900 mb-4">Feedback Overview</h3>
             <div className="space-y-4">
               {/* Total Feedbacks */}
               <div className="bg-white/60 rounded-lg p-4 border border-purple-200">
@@ -867,29 +878,12 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
                 </div>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
-      {/* Map and State Patent Count in Single Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mt-2">
-        {/* State-wise Patent Count */}
-        <div className="flex">
-          <StatePatentCount 
-            onStateChange={handleStateChange}
-          />
-        </div>
-        
-        {/* India Patent Map */}
-        <div className="flex">
-          <IndiaPatentPanel 
-            selectedState={selectedMapState}
-          />
-        </div>
-      </div>
-
-      {/* Recent Feedback Messages - Moved to bottom */}
-      {feedbackStatus === 'success' && allFeedbacks.length > 0 && (
+      {/* Feedback Overview - Moved to bottom above recent feedback */}
+      {feedbackStatus === 'success' && feedbackStats && (
         <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-5 shadow-lg border border-amber-100 mt-1.5">
           <h3 className="font-bold text-lg text-amber-900 mb-4">Recent User Feedback</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
