@@ -47,6 +47,10 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
   // State for yearly patent data
   const [yearlyPatentData, setYearlyPatentData] = React.useState([]);
   const [yearlyDataStatus, setYearlyDataStatus] = React.useState('loading');
+  
+  // State for subscription revenue data
+  const [revenueData, setRevenueData] = React.useState([]);
+  const [revenueStatus, setRevenueStatus] = React.useState('loading');
 
   // Fetch patent count from database on component mount
   React.useEffect(() => {
@@ -83,10 +87,11 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
     return () => clearInterval(interval);
   }, []);
   
-  // Fetch total users count from Firestore
+  // Fetch total users count and subscription revenue from Firestore
   React.useEffect(() => {
     const fetchUsersCount = async () => {
       setUsersStatus('checking');
+      setRevenueStatus('loading');
       try {
         console.log('Fetching users count from Firestore...');
         const usersCollection = collection(db, 'users');
@@ -97,6 +102,87 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
         setUsersStatus('connected');
         setUsersError('');
         console.log('✓ Firestore connected. Users found:', count);
+        
+        // Calculate subscription revenue by date (daily)
+        const dailyRevenue = {};
+        const PRO_PRICE = 49;
+        const ENTERPRISE_PRICE = 199;
+        
+        usersSnapshot.forEach((doc) => {
+          const userData = doc.data();
+          const subscription = userData.subscriptionType?.toLowerCase();
+          
+          // Get subscription date (use createdAt or subscriptionStartDate)
+          let subDate = null;
+          if (userData.subscriptionStartDate) {
+            subDate = userData.subscriptionStartDate.toDate ? userData.subscriptionStartDate.toDate() : new Date(userData.subscriptionStartDate);
+          } else if (userData.createdAt) {
+            subDate = userData.createdAt.toDate ? userData.createdAt.toDate() : new Date(userData.createdAt);
+          }
+          
+          if (subDate && (subscription === 'pro' || subscription === 'enterprise')) {
+            // Format date as YYYY-MM-DD for grouping
+            const dateKey = subDate.toISOString().split('T')[0];
+            const displayDate = subDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            
+            if (!dailyRevenue[dateKey]) {
+              dailyRevenue[dateKey] = { 
+                date: displayDate, 
+                value: 0, 
+                fullDate: subDate,
+                proUsers: 0,
+                enterpriseUsers: 0,
+                totalUsers: 0
+              };
+            }
+            
+            const amount = subscription === 'pro' ? PRO_PRICE : ENTERPRISE_PRICE;
+            dailyRevenue[dateKey].value += amount;
+            dailyRevenue[dateKey].totalUsers += 1;
+            
+            if (subscription === 'pro') {
+              dailyRevenue[dateKey].proUsers += 1;
+            } else if (subscription === 'enterprise') {
+              dailyRevenue[dateKey].enterpriseUsers += 1;
+            }
+          }
+        });
+        
+        // Convert to array and sort by date
+        const revenueArray = Object.values(dailyRevenue)
+          .sort((a, b) => a.fullDate - b.fullDate)
+          .slice(-30) // Get last 30 days
+          .map(item => ({ 
+            date: item.date, 
+            value: item.value,
+            proUsers: item.proUsers,
+            enterpriseUsers: item.enterpriseUsers,
+            totalUsers: item.totalUsers
+          }));
+        
+        // If no revenue data, create empty structure for last 30 days
+        if (revenueArray.length === 0) {
+          const now = new Date();
+          const emptyData = [];
+          for (let i = 29; i >= 0; i--) {
+            const date = new Date(now);
+            date.setDate(date.getDate() - i);
+            const displayDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            emptyData.push({ 
+              date: displayDate, 
+              value: 0,
+              proUsers: 0,
+              enterpriseUsers: 0,
+              totalUsers: 0
+            });
+          }
+          setRevenueData(emptyData);
+        } else {
+          setRevenueData(revenueArray);
+        }
+        
+        setRevenueStatus('success');
+        console.log('✓ Revenue data calculated:', revenueArray);
       } catch (error) {
         console.error('Error fetching users count:', error);
         setTotalUsers(0);
@@ -204,15 +290,8 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
     loading: true,
   });
 
-  /* ---------------- MOCK DATA ---------------- */
-  const portfolioGrowthData = [
-    { month: "Jan", value: 1000000 },
-    { month: "Feb", value: 1050000 },
-    { month: "Mar", value: 1100000 },
-    { month: "Apr", value: 1080000 },
-    { month: "May", value: 1150000 },
-    { month: "Jun", value: 1200000 },
-  ];
+  /* ---------------- SUBSCRIPTION REVENUE DATA ---------------- */
+  // Revenue data will be fetched from Firebase based on subscription counts
 
   const assetData = [
     { name: "Patents", value: 45, color: "#6366f1" },
@@ -440,18 +519,90 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
 
       {/* FULL WIDTH CHARTS SECTION */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-1.5">
-        <div className="bg-white rounded-xl p-4 shadow-sm">
-          <h3 className="font-bold mb-3 text-sm">Portfolio Growth</h3>
+        <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-5 shadow-lg border border-indigo-100">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-bold text-lg text-indigo-900">Subscription Revenue</h3>
+            {revenueStatus === 'loading' && (
+              <div className="text-xs text-indigo-600 animate-pulse">Loading...</div>
+            )}
+            {revenueStatus === 'success' && (
+              <div className="text-xs text-indigo-700 font-medium">● Live Data</div>
+            )}
+          </div>
+          <p className="text-sm text-indigo-700 mb-4">Daily revenue from Pro (₹49) & Enterprise (₹199) subscriptions</p>
           <div className="h-[280px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={portfolioGrowthData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Line dataKey="value" stroke="#6366f1" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
+            {revenueStatus === 'loading' ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-indigo-600">Loading revenue data...</div>
+              </div>
+            ) : revenueData.length === 0 ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-indigo-600">No subscription revenue data available</div>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={revenueData}>
+                  <defs>
+                    <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#6366f1" stopOpacity={0.9} />
+                      <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.7} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e7ff" />
+                  <XAxis 
+                    dataKey="date" 
+                    stroke="#4f46e5"
+                    style={{ fontSize: '12px', fontWeight: '600' }}
+                  />
+                  <YAxis 
+                    stroke="#4f46e5"
+                    style={{ fontSize: '12px', fontWeight: '600' }}
+                    tickFormatter={(value) => `₹${value}`}
+                  />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: '#eef2ff',
+                      border: '2px solid #6366f1',
+                      borderRadius: '8px',
+                      fontWeight: '600',
+                      padding: '12px'
+                    }}
+                    labelStyle={{ color: '#4f46e5', fontWeight: 'bold', marginBottom: '8px' }}
+                    formatter={(value, name, props) => {
+                      const { payload } = props;
+                      return [
+                        <div key="tooltip-revenue" className="space-y-2">
+                          <div className="text-indigo-900 font-bold text-base">₹{value}</div>
+                          <div className="text-sm space-y-1">
+                            {payload.proUsers > 0 && (
+                              <div className="text-indigo-700">
+                                <span className="font-semibold">Pro:</span> {payload.proUsers} user{payload.proUsers !== 1 ? 's' : ''}
+                              </div>
+                            )}
+                            {payload.enterpriseUsers > 0 && (
+                              <div className="text-purple-700">
+                                <span className="font-semibold">Enterprise:</span> {payload.enterpriseUsers} user{payload.enterpriseUsers !== 1 ? 's' : ''}
+                              </div>
+                            )}
+                            {payload.totalUsers === 0 && (
+                              <div className="text-gray-500 italic">No upgrades this day</div>
+                            )}
+                          </div>
+                        </div>
+                      ];
+                    }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="value" 
+                    stroke="url(#revenueGradient)" 
+                    strokeWidth={3}
+                    dot={{ fill: '#6366f1', r: 5 }}
+                    activeDot={{ r: 7, stroke: '#6366f1', strokeWidth: 2 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 
