@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { TrendingUp, CheckCircle2 } from 'lucide-react';
 
+const API_BASE_URL = 'http://localhost:8080/api';
+
 const GrowthTrendChart = ({ 
   totalUsers, 
   dbPatentCount, 
@@ -12,32 +14,67 @@ const GrowthTrendChart = ({
 }) => {
   const [chartData, setChartData] = useState([]);
   const [timeRange, setTimeRange] = useState('7days'); // '7days', '30days', '90days'
+  const [loading, setLoading] = useState(true);
 
+  // Update backend with today's metrics whenever they change
   useEffect(() => {
-    // Only show data from today (when data actually exists)
-    // In production, this should fetch historical data from backend API
-    const generateGrowthData = () => {
-      const data = [];
-      const today = new Date();
-      
-      // Only add today's data point (no simulated historical data)
-      data.push({
-        date: today.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        users: totalUsers,
-        patents: dbPatentCount,
-        filings: totalPatentFilings,
-        fullDate: today.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-      });
-      
-      return data;
+    const updateBackendMetrics = async () => {
+      if (totalUsers > 0 || dbPatentCount > 0 || totalPatentFilings > 0) {
+        try {
+          await fetch(`${API_BASE_URL}/analytics/update`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              totalUsers: totalUsers,
+              totalPatents: dbPatentCount,
+              totalFilings: totalPatentFilings
+            })
+          });
+          console.log('✓ Analytics metrics updated in database');
+        } catch (error) {
+          console.error('Error updating analytics metrics:', error);
+        }
+      }
     };
 
-    if (totalUsers > 0 || dbPatentCount > 0 || totalPatentFilings > 0) {
-      setChartData(generateGrowthData());
-    } else {
-      setChartData([]);
-    }
-  }, [totalUsers, dbPatentCount, totalPatentFilings, timeRange]);
+    updateBackendMetrics();
+  }, [totalUsers, dbPatentCount, totalPatentFilings]);
+
+  // Fetch historical data from backend based on time range
+  useEffect(() => {
+    const fetchGrowthData = async () => {
+      setLoading(true);
+      try {
+        let days = 7;
+        if (timeRange === '30days') days = 30;
+        if (timeRange === '90days') days = 90;
+
+        const response = await fetch(`${API_BASE_URL}/analytics/growth?days=${days}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          setChartData(data);
+          console.log(`✓ Loaded ${data.length} days of analytics data`);
+        } else {
+          console.error('Failed to fetch growth data');
+          setChartData([]);
+        }
+      } catch (error) {
+        console.error('Error fetching growth data:', error);
+        setChartData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchGrowthData();
+    
+    // Refresh data every 60 seconds
+    const interval = setInterval(fetchGrowthData, 60000);
+    return () => clearInterval(interval);
+  }, [timeRange]);
 
   // Custom tooltip
   const CustomTooltip = ({ active, payload, label }) => {
@@ -225,7 +262,14 @@ const GrowthTrendChart = ({
 
       {/* Chart */}
       <div className="bg-white/70 backdrop-blur-sm rounded-xl p-4 border border-purple-100 shadow-sm">
-        {chartData.length > 0 ? (
+        {loading ? (
+          <div className="h-[400px] flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-gray-600 font-semibold">Loading growth data...</p>
+            </div>
+          </div>
+        ) : chartData.length > 0 ? (
           <ResponsiveContainer width="100%" height={400}>
             <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -275,8 +319,8 @@ const GrowthTrendChart = ({
         ) : (
           <div className="h-[400px] flex items-center justify-center">
             <div className="text-center">
-              <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-gray-600 font-semibold">Loading growth data...</p>
+              <p className="text-gray-600 font-semibold">No historical data available yet</p>
+              <p className="text-sm text-gray-500 mt-2">Data will accumulate over time</p>
             </div>
           </div>
         )}
@@ -285,7 +329,7 @@ const GrowthTrendChart = ({
       {/* Footer Info */}
       <div className="mt-4 flex items-center justify-center gap-2 text-sm text-gray-600">
         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-        <span className="font-semibold">Live data • Updated in real-time</span>
+        <span className="font-semibold">Live data • Updated from database</span>
       </div>
     </div>
   );
