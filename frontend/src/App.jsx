@@ -1042,13 +1042,13 @@ const App = () => {
                     © {new Date().getFullYear()} Global IP Intelligence Platform. All rights reserved.
                   </p>
                   <div className="flex gap-4">
-                    <a href="#" className="text-sm text-gray-600 hover:text-gray-800 hover:underline">
+                    <a href="/privacy-policy" className="text-sm text-gray-600 hover:text-gray-800 hover:underline">
                       Privacy Policy
                     </a>
-                    <a href="#" className="text-sm text-gray-600 hover:text-gray-800 hover:underline">
+                    <a href="/terms-of-service" className="text-sm text-gray-600 hover:text-gray-800 hover:underline">
                       Terms of Service
                     </a>
-                    <a href="#" className="text-sm text-gray-600 hover:text-gray-800 hover:underline">
+                    <a href="/cookie-policy" className="text-sm text-gray-600 hover:text-gray-800 hover:underline">
                       Cookie Policy
                     </a>
                   </div>

@@ -38,9 +38,11 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
   const [faqs, setFaqs] = useState([]);
   const [termsConditions, setTermsConditions] = useState(null);
   const [privacyPolicy, setPrivacyPolicy] = useState(null);
+  const [cookiePolicy, setCookiePolicy] = useState(null);
   const [expandedFaq, setExpandedFaq] = useState(null);
   const [showTerms, setShowTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showCookie, setShowCookie] = useState(false);
   const [legalLoading, setLegalLoading] = useState(false);
 
   const currentUID = auth.currentUser?.uid || userProfile?.uid;
@@ -129,6 +131,13 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
         if (privacyResponse.ok) {
           const privacyData = await privacyResponse.json();
           setPrivacyPolicy(privacyData.data || null);
+        }
+        
+        // Fetch Cookie Policy
+        const cookieResponse = await fetch(`${API_BASE}/cookie`);
+        if (cookieResponse.ok) {
+          const cookieData = await cookieResponse.json();
+          setCookiePolicy(cookieData.data || null);
         }
       } catch (error) {
         console.error('Error loading legal data:', error);
@@ -803,6 +812,43 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
                     <div 
                       className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
                       dangerouslySetInnerHTML={{ __html: privacyPolicy.content }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Cookie Policy */}
+              <div className="border-2 border-gray-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-200">
+                <button
+                  onClick={() => setShowCookie(!showCookie)}
+                  className={`w-full flex items-center justify-between px-4 py-3.5 transition-all duration-200 ${
+                    showCookie 
+                      ? 'bg-gradient-to-r from-orange-50 to-amber-50' 
+                      : 'bg-white hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`p-1.5 rounded-lg ${showCookie ? 'bg-orange-600' : 'bg-gray-700'}`}>
+                      <Shield size={16} className="text-white" strokeWidth={2.5} />
+                    </div>
+                    <span className="font-semibold text-gray-900">Cookie Policy</span>
+                  </div>
+                  {showCookie ? 
+                    <ChevronUp size={20} className="text-gray-700" strokeWidth={2.5} /> : 
+                    <ChevronDown size={20} className="text-gray-700" strokeWidth={2.5} />
+                  }
+                </button>
+                {showCookie && cookiePolicy && (
+                  <div className="px-5 py-4 bg-white border-t-2 border-gray-200 max-h-96 overflow-y-auto">
+                    <div className="mb-4 pb-3 border-b border-gray-200">
+                      <h4 className="text-xl font-bold text-gray-900">{cookiePolicy.title}</h4>
+                      <p className="text-xs text-gray-600 mt-1 font-medium">
+                        Version {cookiePolicy.version} | Effective: {new Date(cookiePolicy.effectiveDate).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div 
+                      className="prose prose-sm max-w-none text-gray-700 leading-relaxed"
+                      dangerouslySetInnerHTML={{ __html: cookiePolicy.content }}
                     />
                   </div>
                 )}
