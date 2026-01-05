@@ -15,7 +15,11 @@ import {
   ResponsiveContainer, 
   Cell,
   PieChart,
-  Pie
+  Pie,
+  AreaChart,
+  Area,
+  RadialBarChart,
+  RadialBar
 } from 'recharts';
 
 const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
@@ -1096,52 +1100,179 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
                   <AlertCircle className="w-5 h-5 text-gray-600" />
                   Account Status Overview
                 </h4>
+                
+                {/* Account Status Charts */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Active Users */}
+                  {/* Active Users - Radial Chart */}
                   <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border-2 border-green-200 hover:border-green-400 transition-all duration-300">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3 mb-4">
                       <div className="bg-green-100 p-3 rounded-xl">
-                        <UserCheck className="w-7 h-7 text-green-600" />
+                        <UserCheck className="w-6 h-6 text-green-600" />
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-semibold text-green-600 uppercase mb-1">Active Users</p>
-                        <div className="flex items-baseline gap-2">
-                          <h4 className="text-4xl font-black text-green-900">{userStats.activeUsers}</h4>
-                          <span className="text-lg font-bold text-green-600">
-                            ({userStats.totalUsers > 0 ? Math.round((userStats.activeUsers / userStats.totalUsers) * 100) : 0}%)
-                          </span>
-                        </div>
+                      <div>
+                        <p className="text-sm font-bold text-green-600 uppercase">Active Users</p>
+                        <p className="text-xs text-green-700">Currently active accounts</p>
                       </div>
                     </div>
-                    <div className="mt-4 w-full bg-green-200 rounded-full h-3">
-                      <div 
-                        className="h-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full transition-all duration-1000 shadow-sm" 
-                        style={{ width: `${userStats.totalUsers > 0 ? (userStats.activeUsers / userStats.totalUsers) * 100 : 0}%` }}
-                      ></div>
+
+                    <div className="h-[240px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <RadialBarChart 
+                          cx="50%" 
+                          cy="50%" 
+                          innerRadius="30%" 
+                          outerRadius="90%" 
+                          barSize={30}
+                          data={[
+                            {
+                              name: 'Active',
+                              value: userStats.totalUsers > 0 ? (userStats.activeUsers / userStats.totalUsers) * 100 : 0,
+                              fill: 'url(#activeRadialGradient)',
+                              count: userStats.activeUsers
+                            }
+                          ]}
+                          startAngle={90}
+                          endAngle={-270}
+                        >
+                          <RadialBar
+                            background={{ fill: '#d1fae5' }}
+                            dataKey="value"
+                            cornerRadius={10}
+                            animationDuration={1500}
+                          />
+                          <text 
+                            x="50%" 
+                            y="45%" 
+                            textAnchor="middle" 
+                            dominantBaseline="middle"
+                            className="text-4xl font-black fill-green-900"
+                          >
+                            {userStats.activeUsers}
+                          </text>
+                          <text 
+                            x="50%" 
+                            y="58%" 
+                            textAnchor="middle" 
+                            dominantBaseline="middle"
+                            className="text-lg font-bold fill-green-600"
+                          >
+                            ({userStats.totalUsers > 0 ? Math.round((userStats.activeUsers / userStats.totalUsers) * 100) : 0}%)
+                          </text>
+                          <Tooltip 
+                            contentStyle={{ 
+                              backgroundColor: 'rgba(255, 255, 255, 0.98)', 
+                              border: '2px solid #10b981',
+                              borderRadius: '12px',
+                              padding: '12px'
+                            }}
+                            formatter={(value, name, props) => [
+                              <span className="font-semibold text-green-700">
+                                {props.payload.count} users ({value.toFixed(1)}% of total)
+                              </span>,
+                              'Active Users'
+                            ]}
+                          />
+                          <defs>
+                            <linearGradient id="activeRadialGradient" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#10b981" stopOpacity={1}/>
+                              <stop offset="100%" stopColor="#059669" stopOpacity={0.9}/>
+                            </linearGradient>
+                          </defs>
+                        </RadialBarChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    <div className="mt-4 pt-4 border-t border-green-200 grid grid-cols-2 gap-3">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-green-900">{userStats.activeUsers}</div>
+                        <div className="text-xs text-green-600">Active</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-green-700">{userStats.totalUsers}</div>
+                        <div className="text-xs text-green-600">Total</div>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Deactivated Users */}
+                  {/* Deactivated Users - Area Chart */}
                   <div className="bg-gradient-to-br from-red-50 to-rose-50 rounded-xl p-6 border-2 border-red-200 hover:border-red-400 transition-all duration-300">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3 mb-4">
                       <div className="bg-red-100 p-3 rounded-xl">
-                        <UserX className="w-7 h-7 text-red-600" />
+                        <UserX className="w-6 h-6 text-red-600" />
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-semibold text-red-600 uppercase mb-1">Deactivated Users</p>
-                        <div className="flex items-baseline gap-2">
-                          <h4 className="text-4xl font-black text-red-900">{userStats.deactivatedUsers}</h4>
-                          <span className="text-lg font-bold text-red-600">
-                            ({userStats.totalUsers > 0 ? Math.round((userStats.deactivatedUsers / userStats.totalUsers) * 100) : 0}%)
-                          </span>
-                        </div>
+                      <div>
+                        <p className="text-sm font-bold text-red-600 uppercase">Deactivated Users</p>
+                        <p className="text-xs text-red-700">Inactive accounts</p>
                       </div>
                     </div>
-                    <div className="mt-4 w-full bg-red-200 rounded-full h-3">
-                      <div 
-                        className="h-3 bg-gradient-to-r from-red-500 to-rose-600 rounded-full transition-all duration-1000 shadow-sm" 
-                        style={{ width: `${userStats.totalUsers > 0 ? (userStats.deactivatedUsers / userStats.totalUsers) * 100 : 0}%` }}
-                      ></div>
+
+                    <div className="h-[240px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart
+                          data={[
+                            { category: 'Total\nUsers', value: userStats.totalUsers, label: 'Total' },
+                            { category: 'Active\nUsers', value: userStats.activeUsers, label: 'Active' },
+                            { category: 'Deactivated\nUsers', value: userStats.deactivatedUsers, label: 'Deactivated' }
+                          ]}
+                          margin={{ top: 10, right: 30, left: 0, bottom: 40 }}
+                        >
+                          <defs>
+                            <linearGradient id="deactivatedGradient" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8}/>
+                              <stop offset="95%" stopColor="#dc2626" stopOpacity={0.2}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#fecaca" />
+                          <XAxis 
+                            dataKey="category" 
+                            tick={{ fill: '#991b1b', fontSize: 11, fontWeight: 600 }}
+                            angle={0}
+                            height={60}
+                          />
+                          <YAxis 
+                            tick={{ fill: '#991b1b', fontSize: 11 }}
+                            label={{ 
+                              value: 'User Count', 
+                              angle: -90, 
+                              position: 'insideLeft',
+                              style: { fill: '#991b1b', fontWeight: 600, fontSize: 12 }
+                            }}
+                          />
+                          <Tooltip 
+                            contentStyle={{ 
+                              backgroundColor: 'rgba(255, 255, 255, 0.98)', 
+                              border: '2px solid #ef4444',
+                              borderRadius: '12px',
+                              padding: '12px'
+                            }}
+                            formatter={(value, name, props) => [
+                              <span className="font-semibold text-red-700">{value} users</span>,
+                              <span className="font-bold">{props.payload.label}</span>
+                            ]}
+                          />
+                          <Area 
+                            type="monotone" 
+                            dataKey="value" 
+                            stroke="#dc2626" 
+                            strokeWidth={3}
+                            fill="url(#deactivatedGradient)"
+                            animationDuration={1500}
+                          />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    <div className="mt-4 pt-4 border-t border-red-200 grid grid-cols-2 gap-3">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-red-900">{userStats.deactivatedUsers}</div>
+                        <div className="text-xs text-red-600">Deactivated</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-red-700">
+                          {userStats.totalUsers > 0 ? Math.round((userStats.deactivatedUsers / userStats.totalUsers) * 100) : 0}%
+                        </div>
+                        <div className="text-xs text-red-600">of Total</div>
+                      </div>
                     </div>
                   </div>
                 </div>
