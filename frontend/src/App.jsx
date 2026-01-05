@@ -373,6 +373,20 @@ const App = () => {
     };
   }, [user, userProfile?.uid, userProfile?.emailVerified]);
 
+  // Handle URL query parameters for page navigation
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const pageParam = urlParams.get('page');
+    
+    if (pageParam) {
+      console.log('🔗 Found page parameter in URL:', pageParam);
+      setCurrentPage(pageParam);
+      setActiveItem(pageParam);
+      // Clean URL by removing query parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
   // Fetch user data from Firestore - works with or without authenticated user
   const fetchUserDataWithUID = async (uid, authenticatedUser = null) => {
     try {
