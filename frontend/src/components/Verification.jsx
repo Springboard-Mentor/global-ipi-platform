@@ -24,6 +24,22 @@ function Verification() {
 
   const handleLogout = async () => {
     try {
+      // Update user's online status in Firestore before signing out
+      if (user?.uid) {
+        try {
+          const userRef = doc(db, "users", user.uid);
+          await updateDoc(userRef, {
+            isOnline: false,
+            lastLogout: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          });
+          console.log("User online status set to false");
+        } catch (firestoreError) {
+          console.error("Error updating online status:", firestoreError);
+          // Continue with logout even if Firestore update fails
+        }
+      }
+      
       await signOut(auth);
       navigate("/");
     } catch (error) {

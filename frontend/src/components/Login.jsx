@@ -85,15 +85,17 @@ function Login() {
               deactivatedAt: null,
               reactivatedAt: serverTimestamp(),
               lastLogin: serverTimestamp(),
+              isOnline: true,
               updatedAt: serverTimestamp()
             }, { merge: true });
             
             console.log('Account reactivated successfully!');
           }
         } else {
-          // Account is active - just update last login
+          // Account is active - update last login and set online status
           await setDoc(userRef, {
             lastLogin: serverTimestamp(),
+            isOnline: true,
             updatedAt: serverTimestamp()
           }, { merge: true });
         }
@@ -172,15 +174,17 @@ function Login() {
               deactivatedAt: null,
               reactivatedAt: serverTimestamp(),
               lastLogin: serverTimestamp(),
+              isOnline: true,
               updatedAt: serverTimestamp()
             }, { merge: true });
             
             console.log('Account reactivated successfully!');
           }
         } else {
-          // Update existing active user
+          // Update existing active user and set online status
           await setDoc(userRef, {
             lastLogin: serverTimestamp(),
+            isOnline: true,
             updatedAt: serverTimestamp()
           }, { merge: true });
         }
@@ -197,6 +201,7 @@ function Login() {
           accountStatus: "active",
           createdAt: serverTimestamp(),
           lastLogin: serverTimestamp(),
+          isOnline: true,
           updatedAt: serverTimestamp()
         });
       }

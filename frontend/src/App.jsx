@@ -489,6 +489,23 @@ const App = () => {
 
     try {
       console.log("Logging out user...");
+      
+      // Update user's online status in Firestore before signing out
+      if (userProfile?.uid) {
+        try {
+          const userRef = doc(db, "users", userProfile.uid);
+          await updateDoc(userRef, {
+            isOnline: false,
+            lastLogout: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          });
+          console.log("User online status set to false");
+        } catch (firestoreError) {
+          console.error("Error updating online status:", firestoreError);
+          // Continue with logout even if Firestore update fails
+        }
+      }
+      
       await signOut(auth);
       console.log("User logged out successfully");
       

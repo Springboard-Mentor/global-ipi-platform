@@ -317,9 +317,18 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
       snapshot.forEach((doc) => {
         const userData = doc.data();
         
-        // Count currently logged in users (check if user has a recent lastLogin within last 5 minutes)
-        const lastLogin = userData.lastLogin?.toDate?.() || (userData.lastLogin ? new Date(userData.lastLogin) : null);
-        const isCurrentlyLoggedIn = userData.isOnline || (lastLogin && (new Date() - lastLogin) < 5 * 60 * 1000);
+        // Primary check: isOnline flag (set on login, cleared on logout)
+        // Fallback: if isOnline is undefined/null, check lastLogin within 5 minutes (for backward compatibility)
+        let isCurrentlyLoggedIn = false;
+        
+        if (userData.isOnline !== undefined && userData.isOnline !== null) {
+          // Use explicit isOnline flag if available
+          isCurrentlyLoggedIn = userData.isOnline === true;
+        } else {
+          // Fallback to time-based check for older user records
+          const lastLogin = userData.lastLogin?.toDate?.() || (userData.lastLogin ? new Date(userData.lastLogin) : null);
+          isCurrentlyLoggedIn = lastLogin && (new Date() - lastLogin) < 5 * 60 * 1000;
+        }
         
         if (isCurrentlyLoggedIn) {
           onlineCount++;
