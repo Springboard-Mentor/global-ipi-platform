@@ -71,7 +71,7 @@ mvnw.cmd
 # Documentation files (Markdown and HTML guides)
 *.md
 *.html
-# Keep only root README
+# Keep only root README and essential docs
 !README.md
 !LICENSE.md
 !LICENSE
@@ -97,6 +97,8 @@ mvnw.cmd
 **/ACCOUNT-*.md
 **/SEARCH-*.md
 **/UI-*.md
+**/CHATBOT-*.md
+**/NOTIFICATION-*.md
 **/*-STARTUP-*.html
 **/START-*.html
 **/START-*.md
@@ -117,6 +119,21 @@ QUICK-REFERENCE.txt
 # Keep template/migration SQL files if needed
 !**/migrations/*.sql
 !**/schema/*.sql
+# Exclude all backend SQL documentation and utility files
+**/check-*.sql
+**/create-*.sql
+**/insert-*.sql
+**/setup-*.sql
+**/add-*.sql
+**/update-*.sql
+**/verify-*.sql
+**/view-*.sql
+**/reorganize-*.sql
+**/set-*.sql
+**/fix-*.sql
+**/chatbot-*.sql
+**/EXECUTE-*.sql
+**/QUICK-*.sql
 
 # PowerShell and batch script files (setup, admin, test scripts)
 **/setup-*.ps1

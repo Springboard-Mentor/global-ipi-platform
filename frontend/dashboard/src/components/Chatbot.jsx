@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MessageCircle, X, Send, Loader, Bot, User, Sparkles } from 'lucide-react';
 import './Chatbot.css';
 
-const Chatbot = ({ userId }) => {
+const Chatbot = ({ userId, userProfile }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -164,21 +164,19 @@ const Chatbot = ({ userId }) => {
 
   return (
     <>
-      {/* Floating Chatbot Button */}
-      <button
-        className={`chatbot-toggle-button ${isOpen ? 'open' : ''}`}
-        onClick={() => setIsOpen(!isOpen)}
-        aria-label="Toggle chatbot"
-      >
-        {isOpen ? (
-          <X size={24} />
-        ) : (
+      {/* Floating Chatbot Button - Hidden when chatbot is open */}
+      {!isOpen && (
+        <button
+          className={`chatbot-toggle-button`}
+          onClick={() => setIsOpen(true)}
+          aria-label="Open chatbot"
+        >
           <div className="chatbot-icon-wrapper">
             <Bot size={28} />
             <Sparkles size={14} className="sparkle-icon" />
           </div>
-        )}
-      </button>
+        </button>
+      )}
 
       {/* Chatbot Window */}
       {isOpen && (
@@ -186,14 +184,17 @@ const Chatbot = ({ userId }) => {
           {/* Header */}
           <div className="chatbot-header">
             <div className="chatbot-header-title">
-              <Bot size={24} />
+              <div className="chatbot-header-icon">
+                <Bot size={32} />
+                <Sparkles size={12} className="header-sparkle-icon" />
+              </div>
               <div>
                 <h3>IPI Assistant</h3>
                 <p>Ask me anything about the platform</p>
               </div>
             </div>
             <button
-              className="chatbot-close-button"
+              className="chatbot-header-close-button"
               onClick={() => setIsOpen(false)}
               aria-label="Close chatbot"
             >
@@ -206,7 +207,7 @@ const Chatbot = ({ userId }) => {
             {messages.length === 0 && (
               <div className="chatbot-welcome">
                 <Bot size={48} className="welcome-icon" />
-                <h4>Welcome to IPI Assistant! 👋</h4>
+                <h4>Welcome, {userProfile?.firstName || 'there'}! 👋</h4>
                 <p>I can help you with:</p>
                 <ul>
                   <li>Patent counts and statistics</li>

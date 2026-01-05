@@ -22,6 +22,7 @@ public class ChatbotService {
     private final ChatbotKnowledgeBaseRepository knowledgeBaseRepository;
     private final ChatbotConversationRepository conversationRepository;
     private final PatentFilingRepository patentFilingRepository;
+    private final com.example.backend.repository.UserRepository userRepository;
     
     // @Transactional // Temporarily removed for debugging
     public ChatbotResponse processMessage(ChatbotRequest request) {
@@ -38,7 +39,9 @@ public class ChatbotService {
             ChatbotResponse response;
             
             // Determine query type and generate response
-            if (isPatentCountQuery(userMessage)) {
+            if (isGreeting(userMessage)) {
+                response = handleGreeting(request);
+            } else if (isPatentCountQuery(userMessage)) {
                 response = handlePatentCountQuery(userMessage);
             } else if (isStatePatentQuery(userMessage)) {
                 response = handleStatePatentQuery(userMessage);
@@ -84,6 +87,19 @@ public class ChatbotService {
         }
     }
     
+    private boolean isGreeting(String message) {
+        if (message == null || message.isEmpty()) {
+            return false;
+        }
+        String[] greetings = {"hi", "hello", "hey", "hi there", "hello there", "hey there", "greetings", "good morning", "good afternoon", "good evening"};
+        for (String greeting : greetings) {
+            if (message.equals(greeting) || message.startsWith(greeting + " ") || message.startsWith(greeting + ",")) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
     private boolean isPatentCountQuery(String message) {
         return message.contains("how many patent") || 
                message.contains("total patent") ||
@@ -109,6 +125,81 @@ public class ChatbotService {
                message.contains("granted") ||
                message.contains("pending") ||
                message.contains("abandoned");
+    }
+    
+    private ChatbotResponse handleGreeting(ChatbotRequest request) {
+        try {
+            String firstName = "there";
+            
+            // Try to get user's first name from database
+            if (request.getUserId() != null && !request.getUserId().isEmpty()) {
+                try {
+                    Long userId = Long.parseLong(request.getUserId());
+                    Optional<com.example.backend.model.User> userOpt = userRepository.findById(userId);
+                    if (userOpt.isPresent() && userOpt.get().getFirstName() != null && !userOpt.get().getFirstName().isEmpty()) {
+                        firstName = userOpt.get().getFirstName();
+                    }
+                } catch (NumberFormatException e) {
+                    // If userId is email or other format, try to find by email
+                    Optional<com.example.backend.model.User> userOpt = userRepository.findByEmail(request.getUserId());
+                    if (userOpt.isPresent() && userOpt.get().getFirstName() != null && !userOpt.get().getFirstName().isEmpty()) {
+                        firstName = userOpt.get().getFirstName();
+                    }
+                }
+            }
+            
+            String greetingMessage = String.format(
+                "Hi %s! 👋\n\nHow may I help you? I can assist you with:",
+                firstName
+            );
+            
+            // Get quick queries from knowledge base (top priority questions)
+            List<String> quickQueries = new ArrayList<>();
+            try {
+                List<ChatbotKnowledgeBase> topQuestions = knowledgeBaseRepository.findByIsActiveTrueOrderByPriorityDesc();
+                if (topQuestions != null && !topQuestions.isEmpty()) {
+                    quickQueries = topQuestions.stream()
+                        .filter(kb -> kb != null && kb.getQuestion() != null)
+                        .limit(6)
+                        .map(ChatbotKnowledgeBase::getQuestion)
+                        .collect(Collectors.toList());
+                }
+            } catch (Exception e) {
+                System.err.println("Error fetching quick queries: " + e.getMessage());
+            }
+            
+            // Add default quick queries if none found
+            if (quickQueries.isEmpty()) {
+                quickQueries.add("How many patents are there?");
+                quickQueries.add("Show subscription plans");
+                quickQueries.add("How do I file a patent?");
+                quickQueries.add("What features are available?");
+                quickQueries.add("Show patents by state");
+                quickQueries.add("What are the payment methods?");
+            }
+            
+            ChatbotResponse response = new ChatbotResponse(greetingMessage);
+            response.setQueryType("greeting");
+            response.setSuggestions(quickQueries);
+            
+            return response;
+        } catch (Exception e) {
+            System.err.println("Error in handleGreeting: " + e.getMessage());
+            e.printStackTrace();
+            
+            // Fallback greeting
+            ChatbotResponse response = new ChatbotResponse(
+                "Hi there! 👋\n\nHow may I help you? I can assist you with patent information, subscriptions, and more!"
+            );
+            response.setQueryType("greeting");
+            response.setSuggestions(Arrays.asList(
+                "How many patents are there?",
+                "Show subscription plans",
+                "How do I file a patent?",
+                "What features are available?"
+            ));
+            return response;
+        }
     }
     
     private ChatbotResponse handlePatentCountQuery(String message) {
@@ -321,21 +412,54 @@ public class ChatbotService {
             ChatbotKnowledgeBase bestMatch = null;
             int highestScore = 0;
             
+            // Also track top 3 matches for better suggestions
+            List<ChatbotKnowledgeBase> topMatches = new ArrayList<>();
+            
             for (ChatbotKnowledgeBase kb : allKnowledge) {
                 int score = calculateMatchScore(message, kb);
                 if (score > highestScore) {
                     highestScore = score;
                     bestMatch = kb;
                 }
+                if (score > 0) {
+                    topMatches.add(kb);
+                }
             }
             
-            if (bestMatch != null && highestScore > 0) {
+            // Sort top matches by score
+            topMatches.sort((a, b) -> Integer.compare(
+                calculateMatchScore(message, b),
+                calculateMatchScore(message, a)
+            ));
+            
+            // Lower threshold to accept any match with score >= 3 (very lenient)
+            // This ensures almost all knowledge base entries can be matched
+            if (bestMatch != null && highestScore >= 3) {
                 ChatbotResponse response = new ChatbotResponse(bestMatch.getAnswer());
                 response.setQueryType("knowledge_base");
                 
-                // Add related suggestions
-                List<String> suggestions = getRelatedSuggestions(bestMatch.getCategory());
-                if (suggestions != null && !suggestions.isEmpty()) {
+                // Add related suggestions from top matches
+                List<String> suggestions = new ArrayList<>();
+                for (int i = 0; i < Math.min(4, topMatches.size()); i++) {
+                    ChatbotKnowledgeBase kb = topMatches.get(i);
+                    if (kb != null && kb.getQuestion() != null && !kb.equals(bestMatch)) {
+                        suggestions.add(kb.getQuestion());
+                    }
+                }
+                
+                // Also add category-related suggestions
+                if (suggestions.size() < 3) {
+                    List<String> categorySuggestions = getRelatedSuggestions(bestMatch.getCategory());
+                    if (categorySuggestions != null) {
+                        for (String suggestion : categorySuggestions) {
+                            if (!suggestions.contains(suggestion) && suggestions.size() < 4) {
+                                suggestions.add(suggestion);
+                            }
+                        }
+                    }
+                }
+                
+                if (!suggestions.isEmpty()) {
                     response.setSuggestions(suggestions);
                 }
                 
@@ -387,26 +511,186 @@ public class ChatbotService {
         }
         
         int score = 0;
-        String lowerMessage = message.toLowerCase();
+        String lowerMessage = message.toLowerCase().trim();
         
-        // Check if question matches
-        if (kb.getQuestion() != null && lowerMessage.contains(kb.getQuestion().toLowerCase())) {
-            score += 50;
+        // Remove common punctuation for better matching
+        String cleanMessage = lowerMessage.replaceAll("[?!.,;:]", " ").trim();
+        
+        // 1. Exact match - highest priority
+        if (kb.getQuestion() != null) {
+            String lowerQuestion = kb.getQuestion().toLowerCase().trim();
+            String cleanQuestion = lowerQuestion.replaceAll("[?!.,;:]", " ").trim();
+            
+            if (cleanMessage.equals(cleanQuestion)) {
+                score += 200; // Increased from 100
+            } else if (lowerMessage.equals(lowerQuestion)) {
+                score += 150;
+            } else if (cleanMessage.contains(cleanQuestion)) {
+                score += 80; // Increased from 50
+            } else if (cleanQuestion.contains(cleanMessage)) {
+                score += 70;
+            }
+            
+            // Check for similar structure (Levenshtein-like simple check)
+            if (areSimilar(cleanMessage, cleanQuestion)) {
+                score += 40;
+            }
         }
         
-        // Check keywords
+        // 2. Check keywords with varying weights
         if (kb.getKeywords() != null && kb.getKeywords().length > 0) {
+            int keywordMatches = 0;
+            int totalKeywords = kb.getKeywords().length;
+            
             for (String keyword : kb.getKeywords()) {
-                if (keyword != null && !keyword.isEmpty() && lowerMessage.contains(keyword.toLowerCase())) {
-                    score += 10;
+                if (keyword != null && !keyword.isEmpty()) {
+                    String lowerKeyword = keyword.toLowerCase().trim();
+                    String cleanKeyword = lowerKeyword.replaceAll("[?!.,;:]", " ").trim();
+                    
+                    // Exact keyword match in message
+                    if (cleanMessage.contains(cleanKeyword)) {
+                        keywordMatches++;
+                        score += 20; // Increased from 15
+                    } else if (lowerMessage.contains(lowerKeyword)) {
+                        keywordMatches++;
+                        score += 15;
+                    }
+                    
+                    // Check for word boundaries and partial matches
+                    String[] messageWords = cleanMessage.split("\\s+");
+                    String[] keywordWords = cleanKeyword.split("\\s+");
+                    
+                    for (String msgWord : messageWords) {
+                        if (msgWord.length() > 2) { // Skip very short words
+                            for (String kwWord : keywordWords) {
+                                if (kwWord.length() > 2) {
+                                    // Exact word match
+                                    if (msgWord.equals(kwWord)) {
+                                        score += 8;
+                                    } 
+                                    // Starts with match
+                                    else if (msgWord.startsWith(kwWord) && kwWord.length() >= 3) {
+                                        score += 5;
+                                    } 
+                                    else if (kwWord.startsWith(msgWord) && msgWord.length() >= 3) {
+                                        score += 5;
+                                    }
+                                    // Contains match for longer words
+                                    else if (msgWord.length() >= 5 && kwWord.length() >= 4 && 
+                                            (msgWord.contains(kwWord) || kwWord.contains(msgWord))) {
+                                        score += 3;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Bonus for multiple keyword matches
+            if (keywordMatches > 1) {
+                score += keywordMatches * 10; // Increased from 5
+            }
+            
+            // Extra bonus if most keywords match
+            if (totalKeywords > 0 && keywordMatches >= totalKeywords / 2) {
+                score += 25;
+            }
+        }
+        
+        // 3. Check category relevance
+        if (kb.getCategory() != null && !kb.getCategory().isEmpty()) {
+            String lowerCategory = kb.getCategory().toLowerCase();
+            if (lowerMessage.contains(lowerCategory)) {
+                score += 15; // Increased from 10
+            }
+            // Also check individual category words
+            String[] categoryWords = lowerCategory.split("\\s+");
+            for (String catWord : categoryWords) {
+                if (catWord.length() > 3 && lowerMessage.contains(catWord)) {
+                    score += 5;
                 }
             }
         }
         
-        // Boost score by priority
-        score += (kb.getPriority() != null ? kb.getPriority() : 0);
+        // 4. Word overlap between message and question
+        if (kb.getQuestion() != null) {
+            String[] messageWords = cleanMessage.split("\\s+");
+            String[] questionWords = kb.getQuestion().toLowerCase().replaceAll("[?!.,;:]", " ").trim().split("\\s+");
+            int wordOverlap = 0;
+            int significantOverlap = 0;
+            
+            for (String msgWord : messageWords) {
+                if (msgWord.length() > 2) { // Skip very short words
+                    for (String qWord : questionWords) {
+                        if (qWord.length() > 2) {
+                            if (msgWord.equals(qWord)) {
+                                wordOverlap++;
+                                if (msgWord.length() >= 5) {
+                                    significantOverlap++; // Longer words are more significant
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            score += wordOverlap * 4; // Increased from 3
+            score += significantOverlap * 8; // Extra for significant words
+        }
+        
+        // 5. Check answer content for keyword matches (helps with intent understanding)
+        if (kb.getAnswer() != null && !kb.getAnswer().isEmpty()) {
+            String lowerAnswer = kb.getAnswer().toLowerCase();
+            String[] messageWords = cleanMessage.split("\\s+");
+            int answerMatches = 0;
+            
+            for (String msgWord : messageWords) {
+                if (msgWord.length() > 4 && lowerAnswer.contains(msgWord)) {
+                    answerMatches++;
+                }
+            }
+            
+            if (answerMatches > 0) {
+                score += answerMatches * 2;
+            }
+        }
+        
+        // 6. Boost score by priority (knowledge base priority)
+        if (kb.getPriority() != null && kb.getPriority() > 0) {
+            score += kb.getPriority();
+        }
         
         return score;
+    }
+    
+    // Helper method to check if two strings are similar (simple similarity check)
+    private boolean areSimilar(String s1, String s2) {
+        if (s1 == null || s2 == null) {
+            return false;
+        }
+        
+        // If lengths are very different, not similar
+        int lenDiff = Math.abs(s1.length() - s2.length());
+        if (lenDiff > Math.max(s1.length(), s2.length()) * 0.4) {
+            return false;
+        }
+        
+        // Check character overlap
+        String[] words1 = s1.split("\\s+");
+        String[] words2 = s2.split("\\s+");
+        
+        int commonWords = 0;
+        for (String w1 : words1) {
+            for (String w2 : words2) {
+                if (w1.equals(w2) && w1.length() > 2) {
+                    commonWords++;
+                }
+            }
+        }
+        
+        // If more than 50% of words match, consider similar
+        int minWords = Math.min(words1.length, words2.length);
+        return minWords > 0 && commonWords >= minWords * 0.5;
     }
     
     private List<String> getRelatedSuggestions(String category) {
@@ -461,10 +745,29 @@ public class ChatbotService {
         
         String lowerMessage = message.toLowerCase();
         
+        // Check for specific patterns that indicate ALL states request
+        if (lowerMessage.matches(".*\\b(show|display|list)\\s+(all\\s+)?patents?\\s+by\\s+state.*") ||
+            lowerMessage.matches(".*\\bstate\\s*wise\\s+patents?.*") ||
+            lowerMessage.matches(".*\\bpatents?\\s+by\\s+state.*")) {
+            // User wants all states, not a specific state
+            return null;
+        }
+        
+        // Extract state name only if it appears as a distinct word or phrase
         for (Map.Entry<String, String[]> entry : stateVariations.entrySet()) {
             for (String variation : entry.getValue()) {
-                if (lowerMessage.contains(variation)) {
-                    return entry.getKey();
+                // Use word boundary matching to avoid partial matches
+                // For multi-word states, check direct containment
+                if (variation.contains(" ")) {
+                    if (lowerMessage.contains(variation)) {
+                        return entry.getKey();
+                    }
+                } else {
+                    // For single-word states, use word boundary check
+                    String pattern = "\\b" + variation + "\\b";
+                    if (lowerMessage.matches(".*" + pattern + ".*")) {
+                        return entry.getKey();
+                    }
                 }
             }
         }

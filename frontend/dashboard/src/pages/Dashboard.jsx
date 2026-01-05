@@ -1056,7 +1056,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
       )}
       
       {/* Chatbot Component */}
-      <Chatbot userId={userProfile?.uid} />
+      <Chatbot userId={userProfile?.uid} userProfile={userProfile} />
     </div>
   );
 };
