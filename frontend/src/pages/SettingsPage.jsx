@@ -279,12 +279,12 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
       await signOut(auth);
       
       // Force redirect to login page (main public site)
-      window.location.replace('http://localhost:3000');
+      window.location.replace('/login');
     } catch (error) {
       console.error('Logout error:', error);
       // Clear localStorage and redirect anyway
       localStorage.clear();
-      window.location.replace('http://localhost:3000');
+      window.location.replace('/login');
     }
   };
 
@@ -312,7 +312,7 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
       console.log('✅ User signed out successfully');
       
       // Force redirect to login page (main public site)
-      window.location.replace('http://localhost:3000');
+      window.location.replace('/login');
     } catch (error) {
       console.error('❌ Deactivation error:', error);
       console.error('Error details:', error.message, error.code);

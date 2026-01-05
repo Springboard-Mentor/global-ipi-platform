@@ -147,11 +147,9 @@ function Register() {
       localStorage.setItem('firebaseAuthToken', idToken);
       console.log("Auth token saved to localStorage");
       
-      // Redirect to dashboard
-      setTimeout(() => {
-        console.log("Redirecting to dashboard...");
-        window.location.href = "http://localhost:5173";
-      }, 1000);
+      // Navigate to verification page
+      console.log("Navigating to verification...");
+      navigate("/verification");
     } catch (err) {
       if (err.code === "auth/email-already-in-use") {
         setError("Email is already registered. Please use a different email or login.");
@@ -218,11 +216,9 @@ function Register() {
       localStorage.setItem('firebaseAuthToken', idToken);
       console.log("Auth token saved to localStorage");
       
-      // Redirect to dashboard
-      setTimeout(() => {
-        console.log("Redirecting to dashboard...");
-        window.location.href = "http://localhost:5173";
-      }, 1000);
+      // Navigate to verification page
+      console.log("Navigating to verification...");
+      navigate("/verification");
     } catch (err) {
       setError("Google registration failed. Please try again.");
       console.error("Google registration error:", err.message);

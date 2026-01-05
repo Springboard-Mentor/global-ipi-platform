@@ -490,7 +490,7 @@ const ProfilePage = ({ userProfile, setUserProfile, onBack }) => {
           <h3 className="text-red-800 font-semibold">Authentication Required</h3>
           <p className="text-red-600">Please log in to view and edit your profile.</p>
           <button
-            onClick={() => window.location.href = "http://localhost:3000"}
+            onClick={() => window.location.href = "/login"}
             className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
           >
             Go to Login

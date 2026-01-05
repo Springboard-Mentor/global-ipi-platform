@@ -69,15 +69,11 @@ function Verification() {
       localStorage.setItem('userProfile', JSON.stringify(userProfile));
       
       const idToken = await user.getIdToken();
+      localStorage.setItem('firebaseAuthToken', idToken);
       
-      // Navigate to the dashboard URL in the same window
-      const dashboardURL = new URL('http://localhost:5173/');
-      dashboardURL.searchParams.set('token', idToken);
-      dashboardURL.searchParams.set('uid', user.uid);
-      dashboardURL.searchParams.set('email', user.email);
-      
-      window.location.href = dashboardURL.toString();
-      console.log('✅ Navigating to advanced dashboard');
+      // Navigate to the dashboard route
+      console.log('✅ Navigating to dashboard');
+      navigate('/dashboard');
     } catch (error) {
       console.error('❌ Error:', error);
       alert('Error opening dashboard. Please try again.');

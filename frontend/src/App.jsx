@@ -506,7 +506,7 @@ const App = () => {
       
       // Redirect to login page after short delay
       setTimeout(() => {
-        window.location.href = "http://localhost:3000";
+        window.location.href = "/login";
       }, 1000);
       
     } catch (error) {
@@ -515,7 +515,7 @@ const App = () => {
       
       // Force redirect even if signout fails
       setTimeout(() => {
-        window.location.href = "http://localhost:3000";
+        window.location.href = "/login";
       }, 2000);
     }
   };
@@ -580,7 +580,7 @@ const App = () => {
             <button
               onClick={() => {
                 console.log("Redirecting to login page...");
-                window.location.href = "http://localhost:3000";
+                window.location.href = "/login";
               }}
               className="w-full px-6 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition"
             >
