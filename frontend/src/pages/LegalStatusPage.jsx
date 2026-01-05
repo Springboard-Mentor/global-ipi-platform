@@ -4,6 +4,19 @@ import { collection, getDocs, onSnapshot, query, where } from 'firebase/firestor
 import { db } from '../firebase';
 import { getSearchCounters, getGlobalSearchStats } from '../utils/searchCounters';
 import IndiaPatentPanel from '../components/IndiaPatentPanel';
+import { 
+  BarChart, 
+  Bar, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer, 
+  Cell,
+  PieChart,
+  Pie
+} from 'recharts';
 
 const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -1178,7 +1191,7 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
           )}
         </div>
 
-        {/* Portfolio Health Card */}
+        {/* Portfolio Health Chart */}
         <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-gray-100 hover:shadow-2xl transition-all duration-300">
           <div className="flex items-center gap-3 mb-6">
             <div className="bg-gradient-to-br from-indigo-100 to-blue-100 p-3 rounded-xl">
@@ -1188,54 +1201,112 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
           </div>
           
           {!stats.loading && stats.total > 0 ? (
-            <div className="space-y-4">
-              {/* Granted */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold text-gray-700">Active Patents</span>
-                  <span className="text-sm font-bold text-green-600">{stats.granted}</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="h-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full transition-all duration-1000"
-                    style={{ width: `${(stats.granted / stats.total) * 100}%` }}
-                  ></div>
-                </div>
+            <div className="space-y-6">
+              {/* Bar Chart */}
+              <div className="h-[280px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={[
+                      { 
+                        name: 'Active Patents', 
+                        count: stats.granted, 
+                        percentage: ((stats.granted / stats.total) * 100).toFixed(1)
+                      },
+                      { 
+                        name: 'Rejected', 
+                        count: stats.rejected, 
+                        percentage: ((stats.rejected / stats.total) * 100).toFixed(1)
+                      },
+                      { 
+                        name: 'Under Review', 
+                        count: stats.total - stats.granted - stats.rejected, 
+                        percentage: (((stats.total - stats.granted - stats.rejected) / stats.total) * 100).toFixed(1)
+                      }
+                    ]}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis 
+                      dataKey="name" 
+                      angle={-15}
+                      textAnchor="end"
+                      height={80}
+                      tick={{ fill: '#374151', fontSize: 12, fontWeight: 600 }}
+                    />
+                    <YAxis 
+                      tick={{ fill: '#6b7280', fontSize: 12 }}
+                      label={{ value: 'Number of Patents', angle: -90, position: 'insideLeft', style: { fill: '#374151', fontWeight: 600 } }}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'rgba(255, 255, 255, 0.98)', 
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '12px',
+                        boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+                        padding: '12px'
+                      }}
+                      formatter={(value, name, props) => {
+                        return [
+                          <span className="font-semibold">{value} patents ({props.payload.percentage}%)</span>,
+                          ''
+                        ];
+                      }}
+                      labelFormatter={(label) => <span className="font-bold text-gray-900">{label}</span>}
+                    />
+                    <Bar 
+                      dataKey="count" 
+                      radius={[8, 8, 0, 0]}
+                      animationDuration={1000}
+                    >
+                      <Cell fill="url(#activeGradient)" />
+                      <Cell fill="url(#rejectedGradient)" />
+                      <Cell fill="url(#reviewGradient)" />
+                    </Bar>
+                    <defs>
+                      <linearGradient id="activeGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#10b981" stopOpacity={0.9}/>
+                        <stop offset="100%" stopColor="#059669" stopOpacity={0.8}/>
+                      </linearGradient>
+                      <linearGradient id="rejectedGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#ef4444" stopOpacity={0.9}/>
+                        <stop offset="100%" stopColor="#dc2626" stopOpacity={0.8}/>
+                      </linearGradient>
+                      <linearGradient id="reviewGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.9}/>
+                        <stop offset="100%" stopColor="#d97706" stopOpacity={0.8}/>
+                      </linearGradient>
+                    </defs>
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
               
-              {/* Rejected */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold text-gray-700">Rejected</span>
-                  <span className="text-sm font-bold text-red-600">{stats.rejected}</span>
+              {/* Summary Stats */}
+              <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-200">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">{stats.granted}</div>
+                  <div className="text-xs text-gray-600 mt-1">Active</div>
+                  <div className="text-xs text-gray-500">{((stats.granted / stats.total) * 100).toFixed(1)}%</div>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="h-2 bg-gradient-to-r from-red-500 to-rose-500 rounded-full transition-all duration-1000"
-                    style={{ width: `${(stats.rejected / stats.total) * 100}%` }}
-                  ></div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-red-600">{stats.rejected}</div>
+                  <div className="text-xs text-gray-600 mt-1">Rejected</div>
+                  <div className="text-xs text-gray-500">{((stats.rejected / stats.total) * 100).toFixed(1)}%</div>
                 </div>
-              </div>
-              
-              {/* Pending */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-semibold text-gray-700">Under Review</span>
-                  <span className="text-sm font-bold text-yellow-600">{stats.total - stats.granted - stats.rejected}</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="h-2 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full transition-all duration-1000"
-                    style={{ width: `${((stats.total - stats.granted - stats.rejected) / stats.total) * 100}%` }}
-                  ></div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-yellow-600">{stats.total - stats.granted - stats.rejected}</div>
+                  <div className="text-xs text-gray-600 mt-1">Under Review</div>
+                  <div className="text-xs text-gray-500">{(((stats.total - stats.granted - stats.rejected) / stats.total) * 100).toFixed(1)}%</div>
                 </div>
               </div>
             </div>
           ) : stats.loading ? (
             <div className="animate-pulse space-y-4">
-              <div className="h-4 bg-gray-200 rounded w-full"></div>
-              <div className="h-4 bg-gray-200 rounded w-full"></div>
-              <div className="h-4 bg-gray-200 rounded w-full"></div>
+              <div className="h-64 bg-gray-200 rounded"></div>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="h-16 bg-gray-200 rounded"></div>
+                <div className="h-16 bg-gray-200 rounded"></div>
+                <div className="h-16 bg-gray-200 rounded"></div>
+              </div>
             </div>
           ) : (
             <p className="text-gray-500 italic">Portfolio analysis will appear once you have filed patents.</p>
