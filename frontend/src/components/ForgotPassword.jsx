@@ -136,51 +136,117 @@ function ForgotPassword() {
   };
 
   return (
-    <div className="auth-container">
-      <h2 className="auth-title">Reset Password</h2>
-
-      <p style={{ textAlign: "center", marginBottom: "1.5rem", color: "#666" }}>
-        Enter your email address and we'll send you a link to reset your password.
-      </p>
-
-      {error && <div className="error-message">{error}</div>}
-      {message && <div className="success-message">{message}</div>}
-
-      <div className="form-group">
-        <div className="input-wrapper">
-          <span className="input-icon">📧</span>
-          <input
-            type="email"
-            className="form-input with-icon"
-            placeholder="Enter your registered email address"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            onKeyPress={handleKeyPress}
-            autoComplete="email"
-            autoFocus
-          />
+    <div className="auth-page-wrapper">
+      <div className="auth-split-container">
+        {/* Left Side - Security Information */}
+        <div className="auth-info-section forgot-password-info">
+          <div className="auth-info-content">
+            <h2 className="info-headline">Secure Password Reset Process</h2>
+            
+            <p className="info-description">
+              Your account security is our top priority. We've implemented a robust password 
+              recovery system to help you regain access quickly and securely.
+            </p>
+            
+            <div className="security-features">
+              <div className="security-item">
+                <span className="security-icon">🛡️</span>
+                <div>
+                  <h3>Bank-Level Encryption</h3>
+                  <p>All password reset links are encrypted with industry-standard protocols</p>
+                </div>
+              </div>
+              
+              <div className="security-item">
+                <span className="security-icon">⏱️</span>
+                <div>
+                  <h3>Time-Limited Links</h3>
+                  <p>Reset links expire after 1 hour for maximum security</p>
+                </div>
+              </div>
+              
+              <div className="security-item">
+                <span className="security-icon">✉️</span>
+                <div>
+                  <h3>Email Verification</h3>
+                  <p>Reset instructions are sent only to your registered email address</p>
+                </div>
+              </div>
+              
+              <div className="security-item">
+                <span className="security-icon">🔔</span>
+                <div>
+                  <h3>Activity Notifications</h3>
+                  <p>You'll receive alerts about all password change activities</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="info-box">
+              <h3>📋 How It Works</h3>
+              <ol className="steps-list">
+                <li>Enter your registered email address</li>
+                <li>Check your inbox for the reset link</li>
+                <li>Click the link to create a new password</li>
+                <li>Sign in with your new credentials</li>
+              </ol>
+            </div>
+          </div>
         </div>
-      </div>
+        
+        {/* Right Side - Reset Password Form */}
+        <div className="auth-form-section forgot-password-form">
+          <div className="auth-form-content">
+            <h2 className="form-title">Reset Your Password</h2>
+            <p className="form-subtitle">Enter your email to receive a reset link</p>
 
-      <button className="btn-primary" onClick={handleReset} disabled={loading}>
-        {loading ? "Sending Reset Email..." : "Send Reset Link"}
-      </button>
+            {error && <div className="error-message">{error}</div>}
+            {message && <div className="success-message">{message}</div>}
 
-      <div className="auth-links">
-        <p>
-          Remember your password? <Link to="/">Back to Sign In</Link>
-        </p>
-        <p>
-          Don't have an account? <Link to="/register">Create Account</Link>
-        </p>
-      </div>
+            <div className="form-group">
+              <label className="form-label">Email Address</label>
+              <div className="input-wrapper">
+                <span className="input-icon">📧</span>
+                <input
+                  type="email"
+                  className="form-input with-icon"
+                  placeholder="Enter your registered email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  autoComplete="email"
+                  autoFocus
+                />
+              </div>
+            </div>
 
-      <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: 'rgba(102, 126, 234, 0.1)', borderRadius: '8px', fontSize: '14px', color: '#555' }}>
-        <strong>📧 Instructions:</strong>
-        <ul style={{ marginTop: '0.5rem', marginBottom: '0', paddingLeft: '1.2rem' }}>
-          <li>Check spam folder if not received</li>
-          <li>Link expires in 1 hour</li>
-        </ul>
+            <button className="btn-primary" onClick={handleReset} disabled={loading}>
+              {loading ? "Sending Reset Link..." : "Send Reset Link"}
+            </button>
+
+            <div className="info-alert">
+              <div className="alert-header">
+                <span className="alert-icon">💡</span>
+                <strong>Important Instructions</strong>
+              </div>
+              <ul className="alert-list">
+                <li>Check your spam/junk folder if you don't see the email</li>
+                <li>The reset link expires in 1 hour for security</li>
+                <li>You can request a new link if the previous one expired</li>
+                <li>Contact support if you need further assistance</li>
+              </ul>
+            </div>
+
+            <div className="auth-footer">
+              <p>
+                Remember your password? <Link to="/" className="auth-link">Back to Sign In</Link>
+              </p>
+              <p>
+                Don't have an account? <Link to="/register" className="auth-link">Create Account</Link>
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

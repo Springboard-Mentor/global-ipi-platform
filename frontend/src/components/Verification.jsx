@@ -82,119 +82,137 @@ function Verification() {
 
   if (loading) {
     return (
-      <div className="dashboard-container">
-        <div style={{ textAlign: 'center', padding: '2rem' }}>
-          <div style={{ 
-            width: '40px', 
-            height: '40px', 
-            border: '4px solid #f3f3f3',
-            borderTop: '4px solid #667eea',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto 1rem'
-          }}></div>
-          <p>Loading...</p>
+      <div className="verification-page-wrapper">
+        <div className="loading-container">
+          <div className="spinner"></div>
+          <p>Verifying your identity...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="dashboard-container">
-      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <h2 className="dashboard-title" style={{ fontSize: '1.8rem', marginBottom: '0.5rem' }}>
-          🔐 Identity Verification in Progress
-        </h2>
-        <p style={{ fontSize: '1.1rem', color: '#555', marginBottom: '1rem' }}>
-          Please confirm your account details
-        </p>
-        
-      </div>
-      
-      {user && (
-        <>
-          <div className="user-info" style={{ marginBottom: '2rem' }}>
-            <h3 style={{ marginBottom: '1rem', color: '#333', fontSize: '1.2rem' }}>
-              ✅ Account Verification Details
-            </h3>
-            <div style={{ textAlign: 'left' }}>
-              <p style={{ marginBottom: '0.8rem' }}>
-                <strong>Registered Email:</strong><br />
-                <span style={{ color: '#007bff' }}>{user.email}</span>
-              </p>
-              <p style={{ marginBottom: '0.8rem' }}>
-                <strong>User Identification Code:</strong><br />
-                <span style={{ color: '#007bff', fontFamily: 'monospace' }}>{user.uid.substring(0, 8)}...</span>
-              </p>
-              <p style={{ marginBottom: '0.8rem' }}>
-                <strong>Account Created On:</strong><br />
-                <span style={{ color: '#007bff' }}>{formatDate(user.metadata?.creationTime)}</span>
-              </p>
-              <p style={{ marginBottom: '0.8rem' }}>
-                <strong>Last Login Activity:</strong><br />
-                <span style={{ color: '#007bff' }}>{formatDate(user.metadata?.lastSignInTime)}</span>
-              </p>
-              <p style={{ marginBottom: '0.8rem' }}>
-                <strong>Email Verification Status:</strong><br />
-                <span style={{ color: user.emailVerified ? '#28a745' : '#dc3545' }}>
-                  {user.emailVerified ? "✔ Verified" : "❌ Not Verified"}
-                </span>
-              </p>
-            </div>
+    <div className="verification-page-wrapper">
+      <div className="verification-container">
+        {/* Header Section */}
+        <div className="verification-header">
+          <div className="verification-icon">
+            <span className="icon-shield">🛡️</span>
           </div>
+          <h1 className="verification-title">Identity Verification</h1>
+          <p className="verification-subtitle">
+            Please confirm your account details before proceeding to the dashboard
+          </p>
+        </div>
         
-          
-          <div style={{ textAlign: 'center' }}>
+        {user && (
+          <>
+            {/* Account Information Card */}
+            <div className="verification-card">
+              <div className="card-header">
+                <h2>
+                  <span className="header-icon">✓</span>
+                  Account Verification Details
+                </h2>
+              </div>
+              
+              <div className="info-grid">
+                <div className="info-item">
+                  <div className="info-label">
+                    <span className="label-icon">📧</span>
+                    Registered Email
+                  </div>
+                  <div className="info-value">{user.email}</div>
+                </div>
+                
+                <div className="info-item">
+                  <div className="info-label">
+                    <span className="label-icon">🆔</span>
+                    User Identification Code
+                  </div>
+                  <div className="info-value info-code">{user.uid.substring(0, 16)}...</div>
+                </div>
+                
+                <div className="info-item">
+                  <div className="info-label">
+                    <span className="label-icon">📅</span>
+                    Account Created On
+                  </div>
+                  <div className="info-value">{formatDate(user.metadata?.creationTime)}</div>
+                </div>
+                
+                <div className="info-item">
+                  <div className="info-label">
+                    <span className="label-icon">⏰</span>
+                    Last Login Activity
+                  </div>
+                  <div className="info-value">{formatDate(user.metadata?.lastSignInTime)}</div>
+                </div>
+                
+                <div className="info-item full-width">
+                  <div className="info-label">
+                    <span className="label-icon">✉️</span>
+                    Email Verification Status
+                  </div>
+                  <div className={`info-value verification-status ${user.emailVerified ? 'verified' : 'unverified'}`}>
+                    {user.emailVerified ? (
+                      <><span className="status-icon">✓</span> Verified</>
+                    ) : (
+                      <><span className="status-icon">⚠</span> Not Verified</>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
             
+            {/* Security Notice */}
+            <div className="security-notice">
+              <div className="notice-icon">🔒</div>
+              <div className="notice-content">
+                <h3>Security Checkpoint</h3>
+                <p>
+                  We're verifying this login attempt for your protection. If you don't recognize 
+                  this activity, please click "No, This Is Not Me" to sign out immediately.
+                </p>
+              </div>
+            </div>
             
-            <div style={{ marginBottom: '1rem' }}>
+            {/* Action Buttons */}
+            <div className="verification-actions">
               <button
                 onClick={handleContinueToDashboard}
-                style={{
-                  background: 'linear-gradient(45deg, #28a745 0%, #20c997 100%)',
-                  color: 'white',
-                  border: 'none',
-                  padding: '15px 30px',
-                  borderRadius: '10px',
-                  cursor: 'pointer',
-                  fontSize: '1rem',
-                  fontWeight: 'bold',
-                  marginBottom: '15px',
-                  boxShadow: '0 4px 15px rgba(40, 167, 69, 0.3)',
-                  width: '100%',
-                  maxWidth: '300px'
-                }}
+                className="btn-verify-primary"
               >
-                🚀 Yes, This Is My Account<br />
-                <small style={{ fontSize: '0.85rem', opacity: '0.9' }}>➡️ Continue to Dashboard</small>
+                <span className="btn-icon">✓</span>
+                <div className="btn-content">
+                  <div className="btn-main-text">Yes, This Is My Account</div>
+                  <div className="btn-sub-text">Continue to Dashboard</div>
+                </div>
+              </button>
+              
+              <button
+                onClick={handleLogout}
+                className="btn-verify-secondary"
+              >
+                <span className="btn-icon">✗</span>
+                <div className="btn-content">
+                  <div className="btn-main-text">No, This Is Not Me</div>
+                  <div className="btn-sub-text">Sign Out Immediately</div>
+                </div>
               </button>
             </div>
             
-            <div>
-              <button
-                className="btn-logout"
-                onClick={handleLogout}
-                style={{
-                  background: 'linear-gradient(45deg, #dc3545 0%, #fd7e7e 100%)',
-                  color: 'white',
-                  border: 'none',
-                  padding: '15px 30px',
-                  borderRadius: '10px',
-                  cursor: 'pointer',
-                  fontSize: '1rem',
-                  fontWeight: 'bold',
-                  boxShadow: '0 4px 15px rgba(220, 53, 69, 0.3)',
-                  width: '100%',
-                  maxWidth: '300px'
-                }}
-              >
-                🚪 No, This Is Not Me<br />
-                <small style={{ fontSize: '0.85rem', opacity: '0.9' }}>➡️ Sign Out</small>
-              </button>
+            {/* Additional Information */}
+            <div className="verification-footer">
+              <p className="footer-text">
+                <strong>Why am I seeing this?</strong><br />
+                This verification step helps protect your account from unauthorized access. 
+                We authenticate every login to ensure the security of your IP research data.
+              </p>
             </div>
-          </div>
-        </>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
