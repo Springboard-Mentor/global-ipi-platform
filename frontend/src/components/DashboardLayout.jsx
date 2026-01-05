@@ -9,7 +9,9 @@ import {
   Bell,
   Search,
   User,
-  Menu
+  Menu,
+  BarChart3, // New Icon
+  TrendingUp // New Icon
 } from 'lucide-react';
 
 const DashboardLayout = ({ user, onLogout, currentPage, onNavigate, children }) => {
@@ -26,14 +28,15 @@ const DashboardLayout = ({ user, onLogout, currentPage, onNavigate, children }) 
   const navItems = [
     { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
     { id: 'patents', label: 'My Patents', icon: FileText },
-
-    // ✅ NEW ITEM — ADDED BELOW "MY PATENTS"
     { id: 'search', label: 'Search IP Analysis', icon: Search },
+    
+    // ✅ NEW ANALYTICS ITEMS
+    { id: 'legal-dashboard', label: 'Legal Dashboard', icon: BarChart3 },
+    { id: 'landscape', label: 'Landscape View', icon: TrendingUp },
 
     { id: 'new-filing', label: 'New Filing', icon: Shield },
-    { id: 'analysis', label: 'IP Analysis', icon: Activity },
+    { id: 'analysis', label: 'AI Analysis', icon: Activity },
     { id: 'settings', label: 'Settings', icon: Settings },
-    
   ];
 
   return (

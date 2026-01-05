@@ -9,7 +9,6 @@
 *.war
 *.ear
 *.log
-.env
 
 # Node/Vite Build Output
 /frontend/node_modules/ # Node dependencies (bahut bada folder)

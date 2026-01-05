@@ -82,8 +82,6 @@ public interface IPAssetRepository extends JpaRepository<IPAsset, Integer> {
     // ===========================
     // 🌍 MAP / ANALYTICS SUPPORT
     // ===========================
-    
-    // For Landscape Visualization
     @Query("""
         SELECT a.jurisdiction, COUNT(a)
         FROM IPAsset a
@@ -91,23 +89,4 @@ public interface IPAssetRepository extends JpaRepository<IPAsset, Integer> {
         GROUP BY a.jurisdiction
     """)
     List<Object[]> getJurisdictionCounts(@Param("keyword") String keyword);
-
-    // ✅ ADDED: For Legal Status Dashboard Status Mix
-    // This fixes "The method getStatusDistribution() is undefined" error
-    @Query("""
-        SELECT i.status, COUNT(i)
-        FROM IPAsset i
-        WHERE i.status IS NOT NULL
-        GROUP BY i.status
-    """)
-    List<Object[]> getStatusDistribution();
-    
-    // For Technology/Domain Distribution
-    @Query("""
-        SELECT i.type, COUNT(i)
-        FROM IPAsset i
-        WHERE i.type IS NOT NULL
-        GROUP BY i.type
-    """)
-    List<Object[]> getDomainDistribution();
 }
