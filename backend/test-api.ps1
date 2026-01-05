@@ -15,7 +15,7 @@ try {
 } catch {
     Write-Host "❌ Backend is not running!" -ForegroundColor Red
     Write-Host "Please start the backend first:" -ForegroundColor Yellow
-    Write-Host "  cd backend\backend" -ForegroundColor White
+    Write-Host "  cd backend" -ForegroundColor White
     Write-Host "  .\mvnw spring-boot:run" -ForegroundColor White
     Write-Host ""
     exit 1

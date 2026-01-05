@@ -14,7 +14,7 @@ try {
     Write-Host "   Error: $($_.Exception.Message)" -ForegroundColor Red
     Write-Host ""
     Write-Host "To start the backend:" -ForegroundColor Yellow
-    Write-Host "   1. Open a terminal in: backend\backend" -ForegroundColor White
+    Write-Host "   1. Open a terminal in: backend" -ForegroundColor White
     Write-Host "   2. Run: mvn spring-boot:run" -ForegroundColor White
     Write-Host ""
     exit
