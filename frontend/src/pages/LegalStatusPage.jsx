@@ -24,7 +24,10 @@ import {
   PolarGrid,
   PolarAngleAxis,
   PolarRadiusAxis,
-  Radar
+  Radar,
+  ComposedChart,
+  Line,
+  LabelList
 } from 'recharts';
 
 const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
@@ -941,47 +944,294 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
         </div>
       </div>
 
-      {/* Stats Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
-        <StatCard
-          title="Total Patents"
-          value={stats.total}
-          icon={FileText}
-          gradient="from-blue-500 via-indigo-500 to-purple-600"
-          iconBg="bg-gradient-to-br from-blue-100 to-indigo-100"
-          iconColor="text-blue-600"
-          description="Total number of patent applications filed through the platform"
-        />
-        
-        <StatCard
-          title="Granted Patents"
-          value={stats.granted}
-          icon={CheckCircle}
-          gradient="from-green-500 via-emerald-500 to-teal-600"
-          iconBg="bg-gradient-to-br from-green-100 to-emerald-100"
-          iconColor="text-green-600"
-          description="Successfully granted patents with full legal protection and rights"
-        />
-        
-        <StatCard
-          title="Rejected Patents"
-          value={stats.rejected}
-          icon={XCircle}
-          gradient="from-red-500 via-rose-500 to-pink-600"
-          iconBg="bg-gradient-to-br from-red-100 to-rose-100"
-          iconColor="text-red-600"
-          description="Patent applications that were rejected during the review process"
-        />
-        
-        <StatCard
-          title="Under Review"
-          value={stats.underReview}
-          icon={AlertCircle}
-          gradient="from-yellow-500 via-orange-500 to-amber-600"
-          iconBg="bg-gradient-to-br from-yellow-100 to-orange-100"
-          iconColor="text-yellow-600"
-          description="Patent applications currently under review and pending decision"
-        />
+      {/* Patent Portfolio Comparison Chart */}
+      <div className="mb-8">
+        <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 rounded-3xl shadow-2xl p-8 border-2 border-indigo-100 hover:shadow-3xl transition-all duration-500">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-4">
+              <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-4 rounded-2xl shadow-lg">
+                <FileText className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <h3 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">
+                  Patent Portfolio Analysis
+                </h3>
+                <p className="text-sm text-gray-600 font-medium mt-1">
+                  Comprehensive overview of all patent applications and their current status
+                </p>
+              </div>
+            </div>
+            <div className="bg-white/80 backdrop-blur-sm px-6 py-3 rounded-xl border-2 border-indigo-200 shadow-md">
+              <div className="text-center">
+                <p className="text-xs text-indigo-600 font-bold uppercase tracking-wide">Total Applications</p>
+                <p className="text-4xl font-black text-indigo-900">{stats.total}</p>
+              </div>
+            </div>
+          </div>
+
+          {!stats.loading && stats.total > 0 ? (
+            <div className="space-y-8">
+              {/* Composed Chart with Bars and Lines */}
+              <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-indigo-100">
+                <div className="h-[350px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart
+                      data={[
+                        {
+                          status: 'Total\nPatents',
+                          count: stats.total,
+                          percentage: 100,
+                          color: '#6366f1'
+                        },
+                        {
+                          status: 'Granted\nPatents',
+                          count: stats.granted,
+                          percentage: stats.total > 0 ? Math.round((stats.granted / stats.total) * 100) : 0,
+                          color: '#10b981'
+                        },
+                        {
+                          status: 'Rejected\nPatents',
+                          count: stats.rejected,
+                          percentage: stats.total > 0 ? Math.round((stats.rejected / stats.total) * 100) : 0,
+                          color: '#ef4444'
+                        },
+                        {
+                          status: 'Under\nReview',
+                          count: stats.underReview,
+                          percentage: stats.total > 0 ? Math.round((stats.underReview / stats.total) * 100) : 0,
+                          color: '#f59e0b'
+                        }
+                      ]}
+                      margin={{ top: 30, right: 40, bottom: 60, left: 40 }}
+                    >
+                      <defs>
+                        <linearGradient id="totalGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#6366f1" stopOpacity={0.9}/>
+                          <stop offset="100%" stopColor="#818cf8" stopOpacity={0.6}/>
+                        </linearGradient>
+                        <linearGradient id="grantedGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#10b981" stopOpacity={0.9}/>
+                          <stop offset="100%" stopColor="#34d399" stopOpacity={0.6}/>
+                        </linearGradient>
+                        <linearGradient id="rejectedGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#ef4444" stopOpacity={0.9}/>
+                          <stop offset="100%" stopColor="#f87171" stopOpacity={0.6}/>
+                        </linearGradient>
+                        <linearGradient id="reviewGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.9}/>
+                          <stop offset="100%" stopColor="#fbbf24" stopOpacity={0.6}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e0e7ff" strokeWidth={1.5} />
+                      <XAxis 
+                        dataKey="status" 
+                        angle={0}
+                        height={70}
+                        tick={{ fill: '#4b5563', fontSize: 13, fontWeight: 700 }}
+                      />
+                      <YAxis 
+                        yAxisId="left"
+                        tick={{ fill: '#4b5563', fontSize: 12, fontWeight: 600 }}
+                        label={{ 
+                          value: 'Number of Patents', 
+                          angle: -90, 
+                          position: 'insideLeft',
+                          style: { fill: '#1e293b', fontWeight: 700, fontSize: 13 }
+                        }}
+                      />
+                      <YAxis 
+                        yAxisId="right"
+                        orientation="right"
+                        tick={{ fill: '#7c3aed', fontSize: 12, fontWeight: 600 }}
+                        label={{ 
+                          value: 'Percentage (%)', 
+                          angle: 90, 
+                          position: 'insideRight',
+                          style: { fill: '#7c3aed', fontWeight: 700, fontSize: 13 }
+                        }}
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'rgba(255, 255, 255, 0.98)', 
+                          border: '3px solid #6366f1',
+                          borderRadius: '16px',
+                          boxShadow: '0 20px 40px rgba(99, 102, 241, 0.2)',
+                          padding: '16px'
+                        }}
+                        formatter={(value, name) => {
+                          if (name === 'count') return [<span className="font-bold text-lg">{value} patents</span>, 'Count'];
+                          if (name === 'percentage') return [<span className="font-bold text-lg text-purple-600">{value}%</span>, 'Percentage'];
+                          return [value, name];
+                        }}
+                        labelFormatter={(label) => <span className="font-black text-gray-900 text-base">{label.replace('\n', ' ')}</span>}
+                      />
+                      <Legend 
+                        wrapperStyle={{ paddingTop: '20px' }}
+                        iconType="rect"
+                        formatter={(value) => <span className="font-bold text-gray-700 text-sm">{value === 'count' ? 'Patent Count' : 'Success Rate %'}</span>}
+                      />
+                      <Bar 
+                        yAxisId="left"
+                        dataKey="count" 
+                        radius={[12, 12, 0, 0]}
+                        animationDuration={1500}
+                      >
+                        {[0, 1, 2, 3].map((index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={
+                              index === 0 ? 'url(#totalGradient)' :
+                              index === 1 ? 'url(#grantedGradient)' :
+                              index === 2 ? 'url(#rejectedGradient)' :
+                              'url(#reviewGradient)'
+                            }
+                          />
+                        ))}
+                        <LabelList 
+                          dataKey="count" 
+                          position="top" 
+                          style={{ fill: '#1e293b', fontWeight: 900, fontSize: 14 }}
+                        />
+                      </Bar>
+                      <Line 
+                        yAxisId="right"
+                        type="monotone" 
+                        dataKey="percentage" 
+                        stroke="#7c3aed" 
+                        strokeWidth={4}
+                        dot={{ fill: '#7c3aed', r: 8, strokeWidth: 3, stroke: '#fff' }}
+                        activeDot={{ r: 10, strokeWidth: 3 }}
+                        animationDuration={2000}
+                      >
+                        <LabelList 
+                          dataKey="percentage" 
+                          position="top" 
+                          formatter={(value) => `${value}%`}
+                          style={{ fill: '#7c3aed', fontWeight: 900, fontSize: 13 }}
+                        />
+                      </Line>
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Beautiful Stats Summary Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {/* Total Patents */}
+                <div className="group bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-6 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 border-2 border-indigo-300">
+                  <div className="flex flex-col items-center text-white">
+                    <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl mb-3 group-hover:bg-white/30 transition-all">
+                      <FileText className="w-7 h-7" />
+                    </div>
+                    <p className="text-xs font-black uppercase tracking-wider mb-2 text-white/90">Total Patents</p>
+                    <h4 className="text-5xl font-black mb-2">{stats.total}</h4>
+                    <div className="w-full bg-white/20 rounded-full h-2 mt-2">
+                      <div className="h-2 bg-white rounded-full shadow-lg" style={{ width: '100%' }}></div>
+                    </div>
+                    <p className="text-xs text-white/80 font-semibold mt-2">100%</p>
+                  </div>
+                </div>
+
+                {/* Granted Patents */}
+                <div className="group bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-6 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 border-2 border-green-300">
+                  <div className="flex flex-col items-center text-white">
+                    <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl mb-3 group-hover:bg-white/30 transition-all">
+                      <CheckCircle className="w-7 h-7" />
+                    </div>
+                    <p className="text-xs font-black uppercase tracking-wider mb-2 text-white/90">Granted</p>
+                    <h4 className="text-5xl font-black mb-2">{stats.granted}</h4>
+                    <div className="w-full bg-white/20 rounded-full h-2 mt-2">
+                      <div 
+                        className="h-2 bg-white rounded-full shadow-lg transition-all duration-1000" 
+                        style={{ width: `${stats.total > 0 ? (stats.granted / stats.total) * 100 : 0}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-xs text-white/80 font-semibold mt-2">
+                      {stats.total > 0 ? Math.round((stats.granted / stats.total) * 100) : 0}%
+                    </p>
+                  </div>
+                </div>
+
+                {/* Rejected Patents */}
+                <div className="group bg-gradient-to-br from-red-500 to-rose-600 rounded-2xl p-6 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 border-2 border-red-300">
+                  <div className="flex flex-col items-center text-white">
+                    <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl mb-3 group-hover:bg-white/30 transition-all">
+                      <XCircle className="w-7 h-7" />
+                    </div>
+                    <p className="text-xs font-black uppercase tracking-wider mb-2 text-white/90">Rejected</p>
+                    <h4 className="text-5xl font-black mb-2">{stats.rejected}</h4>
+                    <div className="w-full bg-white/20 rounded-full h-2 mt-2">
+                      <div 
+                        className="h-2 bg-white rounded-full shadow-lg transition-all duration-1000" 
+                        style={{ width: `${stats.total > 0 ? (stats.rejected / stats.total) * 100 : 0}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-xs text-white/80 font-semibold mt-2">
+                      {stats.total > 0 ? Math.round((stats.rejected / stats.total) * 100) : 0}%
+                    </p>
+                  </div>
+                </div>
+
+                {/* Under Review */}
+                <div className="group bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-6 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 border-2 border-amber-300">
+                  <div className="flex flex-col items-center text-white">
+                    <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl mb-3 group-hover:bg-white/30 transition-all">
+                      <AlertCircle className="w-7 h-7" />
+                    </div>
+                    <p className="text-xs font-black uppercase tracking-wider mb-2 text-white/90">Under Review</p>
+                    <h4 className="text-5xl font-black mb-2">{stats.underReview}</h4>
+                    <div className="w-full bg-white/20 rounded-full h-2 mt-2">
+                      <div 
+                        className="h-2 bg-white rounded-full shadow-lg transition-all duration-1000" 
+                        style={{ width: `${stats.total > 0 ? (stats.underReview / stats.total) * 100 : 0}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-xs text-white/80 font-semibold mt-2">
+                      {stats.total > 0 ? Math.round((stats.underReview / stats.total) * 100) : 0}%
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Insights Section */}
+              <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl p-6 text-white shadow-xl">
+                <div className="flex items-start gap-4">
+                  <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+                    <TrendingUp className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-black mb-2">Portfolio Insights</h4>
+                    <p className="text-sm text-white/90 leading-relaxed">
+                      <span className="font-bold">{stats.granted}</span> patents have been successfully granted 
+                      ({stats.total > 0 ? Math.round((stats.granted / stats.total) * 100) : 0}% success rate), 
+                      while <span className="font-bold">{stats.underReview}</span> applications are currently under review. 
+                      Your portfolio demonstrates {stats.rejected === 0 ? 'perfect' : 'strong'} application quality 
+                      with only <span className="font-bold">{stats.rejected}</span> rejection{stats.rejected !== 1 ? 's' : ''}.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : stats.loading ? (
+            <div className="animate-pulse space-y-6">
+              <div className="h-80 bg-gradient-to-r from-gray-200 to-gray-300 rounded-2xl"></div>
+              <div className="grid grid-cols-4 gap-4">
+                <div className="h-40 bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl"></div>
+                <div className="h-40 bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl"></div>
+                <div className="h-40 bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl"></div>
+                <div className="h-40 bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl"></div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-16">
+              <div className="bg-gradient-to-br from-gray-100 to-gray-200 w-24 h-24 rounded-full mx-auto mb-6 flex items-center justify-center">
+                <FileText className="w-12 h-12 text-gray-400" />
+              </div>
+              <p className="text-xl font-bold text-gray-600">No patent data available</p>
+              <p className="text-gray-500 mt-2">File your first patent to see your portfolio analysis</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Subscription Details with Radar Chart */}
