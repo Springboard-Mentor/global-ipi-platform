@@ -19,7 +19,12 @@ import {
   AreaChart,
   Area,
   RadialBarChart,
-  RadialBar
+  RadialBar,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar
 } from 'recharts';
 
 const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
@@ -979,7 +984,7 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
         />
       </div>
 
-      {/* Subscription Details Card */}
+      {/* Subscription Details with Radar Chart */}
       <div className="mb-8">
         <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-gray-100 hover:shadow-2xl transition-all duration-300">
           <div className="flex items-center gap-3 mb-6">
@@ -991,52 +996,132 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
 
           {userStats.loading ? (
             <div className="animate-pulse space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="h-80 bg-gray-200 rounded-xl"></div>
+              <div className="grid grid-cols-4 gap-4">
                 <div className="h-24 bg-gray-200 rounded-xl"></div>
                 <div className="h-24 bg-gray-200 rounded-xl"></div>
-                <div className="h-24 bg-gray-200 rounded-xl"></div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="h-24 bg-gray-200 rounded-xl"></div>
                 <div className="h-24 bg-gray-200 rounded-xl"></div>
               </div>
             </div>
           ) : (
             <div className="space-y-6">
-              {/* Total Registered Users and Subscription Breakdown */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                {/* Total Registered Users */}
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border-2 border-blue-100 hover:border-blue-300 transition-all duration-300 transform hover:scale-105">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="bg-blue-100 p-2 rounded-lg">
-                      <Users className="w-5 h-5 text-blue-600" />
+              {/* Radar Chart */}
+              <div className="h-[400px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart 
+                    cx="50%" 
+                    cy="50%" 
+                    outerRadius="75%" 
+                    data={[
+                      {
+                        category: 'Total Users',
+                        value: userStats.totalUsers,
+                        fullMark: userStats.totalUsers || 100
+                      },
+                      {
+                        category: 'Basic',
+                        value: userStats.basicUsers,
+                        fullMark: userStats.totalUsers || 100
+                      },
+                      {
+                        category: 'Pro',
+                        value: userStats.proUsers,
+                        fullMark: userStats.totalUsers || 100
+                      },
+                      {
+                        category: 'Enterprise',
+                        value: userStats.enterpriseUsers,
+                        fullMark: userStats.totalUsers || 100
+                      },
+                      {
+                        category: 'Active',
+                        value: userStats.activeUsers,
+                        fullMark: userStats.totalUsers || 100
+                      }
+                    ]}
+                  >
+                    <defs>
+                      <linearGradient id="radarGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                        <stop offset="100%" stopColor="#06b6d4" stopOpacity={0.3}/>
+                      </linearGradient>
+                    </defs>
+                    <PolarGrid stroke="#cbd5e1" strokeWidth={1.5} />
+                    <PolarAngleAxis 
+                      dataKey="category" 
+                      tick={{ fill: '#1e293b', fontSize: 13, fontWeight: 700 }}
+                    />
+                    <PolarRadiusAxis 
+                      angle={90} 
+                      domain={[0, userStats.totalUsers || 100]}
+                      tick={{ fill: '#64748b', fontSize: 11 }}
+                    />
+                    <Radar 
+                      name="User Distribution" 
+                      dataKey="value" 
+                      stroke="#2563eb" 
+                      strokeWidth={3}
+                      fill="url(#radarGradient)" 
+                      fillOpacity={0.6}
+                      animationDuration={1500}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'rgba(255, 255, 255, 0.98)', 
+                        border: '2px solid #3b82f6',
+                        borderRadius: '12px',
+                        padding: '12px',
+                        boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
+                      }}
+                      formatter={(value, name, props) => [
+                        <span className="font-semibold text-blue-700">
+                          {value} users
+                          {props.payload.category !== 'Total Users' && userStats.totalUsers > 0 
+                            ? ` (${Math.round((value / userStats.totalUsers) * 100)}%)`
+                            : ''
+                          }
+                        </span>,
+                        props.payload.category
+                      ]}
+                    />
+                    <Legend 
+                      wrapperStyle={{ paddingTop: '20px' }}
+                      iconType="circle"
+                      formatter={() => <span className="font-semibold text-gray-700">User Distribution</span>}
+                    />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Stats Summary Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {/* Total Users */}
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-5 border-2 border-blue-200 hover:border-blue-400 transition-all duration-300">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="bg-blue-100 p-3 rounded-xl mb-3">
+                      <Users className="w-6 h-6 text-blue-600" />
                     </div>
-                    <div className="text-right">
-                      <p className="text-xs font-semibold text-blue-600 uppercase">Total Registered Users</p>
-                      <h4 className="text-3xl font-black text-blue-900">{userStats.totalUsers}</h4>
+                    <p className="text-xs font-bold text-blue-600 uppercase mb-1">Total Users</p>
+                    <h4 className="text-3xl font-black text-blue-900">{userStats.totalUsers}</h4>
+                    <div className="w-full bg-blue-200 rounded-full h-2 mt-3">
+                      <div className="h-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full" style={{ width: '100%' }}></div>
                     </div>
-                  </div>
-                  <div className="w-full bg-blue-200 rounded-full h-2">
-                    <div className="h-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full" style={{ width: '100%' }}></div>
                   </div>
                 </div>
 
                 {/* Basic Users */}
-                <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-6 border-2 border-gray-200 hover:border-gray-400 transition-all duration-300 transform hover:scale-105">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="bg-gray-100 p-2 rounded-lg">
-                      <Users className="w-5 h-5 text-gray-600" />
+                <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-5 border-2 border-gray-300 hover:border-gray-500 transition-all duration-300">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="bg-gray-100 p-3 rounded-xl mb-3">
+                      <Users className="w-6 h-6 text-gray-600" />
                     </div>
-                    <div className="text-right">
-                      <p className="text-xs font-semibold text-gray-600 uppercase">Basic</p>
-                      <h4 className="text-3xl font-black text-gray-900">{userStats.basicUsers}</h4>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-gray-500 font-medium">
+                    <p className="text-xs font-bold text-gray-600 uppercase mb-1">Basic</p>
+                    <h4 className="text-3xl font-black text-gray-900">{userStats.basicUsers}</h4>
+                    <div className="text-xs text-gray-500 font-semibold mt-1">
                       {userStats.totalUsers > 0 ? Math.round((userStats.basicUsers / userStats.totalUsers) * 100) : 0}%
-                    </span>
-                    <div className="w-2/3 bg-gray-200 rounded-full h-2">
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
                       <div 
                         className="h-2 bg-gradient-to-r from-gray-400 to-gray-600 rounded-full transition-all duration-1000" 
                         style={{ width: `${userStats.totalUsers > 0 ? (userStats.basicUsers / userStats.totalUsers) * 100 : 0}%` }}
@@ -1046,21 +1131,17 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
                 </div>
 
                 {/* Pro Users */}
-                <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border-2 border-purple-200 hover:border-purple-400 transition-all duration-300 transform hover:scale-105">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="bg-purple-100 p-2 rounded-lg">
-                      <Award className="w-5 h-5 text-purple-600" />
+                <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-5 border-2 border-purple-300 hover:border-purple-500 transition-all duration-300">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="bg-purple-100 p-3 rounded-xl mb-3">
+                      <Award className="w-6 h-6 text-purple-600" />
                     </div>
-                    <div className="text-right">
-                      <p className="text-xs font-semibold text-purple-600 uppercase">Pro</p>
-                      <h4 className="text-3xl font-black text-purple-900">{userStats.proUsers}</h4>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-purple-500 font-medium">
+                    <p className="text-xs font-bold text-purple-600 uppercase mb-1">Pro</p>
+                    <h4 className="text-3xl font-black text-purple-900">{userStats.proUsers}</h4>
+                    <div className="text-xs text-purple-500 font-semibold mt-1">
                       {userStats.totalUsers > 0 ? Math.round((userStats.proUsers / userStats.totalUsers) * 100) : 0}%
-                    </span>
-                    <div className="w-2/3 bg-purple-200 rounded-full h-2">
+                    </div>
+                    <div className="w-full bg-purple-200 rounded-full h-2 mt-2">
                       <div 
                         className="h-2 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full transition-all duration-1000" 
                         style={{ width: `${userStats.totalUsers > 0 ? (userStats.proUsers / userStats.totalUsers) * 100 : 0}%` }}
@@ -1070,21 +1151,17 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
                 </div>
 
                 {/* Enterprise Users */}
-                <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-6 border-2 border-amber-200 hover:border-amber-400 transition-all duration-300 transform hover:scale-105">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="bg-amber-100 p-2 rounded-lg">
-                      <Award className="w-5 h-5 text-amber-600" />
+                <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-5 border-2 border-amber-300 hover:border-amber-500 transition-all duration-300">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="bg-amber-100 p-3 rounded-xl mb-3">
+                      <Award className="w-6 h-6 text-amber-600" />
                     </div>
-                    <div className="text-right">
-                      <p className="text-xs font-semibold text-amber-600 uppercase">Enterprise</p>
-                      <h4 className="text-3xl font-black text-amber-900">{userStats.enterpriseUsers}</h4>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-amber-600 font-medium">
+                    <p className="text-xs font-bold text-amber-600 uppercase mb-1">Enterprise</p>
+                    <h4 className="text-3xl font-black text-amber-900">{userStats.enterpriseUsers}</h4>
+                    <div className="text-xs text-amber-600 font-semibold mt-1">
                       {userStats.totalUsers > 0 ? Math.round((userStats.enterpriseUsers / userStats.totalUsers) * 100) : 0}%
-                    </span>
-                    <div className="w-2/3 bg-amber-200 rounded-full h-2">
+                    </div>
+                    <div className="w-full bg-amber-200 rounded-full h-2 mt-2">
                       <div 
                         className="h-2 bg-gradient-to-r from-amber-500 to-orange-600 rounded-full transition-all duration-1000" 
                         style={{ width: `${userStats.totalUsers > 0 ? (userStats.enterpriseUsers / userStats.totalUsers) * 100 : 0}%` }}
