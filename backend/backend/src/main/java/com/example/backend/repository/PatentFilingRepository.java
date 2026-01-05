@@ -32,4 +32,17 @@ public interface PatentFilingRepository extends JpaRepository<PatentFiling, Long
     // Get distinct cities by state (case-insensitive, excluding nulls and empty strings)
     @Query("SELECT DISTINCT p.applicantCity FROM PatentFiling p WHERE LOWER(p.applicantState) = LOWER(:state) AND p.applicantCity IS NOT NULL AND p.applicantCity != '' ORDER BY p.applicantCity")
     List<String> findDistinctCitiesByState(@org.springframework.data.repository.query.Param("state") String state);
+    
+    // Date-based analytics queries
+    @Query("SELECT COUNT(p) FROM PatentFiling p WHERE p.applicationDate >= :startDate")
+    long countPatentsFiledSince(@org.springframework.data.repository.query.Param("startDate") java.time.LocalDate startDate);
+    
+    @Query("SELECT p.applicantState, COUNT(p) FROM PatentFiling p WHERE p.applicationDate >= :startDate GROUP BY p.applicantState ORDER BY COUNT(p) DESC")
+    List<Object[]> countPatentsByStateSince(@org.springframework.data.repository.query.Param("startDate") java.time.LocalDate startDate);
+    
+    @Query("SELECT p.applicantCity, COUNT(p) FROM PatentFiling p WHERE p.applicationDate >= :startDate AND LOWER(p.applicantState) = LOWER(:state) GROUP BY p.applicantCity ORDER BY COUNT(p) DESC")
+    List<Object[]> countPatentsByCityInStateSince(@org.springframework.data.repository.query.Param("startDate") java.time.LocalDate startDate, @org.springframework.data.repository.query.Param("state") String state);
+    
+    @Query("SELECT p.applicantCity, COUNT(p) FROM PatentFiling p WHERE p.applicationDate >= :startDate GROUP BY p.applicantCity ORDER BY COUNT(p) DESC")
+    List<Object[]> countPatentsByCitySince(@org.springframework.data.repository.query.Param("startDate") java.time.LocalDate startDate);
 }

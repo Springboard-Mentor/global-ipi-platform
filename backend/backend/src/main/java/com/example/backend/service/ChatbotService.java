@@ -49,6 +49,10 @@ public class ChatbotService {
                 response = handleCityPatentQuery(userMessage);
             } else if (isStatusQuery(userMessage)) {
                 response = handleStatusQuery(userMessage);
+            } else if (isUserRegistrationQuery(userMessage)) {
+                response = handleUserRegistrationQuery(userMessage);
+            } else if (isPatentAnalyticsQuery(userMessage)) {
+                response = handlePatentAnalyticsQuery(userMessage);
             } else {
                 response = handleGeneralQuery(userMessage);
             }
@@ -117,6 +121,29 @@ public class ChatbotService {
         return (message.contains("patent") && message.contains("city")) ||
                message.contains("patents in") ||
                message.contains("patents by city");
+    }
+    
+    private boolean isUserRegistrationQuery(String message) {
+        return (message.contains("how many user") || message.contains("total user") ||
+                message.contains("user registered") || message.contains("new user")) &&
+               (message.contains("today") || message.contains("this week") || 
+                message.contains("this month") || message.contains("last week") ||
+                message.contains("last month") || message.contains("yesterday"));
+    }
+    
+    private boolean isPatentAnalyticsQuery(String message) {
+        return (message.contains("patent") && 
+                (message.contains("today") || message.contains("this week") || 
+                 message.contains("this month") || message.contains("yesterday") ||
+                 message.contains("last week") || message.contains("last month"))) ||
+               (message.contains("how many patent") && message.contains("filed")) ||
+               (message.contains("patent") && message.contains("state") && 
+                (message.contains("today") || message.contains("this week"))) ||
+               (message.contains("patent") && (message.contains("city") || message.contains("district")) && 
+                (message.contains("today") || message.contains("this week"))) ||
+               message.contains("patents in") ||
+               (message.contains("which district") && message.contains("patent")) ||
+               (message.contains("which city") && message.contains("patent"));
     }
     
     private boolean isStatusQuery(String message) {
@@ -401,6 +428,169 @@ public class ChatbotService {
                 "I encountered an error while fetching patent status data. Please try again."
             );
         }
+    }
+    
+    private ChatbotResponse handleUserRegistrationQuery(String message) {
+        try {
+            java.time.LocalDateTime startDate = getStartDateFromQuery(message);
+            String timeFrame = getTimeFrameFromQuery(message);
+            
+            long userCount = userRepository.countUsersRegisteredSince(startDate);
+            
+            String responseMessage = String.format(
+                "📊 **User Registration Analytics - %s**\n\n" +
+                "✅ Total users registered: **%d**\n\n" +
+                "💡 *This data is fetched in real-time from the database.*",
+                timeFrame,
+                userCount
+            );
+            
+            ChatbotResponse response = new ChatbotResponse(
+                responseMessage,
+                "analytics",
+                java.util.Map.of("count", userCount, "timeFrame", timeFrame)
+            );
+            response.setQueryType("user_registration_analytics");
+            response.setSuggestions(Arrays.asList(
+                "How many patents filed today?",
+                "Show patents by state this week",
+                "How many users registered this month?"
+            ));
+            
+            return response;
+        } catch (Exception e) {
+            System.err.println("Error in user registration query: " + e.getMessage());
+            return new ChatbotResponse(
+                "I encountered an error while fetching user registration data. Please try again."
+            );
+        }
+    }
+    
+    private ChatbotResponse handlePatentAnalyticsQuery(String message) {
+        try {
+            java.time.LocalDate startDate = getStartDateFromQuery(message).toLocalDate();
+            String timeFrame = getTimeFrameFromQuery(message);
+            
+            long totalPatents = patentFilingRepository.countPatentsFiledSince(startDate);
+            
+            StringBuilder responseMessage = new StringBuilder();
+            responseMessage.append(String.format("📊 **Patent Filing Analytics - %s**\n\n", timeFrame));
+            responseMessage.append(String.format("✅ Total patents filed: **%d**\n\n", totalPatents));
+            
+            // Check if query asks for specific state's districts/cities
+            String specificState = extractStateName(message);
+            
+            // Check if query asks for state-wise breakdown
+            if (message.contains("state") && specificState == null) {
+                List<Object[]> stateData = patentFilingRepository.countPatentsByStateSince(startDate);
+                if (!stateData.isEmpty()) {
+                    responseMessage.append("**State-wise breakdown:**\n");
+                    for (Object[] row : stateData) {
+                        String state = (String) row[0];
+                        Long count = (Long) row[1];
+                        responseMessage.append(String.format("- **%s**: %d patents\n", state, count));
+                    }
+                    responseMessage.append("\n");
+                }
+            }
+            
+            // Check if query asks for city-wise breakdown in a specific state
+            if (specificState != null && (message.contains("city") || message.contains("district") || message.contains("in " + specificState.toLowerCase()))) {
+                List<Object[]> cityData = patentFilingRepository.countPatentsByCityInStateSince(startDate, specificState);
+                if (!cityData.isEmpty()) {
+                    responseMessage.append(String.format("**Cities/Districts in %s:**\n", specificState));
+                    for (Object[] row : cityData) {
+                        String city = (String) row[0];
+                        Long count = (Long) row[1];
+                        responseMessage.append(String.format("- **%s**: %d patents\n", city, count));
+                    }
+                    responseMessage.append("\n");
+                } else {
+                    responseMessage.append(String.format("No patents found in %s for %s.\n\n", specificState, timeFrame.toLowerCase()));
+                }
+            }
+            // Check if query asks for general city-wise breakdown
+            else if (message.contains("city") || message.contains("district")) {
+                List<Object[]> cityData = patentFilingRepository.countPatentsByCitySince(startDate);
+                if (!cityData.isEmpty()) {
+                    responseMessage.append("**City/District-wise breakdown (Top 10):**\n");
+                    int limit = Math.min(10, cityData.size());
+                    for (int i = 0; i < limit; i++) {
+                        Object[] row = cityData.get(i);
+                        String city = (String) row[0];
+                        Long count = (Long) row[1];
+                        responseMessage.append(String.format("- **%s**: %d patents\n", city, count));
+                    }
+                    if (cityData.size() > 10) {
+                        responseMessage.append(String.format("... and %d more cities\n", cityData.size() - 10));
+                    }
+                    responseMessage.append("\n");
+                }
+            }
+            
+            responseMessage.append("💡 *This data is fetched in real-time from the database.*");
+            
+            ChatbotResponse response = new ChatbotResponse(
+                responseMessage.toString(),
+                "analytics",
+                java.util.Map.of("count", totalPatents, "timeFrame", timeFrame)
+            );
+            response.setQueryType("patent_analytics");
+            response.setSuggestions(Arrays.asList(
+                "How many users registered today?",
+                "Show patents by state this week",
+                "Which cities have most patents today?"
+            ));
+            
+            return response;
+        } catch (Exception e) {
+            System.err.println("Error in patent analytics query: " + e.getMessage());
+            e.printStackTrace();
+            return new ChatbotResponse(
+                "I encountered an error while fetching patent analytics data. Please try again."
+            );
+        }
+    }
+    
+    private java.time.LocalDateTime getStartDateFromQuery(String message) {
+        String lowerMessage = message.toLowerCase();
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        
+        if (lowerMessage.contains("today")) {
+            return now.toLocalDate().atStartOfDay();
+        } else if (lowerMessage.contains("yesterday")) {
+            return now.minusDays(1).toLocalDate().atStartOfDay();
+        } else if (lowerMessage.contains("this week")) {
+            return now.minusDays(now.getDayOfWeek().getValue() - 1).toLocalDate().atStartOfDay();
+        } else if (lowerMessage.contains("last week")) {
+            return now.minusDays(now.getDayOfWeek().getValue() + 6).toLocalDate().atStartOfDay();
+        } else if (lowerMessage.contains("this month")) {
+            return now.withDayOfMonth(1).toLocalDate().atStartOfDay();
+        } else if (lowerMessage.contains("last month")) {
+            return now.minusMonths(1).withDayOfMonth(1).toLocalDate().atStartOfDay();
+        } else if (lowerMessage.contains("last 7 days")) {
+            return now.minusDays(7);
+        } else if (lowerMessage.contains("last 30 days")) {
+            return now.minusDays(30);
+        }
+        
+        // Default to today
+        return now.toLocalDate().atStartOfDay();
+    }
+    
+    private String getTimeFrameFromQuery(String message) {
+        String lowerMessage = message.toLowerCase();
+        
+        if (lowerMessage.contains("today")) return "Today";
+        if (lowerMessage.contains("yesterday")) return "Yesterday";
+        if (lowerMessage.contains("this week")) return "This Week";
+        if (lowerMessage.contains("last week")) return "Last Week";
+        if (lowerMessage.contains("this month")) return "This Month";
+        if (lowerMessage.contains("last month")) return "Last Month";
+        if (lowerMessage.contains("last 7 days")) return "Last 7 Days";
+        if (lowerMessage.contains("last 30 days")) return "Last 30 Days";
+        
+        return "Today";
     }
     
     private ChatbotResponse handleGeneralQuery(String message) {
