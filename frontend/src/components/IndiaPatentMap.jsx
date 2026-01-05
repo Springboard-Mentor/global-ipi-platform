@@ -502,51 +502,121 @@ const IndiaPatentMap = ({ selectedState = null, showHeatMap = false }) => {
           </div>
           
           {/* Legend Items */}
-          <div className="flex flex-col space-y-1.5 mb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 rounded-full bg-[#581c87] flex-shrink-0"></div>
-                <span className="text-xs text-gray-700 font-medium">Very High (75%+)</span>
+          <div className="flex flex-col space-y-2 mb-3">
+            <div className="flex items-center justify-between bg-gradient-to-r from-purple-100/50 to-transparent rounded-lg p-2 border border-purple-200/50">
+              <div className="flex items-center space-x-2 flex-1">
+                <div className="w-3 h-3 rounded-full bg-[#581c87] flex-shrink-0 shadow-sm"></div>
+                <span className="text-xs text-gray-700 font-semibold">Very High (75%+)</span>
               </div>
-              <span className="text-xs font-semibold text-purple-700">
-                {stateData.length > 0 ? stateData.filter(s => s.patents / Math.max(...stateData.map(d => d.patents)) > 0.75).reduce((sum, s) => sum + s.patents, 0) : 0}
-              </span>
+              <div className="flex items-center gap-2">
+                <svg className="w-12 h-6" viewBox="0 0 48 24">
+                  <defs>
+                    <linearGradient id="veryHighGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#581c87" stopOpacity="1"/>
+                      <stop offset="100%" stopColor="#7c3aed" stopOpacity="0.8"/>
+                    </linearGradient>
+                  </defs>
+                  <rect x="2" y={24 - (stateData.length > 0 ? Math.min((stateData.filter(s => s.patents / Math.max(...stateData.map(d => d.patents)) > 0.75).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 20, 20) : 0)} width="8" height={stateData.length > 0 ? Math.min((stateData.filter(s => s.patents / Math.max(...stateData.map(d => d.patents)) > 0.75).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 20, 20) : 0} fill="url(#veryHighGrad)" rx="1"/>
+                  <rect x="14" y={24 - (stateData.length > 0 ? Math.min((stateData.filter(s => s.patents / Math.max(...stateData.map(d => d.patents)) > 0.75).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 18, 18) : 0)} width="8" height={stateData.length > 0 ? Math.min((stateData.filter(s => s.patents / Math.max(...stateData.map(d => d.patents)) > 0.75).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 18, 18) : 0} fill="url(#veryHighGrad)" opacity="0.8" rx="1"/>
+                  <rect x="26" y={24 - (stateData.length > 0 ? Math.min((stateData.filter(s => s.patents / Math.max(...stateData.map(d => d.patents)) > 0.75).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 22, 22) : 0)} width="8" height={stateData.length > 0 ? Math.min((stateData.filter(s => s.patents / Math.max(...stateData.map(d => d.patents)) > 0.75).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 22, 22) : 0} fill="url(#veryHighGrad)" rx="1"/>
+                  <rect x="38" y={24 - (stateData.length > 0 ? Math.min((stateData.filter(s => s.patents / Math.max(...stateData.map(d => d.patents)) > 0.75).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 16, 16) : 0)} width="8" height={stateData.length > 0 ? Math.min((stateData.filter(s => s.patents / Math.max(...stateData.map(d => d.patents)) > 0.75).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 16, 16) : 0} fill="url(#veryHighGrad)" opacity="0.7" rx="1"/>
+                </svg>
+                <span className="text-sm font-black text-purple-900 bg-purple-200 px-2 py-0.5 rounded-md">
+                  {stateData.length > 0 ? stateData.filter(s => s.patents / Math.max(...stateData.map(d => d.patents)) > 0.75).reduce((sum, s) => sum + s.patents, 0) : 0}
+                </span>
+              </div>
             </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 rounded-full bg-[#7c3aed] flex-shrink-0"></div>
-                <span className="text-xs text-gray-700 font-medium">High (45-75%)</span>
+            <div className="flex items-center justify-between bg-gradient-to-r from-purple-100/40 to-transparent rounded-lg p-2 border border-purple-200/40">
+              <div className="flex items-center space-x-2 flex-1">
+                <div className="w-3 h-3 rounded-full bg-[#7c3aed] flex-shrink-0 shadow-sm"></div>
+                <span className="text-xs text-gray-700 font-semibold">High (45-75%)</span>
               </div>
-              <span className="text-xs font-semibold text-purple-600">
-                {stateData.length > 0 ? stateData.filter(s => { const ratio = s.patents / Math.max(...stateData.map(d => d.patents)); return ratio > 0.45 && ratio <= 0.75; }).reduce((sum, s) => sum + s.patents, 0) : 0}
-              </span>
+              <div className="flex items-center gap-2">
+                <svg className="w-12 h-6" viewBox="0 0 48 24">
+                  <defs>
+                    <linearGradient id="highGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#7c3aed" stopOpacity="1"/>
+                      <stop offset="100%" stopColor="#9333ea" stopOpacity="0.8"/>
+                    </linearGradient>
+                  </defs>
+                  <rect x="2" y={24 - (stateData.length > 0 ? Math.min((stateData.filter(s => { const ratio = s.patents / Math.max(...stateData.map(d => d.patents)); return ratio > 0.45 && ratio <= 0.75; }).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 18, 18) : 0)} width="8" height={stateData.length > 0 ? Math.min((stateData.filter(s => { const ratio = s.patents / Math.max(...stateData.map(d => d.patents)); return ratio > 0.45 && ratio <= 0.75; }).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 18, 18) : 0} fill="url(#highGrad)" rx="1"/>
+                  <rect x="14" y={24 - (stateData.length > 0 ? Math.min((stateData.filter(s => { const ratio = s.patents / Math.max(...stateData.map(d => d.patents)); return ratio > 0.45 && ratio <= 0.75; }).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 16, 16) : 0)} width="8" height={stateData.length > 0 ? Math.min((stateData.filter(s => { const ratio = s.patents / Math.max(...stateData.map(d => d.patents)); return ratio > 0.45 && ratio <= 0.75; }).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 16, 16) : 0} fill="url(#highGrad)" opacity="0.8" rx="1"/>
+                  <rect x="26" y={24 - (stateData.length > 0 ? Math.min((stateData.filter(s => { const ratio = s.patents / Math.max(...stateData.map(d => d.patents)); return ratio > 0.45 && ratio <= 0.75; }).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 20, 20) : 0)} width="8" height={stateData.length > 0 ? Math.min((stateData.filter(s => { const ratio = s.patents / Math.max(...stateData.map(d => d.patents)); return ratio > 0.45 && ratio <= 0.75; }).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 20, 20) : 0} fill="url(#highGrad)" rx="1"/>
+                  <rect x="38" y={24 - (stateData.length > 0 ? Math.min((stateData.filter(s => { const ratio = s.patents / Math.max(...stateData.map(d => d.patents)); return ratio > 0.45 && ratio <= 0.75; }).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 14, 14) : 0)} width="8" height={stateData.length > 0 ? Math.min((stateData.filter(s => { const ratio = s.patents / Math.max(...stateData.map(d => d.patents)); return ratio > 0.45 && ratio <= 0.75; }).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 14, 14) : 0} fill="url(#highGrad)" opacity="0.7" rx="1"/>
+                </svg>
+                <span className="text-sm font-black text-purple-800 bg-purple-200 px-2 py-0.5 rounded-md">
+                  {stateData.length > 0 ? stateData.filter(s => { const ratio = s.patents / Math.max(...stateData.map(d => d.patents)); return ratio > 0.45 && ratio <= 0.75; }).reduce((sum, s) => sum + s.patents, 0) : 0}
+                </span>
+              </div>
             </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 rounded-full bg-[#9333ea] flex-shrink-0"></div>
-                <span className="text-xs text-gray-700 font-medium">Medium (30-45%)</span>
+            <div className="flex items-center justify-between bg-gradient-to-r from-purple-100/30 to-transparent rounded-lg p-2 border border-purple-200/30">
+              <div className="flex items-center space-x-2 flex-1">
+                <div className="w-3 h-3 rounded-full bg-[#9333ea] flex-shrink-0 shadow-sm"></div>
+                <span className="text-xs text-gray-700 font-semibold">Medium (30-45%)</span>
               </div>
-              <span className="text-xs font-semibold text-purple-600">
-                {stateData.length > 0 ? stateData.filter(s => { const ratio = s.patents / Math.max(...stateData.map(d => d.patents)); return ratio > 0.30 && ratio <= 0.45; }).reduce((sum, s) => sum + s.patents, 0) : 0}
-              </span>
+              <div className="flex items-center gap-2">
+                <svg className="w-12 h-6" viewBox="0 0 48 24">
+                  <defs>
+                    <linearGradient id="mediumGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#9333ea" stopOpacity="1"/>
+                      <stop offset="100%" stopColor="#a855f7" stopOpacity="0.8"/>
+                    </linearGradient>
+                  </defs>
+                  <rect x="2" y={24 - (stateData.length > 0 ? Math.min((stateData.filter(s => { const ratio = s.patents / Math.max(...stateData.map(d => d.patents)); return ratio > 0.30 && ratio <= 0.45; }).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 16, 16) : 0)} width="8" height={stateData.length > 0 ? Math.min((stateData.filter(s => { const ratio = s.patents / Math.max(...stateData.map(d => d.patents)); return ratio > 0.30 && ratio <= 0.45; }).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 16, 16) : 0} fill="url(#mediumGrad)" rx="1"/>
+                  <rect x="14" y={24 - (stateData.length > 0 ? Math.min((stateData.filter(s => { const ratio = s.patents / Math.max(...stateData.map(d => d.patents)); return ratio > 0.30 && ratio <= 0.45; }).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 14, 14) : 0)} width="8" height={stateData.length > 0 ? Math.min((stateData.filter(s => { const ratio = s.patents / Math.max(...stateData.map(d => d.patents)); return ratio > 0.30 && ratio <= 0.45; }).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 14, 14) : 0} fill="url(#mediumGrad)" opacity="0.8" rx="1"/>
+                  <rect x="26" y={24 - (stateData.length > 0 ? Math.min((stateData.filter(s => { const ratio = s.patents / Math.max(...stateData.map(d => d.patents)); return ratio > 0.30 && ratio <= 0.45; }).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 18, 18) : 0)} width="8" height={stateData.length > 0 ? Math.min((stateData.filter(s => { const ratio = s.patents / Math.max(...stateData.map(d => d.patents)); return ratio > 0.30 && ratio <= 0.45; }).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 18, 18) : 0} fill="url(#mediumGrad)" rx="1"/>
+                  <rect x="38" y={24 - (stateData.length > 0 ? Math.min((stateData.filter(s => { const ratio = s.patents / Math.max(...stateData.map(d => d.patents)); return ratio > 0.30 && ratio <= 0.45; }).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 12, 12) : 0)} width="8" height={stateData.length > 0 ? Math.min((stateData.filter(s => { const ratio = s.patents / Math.max(...stateData.map(d => d.patents)); return ratio > 0.30 && ratio <= 0.45; }).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 12, 12) : 0} fill="url(#mediumGrad)" opacity="0.7" rx="1"/>
+                </svg>
+                <span className="text-sm font-black text-purple-700 bg-purple-200 px-2 py-0.5 rounded-md">
+                  {stateData.length > 0 ? stateData.filter(s => { const ratio = s.patents / Math.max(...stateData.map(d => d.patents)); return ratio > 0.30 && ratio <= 0.45; }).reduce((sum, s) => sum + s.patents, 0) : 0}
+                </span>
+              </div>
             </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 rounded-full bg-[#a855f7] flex-shrink-0"></div>
-                <span className="text-xs text-gray-700 font-medium">Low (15-30%)</span>
+            <div className="flex items-center justify-between bg-gradient-to-r from-purple-100/20 to-transparent rounded-lg p-2 border border-purple-200/20">
+              <div className="flex items-center space-x-2 flex-1">
+                <div className="w-3 h-3 rounded-full bg-[#a855f7] flex-shrink-0 shadow-sm"></div>
+                <span className="text-xs text-gray-700 font-semibold">Low (15-30%)</span>
               </div>
-              <span className="text-xs font-semibold text-purple-500">
-                {stateData.length > 0 ? stateData.filter(s => { const ratio = s.patents / Math.max(...stateData.map(d => d.patents)); return ratio > 0.15 && ratio <= 0.30; }).reduce((sum, s) => sum + s.patents, 0) : 0}
-              </span>
+              <div className="flex items-center gap-2">
+                <svg className="w-12 h-6" viewBox="0 0 48 24">
+                  <defs>
+                    <linearGradient id="lowGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#a855f7" stopOpacity="1"/>
+                      <stop offset="100%" stopColor="#c084fc" stopOpacity="0.8"/>
+                    </linearGradient>
+                  </defs>
+                  <rect x="2" y={24 - (stateData.length > 0 ? Math.min((stateData.filter(s => { const ratio = s.patents / Math.max(...stateData.map(d => d.patents)); return ratio > 0.15 && ratio <= 0.30; }).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 14, 14) : 0)} width="8" height={stateData.length > 0 ? Math.min((stateData.filter(s => { const ratio = s.patents / Math.max(...stateData.map(d => d.patents)); return ratio > 0.15 && ratio <= 0.30; }).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 14, 14) : 0} fill="url(#lowGrad)" rx="1"/>
+                  <rect x="14" y={24 - (stateData.length > 0 ? Math.min((stateData.filter(s => { const ratio = s.patents / Math.max(...stateData.map(d => d.patents)); return ratio > 0.15 && ratio <= 0.30; }).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 12, 12) : 0)} width="8" height={stateData.length > 0 ? Math.min((stateData.filter(s => { const ratio = s.patents / Math.max(...stateData.map(d => d.patents)); return ratio > 0.15 && ratio <= 0.30; }).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 12, 12) : 0} fill="url(#lowGrad)" opacity="0.8" rx="1"/>
+                  <rect x="26" y={24 - (stateData.length > 0 ? Math.min((stateData.filter(s => { const ratio = s.patents / Math.max(...stateData.map(d => d.patents)); return ratio > 0.15 && ratio <= 0.30; }).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 16, 16) : 0)} width="8" height={stateData.length > 0 ? Math.min((stateData.filter(s => { const ratio = s.patents / Math.max(...stateData.map(d => d.patents)); return ratio > 0.15 && ratio <= 0.30; }).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 16, 16) : 0} fill="url(#lowGrad)" rx="1"/>
+                  <rect x="38" y={24 - (stateData.length > 0 ? Math.min((stateData.filter(s => { const ratio = s.patents / Math.max(...stateData.map(d => d.patents)); return ratio > 0.15 && ratio <= 0.30; }).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 10, 10) : 0)} width="8" height={stateData.length > 0 ? Math.min((stateData.filter(s => { const ratio = s.patents / Math.max(...stateData.map(d => d.patents)); return ratio > 0.15 && ratio <= 0.30; }).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 10, 10) : 0} fill="url(#lowGrad)" opacity="0.7" rx="1"/>
+                </svg>
+                <span className="text-sm font-black text-purple-600 bg-purple-200 px-2 py-0.5 rounded-md">
+                  {stateData.length > 0 ? stateData.filter(s => { const ratio = s.patents / Math.max(...stateData.map(d => d.patents)); return ratio > 0.15 && ratio <= 0.30; }).reduce((sum, s) => sum + s.patents, 0) : 0}
+                </span>
+              </div>
             </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 rounded-full bg-[#c084fc] flex-shrink-0"></div>
-                <span className="text-xs text-gray-700 font-medium">Very Low (&lt;15%)</span>
+            <div className="flex items-center justify-between bg-gradient-to-r from-purple-100/10 to-transparent rounded-lg p-2 border border-purple-200/10">
+              <div className="flex items-center space-x-2 flex-1">
+                <div className="w-3 h-3 rounded-full bg-[#c084fc] flex-shrink-0 shadow-sm"></div>
+                <span className="text-xs text-gray-700 font-semibold">Very Low (&lt;15%)</span>
               </div>
-              <span className="text-xs font-semibold text-purple-400">
-                {stateData.length > 0 ? stateData.filter(s => s.patents / Math.max(...stateData.map(d => d.patents)) <= 0.15).reduce((sum, s) => sum + s.patents, 0) : 0}
-              </span>
+              <div className="flex items-center gap-2">
+                <svg className="w-12 h-6" viewBox="0 0 48 24">
+                  <defs>
+                    <linearGradient id="veryLowGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#c084fc" stopOpacity="1"/>
+                      <stop offset="100%" stopColor="#e9d5ff" stopOpacity="0.8"/>
+                    </linearGradient>
+                  </defs>
+                  <rect x="2" y={24 - (stateData.length > 0 ? Math.min((stateData.filter(s => s.patents / Math.max(...stateData.map(d => d.patents)) <= 0.15).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 12, 12) : 0)} width="8" height={stateData.length > 0 ? Math.min((stateData.filter(s => s.patents / Math.max(...stateData.map(d => d.patents)) <= 0.15).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 12, 12) : 0} fill="url(#veryLowGrad)" rx="1"/>
+                  <rect x="14" y={24 - (stateData.length > 0 ? Math.min((stateData.filter(s => s.patents / Math.max(...stateData.map(d => d.patents)) <= 0.15).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 10, 10) : 0)} width="8" height={stateData.length > 0 ? Math.min((stateData.filter(s => s.patents / Math.max(...stateData.map(d => d.patents)) <= 0.15).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 10, 10) : 0} fill="url(#veryLowGrad)" opacity="0.8" rx="1"/>
+                  <rect x="26" y={24 - (stateData.length > 0 ? Math.min((stateData.filter(s => s.patents / Math.max(...stateData.map(d => d.patents)) <= 0.15).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 14, 14) : 0)} width="8" height={stateData.length > 0 ? Math.min((stateData.filter(s => s.patents / Math.max(...stateData.map(d => d.patents)) <= 0.15).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 14, 14) : 0} fill="url(#veryLowGrad)" rx="1"/>
+                  <rect x="38" y={24 - (stateData.length > 0 ? Math.min((stateData.filter(s => s.patents / Math.max(...stateData.map(d => d.patents)) <= 0.15).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 8, 8) : 0)} width="8" height={stateData.length > 0 ? Math.min((stateData.filter(s => s.patents / Math.max(...stateData.map(d => d.patents)) <= 0.15).reduce((sum, s) => sum + s.patents, 0) / (Math.max(...stateData.map(d => d.patents)) || 1)) * 8, 8) : 0} fill="url(#veryLowGrad)" opacity="0.7" rx="1"/>
+                </svg>
+                <span className="text-sm font-black text-purple-500 bg-purple-200 px-2 py-0.5 rounded-md">
+                  {stateData.length > 0 ? stateData.filter(s => s.patents / Math.max(...stateData.map(d => d.patents)) <= 0.15).reduce((sum, s) => sum + s.patents, 0) : 0}
+                </span>
+              </div>
             </div>
           </div>
 

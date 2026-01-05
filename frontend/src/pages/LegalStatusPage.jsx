@@ -1236,144 +1236,174 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
 
       {/* Subscription Details with Radar Chart */}
       <div className="mb-8">
-        <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-gray-100 hover:shadow-2xl transition-all duration-300">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="bg-gradient-to-br from-blue-100 to-cyan-100 p-3 rounded-xl">
-              <Users className="w-6 h-6 text-blue-600" />
+        <div className="bg-gradient-to-br from-white via-blue-50/30 to-cyan-50/30 rounded-2xl shadow-2xl p-8 border-2 border-blue-200/50 hover:shadow-3xl hover:border-blue-300 transition-all duration-500">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-4">
+              <div className="bg-gradient-to-br from-blue-500 to-cyan-500 p-4 rounded-2xl shadow-lg transform hover:scale-110 transition-transform duration-300">
+                <Users className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <h3 className="text-3xl font-black bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                  Subscription Details
+                </h3>
+                <p className="text-sm text-gray-600 font-medium mt-1">User distribution across subscription tiers</p>
+              </div>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900">Subscription Details</h3>
+            <div className="bg-blue-100 px-4 py-2 rounded-xl border-2 border-blue-300">
+              <p className="text-xs text-blue-600 font-bold uppercase">Total Users</p>
+              <p className="text-2xl font-black text-blue-900">{userStats.totalUsers}</p>
+            </div>
           </div>
 
           {userStats.loading ? (
             <div className="animate-pulse space-y-6">
-              <div className="h-80 bg-gray-200 rounded-xl"></div>
+              <div className="h-96 bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl"></div>
               <div className="grid grid-cols-4 gap-4">
-                <div className="h-24 bg-gray-200 rounded-xl"></div>
-                <div className="h-24 bg-gray-200 rounded-xl"></div>
-                <div className="h-24 bg-gray-200 rounded-xl"></div>
-                <div className="h-24 bg-gray-200 rounded-xl"></div>
+                <div className="h-32 bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl"></div>
+                <div className="h-32 bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl"></div>
+                <div className="h-32 bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl"></div>
+                <div className="h-32 bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl"></div>
               </div>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-8">
               {/* Radar Chart */}
-              <div className="h-[400px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart 
-                    cx="50%" 
-                    cy="50%" 
-                    outerRadius="75%" 
-                    data={[
-                      {
-                        category: 'Total Users',
-                        value: userStats.totalUsers,
-                        fullMark: userStats.totalUsers || 100
-                      },
-                      {
-                        category: 'Basic',
-                        value: userStats.basicUsers,
-                        fullMark: userStats.totalUsers || 100
-                      },
-                      {
-                        category: 'Pro',
-                        value: userStats.proUsers,
-                        fullMark: userStats.totalUsers || 100
-                      },
-                      {
-                        category: 'Enterprise',
-                        value: userStats.enterpriseUsers,
-                        fullMark: userStats.totalUsers || 100
-                      },
-                      {
-                        category: 'Active',
-                        value: userStats.activeUsers,
-                        fullMark: userStats.totalUsers || 100
-                      }
-                    ]}
-                  >
-                    <defs>
-                      <linearGradient id="radarGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                        <stop offset="100%" stopColor="#06b6d4" stopOpacity={0.3}/>
-                      </linearGradient>
-                    </defs>
-                    <PolarGrid stroke="#cbd5e1" strokeWidth={1.5} />
-                    <PolarAngleAxis 
-                      dataKey="category" 
-                      tick={{ fill: '#1e293b', fontSize: 13, fontWeight: 700 }}
-                    />
-                    <PolarRadiusAxis 
-                      angle={90} 
-                      domain={[0, userStats.totalUsers || 100]}
-                      tick={{ fill: '#64748b', fontSize: 11 }}
-                    />
-                    <Radar 
-                      name="User Distribution" 
-                      dataKey="value" 
-                      stroke="#2563eb" 
-                      strokeWidth={3}
-                      fill="url(#radarGradient)" 
-                      fillOpacity={0.6}
-                      animationDuration={1500}
-                    />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'rgba(255, 255, 255, 0.98)', 
-                        border: '2px solid #3b82f6',
-                        borderRadius: '12px',
-                        padding: '12px',
-                        boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
-                      }}
-                      formatter={(value, name, props) => [
-                        <span className="font-semibold text-blue-700">
-                          {value} users
-                          {props.payload.category !== 'Total Users' && userStats.totalUsers > 0 
-                            ? ` (${Math.round((value / userStats.totalUsers) * 100)}%)`
-                            : ''
-                          }
-                        </span>,
-                        props.payload.category
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-inner border border-blue-100">
+                <h4 className="text-lg font-bold text-gray-800 mb-4 text-center flex items-center justify-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-blue-500 animate-pulse"></div>
+                  User Distribution Overview
+                  <div className="w-3 h-3 rounded-full bg-cyan-500 animate-pulse"></div>
+                </h4>
+                <div className="h-[450px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart 
+                      cx="50%" 
+                      cy="50%" 
+                      outerRadius="70%" 
+                      data={[
+                        {
+                          category: 'Total Users',
+                          value: userStats.totalUsers,
+                          fullMark: userStats.totalUsers || 100
+                        },
+                        {
+                          category: 'Basic',
+                          value: userStats.basicUsers,
+                          fullMark: userStats.totalUsers || 100
+                        },
+                        {
+                          category: 'Pro',
+                          value: userStats.proUsers,
+                          fullMark: userStats.totalUsers || 100
+                        },
+                        {
+                          category: 'Enterprise',
+                          value: userStats.enterpriseUsers,
+                          fullMark: userStats.totalUsers || 100
+                        },
+                        {
+                          category: 'Active',
+                          value: userStats.activeUsers,
+                          fullMark: userStats.totalUsers || 100
+                        }
                       ]}
-                    />
-                    <Legend 
-                      wrapperStyle={{ paddingTop: '20px' }}
-                      iconType="circle"
-                      formatter={() => <span className="font-semibold text-gray-700">User Distribution</span>}
-                    />
-                  </RadarChart>
-                </ResponsiveContainer>
+                    >
+                      <defs>
+                        <linearGradient id="radarGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.9}/>
+                          <stop offset="50%" stopColor="#06b6d4" stopOpacity={0.7}/>
+                          <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.5}/>
+                        </linearGradient>
+                      </defs>
+                      <PolarGrid 
+                        stroke="#cbd5e1" 
+                        strokeWidth={2} 
+                        strokeDasharray="5 5"
+                      />
+                      <PolarAngleAxis 
+                        dataKey="category" 
+                        tick={{ fill: '#1e293b', fontSize: 14, fontWeight: 700 }}
+                      />
+                      <PolarRadiusAxis 
+                        angle={90} 
+                        domain={[0, userStats.totalUsers || 100]}
+                        tick={{ fill: '#475569', fontSize: 12, fontWeight: 600 }}
+                      />
+                      <Radar 
+                        name="User Distribution" 
+                        dataKey="value" 
+                        stroke="#2563eb" 
+                        strokeWidth={4}
+                        fill="url(#radarGradient)" 
+                        fillOpacity={0.7}
+                        animationDuration={2000}
+                        animationBegin={200}
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'rgba(255, 255, 255, 0.98)', 
+                          border: '3px solid #3b82f6',
+                          borderRadius: '16px',
+                          padding: '16px',
+                          boxShadow: '0 20px 40px rgba(59, 130, 246, 0.3)'
+                        }}
+                        labelStyle={{ fontWeight: 'bold', fontSize: '14px', color: '#1e293b' }}
+                        formatter={(value, name, props) => [
+                          <span className="font-bold text-blue-700 text-base">
+                            {value} users
+                            {props.payload.category !== 'Total Users' && userStats.totalUsers > 0 
+                              ? ` (${Math.round((value / userStats.totalUsers) * 100)}%)`
+                              : ''
+                            }
+                          </span>,
+                          props.payload.category
+                        ]}
+                      />
+                      <Legend 
+                        wrapperStyle={{ paddingTop: '24px' }}
+                        iconType="circle"
+                        formatter={() => <span className="font-bold text-gray-700 text-sm">User Distribution</span>}
+                      />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
 
               {/* Stats Summary Cards */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 {/* Total Users */}
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-5 border-2 border-blue-200 hover:border-blue-400 transition-all duration-300">
+                <div className="group bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-100 rounded-2xl p-6 border-3 border-blue-300 hover:border-blue-500 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500">
                   <div className="flex flex-col items-center text-center">
-                    <div className="bg-blue-100 p-3 rounded-xl mb-3">
-                      <Users className="w-6 h-6 text-blue-600" />
+                    <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-4 rounded-2xl mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                      <Users className="w-7 h-7 text-white" />
                     </div>
-                    <p className="text-xs font-bold text-blue-600 uppercase mb-1">Total Users</p>
-                    <h4 className="text-3xl font-black text-blue-900">{userStats.totalUsers}</h4>
-                    <div className="w-full bg-blue-200 rounded-full h-2 mt-3">
-                      <div className="h-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full" style={{ width: '100%' }}></div>
+                    <p className="text-xs font-black text-blue-700 uppercase tracking-wider mb-2">Total Users</p>
+                    <h4 className="text-4xl font-black bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent">
+                      {userStats.totalUsers}
+                    </h4>
+                    <div className="w-full bg-blue-300 rounded-full h-3 mt-4 shadow-inner">
+                      <div className="h-3 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 rounded-full shadow-lg" style={{ width: '100%' }}></div>
                     </div>
+                    <p className="text-xs text-blue-600 font-bold mt-2">100% Platform Users</p>
                   </div>
                 </div>
 
                 {/* Basic Users */}
-                <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-5 border-2 border-gray-300 hover:border-gray-500 transition-all duration-300">
+                <div className="group bg-gradient-to-br from-gray-50 via-gray-100 to-slate-100 rounded-2xl p-6 border-3 border-gray-400 hover:border-gray-600 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500">
                   <div className="flex flex-col items-center text-center">
-                    <div className="bg-gray-100 p-3 rounded-xl mb-3">
-                      <Users className="w-6 h-6 text-gray-600" />
+                    <div className="bg-gradient-to-br from-gray-500 to-slate-600 p-4 rounded-2xl mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                      <Users className="w-7 h-7 text-white" />
                     </div>
-                    <p className="text-xs font-bold text-gray-600 uppercase mb-1">Basic</p>
-                    <h4 className="text-3xl font-black text-gray-900">{userStats.basicUsers}</h4>
-                    <div className="text-xs text-gray-500 font-semibold mt-1">
-                      {userStats.totalUsers > 0 ? Math.round((userStats.basicUsers / userStats.totalUsers) * 100) : 0}%
+                    <p className="text-xs font-black text-gray-700 uppercase tracking-wider mb-2">Basic</p>
+                    <h4 className="text-4xl font-black bg-gradient-to-r from-gray-700 to-slate-700 bg-clip-text text-transparent">
+                      {userStats.basicUsers}
+                    </h4>
+                    <div className="text-sm text-gray-600 font-bold mt-2">
+                      {userStats.totalUsers > 0 ? Math.round((userStats.basicUsers / userStats.totalUsers) * 100) : 0}% of Total
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                    <div className="w-full bg-gray-300 rounded-full h-3 mt-3 shadow-inner">
                       <div 
-                        className="h-2 bg-gradient-to-r from-gray-400 to-gray-600 rounded-full transition-all duration-1000" 
+                        className="h-3 bg-gradient-to-r from-gray-500 via-gray-600 to-slate-600 rounded-full shadow-lg transition-all duration-1000" 
                         style={{ width: `${userStats.totalUsers > 0 ? (userStats.basicUsers / userStats.totalUsers) * 100 : 0}%` }}
                       ></div>
                     </div>
@@ -1381,19 +1411,21 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
                 </div>
 
                 {/* Pro Users */}
-                <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-5 border-2 border-purple-300 hover:border-purple-500 transition-all duration-300">
+                <div className="group bg-gradient-to-br from-purple-50 via-purple-100 to-pink-100 rounded-2xl p-6 border-3 border-purple-400 hover:border-purple-600 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500">
                   <div className="flex flex-col items-center text-center">
-                    <div className="bg-purple-100 p-3 rounded-xl mb-3">
-                      <Award className="w-6 h-6 text-purple-600" />
+                    <div className="bg-gradient-to-br from-purple-500 to-pink-600 p-4 rounded-2xl mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                      <Award className="w-7 h-7 text-white" />
                     </div>
-                    <p className="text-xs font-bold text-purple-600 uppercase mb-1">Pro</p>
-                    <h4 className="text-3xl font-black text-purple-900">{userStats.proUsers}</h4>
-                    <div className="text-xs text-purple-500 font-semibold mt-1">
-                      {userStats.totalUsers > 0 ? Math.round((userStats.proUsers / userStats.totalUsers) * 100) : 0}%
+                    <p className="text-xs font-black text-purple-700 uppercase tracking-wider mb-2">Pro</p>
+                    <h4 className="text-4xl font-black bg-gradient-to-r from-purple-700 to-pink-700 bg-clip-text text-transparent">
+                      {userStats.proUsers}
+                    </h4>
+                    <div className="text-sm text-purple-600 font-bold mt-2">
+                      {userStats.totalUsers > 0 ? Math.round((userStats.proUsers / userStats.totalUsers) * 100) : 0}% of Total
                     </div>
-                    <div className="w-full bg-purple-200 rounded-full h-2 mt-2">
+                    <div className="w-full bg-purple-300 rounded-full h-3 mt-3 shadow-inner">
                       <div 
-                        className="h-2 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full transition-all duration-1000" 
+                        className="h-3 bg-gradient-to-r from-purple-500 via-purple-600 to-pink-600 rounded-full shadow-lg transition-all duration-1000" 
                         style={{ width: `${userStats.totalUsers > 0 ? (userStats.proUsers / userStats.totalUsers) * 100 : 0}%` }}
                       ></div>
                     </div>
@@ -1401,19 +1433,21 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
                 </div>
 
                 {/* Enterprise Users */}
-                <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-5 border-2 border-amber-300 hover:border-amber-500 transition-all duration-300">
+                <div className="group bg-gradient-to-br from-amber-50 via-amber-100 to-orange-100 rounded-2xl p-6 border-3 border-amber-400 hover:border-amber-600 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500">
                   <div className="flex flex-col items-center text-center">
-                    <div className="bg-amber-100 p-3 rounded-xl mb-3">
-                      <Award className="w-6 h-6 text-amber-600" />
+                    <div className="bg-gradient-to-br from-amber-500 to-orange-600 p-4 rounded-2xl mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                      <Award className="w-7 h-7 text-white" />
                     </div>
-                    <p className="text-xs font-bold text-amber-600 uppercase mb-1">Enterprise</p>
-                    <h4 className="text-3xl font-black text-amber-900">{userStats.enterpriseUsers}</h4>
-                    <div className="text-xs text-amber-600 font-semibold mt-1">
-                      {userStats.totalUsers > 0 ? Math.round((userStats.enterpriseUsers / userStats.totalUsers) * 100) : 0}%
+                    <p className="text-xs font-black text-amber-700 uppercase tracking-wider mb-2">Enterprise</p>
+                    <h4 className="text-4xl font-black bg-gradient-to-r from-amber-700 to-orange-700 bg-clip-text text-transparent">
+                      {userStats.enterpriseUsers}
+                    </h4>
+                    <div className="text-sm text-amber-700 font-bold mt-2">
+                      {userStats.totalUsers > 0 ? Math.round((userStats.enterpriseUsers / userStats.totalUsers) * 100) : 0}% of Total
                     </div>
-                    <div className="w-full bg-amber-200 rounded-full h-2 mt-2">
+                    <div className="w-full bg-amber-300 rounded-full h-3 mt-3 shadow-inner">
                       <div 
-                        className="h-2 bg-gradient-to-r from-amber-500 to-orange-600 rounded-full transition-all duration-1000" 
+                        className="h-3 bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 rounded-full shadow-lg transition-all duration-1000" 
                         style={{ width: `${userStats.totalUsers > 0 ? (userStats.enterpriseUsers / userStats.totalUsers) * 100 : 0}%` }}
                       ></div>
                     </div>
@@ -1422,183 +1456,198 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
               </div>
 
               {/* Account Status Section */}
-              <div className="border-t-2 border-gray-100 pt-6">
-                <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <AlertCircle className="w-5 h-5 text-gray-600" />
-                  Account Status Overview
-                </h4>
+              <div className="border-t-2 border-gradient-to-r from-blue-200 via-purple-200 to-pink-200 pt-8 mt-2">
+                <div className="bg-gradient-to-r from-blue-50 via-purple-50 to-pink-50 rounded-2xl p-6 mb-6 border-2 border-blue-200">
+                  <h4 className="text-2xl font-black bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-2 flex items-center gap-3">
+                    <AlertCircle className="w-7 h-7 text-purple-600" />
+                    Account Status Overview
+                  </h4>
+                  <p className="text-sm text-gray-600 font-medium">Real-time monitoring of active and deactivated accounts</p>
+                </div>
                 
                 {/* Account Status Charts */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {/* Active Users - Radial Chart */}
-                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border-2 border-green-200 hover:border-green-400 transition-all duration-300">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="bg-green-100 p-3 rounded-xl">
-                        <UserCheck className="w-6 h-6 text-green-600" />
+                  <div className="group bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 rounded-2xl p-8 border-3 border-green-300 hover:border-green-500 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500">
+                    <div className="flex items-center gap-4 mb-6">
+                      <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-4 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                        <UserCheck className="w-8 h-8 text-white" />
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-green-600 uppercase">Active Users</p>
-                        <p className="text-xs text-green-700">Currently active accounts</p>
+                        <p className="text-base font-black text-green-700 uppercase tracking-wider">Active Users</p>
+                        <p className="text-sm text-green-600 font-semibold">Currently active accounts</p>
                       </div>
                     </div>
 
-                    <div className="h-[240px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <RadialBarChart 
-                          cx="50%" 
-                          cy="50%" 
-                          innerRadius="30%" 
-                          outerRadius="90%" 
-                          barSize={30}
-                          data={[
-                            {
-                              name: 'Active',
-                              value: userStats.totalUsers > 0 ? (userStats.activeUsers / userStats.totalUsers) * 100 : 0,
-                              fill: 'url(#activeRadialGradient)',
-                              count: userStats.activeUsers
-                            }
-                          ]}
-                          startAngle={90}
-                          endAngle={-270}
-                        >
-                          <RadialBar
-                            background={{ fill: '#d1fae5' }}
-                            dataKey="value"
-                            cornerRadius={10}
-                            animationDuration={1500}
-                          />
-                          <text 
-                            x="50%" 
-                            y="45%" 
-                            textAnchor="middle" 
-                            dominantBaseline="middle"
-                            className="text-4xl font-black fill-green-900"
-                          >
-                            {userStats.activeUsers}
-                          </text>
-                          <text 
-                            x="50%" 
-                            y="58%" 
-                            textAnchor="middle" 
-                            dominantBaseline="middle"
-                            className="text-lg font-bold fill-green-600"
-                          >
-                            ({userStats.totalUsers > 0 ? Math.round((userStats.activeUsers / userStats.totalUsers) * 100) : 0}%)
-                          </text>
-                          <Tooltip 
-                            contentStyle={{ 
-                              backgroundColor: 'rgba(255, 255, 255, 0.98)', 
-                              border: '2px solid #10b981',
-                              borderRadius: '12px',
-                              padding: '12px'
-                            }}
-                            formatter={(value, name, props) => [
-                              <span className="font-semibold text-green-700">
-                                {props.payload.count} users ({value.toFixed(1)}% of total)
-                              </span>,
-                              'Active Users'
+                    <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 shadow-inner border border-green-200">
+                      <div className="h-[280px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RadialBarChart 
+                            cx="50%" 
+                            cy="50%" 
+                            innerRadius="25%" 
+                            outerRadius="85%" 
+                            barSize={35}
+                            data={[
+                              {
+                                name: 'Active',
+                                value: userStats.totalUsers > 0 ? (userStats.activeUsers / userStats.totalUsers) * 100 : 0,
+                                fill: 'url(#activeRadialGradient)',
+                                count: userStats.activeUsers
+                              }
                             ]}
-                          />
-                          <defs>
-                            <linearGradient id="activeRadialGradient" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#10b981" stopOpacity={1}/>
-                              <stop offset="100%" stopColor="#059669" stopOpacity={0.9}/>
-                            </linearGradient>
-                          </defs>
-                        </RadialBarChart>
-                      </ResponsiveContainer>
+                            startAngle={90}
+                            endAngle={-270}
+                          >
+                            <RadialBar
+                              background={{ fill: '#d1fae5', opacity: 0.3 }}
+                              dataKey="value"
+                              cornerRadius={15}
+                              animationDuration={2000}
+                              animationBegin={200}
+                            />
+                            <text 
+                              x="50%" 
+                              y="42%" 
+                              textAnchor="middle" 
+                              dominantBaseline="middle"
+                              className="text-5xl font-black fill-green-900"
+                            >
+                              {userStats.activeUsers}
+                            </text>
+                            <text 
+                              x="50%" 
+                              y="58%" 
+                              textAnchor="middle" 
+                              dominantBaseline="middle"
+                              className="text-xl font-bold fill-green-600"
+                            >
+                              ({userStats.totalUsers > 0 ? Math.round((userStats.activeUsers / userStats.totalUsers) * 100) : 0}%)
+                            </text>
+                            <Tooltip 
+                              contentStyle={{ 
+                                backgroundColor: 'rgba(255, 255, 255, 0.98)', 
+                                border: '3px solid #10b981',
+                                borderRadius: '16px',
+                                padding: '16px',
+                                boxShadow: '0 20px 40px rgba(16, 185, 129, 0.3)'
+                              }}
+                              labelStyle={{ fontWeight: 'bold', fontSize: '14px', color: '#065f46' }}
+                              formatter={(value, name, props) => [
+                                <span className="font-bold text-green-700 text-base">
+                                  {props.payload.count} users ({value.toFixed(1)}% of total)
+                                </span>,
+                                'Active Users'
+                              ]}
+                            />
+                            <defs>
+                              <linearGradient id="activeRadialGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#10b981" stopOpacity={1}/>
+                                <stop offset="50%" stopColor="#059669" stopOpacity={0.95}/>
+                                <stop offset="100%" stopColor="#047857" stopOpacity={0.9}/>
+                              </linearGradient>
+                            </defs>
+                          </RadialBarChart>
+                        </ResponsiveContainer>
+                      </div>
                     </div>
 
-                    <div className="mt-4 pt-4 border-t border-green-200 grid grid-cols-2 gap-3">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-green-900">{userStats.activeUsers}</div>
-                        <div className="text-xs text-green-600">Active</div>
+                    <div className="mt-6 pt-5 border-t-2 border-green-300 grid grid-cols-2 gap-4">
+                      <div className="text-center bg-white/60 rounded-xl p-3 border-2 border-green-200">
+                        <div className="text-3xl font-black text-green-900">{userStats.activeUsers}</div>
+                        <div className="text-xs text-green-700 font-bold uppercase tracking-wide mt-1">Active</div>
                       </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-green-700">{userStats.totalUsers}</div>
-                        <div className="text-xs text-green-600">Total</div>
+                      <div className="text-center bg-white/60 rounded-xl p-3 border-2 border-green-200">
+                        <div className="text-3xl font-black text-green-700">{userStats.totalUsers}</div>
+                        <div className="text-xs text-green-700 font-bold uppercase tracking-wide mt-1">Total</div>
                       </div>
                     </div>
                   </div>
 
                   {/* Deactivated Users - Area Chart */}
-                  <div className="bg-gradient-to-br from-red-50 to-rose-50 rounded-xl p-6 border-2 border-red-200 hover:border-red-400 transition-all duration-300">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="bg-red-100 p-3 rounded-xl">
-                        <UserX className="w-6 h-6 text-red-600" />
+                  <div className="group bg-gradient-to-br from-red-50 via-rose-50 to-pink-50 rounded-2xl p-8 border-3 border-red-300 hover:border-red-500 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500">
+                    <div className="flex items-center gap-4 mb-6">
+                      <div className="bg-gradient-to-br from-red-500 to-rose-600 p-4 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                        <UserX className="w-8 h-8 text-white" />
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-red-600 uppercase">Deactivated Users</p>
-                        <p className="text-xs text-red-700">Inactive accounts</p>
+                        <p className="text-base font-black text-red-700 uppercase tracking-wider">Deactivated Users</p>
+                        <p className="text-sm text-red-600 font-semibold">Inactive accounts</p>
                       </div>
                     </div>
 
-                    <div className="h-[240px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart
-                          data={[
-                            { category: 'Total\nUsers', value: userStats.totalUsers, label: 'Total' },
-                            { category: 'Active\nUsers', value: userStats.activeUsers, label: 'Active' },
-                            { category: 'Deactivated\nUsers', value: userStats.deactivatedUsers, label: 'Deactivated' }
-                          ]}
-                          margin={{ top: 10, right: 30, left: 0, bottom: 40 }}
-                        >
-                          <defs>
-                            <linearGradient id="deactivatedGradient" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8}/>
-                              <stop offset="95%" stopColor="#dc2626" stopOpacity={0.2}/>
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#fecaca" />
-                          <XAxis 
-                            dataKey="category" 
-                            tick={{ fill: '#991b1b', fontSize: 11, fontWeight: 600 }}
-                            angle={0}
-                            height={60}
-                          />
-                          <YAxis 
-                            tick={{ fill: '#991b1b', fontSize: 11 }}
-                            label={{ 
-                              value: 'User Count', 
-                              angle: -90, 
-                              position: 'insideLeft',
-                              style: { fill: '#991b1b', fontWeight: 600, fontSize: 12 }
-                            }}
-                          />
-                          <Tooltip 
-                            contentStyle={{ 
-                              backgroundColor: 'rgba(255, 255, 255, 0.98)', 
-                              border: '2px solid #ef4444',
-                              borderRadius: '12px',
-                              padding: '12px'
-                            }}
-                            formatter={(value, name, props) => [
-                              <span className="font-semibold text-red-700">{value} users</span>,
-                              <span className="font-bold">{props.payload.label}</span>
+                    <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 shadow-inner border border-red-200">
+                      <div className="h-[280px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart
+                            data={[
+                              { category: 'Total\nUsers', value: userStats.totalUsers, label: 'Total' },
+                              { category: 'Active\nUsers', value: userStats.activeUsers, label: 'Active' },
+                              { category: 'Deactivated\nUsers', value: userStats.deactivatedUsers, label: 'Deactivated' }
                             ]}
-                          />
-                          <Area 
-                            type="monotone" 
-                            dataKey="value" 
-                            stroke="#dc2626" 
-                            strokeWidth={3}
-                            fill="url(#deactivatedGradient)"
-                            animationDuration={1500}
-                          />
-                        </AreaChart>
-                      </ResponsiveContainer>
+                            margin={{ top: 10, right: 30, left: 0, bottom: 40 }}
+                          >
+                            <defs>
+                              <linearGradient id="deactivatedGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#ef4444" stopOpacity={0.9}/>
+                                <stop offset="50%" stopColor="#dc2626" stopOpacity={0.5}/>
+                                <stop offset="95%" stopColor="#b91c1c" stopOpacity={0.2}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#fecaca" strokeWidth={2} />
+                            <XAxis 
+                              dataKey="category" 
+                              tick={{ fill: '#991b1b', fontSize: 12, fontWeight: 700 }}
+                              angle={0}
+                              height={60}
+                            />
+                            <YAxis 
+                              tick={{ fill: '#991b1b', fontSize: 12, fontWeight: 600 }}
+                              label={{ 
+                                value: 'User Count', 
+                                angle: -90, 
+                                position: 'insideLeft',
+                                style: { fill: '#991b1b', fontWeight: 700, fontSize: 13 }
+                              }}
+                            />
+                            <Tooltip 
+                              contentStyle={{ 
+                                backgroundColor: 'rgba(255, 255, 255, 0.98)', 
+                                border: '3px solid #ef4444',
+                                borderRadius: '16px',
+                                padding: '16px',
+                                boxShadow: '0 20px 40px rgba(239, 68, 68, 0.3)'
+                              }}
+                              labelStyle={{ fontWeight: 'bold', fontSize: '14px', color: '#7f1d1d' }}
+                              formatter={(value, name, props) => [
+                                <span className="font-bold text-red-700 text-base">{value} users</span>,
+                                <span className="font-bold">{props.payload.label}</span>
+                              ]}
+                            />
+                            <Area 
+                              type="monotone" 
+                              dataKey="value" 
+                              stroke="#dc2626" 
+                              strokeWidth={4}
+                              fill="url(#deactivatedGradient)"
+                              animationDuration={2000}
+                              animationBegin={200}
+                            />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
                     </div>
 
-                    <div className="mt-4 pt-4 border-t border-red-200 grid grid-cols-2 gap-3">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-red-900">{userStats.deactivatedUsers}</div>
-                        <div className="text-xs text-red-600">Deactivated</div>
+                    <div className="mt-6 pt-5 border-t-2 border-red-300 grid grid-cols-2 gap-4">
+                      <div className="text-center bg-white/60 rounded-xl p-3 border-2 border-red-200">
+                        <div className="text-3xl font-black text-red-900">{userStats.deactivatedUsers}</div>
+                        <div className="text-xs text-red-700 font-bold uppercase tracking-wide mt-1">Deactivated</div>
                       </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-red-700">
+                      <div className="text-center bg-white/60 rounded-xl p-3 border-2 border-red-200">
+                        <div className="text-3xl font-black text-red-700">
                           {userStats.totalUsers > 0 ? Math.round((userStats.deactivatedUsers / userStats.totalUsers) * 100) : 0}%
                         </div>
-                        <div className="text-xs text-red-600">of Total</div>
+                        <div className="text-xs text-red-700 font-bold uppercase tracking-wide mt-1">of Total</div>
                       </div>
                     </div>
                   </div>
@@ -1615,103 +1664,131 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
       </div>
 
       {/* Additional Info Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Success Rate Chart */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-gray-100 hover:shadow-2xl transition-all duration-300">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="bg-gradient-to-br from-purple-100 to-pink-100 p-3 rounded-xl">
-              <TrendingUp className="w-6 h-6 text-purple-600" />
+        <div className="group bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 rounded-3xl shadow-2xl p-8 border-3 border-purple-300 hover:border-purple-500 hover:shadow-3xl hover:-translate-y-2 transition-all duration-500">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-4">
+              <div className="bg-gradient-to-br from-purple-500 to-pink-600 p-4 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <TrendingUp className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-black bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Success Rate</h3>
+                <p className="text-sm text-purple-700 font-semibold mt-1">Application approval metrics</p>
+              </div>
             </div>
-            <h3 className="text-xl font-bold text-gray-900">Success Rate</h3>
           </div>
           
           {!stats.loading && stats.total > 0 ? (
             <div className="space-y-6">
               {/* Main Success Rate Display */}
-              <div className="flex items-center justify-center">
-                <div className="text-center">
-                  <div className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 mb-2">
-                    {Math.round(((stats.total - stats.rejected) / stats.total) * 100)}%
+              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-inner border-2 border-purple-200">
+                <div className="flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 mb-3 drop-shadow-lg">
+                      {Math.round(((stats.total - stats.rejected) / stats.total) * 100)}%
+                    </div>
+                    <div className="text-base text-purple-700 font-bold uppercase tracking-wider">Overall Success Rate</div>
+                    <div className="text-sm text-gray-600 mt-2">Patent approval performance</div>
                   </div>
-                  <div className="text-sm text-gray-500 font-semibold uppercase tracking-wide">Overall Success Rate</div>
                 </div>
               </div>
 
               {/* Pie Chart */}
-              <div className="h-[220px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={[
-                        { 
-                          name: 'Successful Applications', 
-                          value: stats.total - stats.rejected,
-                          percentage: ((stats.total - stats.rejected) / stats.total * 100).toFixed(1)
-                        },
-                        { 
-                          name: 'Rejected Applications', 
-                          value: stats.rejected,
-                          percentage: (stats.rejected / stats.total * 100).toFixed(1)
-                        }
-                      ]}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={90}
-                      paddingAngle={5}
-                      dataKey="value"
-                      animationDuration={1000}
-                      label={({percentage}) => `${percentage}%`}
-                      labelLine={true}
-                    >
-                      <Cell fill="url(#successGradient)" />
-                      <Cell fill="url(#failureGradient)" />
-                    </Pie>
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'rgba(255, 255, 255, 0.98)', 
-                        border: '2px solid #e5e7eb',
-                        borderRadius: '12px',
-                        boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
-                        padding: '12px'
-                      }}
-                      formatter={(value, name, props) => [
-                        <span className="font-semibold">{value} applications ({props.payload.percentage}%)</span>,
-                        <span className="font-bold">{props.payload.name}</span>
-                      ]}
-                    />
-                    <defs>
-                      <linearGradient id="successGradient" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stopColor="#a855f7" stopOpacity={0.9}/>
-                        <stop offset="100%" stopColor="#ec4899" stopOpacity={0.9}/>
-                      </linearGradient>
-                      <linearGradient id="failureGradient" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stopColor="#9ca3af" stopOpacity={0.7}/>
-                        <stop offset="100%" stopColor="#6b7280" stopOpacity={0.7}/>
-                      </linearGradient>
-                    </defs>
-                  </PieChart>
-                </ResponsiveContainer>
+              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 shadow-inner border border-purple-100">
+                <h4 className="text-sm font-bold text-purple-800 mb-3 text-center uppercase tracking-wide">Distribution Breakdown</h4>
+                <div className="h-[240px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { 
+                            name: 'Successful Applications', 
+                            value: stats.total - stats.rejected,
+                            percentage: ((stats.total - stats.rejected) / stats.total * 100).toFixed(1)
+                          },
+                          { 
+                            name: 'Rejected Applications', 
+                            value: stats.rejected,
+                            percentage: (stats.rejected / stats.total * 100).toFixed(1)
+                          }
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={65}
+                        outerRadius={95}
+                        paddingAngle={6}
+                        dataKey="value"
+                        animationDuration={1500}
+                        animationBegin={100}
+                        label={({percentage}) => `${percentage}%`}
+                        labelLine={true}
+                      >
+                        <Cell fill="url(#successGradient)" stroke="#a855f7" strokeWidth={2} />
+                        <Cell fill="url(#failureGradient)" stroke="#9ca3af" strokeWidth={2} />
+                      </Pie>
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'rgba(255, 255, 255, 0.98)', 
+                          border: '3px solid #a855f7',
+                          borderRadius: '16px',
+                          boxShadow: '0 20px 40px rgba(168, 85, 247, 0.3)',
+                          padding: '16px'
+                        }}
+                        labelStyle={{ fontWeight: 'bold', fontSize: '14px', color: '#7e22ce' }}
+                        formatter={(value, name, props) => [
+                          <span className="font-bold text-base">{value} applications ({props.payload.percentage}%)</span>,
+                          <span className="font-bold">{props.payload.name}</span>
+                        ]}
+                      />
+                      <defs>
+                        <linearGradient id="successGradient" x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stopColor="#a855f7" stopOpacity={1}/>
+                          <stop offset="50%" stopColor="#ec4899" stopOpacity={0.95}/>
+                          <stop offset="100%" stopColor="#f43f5e" stopOpacity={0.9}/>
+                        </linearGradient>
+                        <linearGradient id="failureGradient" x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stopColor="#9ca3af" stopOpacity={0.8}/>
+                          <stop offset="100%" stopColor="#6b7280" stopOpacity={0.7}/>
+                        </linearGradient>
+                      </defs>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
 
               {/* Stats Summary */}
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
-                <div className="text-center p-3 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl">
-                  <div className="text-2xl font-bold text-purple-600">{stats.total - stats.rejected}</div>
-                  <div className="text-xs text-gray-600 mt-1 font-medium">Successful</div>
+              <div className="grid grid-cols-2 gap-5">
+                <div className="group text-center p-5 bg-gradient-to-br from-purple-100 via-pink-100 to-rose-100 rounded-2xl border-2 border-purple-300 hover:border-purple-500 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                  <div className="text-4xl font-black bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">{stats.total - stats.rejected}</div>
+                  <div className="text-xs text-purple-700 mt-2 font-bold uppercase tracking-wider">Successful</div>
+                  <div className="w-full bg-purple-300 rounded-full h-2 mt-3">
+                    <div className="h-2 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full" style={{ width: '100%' }}></div>
+                  </div>
                 </div>
-                <div className="text-center p-3 bg-gray-50 rounded-xl">
-                  <div className="text-2xl font-bold text-gray-600">{stats.rejected}</div>
-                  <div className="text-xs text-gray-600 mt-1 font-medium">Rejected</div>
+                <div className="group text-center p-5 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl border-2 border-gray-400 hover:border-gray-600 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                  <div className="text-4xl font-black text-gray-700">{stats.rejected}</div>
+                  <div className="text-xs text-gray-700 mt-2 font-bold uppercase tracking-wider">Rejected</div>
+                  <div className="w-full bg-gray-300 rounded-full h-2 mt-3">
+                    <div className="h-2 bg-gradient-to-r from-gray-500 to-gray-600 rounded-full" style={{ width: `${stats.total > 0 ? (stats.rejected / stats.total) * 100 : 0}%` }}></div>
+                  </div>
                 </div>
               </div>
 
               {/* Description */}
-              <p className="text-sm text-gray-600 leading-relaxed text-center bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-xl">
-                <span className="font-semibold text-purple-700">{stats.total - stats.rejected}</span> out of{' '}
-                <span className="font-semibold text-gray-700">{stats.total}</span> patent applications have not been rejected, 
-                demonstrating strong application quality and review success.
-              </p>
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-5 border-2 border-purple-200 shadow-inner">
+                <p className="text-sm text-gray-700 leading-relaxed text-center">
+                  <span className="inline-flex items-center gap-1">
+                    <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+                    <span className="font-black text-purple-700 text-lg">{stats.total - stats.rejected}</span>
+                  </span>
+                  {' '}out of{' '}
+                  <span className="font-bold text-gray-800 text-base">{stats.total}</span>
+                  {' '}patent applications have not been rejected, demonstrating{' '}
+                  <span className="font-bold text-purple-700">strong application quality</span> and{' '}
+                  <span className="font-bold text-pink-600">exceptional review success</span>.
+                </p>
+              </div>
             </div>
           ) : stats.loading ? (
             <div className="animate-pulse space-y-4">
@@ -1728,111 +1805,156 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
         </div>
 
         {/* Portfolio Health Chart */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-gray-100 hover:shadow-2xl transition-all duration-300">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="bg-gradient-to-br from-indigo-100 to-blue-100 p-3 rounded-xl">
-              <AlertCircle className="w-6 h-6 text-indigo-600" />
+        <div className="group bg-gradient-to-br from-indigo-50 via-blue-50 to-cyan-50 rounded-3xl shadow-2xl p-8 border-3 border-indigo-300 hover:border-indigo-500 hover:shadow-3xl hover:-translate-y-2 transition-all duration-500">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-4">
+              <div className="bg-gradient-to-br from-indigo-500 to-blue-600 p-4 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <AlertCircle className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-black bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">Portfolio Health</h3>
+                <p className="text-sm text-indigo-700 font-semibold mt-1">Patent status distribution</p>
+              </div>
             </div>
-            <h3 className="text-xl font-bold text-gray-900">Portfolio Health</h3>
           </div>
           
           {!stats.loading && stats.total > 0 ? (
             <div className="space-y-6">
               {/* Bar Chart */}
-              <div className="h-[280px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={[
-                      { 
-                        name: 'Active Patents', 
-                        count: stats.granted, 
-                        percentage: ((stats.granted / stats.total) * 100).toFixed(1)
-                      },
-                      { 
-                        name: 'Rejected', 
-                        count: stats.rejected, 
-                        percentage: ((stats.rejected / stats.total) * 100).toFixed(1)
-                      },
-                      { 
-                        name: 'Under Review', 
-                        count: stats.total - stats.granted - stats.rejected, 
-                        percentage: (((stats.total - stats.granted - stats.rejected) / stats.total) * 100).toFixed(1)
-                      }
-                    ]}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis 
-                      dataKey="name" 
-                      angle={-15}
-                      textAnchor="end"
-                      height={80}
-                      tick={{ fill: '#374151', fontSize: 12, fontWeight: 600 }}
-                    />
-                    <YAxis 
-                      tick={{ fill: '#6b7280', fontSize: 12 }}
-                      label={{ value: 'Number of Patents', angle: -90, position: 'insideLeft', style: { fill: '#374151', fontWeight: 600 } }}
-                    />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'rgba(255, 255, 255, 0.98)', 
-                        border: '2px solid #e5e7eb',
-                        borderRadius: '12px',
-                        boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
-                        padding: '12px'
-                      }}
-                      formatter={(value, name, props) => {
-                        return [
-                          <span className="font-semibold">{value} patents ({props.payload.percentage}%)</span>,
-                          ''
-                        ];
-                      }}
-                      labelFormatter={(label) => <span className="font-bold text-gray-900">{label}</span>}
-                    />
-                    <Bar 
-                      dataKey="count" 
-                      radius={[8, 8, 0, 0]}
-                      animationDuration={1000}
+              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-5 shadow-inner border-2 border-indigo-200">
+                <h4 className="text-sm font-bold text-indigo-800 mb-4 text-center uppercase tracking-wide">Patent Status Overview</h4>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={[
+                        { 
+                          name: 'Active Patents', 
+                          count: stats.granted, 
+                          percentage: ((stats.granted / stats.total) * 100).toFixed(1)
+                        },
+                        { 
+                          name: 'Rejected', 
+                          count: stats.rejected, 
+                          percentage: ((stats.rejected / stats.total) * 100).toFixed(1)
+                        },
+                        { 
+                          name: 'Under Review', 
+                          count: stats.total - stats.granted - stats.rejected, 
+                          percentage: (((stats.total - stats.granted - stats.rejected) / stats.total) * 100).toFixed(1)
+                        }
+                      ]}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
                     >
-                      <Cell fill="url(#activeGradient)" />
-                      <Cell fill="url(#rejectedGradient)" />
-                      <Cell fill="url(#reviewGradient)" />
-                    </Bar>
-                    <defs>
-                      <linearGradient id="activeGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#10b981" stopOpacity={0.9}/>
-                        <stop offset="100%" stopColor="#059669" stopOpacity={0.8}/>
-                      </linearGradient>
-                      <linearGradient id="rejectedGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#ef4444" stopOpacity={0.9}/>
-                        <stop offset="100%" stopColor="#dc2626" stopOpacity={0.8}/>
-                      </linearGradient>
-                      <linearGradient id="reviewGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.9}/>
-                        <stop offset="100%" stopColor="#d97706" stopOpacity={0.8}/>
-                      </linearGradient>
-                    </defs>
-                  </BarChart>
-                </ResponsiveContainer>
+                      <CartesianGrid strokeDasharray="5 5" stroke="#cbd5e1" strokeWidth={1.5} />
+                      <XAxis 
+                        dataKey="name" 
+                        angle={-15}
+                        textAnchor="end"
+                        height={80}
+                        tick={{ fill: '#1e293b', fontSize: 13, fontWeight: 700 }}
+                      />
+                      <YAxis 
+                        tick={{ fill: '#475569', fontSize: 12, fontWeight: 600 }}
+                        label={{ value: 'Number of Patents', angle: -90, position: 'insideLeft', style: { fill: '#1e293b', fontWeight: 700, fontSize: 13 } }}
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'rgba(255, 255, 255, 0.98)', 
+                          border: '3px solid #4f46e5',
+                          borderRadius: '16px',
+                          boxShadow: '0 20px 40px rgba(79, 70, 229, 0.3)',
+                          padding: '16px'
+                        }}
+                        labelStyle={{ fontWeight: 'bold', fontSize: '14px', color: '#312e81' }}
+                        formatter={(value, name, props) => {
+                          return [
+                            <span className="font-bold text-base">{value} patents ({props.payload.percentage}%)</span>,
+                            ''
+                          ];
+                        }}
+                        labelFormatter={(label) => <span className="font-bold text-gray-900">{label}</span>}
+                      />
+                      <Bar 
+                        dataKey="count" 
+                        radius={[12, 12, 0, 0]}
+                        animationDuration={1500}
+                        animationBegin={100}
+                      >
+                        <Cell fill="url(#activeGradient)" stroke="#10b981" strokeWidth={2} />
+                        <Cell fill="url(#rejectedGradient)" stroke="#ef4444" strokeWidth={2} />
+                        <Cell fill="url(#reviewGradient)" stroke="#f59e0b" strokeWidth={2} />
+                      </Bar>
+                      <defs>
+                        <linearGradient id="activeGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#10b981" stopOpacity={1}/>
+                          <stop offset="50%" stopColor="#059669" stopOpacity={0.95}/>
+                          <stop offset="100%" stopColor="#047857" stopOpacity={0.9}/>
+                        </linearGradient>
+                        <linearGradient id="rejectedGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#ef4444" stopOpacity={1}/>
+                          <stop offset="50%" stopColor="#dc2626" stopOpacity={0.95}/>
+                          <stop offset="100%" stopColor="#b91c1c" stopOpacity={0.9}/>
+                        </linearGradient>
+                        <linearGradient id="reviewGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#f59e0b" stopOpacity={1}/>
+                          <stop offset="50%" stopColor="#d97706" stopOpacity={0.95}/>
+                          <stop offset="100%" stopColor="#b45309" stopOpacity={0.9}/>
+                        </linearGradient>
+                      </defs>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
               
               {/* Summary Stats */}
-              <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-200">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">{stats.granted}</div>
-                  <div className="text-xs text-gray-600 mt-1">Active</div>
-                  <div className="text-xs text-gray-500">{((stats.granted / stats.total) * 100).toFixed(1)}%</div>
+              <div className="grid grid-cols-3 gap-5">
+                <div className="group text-center p-5 bg-gradient-to-br from-green-100 to-emerald-100 rounded-2xl border-2 border-green-300 hover:border-green-500 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                  <div className="text-4xl font-black bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">{stats.granted}</div>
+                  <div className="text-xs text-green-700 mt-2 font-bold uppercase tracking-wider">Active</div>
+                  <div className="text-sm text-green-600 font-bold mt-1">{((stats.granted / stats.total) * 100).toFixed(1)}%</div>
+                  <div className="w-full bg-green-300 rounded-full h-2 mt-3">
+                    <div className="h-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full" style={{ width: `${((stats.granted / stats.total) * 100)}%` }}></div>
+                  </div>
                 </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-red-600">{stats.rejected}</div>
-                  <div className="text-xs text-gray-600 mt-1">Rejected</div>
-                  <div className="text-xs text-gray-500">{((stats.rejected / stats.total) * 100).toFixed(1)}%</div>
+                <div className="group text-center p-5 bg-gradient-to-br from-red-100 to-rose-100 rounded-2xl border-2 border-red-300 hover:border-red-500 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                  <div className="text-4xl font-black bg-gradient-to-r from-red-600 to-rose-600 bg-clip-text text-transparent">{stats.rejected}</div>
+                  <div className="text-xs text-red-700 mt-2 font-bold uppercase tracking-wider">Rejected</div>
+                  <div className="text-sm text-red-600 font-bold mt-1">{((stats.rejected / stats.total) * 100).toFixed(1)}%</div>
+                  <div className="w-full bg-red-300 rounded-full h-2 mt-3">
+                    <div className="h-2 bg-gradient-to-r from-red-500 to-rose-600 rounded-full" style={{ width: `${((stats.rejected / stats.total) * 100)}%` }}></div>
+                  </div>
                 </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-yellow-600">{stats.total - stats.granted - stats.rejected}</div>
-                  <div className="text-xs text-gray-600 mt-1">Under Review</div>
-                  <div className="text-xs text-gray-500">{(((stats.total - stats.granted - stats.rejected) / stats.total) * 100).toFixed(1)}%</div>
+                <div className="group text-center p-5 bg-gradient-to-br from-amber-100 to-yellow-100 rounded-2xl border-2 border-amber-300 hover:border-amber-500 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                  <div className="text-4xl font-black bg-gradient-to-r from-amber-600 to-yellow-600 bg-clip-text text-transparent">{stats.total - stats.granted - stats.rejected}</div>
+                  <div className="text-xs text-amber-700 mt-2 font-bold uppercase tracking-wider">Under Review</div>
+                  <div className="text-sm text-amber-600 font-bold mt-1">{(((stats.total - stats.granted - stats.rejected) / stats.total) * 100).toFixed(1)}%</div>
+                  <div className="w-full bg-amber-300 rounded-full h-2 mt-3">
+                    <div className="h-2 bg-gradient-to-r from-amber-500 to-yellow-600 rounded-full" style={{ width: `${(((stats.total - stats.granted - stats.rejected) / stats.total) * 100)}%` }}></div>
+                  </div>
                 </div>
+              </div>
+              
+              {/* Description */}
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-5 border-2 border-indigo-200 shadow-inner">
+                <p className="text-sm text-gray-700 leading-relaxed text-center">
+                  Your portfolio contains{' '}
+                  <span className="inline-flex items-center gap-1">
+                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    <span className="font-black text-green-700 text-lg">{stats.granted}</span>
+                  </span>
+                  {' '}active patents,{' '}
+                  <span className="inline-flex items-center gap-1">
+                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                    <span className="font-black text-red-700 text-lg">{stats.rejected}</span>
+                  </span>
+                  {' '}rejected, and{' '}
+                  <span className="inline-flex items-center gap-1">
+                    <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
+                    <span className="font-black text-amber-700 text-lg">{stats.total - stats.granted - stats.rejected}</span>
+                  </span>
+                  {' '}under review. Monitor your{' '}
+                  <span className="font-bold text-indigo-700">intellectual property health</span> in real-time.
+                </p>
               </div>
             </div>
           ) : stats.loading ? (
