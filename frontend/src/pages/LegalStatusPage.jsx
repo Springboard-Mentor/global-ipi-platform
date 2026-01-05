@@ -1158,7 +1158,7 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
 
       {/* Additional Info Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Success Rate Card */}
+        {/* Success Rate Chart */}
         <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-gray-100 hover:shadow-2xl transition-all duration-300">
           <div className="flex items-center gap-3 mb-6">
             <div className="bg-gradient-to-br from-purple-100 to-pink-100 p-3 rounded-xl">
@@ -1168,23 +1168,101 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
           </div>
           
           {!stats.loading && stats.total > 0 ? (
-            <div>
-              <div className="flex items-baseline gap-2 mb-4">
-                <span className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">
-                  {Math.round(((stats.total - stats.rejected) / stats.total) * 100)}%
-                </span>
-                <span className="text-lg text-gray-500 font-semibold">success rate</span>
+            <div className="space-y-6">
+              {/* Main Success Rate Display */}
+              <div className="flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 mb-2">
+                    {Math.round(((stats.total - stats.rejected) / stats.total) * 100)}%
+                  </div>
+                  <div className="text-sm text-gray-500 font-semibold uppercase tracking-wide">Overall Success Rate</div>
+                </div>
               </div>
-              <p className="text-gray-600 leading-relaxed">
-                {stats.total - stats.rejected} out of {stats.total} patent applications have not been rejected, 
+
+              {/* Pie Chart */}
+              <div className="h-[220px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { 
+                          name: 'Successful Applications', 
+                          value: stats.total - stats.rejected,
+                          percentage: ((stats.total - stats.rejected) / stats.total * 100).toFixed(1)
+                        },
+                        { 
+                          name: 'Rejected Applications', 
+                          value: stats.rejected,
+                          percentage: (stats.rejected / stats.total * 100).toFixed(1)
+                        }
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={90}
+                      paddingAngle={5}
+                      dataKey="value"
+                      animationDuration={1000}
+                      label={({percentage}) => `${percentage}%`}
+                      labelLine={true}
+                    >
+                      <Cell fill="url(#successGradient)" />
+                      <Cell fill="url(#failureGradient)" />
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'rgba(255, 255, 255, 0.98)', 
+                        border: '2px solid #e5e7eb',
+                        borderRadius: '12px',
+                        boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+                        padding: '12px'
+                      }}
+                      formatter={(value, name, props) => [
+                        <span className="font-semibold">{value} applications ({props.payload.percentage}%)</span>,
+                        <span className="font-bold">{props.payload.name}</span>
+                      ]}
+                    />
+                    <defs>
+                      <linearGradient id="successGradient" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stopColor="#a855f7" stopOpacity={0.9}/>
+                        <stop offset="100%" stopColor="#ec4899" stopOpacity={0.9}/>
+                      </linearGradient>
+                      <linearGradient id="failureGradient" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stopColor="#9ca3af" stopOpacity={0.7}/>
+                        <stop offset="100%" stopColor="#6b7280" stopOpacity={0.7}/>
+                      </linearGradient>
+                    </defs>
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Stats Summary */}
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+                <div className="text-center p-3 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl">
+                  <div className="text-2xl font-bold text-purple-600">{stats.total - stats.rejected}</div>
+                  <div className="text-xs text-gray-600 mt-1 font-medium">Successful</div>
+                </div>
+                <div className="text-center p-3 bg-gray-50 rounded-xl">
+                  <div className="text-2xl font-bold text-gray-600">{stats.rejected}</div>
+                  <div className="text-xs text-gray-600 mt-1 font-medium">Rejected</div>
+                </div>
+              </div>
+
+              {/* Description */}
+              <p className="text-sm text-gray-600 leading-relaxed text-center bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-xl">
+                <span className="font-semibold text-purple-700">{stats.total - stats.rejected}</span> out of{' '}
+                <span className="font-semibold text-gray-700">{stats.total}</span> patent applications have not been rejected, 
                 demonstrating strong application quality and review success.
               </p>
             </div>
           ) : stats.loading ? (
-            <div className="animate-pulse space-y-3">
-              <div className="h-12 bg-gray-200 rounded w-1/2"></div>
-              <div className="h-4 bg-gray-200 rounded w-full"></div>
-              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+            <div className="animate-pulse space-y-4">
+              <div className="h-20 bg-gray-200 rounded"></div>
+              <div className="h-48 bg-gray-200 rounded"></div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="h-16 bg-gray-200 rounded"></div>
+                <div className="h-16 bg-gray-200 rounded"></div>
+              </div>
             </div>
           ) : (
             <p className="text-gray-500 italic">No data available yet. File your first patent to see statistics.</p>
