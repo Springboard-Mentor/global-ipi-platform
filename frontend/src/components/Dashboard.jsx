@@ -12,6 +12,8 @@ import {
   Line,
 } from "recharts";
 import { logout } from "../utils/logout";
+import { useSubscription } from "../context/SubscriptionContext";
+import UpgradeModal from "./UpgradeModal";
 
 const ipLocations = [
   { label: "12.110.16.213", region: "North America", top: "65%", left: "23%" },
@@ -40,8 +42,11 @@ const activeSessionsData = [
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { checkFeatureAccess } = useSubscription();
   const [threatLevel, setThreatLevel] = useState(60); // 0–100
   const [selectedRegion, setSelectedRegion] = useState(ipLocations[0].region);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [blockedFeature, setBlockedFeature] = useState('');
 
   const threatLabel =
     threatLevel < 33 ? "Low" : threatLevel < 66 ? "Medium" : "High";
@@ -55,6 +60,15 @@ const Dashboard = () => {
 
   // logout button
   const [openProfileMenu, setOpenProfileMenu] = useState(false);
+
+  const handleFeatureClick = (feature, route, featureName) => {
+    if (checkFeatureAccess(feature)) {
+      navigate(route);
+    } else {
+      setBlockedFeature(featureName);
+      setShowUpgradeModal(true);
+    }
+  };
 
   // Close dropdown when clicking outside
   React.useEffect(() => {
@@ -81,9 +95,21 @@ const Dashboard = () => {
           </button>
           <button
             className="hover:text-purple-300"
-            onClick={() => navigate("/ip-search")}
+            onClick={() => handleFeatureClick('search', '/ip-search', 'IP Search')}
           >
             IP Search
+          </button>
+          <button
+            className={`hover:text-purple-300 ${!checkFeatureAccess('filingTracker') ? 'opacity-60' : ''}`}
+            onClick={() => handleFeatureClick('filingTracker', '/filing-tracker-dashboard', 'Filing Tracker')}
+          >
+            Filing Tracker {!checkFeatureAccess('filingTracker') && '🔒'}
+          </button>
+          <button
+            className="hover:text-purple-300"
+            onClick={() => navigate("/pricing")}
+          >
+            Pricing
           </button>
           <button
             className="hover:text-purple-300"
@@ -149,16 +175,15 @@ const Dashboard = () => {
                 
                 <button
                   onClick={() => {
-                    navigate("/settings");
+                    navigate("/subscription-status");
                     setOpenProfileMenu(false);
                   }}
                   className="w-full text-left px-3 py-2 hover:bg-white/20 rounded-md flex items-center gap-2 transition-colors"
                 >
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
                   </svg>
-                  Settings
+                  Subscription
                 </button>
                 
                 <button
@@ -462,6 +487,13 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+      
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        feature={blockedFeature}
+        requiredPlan="pro"
+      />
     </div>
   );
 };

@@ -7,6 +7,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -46,13 +51,29 @@ public class ExternalPatentClient {
 
                         log.info("Calling SerpAPI Google Patents");
 
-                        Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+                        ResponseEntity<Map<String, Object>> resp = restTemplate.exchange(
+                                url,
+                                HttpMethod.GET,
+                                null,
+                                new ParameterizedTypeReference<Map<String, Object>>() {}
+                        );
 
+                        Map<String, Object> response = resp.getBody();
                         if (response == null || !response.containsKey("organic_results")) {
                                 return Collections.emptyList();
                         }
 
-                        List<Map<String, Object>> results = (List<Map<String, Object>>) response.get("organic_results");
+                        Object organic = response.get("organic_results");
+                        List<Map<String, Object>> results;
+                        if (organic instanceof List) {
+                                ObjectMapper mapper = new ObjectMapper();
+                                results = ((List<?>) organic).stream()
+                                        .filter(Map.class::isInstance)
+                                        .map(o -> mapper.convertValue(o, new TypeReference<Map<String, Object>>() {}))
+                                        .toList();
+                        } else {
+                                results = Collections.emptyList();
+                        }
 
                         return results.stream()
                                         .map(this::mapToDto)
@@ -74,13 +95,29 @@ public class ExternalPatentClient {
                                 .queryParam("api_key", apiKey)
                                 .toUriString();
 
-                Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+                ResponseEntity<Map<String, Object>> resp = restTemplate.exchange(
+                        url,
+                        HttpMethod.GET,
+                        null,
+                        new ParameterizedTypeReference<Map<String, Object>>() {}
+                );
 
+                Map<String, Object> response = resp.getBody();
                 if (response == null || !response.containsKey("organic_results")) {
                         return List.of();
                 }
 
-                List<Map<String, Object>> results = (List<Map<String, Object>>) response.get("organic_results");
+                Object organic = response.get("organic_results");
+                List<Map<String, Object>> results;
+                if (organic instanceof List) {
+                        ObjectMapper mapper = new ObjectMapper();
+                        results = ((List<?>) organic).stream()
+                                .filter(Map.class::isInstance)
+                                .map(o -> mapper.convertValue(o, new TypeReference<Map<String, Object>>() {}))
+                                .toList();
+                } else {
+                        results = List.of();
+                }
 
                 return results.stream()
                                 .map(this::mapToDto)

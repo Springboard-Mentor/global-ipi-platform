@@ -9,7 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 
 import com.example.demo.ip.client.ExternalPatentClient;
@@ -17,7 +16,6 @@ import com.example.demo.ip.dto.IPSearchRequest;
 import com.example.demo.ip.dto.IPSearchResultDTO;
 import com.example.demo.ip.entity.IPAsset;
 import com.example.demo.ip.exception.IPAssetNotFoundException;
-import com.example.demo.ip.mapper.IPAssetMapper;
 import com.example.demo.ip.repository.IPAssetRepository;
 
 @Service
