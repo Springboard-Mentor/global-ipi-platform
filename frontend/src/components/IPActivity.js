@@ -7,41 +7,8 @@ import FilterBar from "./dashboardComponents/FilterBar";
 import TableRow from "./dashboardComponents/TableRow";
 import KPIStats from "./dashboardComponents/KPIStats";
 import { logout } from "../utils/logout";
-
-const sampleData = [
-  {
-    id: "IP-12345",
-    name: "AI Fraud Detection System",
-    type: "Patent",
-    status: "Completed",
-    filedOn: "2025-01-10",
-    updatedOn: "2025-02-03",
-  },
-  {
-    id: "IP-98765",
-    name: "Global IP Intelligence Tracker",
-    type: "Patent",
-    status: "Pending",
-    filedOn: "2025-02-15",
-    updatedOn: "2025-02-20",
-  },
-  {
-    id: "IP-55555",
-    name: "Real-Time Threat Classifier",
-    type: "Trademark",
-    status: "Pending Review",
-    filedOn: "2025-02-01",
-    updatedOn: "2025-02-18",
-  },
-  {
-    id: "IP-77777",
-    name: "Quantum Encryption Protocol",
-    type: "Patent",
-    status: "Pending Review",
-    filedOn: "2025-01-20",
-    updatedOn: "2025-02-10",
-  },
-];
+import LandscapeVisualization from "./dashboardComponents/LandscapeVisualization";
+import sampleIPData from "./sampleIPData";
 
 const IPActivity = () => {
   const navigate = useNavigate();
@@ -52,7 +19,7 @@ const IPActivity = () => {
   const itemsPerPage = 5;
 
   // Filter Logic
-  const filtered = sampleData.filter((entry) => {
+  const filtered = sampleIPData.filter((entry) => {
     const matchText =
       entry.name.toLowerCase().includes(search.toLowerCase()) ||
       entry.id.toLowerCase().includes(search.toLowerCase());
@@ -90,6 +57,12 @@ const IPActivity = () => {
           </button>
           <button className="hover:text-purple-300 text-purple-300">
             IP Activity
+          </button>
+          <button
+            className="hover:text-purple-300"
+            onClick={() => navigate("/legal-status")}
+          >
+            Legal Status
           </button>
           <button
             className="hover:text-purple-300"
@@ -132,10 +105,24 @@ const IPActivity = () => {
       <h2 className="text-3xl font-bold mb-6">IP Activity</h2>
 
       {/* KPI CARDS */}
-      <KPIStats data={sampleData} />
+      <KPIStats data={sampleIPData} />
 
-      {/* STATUS CHART */}
-      <StatusChart />
+      {/* STATUS + LANDSCAPE SECTION */}
+      <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-8 mt-8 items-start">
+        {/* LEFT: IP Status Overview CHART */}
+        <div className="lg:sticky lg:top-24">
+          <div className="animate-fadeIn">
+            <StatusChart data={sampleIPData} />
+          </div>
+        </div>
+
+        {/* IP Landscape Visualization */}
+        <div className="animate-slideUp 💡">
+          <LandscapeVisualization data={sampleIPData} />
+        </div>
+      </div>
+      {/* SECTION DIVIDER */}
+      <div className="my-12 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
       {/* FILTER BAR */}
       <FilterBar

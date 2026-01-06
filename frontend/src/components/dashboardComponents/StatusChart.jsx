@@ -1,46 +1,70 @@
-import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { IP_STATUSES, STATUS_COLORS } from "../../constants/ipStatuses";
+import { CHART_TOOLTIP_STYLE } from "../../constants/tooltipStyles";
 
-const data = [
-  { name: "Completed", value: 34 },
-  { name: "Pending", value: 22 },
-  { name: "In Review", value: 10 },
+const StatusChart = ({ data }) => {
+  // Build status counts dynamically
+ const STATUS_ORDER = [
+  IP_STATUSES.FILED,
+  IP_STATUSES.UNDER_EXAMINATION,
+  IP_STATUSES.PENDING_REVIEW,
+  IP_STATUSES.GRANTED,
+  IP_STATUSES.REJECTED,
+  IP_STATUSES.ABANDONED,
 ];
 
-const COLORS = ["#b26bff", "#ff6ac1", "#6bc4ff"];
+const statusData = STATUS_ORDER
+  .filter(status => data.some(item => item.status === status))
+  .map(status => ({
+    name: status,
+    value: data.filter(item => item.status === status).length,
+  }));
 
-const StatusChart = () => {
+
   return (
-    <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-6 rounded-xl shadow-lg w-full md:w-1/3 mb-6">
-      <h3 className="text-lg font-semibold">IP Status Overview</h3>
+    <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl shadow-lg shadow-black/30 p-6 w-full animate-fadeIn">
+      {/* Header */}
+      <div className="mb-4 text-center">
+        <h3 className="text-lg font-semibold text-white">IP Status Overview</h3>
+        <p className="text-xs text-purple-200 mt-1">
+          Current distribution of IP filings
+        </p>
+      </div>
 
-      <div className="h-40 mt-4">
-        <ResponsiveContainer>
+      {/* Chart */}
+      <div className="h-44">
+        <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
-              data={data}
+              data={statusData}
               cx="50%"
               cy="50%"
-              innerRadius={40}
-              outerRadius={60}
-              paddingAngle={4}
+              innerRadius={48}
+              outerRadius={70}
+              paddingAngle={5}
               dataKey="value"
+              nameKey="name"
             >
-              {data.map((_, i) => (
-                <Cell key={i} fill={COLORS[i]} />
+              {statusData.map((entry, i) => (
+                <Cell key={i} fill={STATUS_COLORS[entry.name]} />
               ))}
             </Pie>
+
+            <Tooltip {...CHART_TOOLTIP_STYLE}
+            />
           </PieChart>
         </ResponsiveContainer>
       </div>
 
-      <div className="flex justify-around text-xs mt-3">
-        {data.map((d, i) => (
-          <div key={i}>
+      {/* Legend */}
+      <div className="mt-6 grid grid-cols-2 gap-3 text-xs text-purple-100">
+        {statusData.map((d, i) => (
+          <div key={i} className="flex items-center gap-2">
             <span
-              className="inline-block w-3 h-3 rounded-full mr-2"
-              style={{ background: COLORS[i] }}
+              className="inline-block w-2.5 h-2.5 rounded-full"
+              style={{ backgroundColor: STATUS_COLORS[d.name] }}
             />
-            {d.name}
+            <span>{d.name}</span>
           </div>
         ))}
       </div>

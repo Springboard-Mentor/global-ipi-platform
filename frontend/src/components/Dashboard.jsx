@@ -93,6 +93,12 @@ const Dashboard = () => {
           </button>
           <button
             className="hover:text-purple-300"
+            onClick={() => navigate("/legal-status")}
+          >
+            Legal Status
+          </button>
+          <button
+            className="hover:text-purple-300"
             onClick={() => navigate("/profile")}
           >
             Profile
