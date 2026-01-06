@@ -25,6 +25,7 @@ import StatePatentCount from "../components/StatePatentCount";
 import IndiaPatentPanel from "../components/IndiaPatentPanel";
 import QuickSearchKeywords from "../components/QuickSearchKeywords";
 import GrowthTrendChart from "../components/GrowthTrendChart";
+import PatentStatusChart from "../components/PatentStatusChart";
 import Chatbot from "../components/Chatbot";
 
 const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurrentPage }) => {
@@ -678,6 +679,11 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
           dbConnectionStatus={dbConnectionStatus}
           filingsStatus={filingsStatus}
         />
+      </div>
+
+      {/* PATENT STATUS DISTRIBUTION CHART */}
+      <div className="w-full">
+        <PatentStatusChart />
       </div>
 
       {/* FULL WIDTH CHARTS SECTION */}

@@ -38,6 +38,20 @@ public class PatentController {
         List<YearlyPatentCount> yearlyCounts = patentService.getYearlyPatentCounts();
         return ResponseEntity.ok(yearlyCounts);
     }
+    
+    @GetMapping("/status-counts")
+    public ResponseEntity<java.util.Map<String, Long>> getPatentStatusCounts() {
+        // Get patent counts grouped by status for pie chart
+        java.util.Map<String, Long> statusCounts = patentService.getPatentStatusCounts();
+        return ResponseEntity.ok(statusCounts);
+    }
+    
+    @GetMapping("/status-counts-by-date")
+    public ResponseEntity<List<java.util.Map<String, Object>>> getPatentStatusCountsByDate() {
+        // Get patent counts grouped by status and date
+        List<java.util.Map<String, Object>> statusCountsByDate = patentService.getPatentStatusCountsByDate();
+        return ResponseEntity.ok(statusCountsByDate);
+    }
 
     @GetMapping("/local")
     public ResponseEntity<List<Patent>> getAllLocalPatents() {

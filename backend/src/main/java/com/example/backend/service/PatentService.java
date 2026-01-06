@@ -282,4 +282,39 @@ public class PatentService {
             })
             .collect(Collectors.toList());
     }
+    
+    /**
+     * Get patent counts grouped by status
+     */
+    public java.util.Map<String, Long> getPatentStatusCounts() {
+        logger.info("Fetching patent status counts from database");
+        List<Patent> allPatents = patentRepository.findAll();
+        
+        return allPatents.stream()
+            .collect(Collectors.groupingBy(
+                patent -> patent.getStatus() != null && !patent.getStatus().trim().isEmpty() 
+                    ? patent.getStatus() 
+                    : "Unknown",
+                Collectors.counting()
+            ));
+    }
+    
+    /**
+     * Get patent status counts grouped by date (year/month)
+     */
+    public List<java.util.Map<String, Object>> getPatentStatusCountsByDate() {
+        logger.info("Fetching patent status counts by date from database");
+        List<Object[]> results = patentRepository.getPatentStatusCountsByDate();
+        
+        return results.stream()
+            .map(row -> {
+                java.util.Map<String, Object> map = new java.util.HashMap<>();
+                map.put("status", row[0] != null ? row[0].toString() : "Unknown");
+                map.put("count", ((Number) row[1]).longValue());
+                map.put("year", row[2] != null ? row[2].toString() : null);
+                map.put("month", row[3] != null ? row[3].toString() : null);
+                return map;
+            })
+            .collect(Collectors.toList());
+    }
 }
