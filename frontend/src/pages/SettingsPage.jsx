@@ -299,18 +299,54 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
 
   // Account Deactivation - Instant with 30-day auto-delete
   const handleDeactivateAccount = async () => {
+    // Show confirmation dialog with clear warning
+    const confirmed = window.confirm(
+      '⚠️ WARNING: Account Deactivation\n\n' +
+      'This will:\n' +
+      '• Deactivate your account IMMEDIATELY\n' +
+      '• Sign you out of all devices\n' +
+      '• Give you 30 days to reactivate by logging in\n' +
+      '• PERMANENTLY DELETE your account after 30 days if not reactivated\n\n' +
+      'Are you absolutely sure you want to deactivate your account?'
+    );
+    
+    if (!confirmed) {
+      console.log('Account deactivation cancelled by user');
+      return;
+    }
+    
+    // Second confirmation for extra safety
+    const doubleConfirmed = window.confirm(
+      'Final Confirmation\n\n' +
+      'This is your last chance!\n\n' +
+      'Click OK to deactivate your account now, or Cancel to keep it active.'
+    );
+    
+    if (!doubleConfirmed) {
+      console.log('Account deactivation cancelled on second confirmation');
+      return;
+    }
+    
     try {
       const userRef = doc(db, 'users', currentUID);
       
       console.log('Deactivating account for user:', currentUID);
       
       // Update status immediately in Firestore
-      await setDoc(userRef, {
+      await updateDoc(userRef, {
         accountStatus: 'deactivated',
         deactivatedAt: serverTimestamp()
-      }, { merge: true });
+      });
       
       console.log('✅ Account status updated in Firestore. Will auto-delete in 30 days if not reactivated.');
+      
+      // Show success message
+      alert(
+        '✓ Account Deactivated Successfully\n\n' +
+        'Your account has been deactivated.\n\n' +
+        'You have 30 days to reactivate by logging in.\n' +
+        'After 30 days, your account will be permanently deleted.'
+      );
       
       // Clear localStorage
       localStorage.removeItem('userProfile');
@@ -325,9 +361,13 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
     } catch (error) {
       console.error('❌ Deactivation error:', error);
       console.error('Error details:', error.message, error.code);
-      // Force redirect even if error
-      await signOut(auth);
-      window.location.href = '/register';
+      alert(
+        'Error: Failed to deactivate account\n\n' +
+        error.message + '\n\n' +
+        'Please try again or contact support if the problem persists.'
+      );
+      // Only sign out if deactivation was successful
+      // Don't redirect on error
     }
   };
 
