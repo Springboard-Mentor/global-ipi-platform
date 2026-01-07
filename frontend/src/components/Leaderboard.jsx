@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Medal, Award, TrendingUp, Sparkles } from 'lucide-react';
+import { Trophy, Medal, Award, TrendingUp, Sparkles, RefreshCw } from 'lucide-react';
 import { db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -10,6 +10,11 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
   const [timeFilter, setTimeFilter] = useState('all'); // all, weekly, monthly
   const [showConfetti, setShowConfetti] = useState(false);
   const [totalPatents, setTotalPatents] = useState(0);
+  const [weeklyPatents, setWeeklyPatents] = useState(0);
+  const [monthlyPatents, setMonthlyPatents] = useState(0);
+  const [weeklyInnovators, setWeeklyInnovators] = useState(0);
+  const [monthlyInnovators, setMonthlyInnovators] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     fetchLeaderboardData();
@@ -67,12 +72,45 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
       // Calculate total patents
       const total = updatedData.reduce((sum, user) => sum + (user.patentCount || 0), 0);
       setTotalPatents(total);
+      
+      // Fetch weekly and monthly stats in parallel
+      await fetchAdditionalStats();
     } catch (err) {
       console.error('Error fetching leaderboard:', err);
       setError(err.message);
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchAdditionalStats = async () => {
+    try {
+      // Fetch weekly stats
+      const weeklyResponse = await fetch('http://localhost:8080/api/leaderboard/top-users?filter=weekly');
+      if (weeklyResponse.ok) {
+        const weeklyData = await weeklyResponse.json();
+        const weeklyTotal = weeklyData.reduce((sum, user) => sum + (user.patentCount || 0), 0);
+        setWeeklyPatents(weeklyTotal);
+        setWeeklyInnovators(weeklyData.length);
+      }
+      
+      // Fetch monthly stats
+      const monthlyResponse = await fetch('http://localhost:8080/api/leaderboard/top-users?filter=monthly');
+      if (monthlyResponse.ok) {
+        const monthlyData = await monthlyResponse.json();
+        const monthlyTotal = monthlyData.reduce((sum, user) => sum + (user.patentCount || 0), 0);
+        setMonthlyPatents(monthlyTotal);
+        setMonthlyInnovators(monthlyData.length);
+      }
+    } catch (error) {
+      console.warn('Failed to fetch additional stats:', error);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchLeaderboardData();
+    setTimeout(() => setIsRefreshing(false), 500);
   };
 
   const getMedalIcon = (rank) => {
@@ -227,6 +265,14 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
             Patent Filing Leaderboard
           </h2>
         </div>
+        <button
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-blue-500 text-blue-600 rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+          Refresh
+        </button>
       </div>
 
       {/* Subtitle */}
@@ -394,62 +440,92 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
             )}
           </div>
 
-          {/* Time Filter - Below Top 3 */}
-          <div className="flex justify-center gap-2 mb-8">
-            <button
-              onClick={() => setTimeFilter('all')}
-              className={`px-4 py-2 rounded-lg font-semibold transition ${
-                timeFilter === 'all'
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md'
-                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-300'
-              }`}
-            >
-              All Time
-            </button>
-            <button
-              onClick={() => setTimeFilter('monthly')}
-              className={`px-4 py-2 rounded-lg font-semibold transition ${
-                timeFilter === 'monthly'
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md'
-                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-300'
-              }`}
-            >
-              This Month
-            </button>
-            <button
-              onClick={() => setTimeFilter('weekly')}
-              className={`px-4 py-2 rounded-lg font-semibold transition ${
-                timeFilter === 'weekly'
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md'
-                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-300'
-              }`}
-            >
-              This Week
-            </button>
-          </div>
+          {/* Time Filter with Conditional Stats - Below Top 3 */}
+          <div className="mb-8">
+            {/* Filter Buttons Row */}
+            <div className="flex justify-center gap-2 mb-4">
+              <button
+                onClick={() => setTimeFilter('all')}
+                className={`px-4 py-2 rounded-lg font-semibold transition ${
+                  timeFilter === 'all'
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md'
+                    : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-300'
+                }`}
+              >
+                All Time
+              </button>
+              <button
+                onClick={() => setTimeFilter('monthly')}
+                className={`px-4 py-2 rounded-lg font-semibold transition ${
+                  timeFilter === 'monthly'
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md'
+                    : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-300'
+                }`}
+              >
+                This Month
+              </button>
+              <button
+                onClick={() => setTimeFilter('weekly')}
+                className={`px-4 py-2 rounded-lg font-semibold transition ${
+                  timeFilter === 'weekly'
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md'
+                    : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-300'
+                }`}
+              >
+                This Week
+              </button>
+            </div>
 
-          {/* Statistics Card */}
-          <div className="bg-white rounded-xl shadow-lg p-6 mb-8 border-2 border-purple-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                  {timeFilter === 'all' ? 'Total Patent Filings' : 
-                   timeFilter === 'monthly' ? 'Patents Filed This Month' : 
-                   'Patents Filed This Week'}
-                </h3>
-                <div className="flex items-center gap-3">
-                  <div className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                    {totalPatents}
-                  </div>
-                  <div className="text-gray-600">
-                    <p className="text-sm">by {leaderboardData.length} innovators</p>
+            {/* Conditional Statistics Cards - Same Row as Filter */}
+            {timeFilter === 'monthly' && (
+              <div className="flex justify-center">
+                <div className="bg-white rounded-xl shadow-lg p-4 border-2 border-purple-200 max-w-md w-full">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <h3 className="text-sm font-semibold text-gray-700 mb-1">
+                        Patents Filed This Month
+                      </h3>
+                      <div className="flex items-center gap-2">
+                        <div className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                          {monthlyPatents}
+                        </div>
+                        <div className="text-gray-600">
+                          <p className="text-xs">by {monthlyInnovators} innovators</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-4xl opacity-20">
+                      📊
+                    </div>
                   </div>
                 </div>
               </div>
-              <div className="text-6xl opacity-20">
-                📊
+            )}
+
+            {timeFilter === 'weekly' && (
+              <div className="flex justify-center">
+                <div className="bg-white rounded-xl shadow-lg p-4 border-2 border-indigo-200 max-w-md w-full">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <h3 className="text-sm font-semibold text-gray-700 mb-1">
+                        Patents Filed This Week
+                      </h3>
+                      <div className="flex items-center gap-2">
+                        <div className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
+                          {weeklyPatents}
+                        </div>
+                        <div className="text-gray-600">
+                          <p className="text-xs">by {weeklyInnovators} innovators</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-4xl opacity-20">
+                      📈
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Chart Visualization */}
