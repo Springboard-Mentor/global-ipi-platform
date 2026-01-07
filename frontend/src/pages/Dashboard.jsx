@@ -33,6 +33,14 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
   const [dbConnectionStatus, setDbConnectionStatus] = React.useState('checking'); // 'checking', 'connected', 'error'
   const [dbError, setDbError] = React.useState('');
   
+  // Typewriter effect state
+  const [typewriterText, setTypewriterText] = React.useState('');
+  const fullText = 'Empowering Innovation Through Data-Driven IP Analytics';
+  
+  // Scroll animation states
+  const [visibleSections, setVisibleSections] = React.useState({});
+  const sectionRefs = React.useRef({});
+  
   // State for map location selection
   const [selectedMapState, setSelectedMapState] = React.useState(null);
   
@@ -71,6 +79,74 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
       setLocalUserProfile(userProfile);
     }
   }, [userProfile]);
+  
+  // Typewriter effect with continuous loop
+  React.useEffect(() => {
+    let index = 0;
+    let isDeleting = false;
+    let timer;
+    
+    const typeWriter = () => {
+      if (!isDeleting && index < fullText.length) {
+        // Typing forward
+        index++;
+        setTypewriterText(fullText.slice(0, index));
+        timer = setTimeout(typeWriter, 50);
+      } else if (!isDeleting && index === fullText.length) {
+        // Pause at end before deleting
+        timer = setTimeout(() => {
+          isDeleting = true;
+          typeWriter();
+        }, 2000);
+      } else if (isDeleting && index > 0) {
+        // Deleting backward
+        index--;
+        setTypewriterText(fullText.slice(0, index));
+        timer = setTimeout(typeWriter, 30);
+      } else if (isDeleting && index === 0) {
+        // Pause before typing again
+        timer = setTimeout(() => {
+          isDeleting = false;
+          typeWriter();
+        }, 500);
+      }
+    };
+    
+    typeWriter();
+    return () => clearTimeout(timer);
+  }, []);
+  
+  // Scroll animation observer - repeats every time
+  React.useEffect(() => {
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -100px 0px'
+    };
+    
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          // Show section when it comes into view
+          setVisibleSections(prev => ({
+            ...prev,
+            [entry.target.dataset.section]: true
+          }));
+        } else {
+          // Hide section when it goes out of view (allows re-animation)
+          setVisibleSections(prev => ({
+            ...prev,
+            [entry.target.dataset.section]: false
+          }));
+        }
+      });
+    }, observerOptions);
+    
+    Object.values(sectionRefs.current).forEach(ref => {
+      if (ref) observer.observe(ref);
+    });
+    
+    return () => observer.disconnect();
+  }, []);
   
   // Fetch emailVerified status immediately on mount
   React.useEffect(() => {
@@ -589,7 +665,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
             <div className="w-full lg:w-96 flex-shrink-0">
               <div className="border-2 border-gray-300 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-base font-bold text-gray-800">Search Mode</p>
+                  <p className="text-xl font-extrabold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">Search Mode</p>
                   <div className={`w-2.5 h-2.5 rounded-full ${searchMode === 'api' ? 'bg-cyan-500' : 'bg-teal-500'} animate-pulse`}></div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -634,8 +710,9 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
                 </h2>
                 <Crown className="text-yellow-500" size={32} />
               </div>
-              <p className="text-lg text-gray-700 font-semibold mb-2">
-                Empowering Innovation Through Data-Driven IP Analytics
+              <p className="text-lg text-gray-700 font-semibold mb-2 h-7">
+                <span className="inline-block">{typewriterText}</span>
+                <span className="inline-block w-0.5 h-5 bg-gray-700 ml-1 animate-pulse"></span>
               </p>
               <p className="text-sm text-gray-600 leading-relaxed max-w-4xl mx-auto">
                 Join thousands of innovators, patent attorneys, and R&D teams leveraging our comprehensive platform 
@@ -677,8 +754,14 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
 
 
       {/* Growth Metrics Section */}
-      <div className="w-full mt-12 mb-6">
-        <div className="bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 rounded-2xl p-6 border-l-4 border-blue-500 shadow-sm">
+      <div 
+        className="w-full mt-12 mb-6"
+        ref={el => sectionRefs.current['growth'] = el}
+        data-section="growth"
+      >
+        <div className={`bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 rounded-2xl p-6 border-l-4 border-blue-500 shadow-sm transition-all duration-1000 ${
+          visibleSections['growth'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+        }`}>
           <div className="flex items-start gap-3">
             <div className="p-2 bg-blue-500 rounded-lg shadow-lg">
               <TrendingUp className="text-white" size={28} />
@@ -710,8 +793,14 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
       </div>
 
       {/* Patent Status Analysis Section */}
-      <div className="w-full mt-12 mb-6">
-        <div className="bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-green-500/10 rounded-2xl p-6 border-l-4 border-emerald-500 shadow-sm">
+      <div 
+        className="w-full mt-12 mb-6"
+        ref={el => sectionRefs.current['patent'] = el}
+        data-section="patent"
+      >
+        <div className={`bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-green-500/10 rounded-2xl p-6 border-l-4 border-emerald-500 shadow-sm transition-all duration-1000 ${
+          visibleSections['patent'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+        }`}>
           <div className="flex items-start gap-3">
             <div className="p-2 bg-emerald-500 rounded-lg shadow-lg">
               <CheckCircle className="text-white" size={28} />
@@ -736,8 +825,14 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
       </div>
 
       {/* Subscription & Trends Analysis Section */}
-      <div className="w-full mt-12 mb-6">
-        <div className="bg-gradient-to-r from-violet-500/10 via-purple-500/10 to-fuchsia-500/10 rounded-2xl p-6 border-l-4 border-violet-500 shadow-sm">
+      <div 
+        className="w-full mt-12 mb-6"
+        ref={el => sectionRefs.current['revenue'] = el}
+        data-section="revenue"
+      >
+        <div className={`bg-gradient-to-r from-violet-500/10 via-purple-500/10 to-fuchsia-500/10 rounded-2xl p-6 border-l-4 border-violet-500 shadow-sm transition-all duration-1000 ${
+          visibleSections['revenue'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+        }`}>
           <div className="flex items-start gap-3">
             <div className="p-2 bg-violet-500 rounded-lg shadow-lg">
               <Zap className="text-white" size={28} />
@@ -913,8 +1008,14 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
       </div>
 
       {/* Geographic Distribution Section */}
-      <div className="w-full mt-12 mb-6">
-        <div className="bg-gradient-to-r from-cyan-500/10 via-blue-500/10 to-sky-500/10 rounded-2xl p-6 border-l-4 border-cyan-500 shadow-sm">
+      <div 
+        className="w-full mt-12 mb-6"
+        ref={el => sectionRefs.current['geographic'] = el}
+        data-section="geographic"
+      >
+        <div className={`bg-gradient-to-r from-cyan-500/10 via-blue-500/10 to-sky-500/10 rounded-2xl p-6 border-l-4 border-cyan-500 shadow-sm transition-all duration-1000 ${
+          visibleSections['geographic'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+        }`}>
           <div className="flex items-start gap-3">
             <div className="p-2 bg-cyan-500 rounded-lg shadow-lg">
               <Globe className="text-white" size={28} />
@@ -951,8 +1052,14 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
       </div>
 
       {/* User Feedback & Quality Metrics Section */}
-      <div className="w-full mt-12 mb-6">
-        <div className="bg-gradient-to-r from-pink-500/10 via-rose-500/10 to-red-500/10 rounded-2xl p-6 border-l-4 border-pink-500 shadow-sm">
+      <div 
+        className="w-full mt-12 mb-6"
+        ref={el => sectionRefs.current['feedback'] = el}
+        data-section="feedback"
+      >
+        <div className={`bg-gradient-to-r from-pink-500/10 via-rose-500/10 to-red-500/10 rounded-2xl p-6 border-l-4 border-pink-500 shadow-sm transition-all duration-1000 ${
+          visibleSections['feedback'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+        }`}>
           <div className="flex items-start gap-3">
             <div className="p-2 bg-pink-500 rounded-lg shadow-lg">
               <Info className="text-white" size={28} />
