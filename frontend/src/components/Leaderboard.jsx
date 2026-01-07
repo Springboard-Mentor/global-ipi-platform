@@ -457,6 +457,42 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
             </div>
           </div>
 
+          {/* Motivational Section */}
+          <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-xl p-6 mb-8 text-white text-center shadow-xl">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <Sparkles className="w-8 h-8 animate-bounce" />
+              <h3 className="text-2xl font-bold">Ready to Make Your Mark?</h3>
+              <Sparkles className="w-8 h-8 animate-bounce" />
+            </div>
+            <p className="text-lg mb-4 text-white/90">
+              Join these innovative leaders and protect your groundbreaking ideas today!
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div className="bg-white/20 rounded-lg p-4 backdrop-blur-sm">
+                <div className="text-3xl mb-2">💡</div>
+                <p className="text-sm font-semibold">Protect Your Innovation</p>
+              </div>
+              <div className="bg-white/20 rounded-lg p-4 backdrop-blur-sm">
+                <div className="text-3xl mb-2">🏆</div>
+                <p className="text-sm font-semibold">Build Your Legacy</p>
+              </div>
+              <div className="bg-white/20 rounded-lg p-4 backdrop-blur-sm">
+                <div className="text-3xl mb-2">⚡</div>
+                <p className="text-sm font-semibold">Stay Ahead of Competition</p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                if (onNavigateToPatentFiling) {
+                  onNavigateToPatentFiling();
+                }
+              }}
+              className="bg-white text-purple-600 px-8 py-3 rounded-lg font-bold hover:bg-gray-100 transition-all hover:scale-105 shadow-lg"
+            >
+              Start Your Patent Journey →
+            </button>
+          </div>
+
           {/* Rest of Top 10 - List Format */}
           {leaderboardData.length > 3 && (
             <div className="mt-8">
@@ -511,41 +547,6 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
             </div>
           )}
 
-          {/* Motivational Section */}
-          <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-xl p-6 mt-8 text-white text-center shadow-xl">
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <Sparkles className="w-8 h-8 animate-bounce" />
-              <h3 className="text-2xl font-bold">Ready to Make Your Mark?</h3>
-              <Sparkles className="w-8 h-8 animate-bounce" />
-            </div>
-            <p className="text-lg mb-4 text-white/90">
-              Join these innovative leaders and protect your groundbreaking ideas today!
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <div className="bg-white/20 rounded-lg p-4 backdrop-blur-sm">
-                <div className="text-3xl mb-2">💡</div>
-                <p className="text-sm font-semibold">Protect Your Innovation</p>
-              </div>
-              <div className="bg-white/20 rounded-lg p-4 backdrop-blur-sm">
-                <div className="text-3xl mb-2">🏆</div>
-                <p className="text-sm font-semibold">Build Your Legacy</p>
-              </div>
-              <div className="bg-white/20 rounded-lg p-4 backdrop-blur-sm">
-                <div className="text-3xl mb-2">⚡</div>
-                <p className="text-sm font-semibold">Stay Ahead of Competition</p>
-              </div>
-            </div>
-            <button
-              onClick={() => {
-                if (onNavigateToPatentFiling) {
-                  onNavigateToPatentFiling();
-                }
-              }}
-              className="bg-white text-purple-600 px-8 py-3 rounded-lg font-bold hover:bg-gray-100 transition-all hover:scale-105 shadow-lg"
-            >
-              Start Your Patent Journey →
-            </button>
-          </div>
 
         </div>
       )}
