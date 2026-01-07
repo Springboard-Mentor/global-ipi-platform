@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy, Medal, Award, TrendingUp, Sparkles } from 'lucide-react';
+import { db } from '../firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
   const [leaderboardData, setLeaderboardData] = useState([]);
@@ -31,10 +33,39 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
       }
 
       const data = await response.json();
-      setLeaderboardData(data);
+      
+      // Fetch current names from Firestore for each user
+      const updatedData = await Promise.all(
+        data.map(async (user) => {
+          try {
+            // userId is the email, use it to fetch from Firestore
+            const userDocRef = doc(db, 'users', user.userId);
+            const userDoc = await getDoc(userDocRef);
+            
+            if (userDoc.exists()) {
+              const userData = userDoc.data();
+              const currentName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim();
+              
+              return {
+                ...user,
+                userName: currentName || user.userName || 'Unknown User',
+                userPhoto: userData.profilePhoto || user.userPhoto
+              };
+            }
+            
+            // If Firestore document doesn't exist, keep original data
+            return user;
+          } catch (firestoreError) {
+            console.warn(`Failed to fetch Firestore data for ${user.userId}:`, firestoreError);
+            return user; // Fallback to original data
+          }
+        })
+      );
+      
+      setLeaderboardData(updatedData);
       
       // Calculate total patents
-      const total = data.reduce((sum, user) => sum + (user.patentCount || 0), 0);
+      const total = updatedData.reduce((sum, user) => sum + (user.patentCount || 0), 0);
       setTotalPatents(total);
     } catch (err) {
       console.error('Error fetching leaderboard:', err);
