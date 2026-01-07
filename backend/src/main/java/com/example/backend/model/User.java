@@ -23,6 +23,9 @@ public class User {
     private String phoneNumber;
     private String organization;
     
+    @Column(name = "profile_photo")
+    private String profilePhoto;
+    
     @Column(name = "created_at")
     private LocalDateTime createdAt;
     

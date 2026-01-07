@@ -7,6 +7,7 @@ public class LeaderboardUserDTO {
     
     private String userId;
     private String userName;
+    private String userPhoto;
     private Long patentCount;
     private Integer rank;
     
@@ -17,12 +18,14 @@ public class LeaderboardUserDTO {
     public LeaderboardUserDTO(String userId, String userName, Long patentCount) {
         this.userId = userId;
         this.userName = userName;
+        this.userPhoto = null; // Will be set from user profile later
         this.patentCount = patentCount;
     }
     
-    public LeaderboardUserDTO(String userId, String userName, Long patentCount, Integer rank) {
+    public LeaderboardUserDTO(String userId, String userName, String userPhoto, Long patentCount, Integer rank) {
         this.userId = userId;
         this.userName = userName;
+        this.userPhoto = userPhoto;
         this.patentCount = patentCount;
         this.rank = rank;
     }
@@ -42,6 +45,14 @@ public class LeaderboardUserDTO {
     
     public void setUserName(String userName) {
         this.userName = userName;
+    }
+    
+    public String getUserPhoto() {
+        return userPhoto;
+    }
+    
+    public void setUserPhoto(String userPhoto) {
+        this.userPhoto = userPhoto;
     }
     
     public Long getPatentCount() {
@@ -65,6 +76,7 @@ public class LeaderboardUserDTO {
         return "LeaderboardUserDTO{" +
                 "userId='" + userId + '\'' +
                 ", userName='" + userName + '\'' +
+                ", userPhoto='" + userPhoto + '\'' +
                 ", patentCount=" + patentCount +
                 ", rank=" + rank +
                 '}';

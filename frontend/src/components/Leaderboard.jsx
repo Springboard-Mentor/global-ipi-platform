@@ -6,6 +6,8 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [timeFilter, setTimeFilter] = useState('all'); // all, weekly, monthly
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [totalPatents, setTotalPatents] = useState(0);
 
   useEffect(() => {
     fetchLeaderboardData();
@@ -30,6 +32,10 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
 
       const data = await response.json();
       setLeaderboardData(data);
+      
+      // Calculate total patents
+      const total = data.reduce((sum, user) => sum + (user.patentCount || 0), 0);
+      setTotalPatents(total);
     } catch (err) {
       console.error('Error fetching leaderboard:', err);
       setError(err.message);
@@ -76,12 +82,46 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
 
   const getTopThreeStyle = (rank) => {
     const styles = {
-      1: 'transform scale-105 bg-gradient-to-br from-yellow-50 via-amber-100 to-yellow-100 border-yellow-400 shadow-2xl',
-      2: 'bg-gradient-to-br from-slate-50 via-gray-200 to-slate-100 border-slate-400 shadow-xl',
-      3: 'bg-gradient-to-br from-orange-50 via-orange-200 to-red-100 border-orange-500 shadow-xl',
+      1: 'transform scale-105 bg-gradient-to-br from-yellow-50 via-amber-100 to-yellow-100 border-yellow-400 shadow-2xl ring-4 ring-yellow-300',
+      2: 'bg-gradient-to-br from-slate-50 via-gray-200 to-slate-100 border-slate-400 shadow-xl ring-4 ring-slate-300',
+      3: 'bg-gradient-to-br from-orange-50 via-orange-200 to-red-100 border-orange-500 shadow-xl ring-4 ring-orange-300',
     };
     
     return styles[rank] || '';
+  };
+
+  const handleRank1Hover = () => {
+    setShowConfetti(true);
+    setTimeout(() => setShowConfetti(false), 3000);
+  };
+
+  // Confetti Component
+  const Confetti = () => {
+    const confettiPieces = Array.from({ length: 50 });
+    return (
+      <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+        {confettiPieces.map((_, i) => (
+          <div
+            key={i}
+            className="absolute animate-fall"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: '-10px',
+              animationDelay: `${Math.random() * 0.5}s`,
+              animationDuration: `${2 + Math.random()}s`,
+            }}
+          >
+            <div
+              className="w-3 h-3 rounded-full"
+              style={{
+                backgroundColor: ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A'][Math.floor(Math.random() * 5)],
+                transform: `rotate(${Math.random() * 360}deg)`,
+              }}
+            />
+          </div>
+        ))}
+      </div>
+    );
   };
 
   if (loading) {
@@ -184,9 +224,11 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
 
                   {/* User Info */}
                   <div className="text-center">
-                    {/* User Avatar/Initial */}
+                    {/* User Avatar/Initial/Photo */}
                     <div className="w-16 h-16 mx-auto mb-3 rounded-full flex items-center justify-center text-xl font-bold bg-gradient-to-br from-gray-400 to-gray-600 text-white shadow-lg overflow-hidden">
-                      {leaderboardData[1].userName ? (
+                      {leaderboardData[1].userPhoto ? (
+                        <img src={leaderboardData[1].userPhoto} alt={leaderboardData[1].userName} className="w-full h-full object-cover" />
+                      ) : leaderboardData[1].userName ? (
                         leaderboardData[1].userName.split(' ').map(n => n.charAt(0)).join('').toUpperCase().slice(0, 2)
                       ) : 'U'}
                     </div>
@@ -221,7 +263,10 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
             {/* 1st Place - Center (Tallest) */}
             {leaderboardData[0] && (
               <div className="relative flex-1 max-w-xs">
-                <div className={`relative border-3 rounded-2xl p-6 transition-all hover:scale-105 ${getTopThreeStyle(1)}`}>
+                <div 
+                  className={`relative border-3 rounded-2xl p-6 transition-all hover:scale-105 ${getTopThreeStyle(1)} cursor-pointer`}
+                  onMouseEnter={handleRank1Hover}
+                >
                   {/* Medal Icon at Top */}
                   <div className="flex justify-center mb-4">
                     {getMedalIcon(1)}
@@ -229,9 +274,11 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
 
                   {/* User Info */}
                   <div className="text-center">
-                    {/* User Avatar/Initial */}
+                    {/* User Avatar/Initial/Photo */}
                     <div className="w-24 h-24 mx-auto mb-4 rounded-full flex items-center justify-center text-3xl font-bold bg-gradient-to-br from-yellow-400 to-yellow-600 text-white shadow-2xl overflow-hidden">
-                      {leaderboardData[0].userName ? (
+                      {leaderboardData[0].userPhoto ? (
+                        <img src={leaderboardData[0].userPhoto} alt={leaderboardData[0].userName} className="w-full h-full object-cover" />
+                      ) : leaderboardData[0].userName ? (
                         leaderboardData[0].userName.split(' ').map(n => n.charAt(0)).join('').toUpperCase().slice(0, 2)
                       ) : 'U'}
                     </div>
@@ -279,9 +326,11 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
 
                   {/* User Info */}
                   <div className="text-center">
-                    {/* User Avatar/Initial */}
+                    {/* User Avatar/Initial/Photo */}
                     <div className="w-16 h-16 mx-auto mb-3 rounded-full flex items-center justify-center text-xl font-bold bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-lg overflow-hidden">
-                      {leaderboardData[2].userName ? (
+                      {leaderboardData[2].userPhoto ? (
+                        <img src={leaderboardData[2].userPhoto} alt={leaderboardData[2].userName} className="w-full h-full object-cover" />
+                      ) : leaderboardData[2].userName ? (
                         leaderboardData[2].userName.split(' ').map(n => n.charAt(0)).join('').toUpperCase().slice(0, 2)
                       ) : 'U'}
                     </div>
@@ -348,6 +397,66 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
             </button>
           </div>
 
+          {/* Statistics Card */}
+          <div className="bg-white rounded-xl shadow-lg p-6 mb-8 border-2 border-purple-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                  {timeFilter === 'all' ? 'Total Patent Filings' : 
+                   timeFilter === 'monthly' ? 'Patents Filed This Month' : 
+                   'Patents Filed This Week'}
+                </h3>
+                <div className="flex items-center gap-3">
+                  <div className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    {totalPatents}
+                  </div>
+                  <div className="text-gray-600">
+                    <p className="text-sm">by {leaderboardData.length} innovators</p>
+                  </div>
+                </div>
+              </div>
+              <div className="text-6xl opacity-20">
+                📊
+              </div>
+            </div>
+          </div>
+
+          {/* Chart Visualization */}
+          <div className="bg-white rounded-xl shadow-lg p-6 mb-8 border-2 border-indigo-200">
+            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <TrendingUp className="text-indigo-600" />
+              Patent Filing Distribution
+            </h3>
+            <div className="space-y-3">
+              {leaderboardData.slice(0, 10).map((user, index) => {
+                const maxCount = leaderboardData[0]?.patentCount || 1;
+                const percentage = (user.patentCount / maxCount) * 100;
+                return (
+                  <div key={user.userId} className="flex items-center gap-3">
+                    <div className="w-8 text-sm font-semibold text-gray-600">#{index + 1}</div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium text-gray-700 truncate">{user.userName || 'Unknown'}</span>
+                        <span className="text-sm font-bold text-indigo-600">{user.patentCount}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                        <div 
+                          className="h-full rounded-full transition-all duration-500 ease-out"
+                          style={{
+                            width: `${percentage}%`,
+                            background: index < 3 
+                              ? `linear-gradient(to right, ${index === 0 ? '#FFD700, #FFA500' : index === 1 ? '#C0C0C0, #A9A9A9' : '#CD7F32, #FF8C00'})`
+                              : 'linear-gradient(to right, #6366f1, #8b5cf6)'
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Rest of Top 10 - List Format */}
           {leaderboardData.length > 3 && (
             <div className="mt-8">
@@ -402,32 +511,59 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
             </div>
           )}
 
-          {/* Motivational Message */}
-          <div className="mt-6 p-4 bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 rounded-xl text-white text-center relative overflow-hidden">
-            <div className="absolute inset-0 bg-white/10 transform -skew-y-3"></div>
-            <div className="relative z-10">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Sparkles className="w-6 h-6 animate-pulse" />
-                <h3 className="text-xl font-bold">You Could Be Next!</h3>
-              </div>
-              <p className="text-sm mb-3 text-white/90">
-                Join the top leaders by filing your patents today
-              </p>
-              <button
-                onClick={() => {
-                  // Navigate to patent filing page
-                  if (onNavigateToPatentFiling) {
-                    onNavigateToPatentFiling();
-                  }
-                }}
-                className="bg-white text-purple-600 px-6 py-2 rounded-lg font-bold hover:bg-gray-100 transition-all hover:scale-105 shadow-lg text-sm"
-              >
-                Start Filing Now →
-              </button>
+          {/* Motivational Section */}
+          <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-xl p-6 mt-8 text-white text-center shadow-xl">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <Sparkles className="w-8 h-8 animate-bounce" />
+              <h3 className="text-2xl font-bold">Ready to Make Your Mark?</h3>
+              <Sparkles className="w-8 h-8 animate-bounce" />
             </div>
+            <p className="text-lg mb-4 text-white/90">
+              Join these innovative leaders and protect your groundbreaking ideas today!
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div className="bg-white/20 rounded-lg p-4 backdrop-blur-sm">
+                <div className="text-3xl mb-2">💡</div>
+                <p className="text-sm font-semibold">Protect Your Innovation</p>
+              </div>
+              <div className="bg-white/20 rounded-lg p-4 backdrop-blur-sm">
+                <div className="text-3xl mb-2">🏆</div>
+                <p className="text-sm font-semibold">Build Your Legacy</p>
+              </div>
+              <div className="bg-white/20 rounded-lg p-4 backdrop-blur-sm">
+                <div className="text-3xl mb-2">⚡</div>
+                <p className="text-sm font-semibold">Stay Ahead of Competition</p>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                if (onNavigateToPatentFiling) {
+                  onNavigateToPatentFiling();
+                }
+              }}
+              className="bg-white text-purple-600 px-8 py-3 rounded-lg font-bold hover:bg-gray-100 transition-all hover:scale-105 shadow-lg"
+            >
+              Start Your Patent Journey →
+            </button>
           </div>
+
         </div>
       )}
+
+      {/* Confetti Effect */}
+      {showConfetti && <Confetti />}
+
+      {/* Add custom CSS for confetti animation */}
+      <style jsx>{`
+        @keyframes fall {
+          to {
+            transform: translateY(100vh) rotate(360deg);
+          }
+        }
+        .animate-fall {
+          animation: fall linear forwards;
+        }
+      `}</style>
     </div>
   );
 };
