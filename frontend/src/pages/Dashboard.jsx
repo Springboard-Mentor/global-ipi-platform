@@ -550,13 +550,13 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
         setSearchMode={setSearchMode}
       />
       
-      {/* FULL WIDTH WELCOME CARD */}
+      {/* COMBINED HEADER - Welcome + Platform Info */}
       <div className="w-full">
-        {/* Welcome Card */}
         <div className="bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30 rounded-2xl p-6 shadow-xl border border-gray-100">
-          <div className="flex flex-col lg:flex-row items-start justify-between gap-6 lg:gap-8">
+          {/* Top Row: Welcome + Search Mode */}
+          <div className="flex flex-col lg:flex-row items-start justify-between gap-4 mb-6">
             {/* Left Side - User Info */}
-            <div className="flex-1 min-w-0 w-full lg:w-auto">
+            <div className="flex-1 min-w-0">
               <p className="text-base font-semibold text-gray-700">Welcome back,</p>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 {getTimeGreeting()}, {localUserProfile?.firstName || userProfile?.firstName || "User"}.
@@ -585,12 +585,12 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
               </div>
             </div>
 
-            {/* Right Side - Search Mode - Water Drop Color */}
+            {/* Right Side - Search Mode - Fixed Top Right */}
             <div className="w-full lg:w-96 flex-shrink-0">
-              <div className="bg-gradient-to-br from-cyan-50 via-blue-50 to-teal-50 rounded-2xl shadow-xl border-2 border-cyan-200/50 p-5 hover:shadow-2xl transition-all hover:scale-[1.01]">
+              <div className="border-2 border-gray-300 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-base font-bold bg-gradient-to-r from-cyan-700 to-teal-700 bg-clip-text text-transparent">Search Mode</p>
-                  <div className={`w-2.5 h-2.5 rounded-full ${searchMode === 'api' ? 'bg-cyan-500' : 'bg-teal-500'} animate-pulse shadow-lg`}></div>
+                  <p className="text-base font-bold text-gray-800">Search Mode</p>
+                  <div className={`w-2.5 h-2.5 rounded-full ${searchMode === 'api' ? 'bg-cyan-500' : 'bg-teal-500'} animate-pulse`}></div>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
@@ -620,50 +620,78 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
                     <span>Local</span>
                   </button>
                 </div>
-
-                {/* Compact Status Indicator */}
-                <div className="mt-4 pt-3 border-t border-cyan-200/50">
-                  {searchMode === 'api' && (
-                    <div className="flex items-start gap-2 bg-white/70 backdrop-blur-sm rounded-lg p-3 border border-cyan-200 shadow-sm">
-                      <div className="p-1.5 bg-cyan-100 rounded-lg">
-                        <Globe size={16} className="text-cyan-600" />
-                      </div>
-                      <p className="text-sm text-gray-700 leading-relaxed font-medium">
-                        Searching from external API
-                      </p>
-                    </div>
-                  )}
-                  {searchMode === 'local' && dbConnectionStatus === 'connected' && dbPatentCount > 0 && (
-                    <div className="flex items-start gap-2 bg-white/70 backdrop-blur-sm rounded-lg p-3 border border-teal-200 shadow-sm">
-                      <div className="p-1.5 bg-teal-100 rounded-lg">
-                        <Database size={16} className="text-teal-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-800 font-semibold">Local Database</p>
-                        <p className="text-xs text-gray-600 mt-0.5">{dbPatentCount} patents stored</p>
-                      </div>
-                    </div>
-                  )}
-                  {searchMode === 'local' && dbConnectionStatus === 'checking' && (
-                    <div className="flex items-center gap-2 bg-white/70 backdrop-blur-sm rounded-lg p-3 border border-cyan-200 shadow-sm">
-                      <div className="w-4 h-4 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
-                      <p className="text-sm text-gray-700 font-medium">Connecting...</p>
-                    </div>
-                  )}
-                  {searchMode === 'local' && dbConnectionStatus === 'error' && (
-                    <div className="flex items-start gap-2 p-3 bg-red-50 rounded-lg border border-red-200 shadow-sm">
-                      <span className="text-red-600 text-sm">⚠️</span>
-                      <p className="text-sm text-red-700 font-medium">Server not running</p>
-                    </div>
-                  )}
-                  {searchMode === 'local' && dbConnectionStatus === 'connected' && dbPatentCount === 0 && (
-                    <div className="flex items-start gap-2 p-3 bg-yellow-50 rounded-lg border border-yellow-200 shadow-sm">
-                      <span className="text-yellow-600 text-sm">ℹ️</span>
-                      <p className="text-sm text-yellow-700 font-medium">Database empty</p>
-                    </div>
-                  )}
-                </div>
               </div>
+            </div>
+          </div>
+
+          {/* Platform Title and Description */}
+          <div className="border-t border-gray-200 pt-6">
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center justify-center gap-3 mb-3">
+                <Crown className="text-yellow-500" size={32} />
+                <h2 className="text-4xl font-extrabold bg-gradient-to-r from-indigo-600 via-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  Global IP Intelligence Hub
+                </h2>
+                <Crown className="text-yellow-500" size={32} />
+              </div>
+              <p className="text-lg text-gray-700 font-semibold mb-2">
+                Empowering Innovation Through Data-Driven IP Analytics
+              </p>
+              <p className="text-sm text-gray-600 leading-relaxed max-w-4xl mx-auto">
+                Join thousands of innovators, patent attorneys, and R&D teams leveraging our comprehensive platform 
+                to track, analyze, and protect intellectual property worldwide. Stay competitive with real-time insights, 
+                advanced analytics, and powerful search capabilities across global patent databases.
+              </p>
+            </div>
+            
+            {/* Key Features Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <Database className="text-blue-600" size={20} />
+                  <h4 className="font-bold text-blue-900 text-sm">Comprehensive Database</h4>
+                </div>
+                <p className="text-xs text-gray-700">Access millions of patent records with powerful search and filtering</p>
+              </div>
+              
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <TrendingUp className="text-purple-600" size={20} />
+                  <h4 className="font-bold text-purple-900 text-sm">Real-Time Analytics</h4>
+                </div>
+                <p className="text-xs text-gray-700">Track trends, monitor competitors, and identify innovation opportunities</p>
+              </div>
+              
+              <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg p-4 border border-indigo-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <Globe className="text-indigo-600" size={20} />
+                  <h4 className="font-bold text-indigo-900 text-sm">Global Coverage</h4>
+                </div>
+                <p className="text-xs text-gray-700">Monitor IP activities across multiple jurisdictions and regions</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+
+      {/* Growth Metrics Section */}
+      <div className="w-full mt-12 mb-6">
+        <div className="bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 rounded-2xl p-6 border-l-4 border-blue-500 shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-blue-500 rounded-lg shadow-lg">
+              <TrendingUp className="text-white" size={28} />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-3xl font-extrabold bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-900 bg-clip-text text-transparent mb-3">
+                Platform Growth Metrics
+              </h3>
+              <p className="text-base text-gray-800 leading-relaxed font-medium">
+                Track the expansion of our platform ecosystem in real-time. Monitor active users, patent database growth, 
+                and filing submissions to understand platform adoption and usage patterns. These metrics reflect the collective 
+                innovation activity across our global user community.
+              </p>
             </div>
           </div>
         </div>
@@ -681,15 +709,57 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
         />
       </div>
 
+      {/* Patent Status Analysis Section */}
+      <div className="w-full mt-12 mb-6">
+        <div className="bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-green-500/10 rounded-2xl p-6 border-l-4 border-emerald-500 shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-emerald-500 rounded-lg shadow-lg">
+              <CheckCircle className="text-white" size={28} />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-3xl font-extrabold bg-gradient-to-r from-emerald-700 via-teal-700 to-green-900 bg-clip-text text-transparent mb-3">
+                Patent Lifecycle Distribution
+              </h3>
+              <p className="text-base text-gray-800 leading-relaxed font-medium">
+                Visualize the status distribution of patents across different stages of the intellectual property lifecycle. 
+                From pending applications to granted patents and expired rights, this analysis provides insights into the 
+                maturity and health of patent portfolios within our database.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* PATENT STATUS DISTRIBUTION CHART */}
       <div className="w-full">
         <PatentStatusChart />
       </div>
 
+      {/* Subscription & Trends Analysis Section */}
+      <div className="w-full mt-12 mb-6">
+        <div className="bg-gradient-to-r from-violet-500/10 via-purple-500/10 to-fuchsia-500/10 rounded-2xl p-6 border-l-4 border-violet-500 shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-violet-500 rounded-lg shadow-lg">
+              <Zap className="text-white" size={28} />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-3xl font-extrabold bg-gradient-to-r from-violet-700 via-purple-700 to-fuchsia-900 bg-clip-text text-transparent mb-3">
+                Revenue & Innovation Trends
+              </h3>
+              <p className="text-base text-gray-800 leading-relaxed font-medium">
+                Analyze premium subscription adoption and historical patent filing trends. The subscription chart tracks daily 
+                upgrades to Pro and Enterprise plans, while yearly trends reveal long-term patterns in global patent activity. 
+                These insights help identify emerging technology sectors and innovation hotspots.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* FULL WIDTH CHARTS SECTION */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-1.5">
         <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-5 shadow-lg border border-indigo-100">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-2">
             <h3 className="font-bold text-lg text-indigo-900">Premium Subscriptions</h3>
             {revenueStatus === 'loading' && (
               <div className="text-xs text-indigo-600 animate-pulse">Loading...</div>
@@ -698,7 +768,10 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
               <div className="text-xs text-indigo-700 font-medium">● Live Data</div>
             )}
           </div>
-          <p className="text-sm text-indigo-700 mb-4">Daily count of users who upgraded to Pro & Enterprise plans</p>
+          <div className="mb-3 pb-3 border-b border-indigo-200">
+            <p className="text-sm text-indigo-700 font-medium">Track daily premium plan adoptions</p>
+            <p className="text-xs text-indigo-600 mt-1">Monitor user upgrades to Pro ($49) and Enterprise ($199) subscriptions over the last 30 days</p>
+          </div>
           <div className="h-[280px]">
             {revenueStatus === 'loading' ? (
               <div className="flex items-center justify-center h-full">
@@ -776,7 +849,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
         </div>
 
         <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-5 shadow-lg border border-emerald-100">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-2">
             <h3 className="font-bold text-lg text-emerald-900">Yearly Patent Trends</h3>
             {yearlyDataStatus === 'loading' && (
               <div className="text-xs text-emerald-600 animate-pulse">Loading...</div>
@@ -785,7 +858,10 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
               <div className="text-xs text-emerald-700 font-medium">● Live Data</div>
             )}
           </div>
-          <p className="text-sm text-emerald-700 mb-4">Patent count by year (Last 7 years)</p>
+          <div className="mb-3 pb-3 border-b border-emerald-200">
+            <p className="text-sm text-emerald-700 font-medium">Historical patent filing trends</p>
+            <p className="text-xs text-emerald-600 mt-1">Analyze year-over-year patent growth patterns across the last 7 years to identify innovation cycles</p>
+          </div>
           <div className="h-[280px]">
             {yearlyDataStatus === 'loading' ? (
               <div className="flex items-center justify-center h-full">
@@ -836,6 +912,27 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
         </div>
       </div>
 
+      {/* Geographic Distribution Section */}
+      <div className="w-full mt-12 mb-6">
+        <div className="bg-gradient-to-r from-cyan-500/10 via-blue-500/10 to-sky-500/10 rounded-2xl p-6 border-l-4 border-cyan-500 shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-cyan-500 rounded-lg shadow-lg">
+              <Globe className="text-white" size={28} />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-3xl font-extrabold bg-gradient-to-r from-cyan-700 via-blue-700 to-sky-900 bg-clip-text text-transparent mb-3">
+                Geographic Innovation Landscape
+              </h3>
+              <p className="text-base text-gray-800 leading-relaxed font-medium">
+                Explore the geographical distribution of patent activities across India. Interactive state-wise analytics and 
+                visual mapping provide comprehensive insights into regional innovation strengths. Identify innovation clusters, 
+                track state-level IP development, and discover emerging technology hubs across the country.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Map and State Patent Count in Single Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mt-2">
         {/* State-wise Patent Count */}
@@ -853,11 +950,32 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
         </div>
       </div>
 
+      {/* User Feedback & Quality Metrics Section */}
+      <div className="w-full mt-12 mb-6">
+        <div className="bg-gradient-to-r from-pink-500/10 via-rose-500/10 to-red-500/10 rounded-2xl p-6 border-l-4 border-pink-500 shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-pink-500 rounded-lg shadow-lg">
+              <Info className="text-white" size={28} />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-3xl font-extrabold bg-gradient-to-r from-pink-700 via-rose-700 to-red-900 bg-clip-text text-transparent mb-3">
+                User Experience & Platform Quality
+              </h3>
+              <p className="text-base text-gray-800 leading-relaxed font-medium">
+                Our commitment to excellence is reflected in user feedback and satisfaction metrics. Monitor real-time ratings 
+                across User Interface, Performance, Features, and Support to ensure we're delivering world-class IP intelligence 
+                tools. Your feedback drives continuous improvement and helps us build the best platform for IP professionals.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* FEEDBACK ANALYTICS SECTION - Moved to bottom */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-1.5 mt-1.5">
         {/* Average Ratings by Category - Left Side (2/3 width) */}
         <div className="lg:col-span-2 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-5 shadow-lg border border-blue-100">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-2">
             <h3 className="font-bold text-lg text-blue-900">User Feedback Ratings</h3>
             {feedbackStatus === 'loading' && (
               <div className="text-xs text-blue-600 animate-pulse">Loading...</div>
@@ -866,7 +984,10 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
               <div className="text-xs text-blue-700 font-medium">● Live Data</div>
             )}
           </div>
-          <p className="text-sm text-blue-700 mb-4">Average ratings across all categories (Scale: 0-5)</p>
+          <div className="mb-3 pb-3 border-b border-blue-200">
+            <p className="text-sm text-blue-700 font-medium">Quality metrics across key platform dimensions</p>
+            <p className="text-xs text-blue-600 mt-1">Aggregate user ratings help us continuously improve your experience on a 5-point scale</p>
+          </div>
           <div className="h-[320px] px-4">
             {feedbackStatus === 'loading' ? (
               <div className="flex items-center justify-center h-full">
@@ -1012,7 +1133,10 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
       {/* Feedback Overview - Moved to bottom above recent feedback */}
       {feedbackStatus === 'success' && feedbackStats && (
         <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-5 shadow-lg border border-amber-100 mt-1.5">
-          <h3 className="font-bold text-lg text-amber-900 mb-4">Recent User Feedback</h3>
+          <h3 className="font-bold text-lg text-amber-900 mb-2">Recent User Feedback</h3>
+          <p className="text-sm text-amber-700 mb-4 italic">
+            "Your voice shapes our platform. Recent testimonials from IP professionals using our services."
+          </p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {allFeedbacks.slice(-3).reverse().map((feedback) => (
               <div key={feedback.id} className="bg-white/70 rounded-lg p-4 border border-amber-200 shadow-sm hover:shadow-md transition-shadow">
@@ -1069,6 +1193,141 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
           </div>
         </div>
       )}
+      
+      {/* Platform Insights & Education Section */}
+      <div className="w-full bg-gradient-to-br from-slate-50 to-gray-50 rounded-2xl p-8 shadow-lg border border-slate-200 mt-6">
+        <div className="max-w-6xl mx-auto">
+          <h3 className="text-3xl font-bold text-center bg-gradient-to-r from-slate-700 to-gray-700 bg-clip-text text-transparent mb-6">
+            Understanding Intellectual Property Analytics
+          </h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {/* IP Asset Types */}
+            <div className="bg-white rounded-xl p-5 shadow-md border border-slate-200 hover:shadow-lg transition-shadow">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-3">
+                <span className="text-2xl">⚖️</span>
+              </div>
+              <h4 className="font-bold text-gray-900 mb-2">Patents</h4>
+              <p className="text-sm text-gray-600">Exclusive rights granted for inventions, protecting technical innovations for up to 20 years.</p>
+            </div>
+            
+            <div className="bg-white rounded-xl p-5 shadow-md border border-slate-200 hover:shadow-lg transition-shadow">
+              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-3">
+                <span className="text-2xl">™️</span>
+              </div>
+              <h4 className="font-bold text-gray-900 mb-2">Trademarks</h4>
+              <p className="text-sm text-gray-600">Brand identifiers including logos, names, and symbols that distinguish products and services.</p>
+            </div>
+            
+            <div className="bg-white rounded-xl p-5 shadow-md border border-slate-200 hover:shadow-lg transition-shadow">
+              <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mb-3">
+                <span className="text-2xl">©️</span>
+              </div>
+              <h4 className="font-bold text-gray-900 mb-2">Copyrights</h4>
+              <p className="text-sm text-gray-600">Protection for original creative works including software, literature, music, and artistic creations.</p>
+            </div>
+            
+            <div className="bg-white rounded-xl p-5 shadow-md border border-slate-200 hover:shadow-lg transition-shadow">
+              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mb-3">
+                <span className="text-2xl">🔒</span>
+              </div>
+              <h4 className="font-bold text-gray-900 mb-2">Trade Secrets</h4>
+              <p className="text-sm text-gray-600">Confidential business information providing competitive advantage through proprietary processes.</p>
+            </div>
+          </div>
+          
+          {/* Platform Benefits */}
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-200">
+            <h4 className="text-xl font-bold text-gray-900 mb-4 text-center">Why Choose Our Platform?</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div className="flex items-start gap-3">
+                <CheckCircle className="text-green-600 flex-shrink-0 mt-0.5" size={20} />
+                <div>
+                  <p className="font-semibold text-gray-900">Comprehensive Coverage</p>
+                  <p className="text-gray-600">Access to millions of patent records from global databases with advanced filtering</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3">
+                <CheckCircle className="text-green-600 flex-shrink-0 mt-0.5" size={20} />
+                <div>
+                  <p className="font-semibold text-gray-900">Real-Time Updates</p>
+                  <p className="text-gray-600">Stay informed with instant notifications on filing activities and status changes</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3">
+                <CheckCircle className="text-green-600 flex-shrink-0 mt-0.5" size={20} />
+                <div>
+                  <p className="font-semibold text-gray-900">Advanced Analytics</p>
+                  <p className="text-gray-600">Visualize trends, track competitors, and make data-driven IP strategy decisions</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Platform Statistics Footer */}
+      <div className="w-full bg-gradient-to-r from-gray-800 via-slate-800 to-gray-800 rounded-2xl p-8 shadow-2xl border border-gray-700 mt-6 mb-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-6">
+            <h4 className="text-2xl font-bold text-white mb-2">Platform at a Glance</h4>
+            <p className="text-gray-300">Real-time statistics showcasing our growing IP intelligence ecosystem</p>
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="text-center">
+              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 shadow-lg">
+                <div className="text-4xl font-extrabold text-white mb-1">
+                  {totalUsers > 0 ? totalUsers.toLocaleString() : '---'}
+                </div>
+                <div className="text-sm text-blue-100 font-medium">Registered Users</div>
+                <div className="text-xs text-blue-200 mt-1">Growing Daily</div>
+              </div>
+            </div>
+            
+            <div className="text-center">
+              <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 shadow-lg">
+                <div className="text-4xl font-extrabold text-white mb-1">
+                  {dbPatentCount > 0 ? dbPatentCount.toLocaleString() : '---'}
+                </div>
+                <div className="text-sm text-green-100 font-medium">Patents Indexed</div>
+                <div className="text-xs text-green-200 mt-1">Local Database</div>
+              </div>
+            </div>
+            
+            <div className="text-center">
+              <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 shadow-lg">
+                <div className="text-4xl font-extrabold text-white mb-1">
+                  {totalPatentFilings > 0 ? totalPatentFilings.toLocaleString() : '---'}
+                </div>
+                <div className="text-sm text-purple-100 font-medium">Patent Filings</div>
+                <div className="text-xs text-purple-200 mt-1">User Submissions</div>
+              </div>
+            </div>
+            
+            <div className="text-center">
+              <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 shadow-lg">
+                <div className="text-4xl font-extrabold text-white mb-1">
+                  {onlineUsers > 0 ? onlineUsers.toLocaleString() : '0'}
+                </div>
+                <div className="text-sm text-orange-100 font-medium">Online Now</div>
+                <div className="text-xs text-orange-200 mt-1 flex items-center justify-center gap-1">
+                  <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                  Active Users
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-6 text-center">
+            <p className="text-gray-400 text-sm">
+              © 2026 Global IP Intelligence Platform • Empowering Innovation Worldwide
+            </p>
+          </div>
+        </div>
+      </div>
       
       {/* Chatbot Component */}
       <Chatbot userId={userProfile?.uid} userProfile={userProfile} />
