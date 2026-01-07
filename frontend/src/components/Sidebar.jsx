@@ -15,6 +15,7 @@ import {
   FileCheck,
   Shield,
   Lock,
+  Trophy,
 } from "lucide-react";
 import UpgradeModal from "./UpgradeModal";
 
@@ -50,6 +51,7 @@ const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem, onLogout, userPro
     { id: "search", icon: Search, label: "Search" },
     { id: "filing", icon: FileText, label: "Filing Tracker" },
     { id: "legal", icon: BarChart3, label: "Legal Status" },
+    { id: "leaderboard", icon: Trophy, label: "Leaderboard" },
   ];
 
   // Patent filing is only for non-basic users
@@ -107,7 +109,8 @@ const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem, onLogout, userPro
             const Icon = item.icon;
             const isFilingTracker = item.id === 'filing';
             const isLegalStatus = item.id === 'legal';
-            const isLocked = (isFilingTracker || isLegalStatus) && isBasicUser;
+            const isLeaderboard = item.id === 'leaderboard';
+            const isLocked = ((isFilingTracker || isLegalStatus || isLeaderboard) && isBasicUser);
             
             return (
               <button

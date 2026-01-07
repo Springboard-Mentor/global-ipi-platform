@@ -45,4 +45,12 @@ public interface PatentFilingRepository extends JpaRepository<PatentFiling, Long
     
     @Query("SELECT p.applicantCity, COUNT(p) FROM PatentFiling p WHERE p.applicationDate >= :startDate GROUP BY p.applicantCity ORDER BY COUNT(p) DESC")
     List<Object[]> countPatentsByCitySince(@org.springframework.data.repository.query.Param("startDate") java.time.LocalDate startDate);
+    
+    // Leaderboard query - Get top users by patent count (all time)
+    @Query("SELECT p.userId, p.userName, COUNT(p) as patentCount FROM PatentFiling p WHERE p.userId IS NOT NULL AND p.userId != '' GROUP BY p.userId, p.userName ORDER BY patentCount DESC")
+    List<Object[]> findTopUsersByPatentCount();
+    
+    // Leaderboard query - Get top users by patent count (with date filter)
+    @Query("SELECT p.userId, p.userName, COUNT(p) as patentCount FROM PatentFiling p WHERE p.userId IS NOT NULL AND p.userId != '' AND p.applicationDate >= :startDate GROUP BY p.userId, p.userName ORDER BY patentCount DESC")
+    List<Object[]> findTopUsersByPatentCountSince(@org.springframework.data.repository.query.Param("startDate") java.time.LocalDate startDate);
 }
