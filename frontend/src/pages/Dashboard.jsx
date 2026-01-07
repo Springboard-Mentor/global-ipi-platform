@@ -690,7 +690,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-1.5">
         <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-5 shadow-lg border border-indigo-100">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-lg text-indigo-900">Subscription Revenue</h3>
+            <h3 className="font-bold text-lg text-indigo-900">Premium Subscriptions</h3>
             {revenueStatus === 'loading' && (
               <div className="text-xs text-indigo-600 animate-pulse">Loading...</div>
             )}
@@ -698,7 +698,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
               <div className="text-xs text-indigo-700 font-medium">● Live Data</div>
             )}
           </div>
-          <p className="text-sm text-indigo-700 mb-4">Daily revenue from Pro (₹49) & Enterprise (₹199) subscriptions</p>
+          <p className="text-sm text-indigo-700 mb-4">Daily count of users who upgraded to Pro & Enterprise plans</p>
           <div className="h-[280px]">
             {revenueStatus === 'loading' ? (
               <div className="flex items-center justify-center h-full">
@@ -706,7 +706,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
               </div>
             ) : revenueData.length === 0 ? (
               <div className="flex items-center justify-center h-full">
-                <div className="text-indigo-600">No subscription revenue data available</div>
+                <div className="text-indigo-600">No subscription data available</div>
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
@@ -726,7 +726,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
                   <YAxis 
                     stroke="#4f46e5"
                     style={{ fontSize: '12px', fontWeight: '600' }}
-                    tickFormatter={(value) => `₹${value}`}
+                    allowDecimals={false}
                   />
                   <Tooltip 
                     contentStyle={{
@@ -741,7 +741,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
                       const { payload } = props;
                       return [
                         <div key="tooltip-revenue" className="space-y-2">
-                          <div className="text-indigo-900 font-bold text-base">₹{value}</div>
+                          <div className="text-indigo-900 font-bold text-base">{payload.totalUsers} user{payload.totalUsers !== 1 ? 's' : ''}</div>
                           <div className="text-sm space-y-1">
                             {payload.proUsers > 0 && (
                               <div className="text-indigo-700">
@@ -763,7 +763,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
                   />
                   <Line 
                     type="monotone" 
-                    dataKey="value" 
+                    dataKey="totalUsers" 
                     stroke="url(#revenueGradient)" 
                     strokeWidth={3}
                     dot={{ fill: '#6366f1', r: 5 }}
