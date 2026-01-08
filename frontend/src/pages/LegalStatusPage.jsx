@@ -4,6 +4,7 @@ import { collection, getDocs, onSnapshot, query, where } from 'firebase/firestor
 import { db } from '../firebase';
 import { getSearchCounters, getGlobalSearchStats } from '../utils/searchCounters';
 import IndiaPatentPanel from '../components/IndiaPatentPanel';
+import StateFilingsComparisonChart from '../components/StateFilingsComparisonChart';
 import { 
   BarChart, 
   Bar, 
@@ -1599,6 +1600,11 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
       {/* India Patent Distribution Map */}
       <div className="mb-8">
         <IndiaPatentPanel showHeatMap={true} />
+      </div>
+
+      {/* State-wise Filings Comparison Chart */}
+      <div className="mb-8">
+        <StateFilingsComparisonChart />
       </div>
 
       {/* Additional Info Section */}
