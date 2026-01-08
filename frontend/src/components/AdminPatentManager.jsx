@@ -853,12 +853,11 @@ const AdminPatentManager = ({ onBack }) => {
         if (patent && patent.userId) {
           try {
             console.log('🔔 Sending deactivation notification to userId:', patent.userId);
-            await addUserNotification(
-              patent.userId,
-              'Patent Deactivated',
-              `Your patent application "${patent.inventionTitle}" (ID: ${patent.id}) has been temporarily deactivated by the admin. Please contact support for more information.`,
-              'warning'
-            );
+            await addUserNotification(patent.userId, {
+              title: 'Patent Deactivated',
+              message: `Your patent application "${patent.inventionTitle}" has been temporarily deactivated by the admin.`,
+              details: `Patent ID: ${patent.id}. Please contact support for more information.`
+            });
             console.log('✅ Deactivation notification sent successfully');
           } catch (notificationError) {
             console.error('❌ Failed to send deactivation notification:', notificationError);
