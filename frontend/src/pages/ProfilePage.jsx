@@ -1,91 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { User, Mail, Building, Briefcase, Phone, Calendar, Shield, CheckCircle, XCircle, Camera, Trash2 } from 'lucide-react';
-import { db, storage, auth } from '../firebase';
+import { db, auth } from '../firebase';
 import { doc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'; // <--- IMPORT FIREBASE STORAGE FUNCTIONS
-
-// Helper function to upload file to Firebase Storage
-const uploadPhotoToStorage = async (file, uid) => {
-  if (!file) {
-    console.log('❌ No file provided to uploadPhotoToStorage');
-    return null;
-  }
-  
-  console.log('📤 Starting photo upload...');
-  console.log('File name:', file.name);
-  console.log('File size:', file.size, 'bytes');
-  console.log('File type:', file.type);
-  console.log('User ID:', uid);
-  
-  try {
-    // Get file extension dynamically
-    const fileExtension = file.name.split('.').pop().toLowerCase();
-    const fileName = `profile_${Date.now()}.${fileExtension}`;
-    const storageRef = ref(storage, `users/${uid}/${fileName}`);
-    console.log('Storage path:', `users/${uid}/${fileName}`);
-    
-    // Add metadata
-    const metadata = {
-      contentType: file.type,
-      customMetadata: {
-        uploadedBy: uid,
-        uploadedAt: new Date().toISOString()
-      }
-    };
-    
-    console.log('Uploading file with metadata...');
-    const snapshot = await uploadBytes(storageRef, file, metadata);
-    console.log('✅ File uploaded successfully:', snapshot);
-    
-    const downloadURL = await getDownloadURL(snapshot.ref);
-    console.log('✅ Download URL obtained:', downloadURL);
-    console.log('✅ Download URL length:', downloadURL.length);
-    
-    return downloadURL;
-  } catch (error) {
-    console.error('❌ Error in uploadPhotoToStorage:', error);
-    console.error('Error code:', error.code);
-    console.error('Error message:', error.message);
-    
-    // Provide user-friendly error messages
-    if (error.code === 'storage/unauthorized') {
-      throw new Error('Permission denied. Please check Firebase Storage rules.');
-    } else if (error.code === 'storage/canceled') {
-      throw new Error('Upload was cancelled.');
-    } else if (error.code === 'storage/unknown') {
-      throw new Error('An unknown error occurred during upload.');
-    }
-    
-    throw error; // Re-throw to handle in calling function
-  }
-};
-
-// Helper function to delete old photo from Firebase Storage
-// This is an optional but good cleanup for managing storage space
-const deleteOldPhotoFromStorage = async (uid) => {
-    // Only attempt to delete if a UID exists
-    if (!uid) return;
-    try {
-        // Try to delete common image formats
-        const commonExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
-        
-        for (const ext of commonExtensions) {
-            try {
-                const storageRef = ref(storage, `users/${uid}/profile.${ext}`);
-                await deleteObject(storageRef);
-                console.log(`Old profile photo deleted: profile.${ext}`);
-                break; // If successful, stop trying other formats
-            } catch (error) {
-                if (error.code !== 'storage/object-not-found') {
-                    console.error(`Error deleting profile.${ext}:`, error);
-                }
-                // Continue to next extension if file not found
-            }
-        }
-    } catch (error) {
-        console.error('Error in deleteOldPhotoFromStorage:', error);
-    }
-};
 
 const ProfilePage = ({ userProfile, setUserProfile, onBack }) => {
   // Debug: Log props on component mount and updates
@@ -263,7 +179,7 @@ const ProfilePage = ({ userProfile, setUserProfile, onBack }) => {
     if (file) {
       console.log('📁 File selected:', file.name, file.type, file.size);
       
-      // Check file size (max 5MB)
+      // Check file size (max 5MB for Base64 storage)
       if (file.size > 5 * 1024 * 1024) {
         alert('File size should not exceed 5MB');
         return;
@@ -281,20 +197,20 @@ const ProfilePage = ({ userProfile, setUserProfile, onBack }) => {
         return;
       }
 
-      // 1. Store the actual File object for Firebase Storage upload later
-      setNewFile(file); 
-
-      // 2. Use FileReader for immediate local preview
+      // Convert file to Base64 string
       const reader = new FileReader();
       reader.onloadend = () => {
-        console.log('📷 Preview generated for file:', file.name);
+        console.log('📷 Photo converted to Base64 for file:', file.name);
+        console.log('📷 Base64 length:', reader.result.length);
+        // Store Base64 string directly - this will be saved to Firestore
         setFormData(prevData => ({
           ...prevData,
-          photoURL: reader.result // Base64 for instant UI preview only
+          photoURL: reader.result // Base64 string to be stored in Firestore
         }));
+        setNewFile(reader.result); // Store Base64 for save operation
       };
       reader.onerror = () => {
-        console.error('❌ Error reading file for preview');
+        console.error('❌ Error reading file');
         alert('Error reading file. Please try again.');
       };
       reader.readAsDataURL(file);
@@ -347,100 +263,53 @@ const ProfilePage = ({ userProfile, setUserProfile, onBack }) => {
 
       console.log('🔑 Using authenticated user UID:', userId);
 
-      // 1. Update UI IMMEDIATELY for instant save
-      const quickUpdateData = {
+      // Prepare photo URL - use Base64 string directly or existing URL
+      let photoUrlToSave = formData.photoURL || '';
+      
+      // If newFile exists, it means user uploaded a new photo (Base64 string)
+      // This will REPLACE the old photoURL in Firestore
+      if (newFile && typeof newFile === 'string' && newFile.startsWith('data:')) {
+        photoUrlToSave = newFile;
+        console.log('📸 Saving new Base64 photo (replacing old photoURL)');
+        console.log('📸 Base64 length:', photoUrlToSave.length);
+      }
+      
+      // Prepare update data for Firestore
+      const userRef = doc(db, 'users', userId);
+      const updateData = {
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        email: formData.email || auth.currentUser?.email || '',
+        company: formData.company || '',
+        position: formData.position || '',
+        phoneNumber: formData.phoneNumber || '',
+        emailVerified: auth.currentUser?.emailVerified || formData.emailVerified || false,
+        authProvider: formData.authProvider || 'google',
+        photoURL: photoUrlToSave, // Base64 string or empty - replaces old value
+        updatedAt: serverTimestamp()
+      };
+      
+      // Save to Firestore
+      await updateDoc(userRef, updateData);
+      console.log('✅ Profile saved to Firestore successfully!');
+      
+      // Update local state
+      const updatedProfile = {
         ...formData,
+        photoURL: photoUrlToSave,
         uid: userId,
         updatedAt: new Date()
       };
       
-      setFormData(quickUpdateData);
+      setFormData(updatedProfile);
       if (setUserProfile) {
-        setUserProfile(quickUpdateData);
+        setUserProfile(updatedProfile);
       }
+      setNewFile(null);
       setIsEditing(false);
-      setIsSaving(false); // Stop loading indicator INSTANTLY
       
-      // 2. Show success message IMMEDIATELY
-      alert('✅ Profile saved successfully!' + (newFile ? '\n\n📸 Photo is uploading in the background...' : ''));
-      
-      console.log('✅ Profile saved instantly to UI!');
-      
-      // 3. Handle Photo Upload in background (non-blocking)
-      let photoUrlToSave = formData.photoURL;
-      
-      if (newFile) {
-        console.log('📸 Starting background photo upload...');
-        uploadPhotoToStorage(newFile, userId)
-          .then(async (uploadedUrl) => {
-            console.log('✅ Photo uploaded! URL:', uploadedUrl);
-            photoUrlToSave = uploadedUrl;
-            
-            // Update Firestore with photo URL
-            const userRef = doc(db, 'users', userId);
-            await updateDoc(userRef, {
-              photoURL: uploadedUrl,
-              firstName: formData.firstName,
-              lastName: formData.lastName,
-              email: formData.email || '',
-              company: formData.company || '',
-              position: formData.position || '',
-              phoneNumber: formData.phoneNumber || '',
-              updatedAt: new Date()
-            });
-            
-            // Update UI with photo URL
-            setFormData(prev => ({ ...prev, photoURL: uploadedUrl }));
-            if (setUserProfile) {
-              setUserProfile(prev => ({ ...prev, photoURL: uploadedUrl }));
-            }
-            setNewFile(null);
-            
-            console.log('✅ Photo synced to Firestore');
-          })
-          .catch((uploadError) => {
-            console.error('❌ Background photo upload failed:', uploadError);
-            // Photo failed but data is already saved - silent failure
-          });
-      } else if (formData.photoURL === '' && !newFile) {
-        // User wants to remove the photo completely (background deletion)
-        console.log('🗑️ Removing photo in background...');
-        deleteOldPhotoFromStorage(userId).catch(err => console.error('Photo deletion error:', err));
-        photoUrlToSave = '';
-      } else {
-        photoUrlToSave = formData.photoURL || '';
-      }
-      
-      // Don't save Base64 to Firestore
-      if (photoUrlToSave && photoUrlToSave.startsWith('data:')) {
-        photoUrlToSave = '';
-      }
-      
-      // 4. Save text data to Firestore in background (if no photo upload)
-      if (!newFile) {
-        const userRef = doc(db, 'users', userId);
-        const updateData = {
-          firstName: formData.firstName.trim(),
-          lastName: formData.lastName.trim(),
-          email: formData.email || auth.currentUser?.email || '',
-          company: formData.company || '',
-          position: formData.position || '',
-          phoneNumber: formData.phoneNumber || '',
-          emailVerified: auth.currentUser?.emailVerified || formData.emailVerified || false,
-          authProvider: formData.authProvider || 'google',
-          photoURL: photoUrlToSave,
-          updatedAt: serverTimestamp()
-        };
-        
-        updateDoc(userRef, updateData)
-          .then(() => {
-            console.log('✅ Firestore sync completed');
-            setNewFile(null);
-          })
-          .catch((firestoreError) => {
-            console.error('❌ Firestore sync failed:', firestoreError);
-          });
-      }
+      alert('✅ Profile saved successfully!');
+      console.log('✅ Profile data synced across application');
       
     } catch (error) {
       console.error('❌ Error updating profile:', error);
