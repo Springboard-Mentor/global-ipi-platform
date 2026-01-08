@@ -54,7 +54,7 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
               return {
                 ...user,
                 userName: currentName || user.userName || 'Unknown User',
-                userPhoto: userData.profilePhoto || user.userPhoto
+                userPhoto: userData.photoURL || user.userPhoto
               };
             }
             
@@ -588,7 +588,9 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
 
                         {/* User Avatar */}
                         <div className="w-12 h-12 bg-gradient-to-br from-gray-300 to-gray-500 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-md overflow-hidden">
-                          {user.userName ? (
+                          {user.userPhoto ? (
+                            <img src={user.userPhoto} alt={user.userName} className="w-full h-full object-cover" />
+                          ) : user.userName ? (
                             user.userName.split(' ').map(n => n.charAt(0)).join('').toUpperCase().slice(0, 2)
                           ) : 'U'}
                         </div>
