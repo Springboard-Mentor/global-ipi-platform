@@ -1340,87 +1340,78 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
                 </div>
               </div>
 
-              {/* Stats Summary Cards */}
+              {/* Stats Summary Cards - Numbers visible only on hover */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 {/* Total Users */}
-                <div className="group bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-100 rounded-2xl p-6 border-3 border-blue-300 hover:border-blue-500 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500">
+                <div className="group relative bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-100 rounded-2xl p-6 border-4 border-blue-400 hover:border-blue-600 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-hidden">
                   <div className="flex flex-col items-center text-center">
-                    <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-4 rounded-2xl mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                      <Users className="w-7 h-7 text-white" />
+                    <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-5 rounded-2xl mb-4 shadow-xl group-hover:scale-110 transition-transform duration-300">
+                      <Users className="w-8 h-8 text-white" />
                     </div>
-                    <p className="text-xs font-black text-blue-700 uppercase tracking-wider mb-2">Total Users</p>
-                    <h4 className="text-4xl font-black bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent">
-                      {userStats.totalUsers}
-                    </h4>
-                    <div className="w-full bg-blue-300 rounded-full h-3 mt-4 shadow-inner">
-                      <div className="h-3 bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 rounded-full shadow-lg" style={{ width: '100%' }}></div>
+                    <p className="text-sm font-black text-blue-700 uppercase tracking-wider">Total Users</p>
+                    {/* Hidden by default, visible on hover */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/95 via-indigo-500/95 to-blue-600/95 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl">
+                      <h4 className="text-5xl font-black text-white drop-shadow-lg">
+                        {userStats.totalUsers}
+                      </h4>
+                      <p className="text-lg text-white/90 font-bold mt-3">100% Platform Users</p>
                     </div>
-                    <p className="text-xs text-blue-600 font-bold mt-2">100% Platform Users</p>
                   </div>
                 </div>
 
                 {/* Basic Users */}
-                <div className="group bg-gradient-to-br from-gray-50 via-gray-100 to-slate-100 rounded-2xl p-6 border-3 border-gray-400 hover:border-gray-600 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500">
+                <div className="group relative bg-gradient-to-br from-gray-50 via-gray-100 to-slate-100 rounded-2xl p-6 border-4 border-gray-500 hover:border-gray-700 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-hidden">
                   <div className="flex flex-col items-center text-center">
-                    <div className="bg-gradient-to-br from-gray-500 to-slate-600 p-4 rounded-2xl mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                      <Users className="w-7 h-7 text-white" />
+                    <div className="bg-gradient-to-br from-gray-500 to-slate-600 p-5 rounded-2xl mb-4 shadow-xl group-hover:scale-110 transition-transform duration-300">
+                      <Users className="w-8 h-8 text-white" />
                     </div>
-                    <p className="text-xs font-black text-gray-700 uppercase tracking-wider mb-2">Basic</p>
-                    <h4 className="text-4xl font-black bg-gradient-to-r from-gray-700 to-slate-700 bg-clip-text text-transparent">
-                      {userStats.basicUsers}
-                    </h4>
-                    <div className="text-sm text-gray-600 font-bold mt-2">
-                      {userStats.totalUsers > 0 ? Math.round((userStats.basicUsers / userStats.totalUsers) * 100) : 0}% of Total
-                    </div>
-                    <div className="w-full bg-gray-300 rounded-full h-3 mt-3 shadow-inner">
-                      <div 
-                        className="h-3 bg-gradient-to-r from-gray-500 via-gray-600 to-slate-600 rounded-full shadow-lg transition-all duration-1000" 
-                        style={{ width: `${userStats.totalUsers > 0 ? (userStats.basicUsers / userStats.totalUsers) * 100 : 0}%` }}
-                      ></div>
+                    <p className="text-sm font-black text-gray-700 uppercase tracking-wider">Basic</p>
+                    {/* Hidden by default, visible on hover */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-gray-600/95 via-slate-600/95 to-gray-700/95 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl">
+                      <h4 className="text-5xl font-black text-white drop-shadow-lg">
+                        {userStats.basicUsers}
+                      </h4>
+                      <p className="text-lg text-white/90 font-bold mt-3">
+                        {userStats.totalUsers > 0 ? Math.round((userStats.basicUsers / userStats.totalUsers) * 100) : 0}% of Total
+                      </p>
                     </div>
                   </div>
                 </div>
 
                 {/* Pro Users */}
-                <div className="group bg-gradient-to-br from-purple-50 via-purple-100 to-pink-100 rounded-2xl p-6 border-3 border-purple-400 hover:border-purple-600 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500">
+                <div className="group relative bg-gradient-to-br from-purple-50 via-purple-100 to-pink-100 rounded-2xl p-6 border-4 border-purple-500 hover:border-purple-700 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-hidden">
                   <div className="flex flex-col items-center text-center">
-                    <div className="bg-gradient-to-br from-purple-500 to-pink-600 p-4 rounded-2xl mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                      <Award className="w-7 h-7 text-white" />
+                    <div className="bg-gradient-to-br from-purple-500 to-pink-600 p-5 rounded-2xl mb-4 shadow-xl group-hover:scale-110 transition-transform duration-300">
+                      <Award className="w-8 h-8 text-white" />
                     </div>
-                    <p className="text-xs font-black text-purple-700 uppercase tracking-wider mb-2">Pro</p>
-                    <h4 className="text-4xl font-black bg-gradient-to-r from-purple-700 to-pink-700 bg-clip-text text-transparent">
-                      {userStats.proUsers}
-                    </h4>
-                    <div className="text-sm text-purple-600 font-bold mt-2">
-                      {userStats.totalUsers > 0 ? Math.round((userStats.proUsers / userStats.totalUsers) * 100) : 0}% of Total
-                    </div>
-                    <div className="w-full bg-purple-300 rounded-full h-3 mt-3 shadow-inner">
-                      <div 
-                        className="h-3 bg-gradient-to-r from-purple-500 via-purple-600 to-pink-600 rounded-full shadow-lg transition-all duration-1000" 
-                        style={{ width: `${userStats.totalUsers > 0 ? (userStats.proUsers / userStats.totalUsers) * 100 : 0}%` }}
-                      ></div>
+                    <p className="text-sm font-black text-purple-700 uppercase tracking-wider">Pro</p>
+                    {/* Hidden by default, visible on hover */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-600/95 via-pink-600/95 to-purple-700/95 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl">
+                      <h4 className="text-5xl font-black text-white drop-shadow-lg">
+                        {userStats.proUsers}
+                      </h4>
+                      <p className="text-lg text-white/90 font-bold mt-3">
+                        {userStats.totalUsers > 0 ? Math.round((userStats.proUsers / userStats.totalUsers) * 100) : 0}% of Total
+                      </p>
                     </div>
                   </div>
                 </div>
 
                 {/* Enterprise Users */}
-                <div className="group bg-gradient-to-br from-amber-50 via-amber-100 to-orange-100 rounded-2xl p-6 border-3 border-amber-400 hover:border-amber-600 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500">
+                <div className="group relative bg-gradient-to-br from-amber-50 via-amber-100 to-orange-100 rounded-2xl p-6 border-4 border-amber-500 hover:border-amber-700 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-hidden">
                   <div className="flex flex-col items-center text-center">
-                    <div className="bg-gradient-to-br from-amber-500 to-orange-600 p-4 rounded-2xl mb-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
-                      <Award className="w-7 h-7 text-white" />
+                    <div className="bg-gradient-to-br from-amber-500 to-orange-600 p-5 rounded-2xl mb-4 shadow-xl group-hover:scale-110 transition-transform duration-300">
+                      <Award className="w-8 h-8 text-white" />
                     </div>
-                    <p className="text-xs font-black text-amber-700 uppercase tracking-wider mb-2">Enterprise</p>
-                    <h4 className="text-4xl font-black bg-gradient-to-r from-amber-700 to-orange-700 bg-clip-text text-transparent">
-                      {userStats.enterpriseUsers}
-                    </h4>
-                    <div className="text-sm text-amber-700 font-bold mt-2">
-                      {userStats.totalUsers > 0 ? Math.round((userStats.enterpriseUsers / userStats.totalUsers) * 100) : 0}% of Total
-                    </div>
-                    <div className="w-full bg-amber-300 rounded-full h-3 mt-3 shadow-inner">
-                      <div 
-                        className="h-3 bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 rounded-full shadow-lg transition-all duration-1000" 
-                        style={{ width: `${userStats.totalUsers > 0 ? (userStats.enterpriseUsers / userStats.totalUsers) * 100 : 0}%` }}
-                      ></div>
+                    <p className="text-sm font-black text-amber-700 uppercase tracking-wider">Enterprise</p>
+                    {/* Hidden by default, visible on hover */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-amber-600/95 via-orange-600/95 to-amber-700/95 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl">
+                      <h4 className="text-5xl font-black text-white drop-shadow-lg">
+                        {userStats.enterpriseUsers}
+                      </h4>
+                      <p className="text-lg text-white/90 font-bold mt-3">
+                        {userStats.totalUsers > 0 ? Math.round((userStats.enterpriseUsers / userStats.totalUsers) * 100) : 0}% of Total
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1439,7 +1430,7 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
                 {/* Account Status Charts */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {/* Active Users - Radial Chart */}
-                  <div className="group bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 rounded-2xl p-8 border-3 border-green-300 hover:border-green-500 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500">
+                  <div className="group bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 rounded-2xl p-8 border-4 border-green-400 hover:border-green-600 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500">
                     <div className="flex items-center gap-4 mb-6">
                       <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-4 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
                         <UserCheck className="w-8 h-8 text-white" />
@@ -1522,21 +1513,10 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
                         </ResponsiveContainer>
                       </div>
                     </div>
-
-                    <div className="mt-6 pt-5 border-t-2 border-green-300 grid grid-cols-2 gap-4">
-                      <div className="text-center bg-white/60 rounded-xl p-3 border-2 border-green-200">
-                        <div className="text-3xl font-black text-green-900">{userStats.activeUsers}</div>
-                        <div className="text-xs text-green-700 font-bold uppercase tracking-wide mt-1">Active</div>
-                      </div>
-                      <div className="text-center bg-white/60 rounded-xl p-3 border-2 border-green-200">
-                        <div className="text-3xl font-black text-green-700">{userStats.totalUsers}</div>
-                        <div className="text-xs text-green-700 font-bold uppercase tracking-wide mt-1">Total</div>
-                      </div>
-                    </div>
                   </div>
 
                   {/* Deactivated Users - Area Chart */}
-                  <div className="group bg-gradient-to-br from-red-50 via-rose-50 to-pink-50 rounded-2xl p-8 border-3 border-red-300 hover:border-red-500 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500">
+                  <div className="group bg-gradient-to-br from-red-50 via-rose-50 to-pink-50 rounded-2xl p-8 border-4 border-red-400 hover:border-red-600 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500">
                     <div className="flex items-center gap-4 mb-6">
                       <div className="bg-gradient-to-br from-red-500 to-rose-600 p-4 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
                         <UserX className="w-8 h-8 text-white" />
@@ -1608,19 +1588,6 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
                         </ResponsiveContainer>
                       </div>
                     </div>
-
-                    <div className="mt-6 pt-5 border-t-2 border-red-300 grid grid-cols-2 gap-4">
-                      <div className="text-center bg-white/60 rounded-xl p-3 border-2 border-red-200">
-                        <div className="text-3xl font-black text-red-900">{userStats.deactivatedUsers}</div>
-                        <div className="text-xs text-red-700 font-bold uppercase tracking-wide mt-1">Deactivated</div>
-                      </div>
-                      <div className="text-center bg-white/60 rounded-xl p-3 border-2 border-red-200">
-                        <div className="text-3xl font-black text-red-700">
-                          {userStats.totalUsers > 0 ? Math.round((userStats.deactivatedUsers / userStats.totalUsers) * 100) : 0}%
-                        </div>
-                        <div className="text-xs text-red-700 font-bold uppercase tracking-wide mt-1">of Total</div>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -1637,7 +1604,7 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
       {/* Additional Info Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Success Rate Chart */}
-        <div className="group bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 rounded-3xl shadow-2xl p-8 border-3 border-purple-300 hover:border-purple-500 hover:shadow-3xl hover:-translate-y-2 transition-all duration-500">
+        <div className="group bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 rounded-3xl shadow-2xl p-8 border-4 border-purple-400 hover:border-purple-600 hover:shadow-3xl hover:-translate-y-2 transition-all duration-500">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-4">
               <div className="bg-gradient-to-br from-purple-500 to-pink-600 p-4 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
@@ -1776,7 +1743,7 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
         </div>
 
         {/* Portfolio Health Chart */}
-        <div className="group bg-gradient-to-br from-indigo-50 via-blue-50 to-cyan-50 rounded-3xl shadow-2xl p-8 border-3 border-indigo-300 hover:border-indigo-500 hover:shadow-3xl hover:-translate-y-2 transition-all duration-500">
+        <div className="group bg-gradient-to-br from-indigo-50 via-blue-50 to-cyan-50 rounded-3xl shadow-2xl p-8 border-4 border-indigo-400 hover:border-indigo-600 hover:shadow-3xl hover:-translate-y-2 transition-all duration-500">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-4">
               <div className="bg-gradient-to-br from-indigo-500 to-blue-600 p-4 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
