@@ -3,6 +3,7 @@ package com.project.backend.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties; //
 
 @Entity
 @Table(name = "notifications")

@@ -1,38 +1,156 @@
 package com.project.backend.controller;
 
+import com.project.backend.service.AnalyticsService;
 import com.project.backend.service.DashboardService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/dashboard")
-// ✅ UPDATED CORS: Explicitly allows your React Port (5173) to reach Port (5001)
-@CrossOrigin(origins = "http://192.168.43.45:5173") 
+@RequestMapping("/api")
+// ✅ Combined CORS to allow both localhost and your specific Network IP
+@CrossOrigin(origins = {"http://localhost:5173", "http://192.168.43.45:5173"}) 
+@RequiredArgsConstructor
 public class DashboardController {
 
-    @Autowired
-    private DashboardService dashboardService;
+    private final AnalyticsService analyticsService;
+    private final DashboardService dashboardService;
 
-    @GetMapping("/stats")
+    // ===========================
+    // 🏠 DASHBOARD CORE ENDPOINTS
+    // ===========================
+
+    @GetMapping("/dashboard/stats")
     public ResponseEntity<Map<String, Object>> getStats() {
         return ResponseEntity.ok(dashboardService.getDashboardStats());
     }
 
-    @GetMapping("/recent-activity")
+    @GetMapping("/dashboard/recent-activity")
     public ResponseEntity<List<Map<String, Object>>> getRecentActivity() {
         return ResponseEntity.ok(dashboardService.getRecentActivity());
     }
 
-    @GetMapping("/global-coverage")
+    @GetMapping("/dashboard/global-coverage")
     public ResponseEntity<List<Map<String, Object>>> getGlobalCoverage() {
         return ResponseEntity.ok(dashboardService.getGlobalCoverage());
     }
 
-    @GetMapping("/upcoming-deadlines")
+    @GetMapping("/dashboard/upcoming-deadlines")
     public ResponseEntity<List<Map<String, Object>>> getUpcomingDeadlines() {
         return ResponseEntity.ok(dashboardService.getUpcomingDeadlines());
+    }
+
+    // ===========================
+    // 📊 ANALYTICS & TRENDS
+    // ===========================
+
+    @GetMapping("/analytics/summary")
+    public ResponseEntity<Map<String, Object>> getDashboardSummary(
+            @RequestParam(required = false) String dateRange,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String jurisdiction) {
+        return ResponseEntity.ok(analyticsService.getDashboardSummary(dateRange, type, jurisdiction));
+    }
+
+    @GetMapping("/analytics/status-distribution")
+    public ResponseEntity<Map<String, Object>> getStatusDistribution(
+            @RequestParam(required = false) String dateRange,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String jurisdiction) {
+        return ResponseEntity.ok(analyticsService.getStatusDistribution(dateRange, type, jurisdiction));
+    }
+
+    @GetMapping("/analytics/filings-trend")
+    public ResponseEntity<Map<String, Object>> getFilingsTrend(
+            @RequestParam(required = false) String dateRange,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String jurisdiction) {
+        return ResponseEntity.ok(analyticsService.getFilingsTrend(dateRange, type, jurisdiction));
+    }
+
+    @GetMapping("/analytics/field-wise-trends")
+    public ResponseEntity<Map<String, Object>> getFieldWiseTrends(
+            @RequestParam(required = false) String dateRange,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String jurisdiction) {
+        return ResponseEntity.ok(analyticsService.getFieldWiseTrends(dateRange, type, jurisdiction));
+    }
+
+    @GetMapping("/analytics/jurisdiction-breakdown")
+    public ResponseEntity<Map<String, Object>> getJurisdictionBreakdown(
+            @RequestParam(required = false) String dateRange,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String jurisdiction) {
+        return ResponseEntity.ok(analyticsService.getJurisdictionBreakdown(dateRange, type, jurisdiction));
+    }
+
+    @GetMapping("/analytics/status-timeline")
+    public ResponseEntity<Map<String, Object>> getStatusTimeline(
+            @RequestParam(required = false) String dateRange,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String jurisdiction) {
+        return ResponseEntity.ok(analyticsService.getStatusTimeline(dateRange, type, jurisdiction));
+    }
+
+    // ===========================
+    // 🌐 LANDSCAPE ANALYSIS
+    // ===========================
+    
+    @GetMapping("/analytics/landscape/classifications")
+    public ResponseEntity<Map<String, Object>> getClassificationTrends(
+            @RequestParam(required = false) String field,
+            @RequestParam(defaultValue = "10") Integer topN) {
+        return ResponseEntity.ok(analyticsService.getClassificationTrends(field, topN));
+    }
+
+    @GetMapping("/analytics/landscape/competitors")
+    public ResponseEntity<Map<String, Object>> getCompetitorAnalysis(
+            @RequestParam(required = false) String field,
+            @RequestParam(defaultValue = "10") Integer topN) {
+        return ResponseEntity.ok(analyticsService.getCompetitorAnalysis(field, topN));
+    }
+
+    @GetMapping("/analytics/landscape/innovation-trends")
+    public ResponseEntity<Map<String, Object>> getInnovationTrends(
+            @RequestParam(required = false) String field,
+            @RequestParam(defaultValue = "10") Integer topN) {
+        return ResponseEntity.ok(analyticsService.getInnovationTrends(field, topN));
+    }
+
+    @GetMapping("/analytics/landscape/top-inventors")
+    public ResponseEntity<Map<String, Object>> getTopInventors(
+            @RequestParam(required = false) String field,
+            @RequestParam(defaultValue = "10") Integer topN) {
+        return ResponseEntity.ok(analyticsService.getTopInventors(field, topN));
+    }
+
+    @GetMapping("/analytics/landscape/convergence")
+    public ResponseEntity<Map<String, Object>> getTechnologyConvergence(
+            @RequestParam(required = false) String field,
+            @RequestParam(defaultValue = "10") Integer topN) {
+        return ResponseEntity.ok(analyticsService.getTechnologyConvergence(field, topN));
+    }
+
+    @GetMapping("/analytics/landscape/lifecycle")
+    public ResponseEntity<Map<String, Object>> getLifecycleAnalysis(
+            @RequestParam(required = false) String field,
+            @RequestParam(defaultValue = "10") Integer topN) {
+        return ResponseEntity.ok(analyticsService.getLifecycleAnalysis(field, topN));
+    }
+
+    // ===========================
+    // 🔍 DRILL DOWN
+    // ===========================
+
+    @GetMapping("/analytics/assets-by-category")
+    public ResponseEntity<Map<String, Object>> getAssetsByCategory(
+            @RequestParam String category,
+            @RequestParam(required = false) String dateRange,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String jurisdiction) {
+        return ResponseEntity.ok(analyticsService.getAssetsByCategory(category, dateRange, type, jurisdiction));
     }
 }

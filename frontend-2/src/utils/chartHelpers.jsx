@@ -1,88 +1,154 @@
-// frontend/src/utils/chartHelpers.jsx
-import React from 'react';
+// FILE LOCATION: frontend/src/utils/chartHelpers.jsx
 
-/**
- * 🎨 VIBRANT THEME PALETTES
- * Designed for high-contrast visibility on premium dashboards.
- */
+// ==========================================
+// VISUALIZATION CONSTANTS & CONFIG
+// ==========================================
+
+// Main Chart Color Palette (Standard UI Colors)
+export const CHART_COLORS = {
+  primary: '#4f46e5',   // Indigo-600
+  secondary: '#10b981', // Emerald-500
+  tertiary: '#f59e0b',  // Amber-500
+  quaternary: '#ef4444', // Red-500
+  info: '#3b82f6',      // Blue-500
+  danger: '#ef4444',    // Red-500
+  gray: '#9ca3af'       // Gray-400
+};
+
+// Colors specifically for Status Distribution (Matches Backend Logic)
+export const STATUS_COLORS = {
+  'ACTIVE': '#10b981',   // Green
+  'PENDING': '#f59e0b',  // Orange
+  'EXPIRED': '#ef4444',  // Red
+  'ABANDONED': '#6b7280', // Gray
+  'GRANTED': '#059669',  // Dark Green
+  'REJECTED': '#dc2626', // Dark Red
+  'FILED': '#3b82f6',    // Blue
+  'REGISTERED': '#0891b2' // Cyan
+};
+
+// Distinct Colors for Technology Fields/Categories (Cycle through these)
 export const FIELD_COLORS = [
-  '#6366F1', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
-  '#EC4899', '#06B6D4', '#F97316', '#3B82F6', '#64748B'
+  '#4f46e5', // Indigo
+  '#8b5cf6', // Violet
+  '#ec4899', // Pink
+  '#f43f5e', // Rose
+  '#f97316', // Orange
+  '#f59e0b', // Amber
+  '#84cc16', // Lime
+  '#10b981', // Emerald
+  '#06b6d4', // Cyan
+  '#0ea5e9', // Sky
+  '#3b82f6', // Blue
+  '#6366f1'  // Indigo
 ];
 
-export const STATUS_COLORS = {
-  ACTIVE: '#10B981',
-  PENDING: '#F59E0B',
-  EXPIRED: '#EF4444',
-  ABANDONED: '#64748B',
-  GRANTED: '#6366F1',
-  REJECTED: '#F43F5E',
-  FILED: '#0EA5E9'
-};
+// ==========================================
+// FILTER OPTIONS (Dropdown Data)
+// ==========================================
 
-/**
- * ⚙️ GLOBAL RECHARTS CONFIGURATIONS
- * Fixed: Explicitly exported to resolve browser SyntaxErrors.
- */
-export const CHART_MARGIN = { top: 20, right: 30, left: 10, bottom: 10 };
+export const DATE_RANGES = [
+  { value: 'week', label: 'Last Week' },
+  { value: 'month', label: 'Last Month' },
+  { value: 'quarter', label: 'Last Quarter' },
+  { value: 'year', label: 'Last Year' },
+  { value: 'all', label: 'All Time' }
+];
 
-export const CARTESIAN_GRID_CONFIG = { 
-  strokeDasharray: '3 3', 
-  stroke: '#E2E8F0',
-  vertical: false 
-};
+export const IP_TYPES = [
+  { value: 'all', label: 'All Types' },
+  { value: 'patent', label: 'Patents' },
+  { value: 'trademark', label: 'Trademarks' },
+  { value: 'copyright', label: 'Copyrights' },
+  { value: 'design', label: 'Designs' }
+];
 
-export const TOOLTIP_CONFIG = {
-  contentStyle: { 
-    backgroundColor: '#ffffff', 
-    border: 'none', 
-    borderRadius: '16px',
-    boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
-    fontSize: '12px',
-    fontWeight: '700',
-    padding: '12px'
-  },
-  cursor: { fill: '#F1F5F9', radius: 8 },
-  itemStyle: { padding: '2px 0' }
-};
+export const JURISDICTIONS = [
+  { value: 'all', label: 'All Regions', flag: '🌍' },
+  { value: 'US', label: 'United States', flag: '🇺🇸' },
+  { value: 'EP', label: 'Europe (EPO)', flag: '🇪🇺' },
+  { value: 'CN', label: 'China', flag: '🇨🇳' },
+  { value: 'IN', label: 'India', flag: '🇮🇳' },
+  { value: 'JP', label: 'Japan', flag: '🇯🇵' },
+  { value: 'KR', label: 'South Korea', flag: '🇰🇷' },
+  { value: 'WO', label: 'WIPO (PCT)', flag: '🌐' }
+];
 
-export const CHART_CONFIG = {
-  margin: CHART_MARGIN,
-  grid: CARTESIAN_GRID_CONFIG,
-  tooltip: TOOLTIP_CONFIG
-};
+export const TECH_FIELDS = [
+  { value: 'all', label: 'All Technologies' },
+  { value: 'AI & Machine Learning', label: 'AI & Machine Learning' },
+  { value: '5G & Wireless', label: '5G & Wireless' },
+  { value: 'Biotechnology', label: 'Biotechnology' },
+  { value: 'Autonomous Vehicles', label: 'Autonomous Vehicles' },
+  { value: 'Blockchain', label: 'Blockchain' },
+  { value: 'Cloud Computing', label: 'Cloud Computing' },
+  { value: 'Cybersecurity', label: 'Cybersecurity' },
+  { value: 'IoT', label: 'Internet of Things' },
+  { value: 'Nanotechnology', label: 'Nanotechnology' },
+  { value: 'Quantum Computing', label: 'Quantum Computing' },
+  { value: 'Robotics', label: 'Robotics' },
+  { value: 'Semiconductors', label: 'Semiconductors' }
+];
 
-/**
- * 🔢 ADVANCED DATA FORMATTERS
- * Handles currency, percentages, and large IP asset counts.
- */
+// ==========================================
+// FORMATTERS & UTILITIES
+// ==========================================
+
+// Format large numbers (e.g., 1.5K, 2M)
 export const formatNumber = (num) => {
   if (num === undefined || num === null) return '0';
   if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
   if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
-  return num.toLocaleString();
+  return num.toString();
 };
 
-export const formatCurrency = (val) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumSignificantDigits: 3
-  }).format(val);
-};
-
+// Format percentages with sign (e.g., +5.5%, -2.1%)
 export const formatPercent = (val) => {
-  if (!val) return '0%';
-  return `${val > 0 ? '+' : ''}${val.toFixed(1)}%`;
+  if (val === undefined || val === null) return '0%';
+  return `${val >= 0 ? '+' : ''}${val.toFixed(1)}%`;
 };
 
-/**
- * 🌍 REGIONAL METADATA
- */
-export const JURISDICTIONS = [
-  { id: 'US', label: 'United States', color: '#3B82F6' },
-  { id: 'EP', label: 'Europe', color: '#10B981' },
-  { id: 'CN', label: 'China', color: '#EF4444' },
-  { id: 'JP', label: 'Japan', color: '#F59E0B' },
-  { id: 'IN', label: 'India', color: '#8B5CF6' }
-];
+// Determine visual indicator for growth stats
+export const getGrowthIndicator = (growth) => {
+  if (growth > 5) return { color: 'text-emerald-600', bgColor: 'bg-emerald-100', icon: 'Up', symbol: '↑' };
+  if (growth < -5) return { color: 'text-red-600', bgColor: 'bg-red-100', icon: 'Down', symbol: '↓' };
+  return { color: 'text-gray-600', bgColor: 'bg-gray-100', icon: 'Flat', symbol: '–' };
+};
+
+// Custom Tooltip Formatter for Recharts
+export const customTooltipFormatter = (value, name) => {
+  // Try to match name to a readable label if possible
+  const readableName = name.charAt(0).toUpperCase() + name.slice(1);
+  return [formatNumber(value), readableName];
+};
+
+// ==========================================
+// CHART CONFIGURATIONS (Recharts props)
+// ==========================================
+
+export const CHART_MARGIN = { top: 20, right: 30, left: 20, bottom: 5 };
+
+export const CARTESIAN_GRID_CONFIG = {
+  strokeDasharray: "3 3",
+  vertical: false,
+  stroke: "#e5e7eb"
+};
+
+export const TOOLTIP_CONFIG = {
+  contentStyle: { 
+    backgroundColor: '#fff', 
+    border: '1px solid #e5e7eb', 
+    borderRadius: '8px',
+    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+    padding: '10px'
+  },
+  itemStyle: { color: '#374151', fontSize: '12px', fontWeight: '500' },
+  cursor: { fill: '#f3f4f6', opacity: 0.6 }
+};
+
+export const LEGEND_CONFIG = {
+  verticalAlign: "top",
+  height: 36,
+  iconType: "circle",
+  wrapperStyle: { paddingTop: '10px' }
+};

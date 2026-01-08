@@ -1,89 +1,556 @@
 package com.project.backend.service;
 
-import com.project.backend.repository.IPAssetRepository;
 import com.project.backend.entity.IPAsset;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.project.backend.repository.IPAssetRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * Service to handle complex data aggregation for Milestone Three.
- * Directly addresses Legal Status and Landscape Visualization requirements.
- */
 @Service
+@RequiredArgsConstructor
 public class AnalyticsService {
 
-    @Autowired
-    private IPAssetRepository ipAssetRepository;
+    private final IPAssetRepository ipAssetRepository;
 
-    /**
-     * Calculates KPI summaries for the Legal Dashboard.
-     * Prevents NaN% by checking total filing counts.
-     */
-    public Map<String, Object> getDashboardSummary() {
-        List<IPAsset> allAssets = ipAssetRepository.findAll();
-        long total = allAssets.size();
+    public Map<String, Object> getDashboardStats() {
+        return getDashboardSummary(null, null, null);
+    }
+
+    public Map<String, Object> getDashboardSummary(String dateRange, String type, String jurisdiction) {
+        List<IPAsset> filteredAssets = getFilteredAssets(dateRange, type, jurisdiction);
         
-        long granted = allAssets.stream()
-            .filter(a -> "Granted".equalsIgnoreCase(a.getStatus()) || "Active".equalsIgnoreCase(a.getStatus()))
-            .count();
-            
-        long pending = allAssets.stream()
-            .filter(a -> "Pending".equalsIgnoreCase(a.getStatus()))
-            .count();
-            
-        long rejected = allAssets.stream()
-            .filter(a -> "Rejected".equalsIgnoreCase(a.getStatus()) || "Expired".equalsIgnoreCase(a.getStatus()))
-            .count();
+        long totalFilings = filteredAssets.size();
+        
+        long activePatents = filteredAssets.stream()
+                .filter(a -> a.getStatus() != null && "ACTIVE".equalsIgnoreCase(a.getStatus().trim()))
+                .count();
+                
+        long pendingApplications = filteredAssets.stream()
+                .filter(a -> a.getStatus() != null && "PENDING".equalsIgnoreCase(a.getStatus().trim()))
+                .count();
+                
+        long expiringSoon = filteredAssets.stream()
+                .filter(a -> a.getFilingDate() != null && 
+                        a.getFilingDate().toLocalDate().plusYears(20).isBefore(LocalDate.now().plusMonths(6)))
+                .count();
 
         Map<String, Object> summary = new HashMap<>();
-        summary.put("totalFilings", total);
-        summary.put("activePatents", granted);
-        summary.put("pendingApplications", pending);
-        summary.put("criticalAlerts", rejected);
-        
-        // Success Rate Calculation: (Granted / Total) * 100
-        double successRate = total > 0 ? ((double) granted / total) * 100 : 0.0;
-        summary.put("successRate", String.format("%.1f", successRate));
+        summary.put("totalFilings", totalFilings);
+        summary.put("activePatents", activePatents);
+        summary.put("pendingApplications", pendingApplications);
+        summary.put("expiringSoon", expiringSoon);
         
         return summary;
     }
 
-    /**
-     * Aggregates filings per year for the Filing Status Trends chart.
-     */
-    public List<Map<String, Object>> getTimelineData() {
-        return ipAssetRepository.findAll().stream()
-            .filter(a -> a.getFilingDate() != null)
-            .collect(Collectors.groupingBy(a -> a.getFilingDate().getYear(), Collectors.counting()))
-            .entrySet().stream()
-            .sorted(Map.Entry.comparingByKey())
-            .map(e -> {
-                Map<String, Object> map = new HashMap<>();
-                map.put("year", e.getKey());
-                map.put("innovations", e.getValue());
-                return map;
-            }).collect(Collectors.toList());
+    public Map<String, Object> getStatusDistribution(String dateRange, String type, String jurisdiction) {
+        List<IPAsset> assets = getFilteredAssets(dateRange, type, jurisdiction);
+        
+        Map<String, Long> statusCounts = assets.stream()
+                .collect(Collectors.groupingBy(
+                        a -> a.getStatus() != null ? a.getStatus().toUpperCase() : "UNKNOWN",
+                        Collectors.counting()
+                ));
+
+        List<Map<String, Object>> distribution = statusCounts.entrySet().stream()
+                .map(entry -> {
+                    Map<String, Object> item = new HashMap<>();
+                    item.put("name", entry.getKey());
+                    item.put("value", entry.getValue());
+                    return item;
+                })
+                .sorted((a, b) -> Long.compare((Long)b.get("value"), (Long)a.get("value")))
+                .collect(Collectors.toList());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("data", distribution);
+        return result;
     }
 
-    /**
-     * Maps database rows to status distribution objects for PieCharts.
-     */
-    public List<Map<String, Object>> getStatusDistribution() {
-        return ipAssetRepository.getStatusDistribution().stream()
-            .map(row -> {
-                Map<String, Object> map = new HashMap<>();
-                map.put("name", row[0] != null ? row[0] : "Unknown");
-                map.put("value", row[1]);
-                return map;
-            }).collect(Collectors.toList());
+    public Map<String, Object> getFilingsTrend(String dateRange, String type, String jurisdiction) {
+        List<IPAsset> assets = getFilteredAssets(dateRange, type, jurisdiction);
+        
+        Map<YearMonth, Long> monthlyPatents = new TreeMap<>();
+        Map<YearMonth, Long> monthlyTrademarks = new TreeMap<>();
+
+        for (IPAsset asset : assets) {
+            if (asset.getFilingDate() != null) {
+                YearMonth ym = YearMonth.from(asset.getFilingDate());
+                if ("PATENT".equalsIgnoreCase(asset.getType())) {
+                    monthlyPatents.merge(ym, 1L, Long::sum);
+                } else if ("TRADEMARK".equalsIgnoreCase(asset.getType())) {
+                    monthlyTrademarks.merge(ym, 1L, Long::sum);
+                }
+            }
+        }
+
+        List<Map<String, Object>> trend = new ArrayList<>();
+        Set<YearMonth> allMonths = new TreeSet<>();
+        allMonths.addAll(monthlyPatents.keySet());
+        allMonths.addAll(monthlyTrademarks.keySet());
+
+        for (YearMonth ym : allMonths) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("month", ym.format(DateTimeFormatter.ofPattern("MMM yyyy")));
+            item.put("patents", monthlyPatents.getOrDefault(ym, 0L));
+            item.put("trademarks", monthlyTrademarks.getOrDefault(ym, 0L));
+            trend.add(item);
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("data", trend);
+        return result;
     }
 
-    /**
-     * Retrieves raw jurisdictional counts for Landscape Visualization.
-     */
-    public List<Object[]> getJurisdictionData(String keyword) {
-        return ipAssetRepository.getJurisdictionCounts(keyword);
+    public Map<String, Object> getFieldWiseTrends(String dateRange, String type, String jurisdiction) {
+        List<IPAsset> assets = getFilteredAssets(dateRange, type, jurisdiction);
+        
+        Map<String, Long> fieldCounts = assets.stream()
+                .filter(a -> a.getAssetClass() != null && !a.getAssetClass().isEmpty())
+                .collect(Collectors.groupingBy(
+                        a -> a.getAssetClass().split(",")[0].trim(),
+                        Collectors.counting()
+                ));
+
+        List<Map<String, Object>> trends = fieldCounts.entrySet().stream()
+                .map(entry -> {
+                    Map<String, Object> item = new HashMap<>();
+                    item.put("field", entry.getKey());
+                    item.put("count", entry.getValue());
+                    return item;
+                })
+                .sorted((a, b) -> Long.compare((Long)b.get("count"), (Long)a.get("count")))
+                .limit(10)
+                .collect(Collectors.toList());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("data", trends);
+        return result;
+    }
+
+    public Map<String, Object> getJurisdictionBreakdown(String dateRange, String type, String jurisdiction) {
+        List<IPAsset> assets = getFilteredAssets(dateRange, type, jurisdiction);
+        
+        Map<String, Long> jurisdictionCounts = assets.stream()
+                .collect(Collectors.groupingBy(
+                        a -> a.getJurisdiction() != null ? a.getJurisdiction() : "Global",
+                        Collectors.counting()
+                ));
+
+        List<Map<String, Object>> breakdown = jurisdictionCounts.entrySet().stream()
+                .map(entry -> {
+                    Map<String, Object> item = new HashMap<>();
+                    item.put("jurisdiction", entry.getKey());
+                    item.put("patents", entry.getValue());
+                    return item;
+                })
+                .sorted((a, b) -> Long.compare((Long)b.get("patents"), (Long)a.get("patents")))
+                .collect(Collectors.toList());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("data", breakdown);
+        return result;
+    }
+
+    public Map<String, Object> getStatusTimeline(String dateRange, String type, String jurisdiction) {
+        List<IPAsset> assets = getFilteredAssets(dateRange, type, jurisdiction);
+        
+        Map<String, Map<String, Long>> quarterlyStatus = new TreeMap<>();
+
+        for (IPAsset asset : assets) {
+            if (asset.getFilingDate() != null) {
+                int year = asset.getFilingDate().getYear();
+                int quarter = (asset.getFilingDate().getMonthValue() - 1) / 3 + 1;
+                String key = "Q" + quarter + " " + year;
+                
+                quarterlyStatus.putIfAbsent(key, new HashMap<>());
+                Map<String, Long> statusMap = quarterlyStatus.get(key);
+                
+                if ("GRANTED".equalsIgnoreCase(asset.getStatus())) {
+                    statusMap.merge("granted", 1L, Long::sum);
+                } else if ("PENDING".equalsIgnoreCase(asset.getStatus())) {
+                    statusMap.merge("filed", 1L, Long::sum);
+                }
+            }
+        }
+
+        List<Map<String, Object>> timeline = quarterlyStatus.entrySet().stream()
+                .map(entry -> {
+                    Map<String, Object> item = new HashMap<>();
+                    item.put("quarter", entry.getKey());
+                    item.put("granted", entry.getValue().getOrDefault("granted", 0L));
+                    item.put("filed", entry.getValue().getOrDefault("filed", 0L));
+                    return item;
+                })
+                .collect(Collectors.toList());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("data", timeline);
+        return result;
+    }
+
+    public List<Map<String, Object>> getRecentActivity() {
+        List<IPAsset> recentAssets = ipAssetRepository.findTop10ByOrderByLastUpdatedDesc();
+        return recentAssets.stream().map(asset -> {
+            Map<String, Object> item = new HashMap<>();
+            item.put("id", asset.getId());
+            item.put("title", asset.getTitle());
+            item.put("type", asset.getType());
+            item.put("date", asset.getLastUpdated());
+            item.put("action", "Updated");
+            return item;
+        }).collect(Collectors.toList());
+    }
+
+    public List<Map<String, Object>> getGlobalCoverage() {
+        Map<String, Object> breakdown = getJurisdictionBreakdown(null, null, null);
+        return (List<Map<String, Object>>) breakdown.get("data");
+    }
+
+    public List<Map<String, Object>> getUpcomingDeadlines() {
+        List<IPAsset> assets = ipAssetRepository.findAll();
+        LocalDate today = LocalDate.now();
+        LocalDate warningDate = today.plusMonths(6);
+
+        return assets.stream()
+                .filter(a -> a.getFilingDate() != null)
+                .filter(a -> {
+                    LocalDate expiry = a.getFilingDate().toLocalDate().plusYears(20);
+                    return expiry.isAfter(today) && expiry.isBefore(warningDate);
+                })
+                .sorted((a, b) -> a.getFilingDate().compareTo(b.getFilingDate()))
+                .limit(10)
+                .map(asset -> {
+                    Map<String, Object> item = new HashMap<>();
+                    item.put("id", asset.getId());
+                    item.put("title", asset.getTitle());
+                    item.put("deadline", asset.getFilingDate().plusYears(20));
+                    item.put("type", "Patent Expiry");
+                    return item;
+                })
+                .collect(Collectors.toList());
+    }
+
+    public Map<String, Object> getClassificationTrends(String field, Integer topN) {
+        List<IPAsset> assets = field != null && !field.equals("all") 
+                ? ipAssetRepository.findByAssetClassContaining(field)
+                : ipAssetRepository.findAll();
+
+        Map<String, Long> classificationCounts = new HashMap<>();
+        for (IPAsset asset : assets) {
+            if (asset.getAssetClass() != null && !asset.getAssetClass().isEmpty()) {
+                String[] codes = asset.getAssetClass().split(",");
+                for (String code : codes) {
+                    classificationCounts.merge(code.trim(), 1L, Long::sum);
+                }
+            }
+        }
+
+        List<Map<String, Object>> trends = classificationCounts.entrySet().stream()
+                .map(entry -> {
+                    Map<String, Object> item = new HashMap<>();
+                    item.put("code", entry.getKey());
+                    item.put("count", entry.getValue());
+                    item.put("description", getClassificationDescription(entry.getKey()));
+                    return item;
+                })
+                .sorted((a, b) -> Long.compare((Long)b.get("count"), (Long)a.get("count")))
+                .limit(topN != null ? topN : 10)
+                .collect(Collectors.toList());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("data", trends);
+        return result;
+    }
+
+    public Map<String, Object> getCompetitorAnalysis(String field, Integer topN) {
+        List<IPAsset> assets = field != null && !field.equals("all")
+                ? ipAssetRepository.findByAssetClassContaining(field)
+                : ipAssetRepository.findAll();
+
+        Map<String, List<IPAsset>> assigneeMap = assets.stream()
+                .filter(a -> a.getAssignee() != null)
+                .collect(Collectors.groupingBy(IPAsset::getAssignee));
+
+        int currentYear = LocalDate.now().getYear();
+        int lastYear = currentYear - 1;
+
+        List<Map<String, Object>> competitors = assigneeMap.entrySet().stream()
+                .map(entry -> {
+                    String name = entry.getKey();
+                    List<IPAsset> assigneeAssets = entry.getValue();
+
+                    long total = assigneeAssets.size();
+                    long active = assigneeAssets.stream()
+                            .filter(a -> "ACTIVE".equalsIgnoreCase(a.getStatus()))
+                            .count();
+
+                    long thisYearCount = assigneeAssets.stream()
+                            .filter(a -> a.getFilingDate() != null && a.getFilingDate().getYear() == currentYear)
+                            .count();
+                    long lastYearCount = assigneeAssets.stream()
+                            .filter(a -> a.getFilingDate() != null && a.getFilingDate().getYear() == lastYear)
+                            .count();
+
+                    double growth;
+                    if (lastYearCount == 0) {
+                        growth = thisYearCount > 0 ? 100.0 : 0.0;
+                    } else {
+                        growth = ((double) (thisYearCount - lastYearCount) / lastYearCount) * 100.0;
+                    }
+
+                    Map<String, Object> item = new HashMap<>();
+                    item.put("assignee", name);
+                    item.put("patentCount", total);
+                    item.put("activeCount", active);
+                    item.put("growth", Math.round(growth * 100.0) / 100.0);
+                    return item;
+                })
+                .sorted((a, b) -> Long.compare((Long)b.get("patentCount"), (Long)a.get("patentCount")))
+                .limit(topN != null ? topN : 10)
+                .collect(Collectors.toList());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("data", competitors);
+        return result;
+    }
+
+    public Map<String, Object> getInnovationTrends(String field, Integer topN) {
+        List<IPAsset> assets = field != null && !field.equals("all")
+                ? ipAssetRepository.findByAssetClassContaining(field)
+                : ipAssetRepository.findAll();
+
+        Map<Integer, Long> yearlyInnovations = new TreeMap<>();
+        for (IPAsset asset : assets) {
+            if (asset.getFilingDate() != null) {
+                int year = asset.getFilingDate().getYear();
+                yearlyInnovations.merge(year, 1L, Long::sum);
+            }
+        }
+
+        List<Map<String, Object>> trends = new ArrayList<>();
+        Long prevCount = null; 
+        for (Map.Entry<Integer, Long> entry : yearlyInnovations.entrySet()) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("year", entry.getKey());
+            item.put("innovations", entry.getValue());
+            
+            if (prevCount != null && prevCount > 0) {
+                double growthRate = ((double)(entry.getValue() - prevCount) / prevCount) * 100.0;
+                item.put("growthRate", Math.round(growthRate * 100.0) / 100.0);
+            } else {
+                item.put("growthRate", 0.0);
+            }
+            
+            prevCount = entry.getValue();
+            trends.add(item);
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("data", trends);
+        return result;
+    }
+
+    public Map<String, Object> getTopInventors(String field, Integer topN) {
+        List<IPAsset> assets = field != null && !field.equals("all")
+                ? ipAssetRepository.findByAssetClassContaining(field)
+                : ipAssetRepository.findAll();
+
+        Map<String, Long> inventorCounts = assets.stream()
+                .filter(a -> a.getInventor() != null && !a.getInventor().isEmpty())
+                .collect(Collectors.groupingBy(
+                        IPAsset::getInventor,
+                        Collectors.counting()
+                ));
+
+        List<Map<String, Object>> inventors = inventorCounts.entrySet().stream()
+                .map(entry -> {
+                    Map<String, Object> item = new HashMap<>();
+                    item.put("name", entry.getKey());
+                    item.put("patentCount", entry.getValue());
+                    return item;
+                })
+                .sorted((a, b) -> Long.compare((Long)b.get("patentCount"), (Long)a.get("patentCount")))
+                .limit(topN != null ? topN : 10)
+                .collect(Collectors.toList());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("data", inventors);
+        return result;
+    }
+
+    public Map<String, Object> getTechnologyConvergence(String field, Integer topN) {
+        List<IPAsset> assets = ipAssetRepository.findAll();
+        
+        Map<String, Set<String>> fieldCooccurrence = new HashMap<>();
+        
+        for (IPAsset asset : assets) {
+            if (asset.getAssetClass() != null && !asset.getAssetClass().isEmpty()) {
+                String[] fields = asset.getAssetClass().split(",");
+                if (fields.length > 1) {
+                    for (int i = 0; i < fields.length; i++) {
+                        String field1 = fields[i].trim();
+                        for (int j = i + 1; j < fields.length; j++) {
+                            String field2 = fields[j].trim();
+                            String key = field1.compareTo(field2) < 0 ? field1 + "|" + field2 : field2 + "|" + field1;
+                            fieldCooccurrence.putIfAbsent(key, new HashSet<>());
+                            fieldCooccurrence.get(key).add(asset.getAssetNumber());
+                        }
+                    }
+                }
+            }
+        }
+
+        List<Map<String, Object>> convergence = fieldCooccurrence.entrySet().stream()
+                .map(entry -> {
+                    String[] fields = entry.getKey().split("\\|");
+                    Map<String, Object> item = new HashMap<>();
+                    item.put("field1", fields[0]);
+                    item.put("field2", fields[1]);
+                    item.put("overlapCount", entry.getValue().size());
+                    item.put("strength", Math.min(100, entry.getValue().size() * 5));
+                    return item;
+                })
+                .sorted((a, b) -> Integer.compare((Integer)b.get("overlapCount"), (Integer)a.get("overlapCount")))
+                .limit(topN != null ? topN : 10)
+                .collect(Collectors.toList());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("data", convergence);
+        return result;
+    }
+
+    public Map<String, Object> getLifecycleAnalysis(String field, Integer topN) {
+        List<IPAsset> assets = field != null && !field.equals("all")
+                ? ipAssetRepository.findByAssetClassContaining(field)
+                : ipAssetRepository.findAll();
+
+        if (assets.isEmpty()) {
+            Map<String, Object> empty = new HashMap<>();
+            empty.put("avgLifespan", 0);
+            empty.put("activePhase", 0);
+            empty.put("maturityRate", 0);
+            return empty;
+        }
+
+        double totalAgeInYears = 0;
+        long activeCount = 0;
+        int countWithDates = 0;
+
+        for (IPAsset asset : assets) {
+            if (asset.getFilingDate() != null) {
+                LocalDate start = asset.getFilingDate().toLocalDate();
+                LocalDate end = LocalDate.now();
+                long days = ChronoUnit.DAYS.between(start, end);
+                totalAgeInYears += (days / 365.0);
+                countWithDates++;
+
+                if ("ACTIVE".equalsIgnoreCase(asset.getStatus())) {
+                    activeCount++;
+                }
+            }
+        }
+
+        double avgLifespan = countWithDates > 0 ? (totalAgeInYears / countWithDates) : 0.0;
+        double maturityRate = (double) activeCount / assets.size() * 100.0;
+
+        Map<String, Object> lifecycle = new HashMap<>();
+        lifecycle.put("avgLifespan", Math.round(avgLifespan * 10.0) / 10.0);
+        lifecycle.put("activePhase", Math.round((avgLifespan * 0.8) * 10.0) / 10.0);
+        lifecycle.put("maturityRate", Math.round(maturityRate));
+
+        return lifecycle;
+    }
+
+    // ✅ FIXED: Now accepts filters and applies them FIRST
+    public Map<String, Object> getAssetsByCategory(String category, String dateRange, String type, String jurisdiction) {
+        List<IPAsset> filteredAssets = getFilteredAssets(dateRange, type, jurisdiction);
+        List<IPAsset> finalAssets;
+
+        if (category == null || category.isEmpty()) {
+            finalAssets = filteredAssets;
+        } 
+        else if (Arrays.asList("ACTIVE", "PENDING", "GRANTED", "EXPIRED", "ABANDONED").contains(category.toUpperCase())) {
+            finalAssets = filteredAssets.stream()
+                    .filter(a -> a.getStatus() != null && a.getStatus().equalsIgnoreCase(category))
+                    .collect(Collectors.toList());
+        } 
+        else if (category.toUpperCase().matches("[A-Z]{2}")) { 
+             finalAssets = filteredAssets.stream()
+                    .filter(a -> a.getJurisdiction() != null && a.getJurisdiction().equalsIgnoreCase(category))
+                    .collect(Collectors.toList());
+        }
+        else {
+            String search = category.toLowerCase();
+            finalAssets = filteredAssets.stream()
+                    .filter(a -> (a.getAssignee() != null && a.getAssignee().toLowerCase().contains(search)) ||
+                                 (a.getInventor() != null && a.getInventor().toLowerCase().contains(search)) ||
+                                 (a.getAssetClass() != null && a.getAssetClass().toLowerCase().contains(search)))
+                    .collect(Collectors.toList());
+        }
+
+        List<Map<String, Object>> assetList = finalAssets.stream()
+                .limit(100)
+                .map(asset -> {
+                    Map<String, Object> item = new HashMap<>();
+                    item.put("id", asset.getId());
+                    item.put("assetNumber", asset.getAssetNumber());
+                    item.put("title", asset.getTitle());
+                    item.put("type", asset.getType() != null ? asset.getType() : "PATENT");
+                    item.put("assignee", asset.getAssignee());
+                    item.put("inventor", asset.getInventor());
+                    item.put("filingDate", asset.getFilingDate());
+                    item.put("status", asset.getStatus());
+                    item.put("jurisdiction", asset.getJurisdiction());
+                    return item;
+                })
+                .collect(Collectors.toList());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("data", assetList);
+        result.put("total", assetList.size());
+        return result;
+    }
+
+    private List<IPAsset> getFilteredAssets(String dateRange, String type, String jurisdiction) {
+        List<IPAsset> assets = ipAssetRepository.findAll();
+        
+        LocalDate cutoffDate = null;
+        if ("week".equals(dateRange)) {
+            cutoffDate = LocalDate.now().minusWeeks(1);
+        } else if ("month".equals(dateRange)) {
+            cutoffDate = LocalDate.now().minusMonths(1);
+        } else if ("quarter".equals(dateRange)) {
+            cutoffDate = LocalDate.now().minusMonths(3);
+        } else if ("year".equals(dateRange)) {
+            cutoffDate = LocalDate.now().minusYears(1);
+        }
+
+        final LocalDate finalCutoffDate = cutoffDate;
+        return assets.stream()
+                .filter(a -> finalCutoffDate == null || 
+                        (a.getFilingDate() != null && !a.getFilingDate().toLocalDate().isBefore(finalCutoffDate))) 
+                .filter(a -> type == null || "all".equalsIgnoreCase(type) || 
+                        (a.getType() != null && a.getType().equalsIgnoreCase(type)))
+                .filter(a -> jurisdiction == null || "all".equalsIgnoreCase(jurisdiction) || 
+                        (a.getJurisdiction() != null && a.getJurisdiction().equalsIgnoreCase(jurisdiction)))
+                .collect(Collectors.toList());
+    }
+
+    private String getClassificationDescription(String code) {
+        Map<String, String> descriptions = Map.of(
+                "G06F", "Electric digital data processing",
+                "H04L", "Transmission of digital information",
+                "A61K", "Preparations for medical purposes",
+                "C07D", "Heterocyclic compounds",
+                "H01L", "Semiconductor devices"
+        );
+        return descriptions.getOrDefault(code, "Technology classification");
     }
 }

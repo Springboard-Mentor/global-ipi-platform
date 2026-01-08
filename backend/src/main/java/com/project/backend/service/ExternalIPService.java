@@ -13,7 +13,7 @@ public class ExternalIPService {
     private final RestTemplate restTemplate;
 
     // 🔴 PUT YOUR REAL KEY
-    private static final String SERP_API_KEY = "d26690f601ff4b1e06460cf949bdb1cf4a1165f441e5d26da85379e74cd5bf4c";
+    private static final String SERP_API_KEY = "yourapikey";
 
     public ExternalIPService(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;

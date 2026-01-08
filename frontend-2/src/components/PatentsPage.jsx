@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Download, Plus, FileText, Calendar, MapPin, Eye, User, Building, Loader2 } from 'lucide-react';
+import { Search, Download, Plus, FileText, Calendar, MapPin, Eye, User, Building, Loader2, Copy } from 'lucide-react';
 
 const PatentsPage = ({ onViewPatent }) => {
     const navigate = useNavigate();
@@ -8,23 +8,26 @@ const PatentsPage = ({ onViewPatent }) => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
+    const [copyMessage, setCopyMessage] = useState({ visible: false, text: '' });
 
     useEffect(() => {
         fetchPatents();
     }, []);
 
     const fetchPatents = async () => {
+        setLoading(true);
         try {
-            const response = await fetch('http://localhost:5001/api/filings');
+            // Ensure this URL matches your backend configuration
+            const response = await fetch('http://192.168.43.45:5001/api/filings'); 
             if (!response.ok) throw new Error('Failed to fetch data');
 
             const data = await response.json();
 
             const formattedData = data.map(item => ({
                 id: item.id,
-                patentNumber: item.applicationNumber || `APP-${String(item.id).padStart(5, '0')}`,
+                patentNumber: item.patentNumber || item.applicationNumber || `APP-${String(item.id).padStart(5, '0')}`,
                 title: item.title,
-                status: item.status || 'Pending',
+                status: item.patentStatus || item.status || 'Pending', 
                 filingDate: item.filingDate || item.submissionDate,
                 jurisdiction: item.jurisdiction || 'IN',
                 region: getRegionName(item.jurisdiction),
@@ -34,10 +37,10 @@ const PatentsPage = ({ onViewPatent }) => {
                 inventors: item.inventorName || 'Unknown',
                 abstractText: item.description || item.title
             }));
-
+            
             setPatents(formattedData);
         } catch (error) {
-            console.error("Error loading patents:", error);
+            console.error("Error loading user filings:", error);
         } finally {
             setLoading(false);
         }
@@ -46,9 +49,58 @@ const PatentsPage = ({ onViewPatent }) => {
     const getRegionName = (code) => {
         const regions = { 
             'US': 'United States', 'IN': 'India', 'EP': 'Europe', 
-            'CN': 'China', 'JP': 'Japan', 'KR': 'South Korea', 'GB': 'United Kingdom'
+            'CN': 'China', 'JP': 'Japan', 'KR': 'South Korea', 'GB': 'United Kingdom', 'WO': 'World (PCT)'
         };
         return regions[code] || code || 'Global';
+    };
+
+    // ✅ Helper: Fallback Copy Method (for HTTP/IP addresses where navigator.clipboard is blocked)
+    const fallbackCopy = (text) => {
+        try {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            
+            // Ensure textarea is not visible
+            textArea.style.position = "fixed";
+            textArea.style.left = "-9999px";
+            textArea.style.top = "0";
+            
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            const successful = document.execCommand('copy');
+            document.body.removeChild(textArea);
+            
+            if (successful) {
+                 setCopyMessage({ visible: true, text: `Copied: ${text}` });
+                 setTimeout(() => setCopyMessage({ visible: false, text: '' }), 2000);
+            }
+        } catch (err) {
+            console.error('Fallback copy error', err);
+        }
+    };
+
+    // ✅ Main Copy Handler
+    const handleCopy = (e, text) => {
+        // Stop the click from bubbling up to the row's onClick handler
+        if (e && e.stopPropagation) e.stopPropagation();
+
+        // 1. Try Modern API (Works on localhost/HTTPS)
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text)
+                .then(() => {
+                    setCopyMessage({ visible: true, text: `Copied: ${text}` });
+                    setTimeout(() => setCopyMessage({ visible: false, text: '' }), 2000);
+                })
+                .catch((err) => {
+                    console.error("Async copy failed, trying fallback", err);
+                    fallbackCopy(text);
+                });
+        } else {
+            // 2. Fallback for HTTP/IP Address
+            fallbackCopy(text);
+        }
     };
 
     const handleExport = () => {
@@ -104,14 +156,14 @@ const PatentsPage = ({ onViewPatent }) => {
         const s = status?.toUpperCase();
         if (['GRANTED', 'ACTIVE', 'REGISTERED'].includes(s)) return 'bg-emerald-100 text-emerald-800 border-emerald-200';
         if (['PENDING', 'SUBMITTED'].includes(s)) return 'bg-amber-100 text-amber-800 border-amber-200';
-        if (['UNDER REVIEW', 'EXAMINATION'].includes(s)) return 'bg-blue-100 text-blue-800 border-blue-200';
+        if (['UNDER REVIEW', 'EXAMINATION', 'UNDER EXAMINATION'].includes(s)) return 'bg-blue-100 text-blue-800 border-blue-200';
         if (['REJECTED', 'EXPIRED', 'ABANDONED'].includes(s)) return 'bg-red-100 text-red-800 border-red-200';
         return 'bg-gray-100 text-gray-800 border-gray-200';
     };
 
     const uniqueStatuses = useMemo(() => {
-        const statuses = new Set(patents.map(p => p.status).filter(Boolean));
-        const formattedStatuses = Array.from(statuses).map(s => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase());
+        const uniqueLower = new Set(patents.map(p => p.status?.toLowerCase()).filter(Boolean));
+        const formattedStatuses = Array.from(uniqueLower).map(s => s.charAt(0).toUpperCase() + s.slice(1));
         return ['All', ...new Set(formattedStatuses)];
     }, [patents]);
 
@@ -126,10 +178,17 @@ const PatentsPage = ({ onViewPatent }) => {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
+            {/* --- Copy Success Message (Toast) --- */}
+            {copyMessage.visible && (
+                <div className="fixed top-4 right-4 z-50 p-3 bg-green-500 text-white rounded-lg shadow-xl animate-in slide-in-from-right">
+                    {copyMessage.text}
+                </div>
+            )}
+            
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-900">My Patents</h2>
-                    <p className="text-slate-600 mt-1">Track your submitted filings and applications.</p>
+                    <h2 className="text-2xl font-bold text-slate-900">My Patent Filings</h2>
+                    <p className="text-slate-600 mt-1">Track your submitted applications and assigned patents from the user filings table.</p>
                 </div>
                 <button 
                     onClick={handleNewFiling}
@@ -183,7 +242,7 @@ const PatentsPage = ({ onViewPatent }) => {
                         </div>
                         <p className="text-slate-900 font-semibold text-lg">No filings found</p>
                         <p className="text-slate-500 text-sm mt-1 max-w-xs mx-auto">
-                            You haven't submitted any patents yet, or your search didn't match any records.
+                            You haven't submitted any patent applications yet, or your search didn't match any records.
                         </p>
                     </div>
                 ) : (
@@ -197,9 +256,20 @@ const PatentsPage = ({ onViewPatent }) => {
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-3 mb-2">
-                                            <span className="text-xs font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded border border-indigo-100">
-                                                {patent.patentNumber}
-                                            </span>
+                                            {/* --- Patent Number & Copy Button --- */}
+                                            <div className="flex items-center bg-indigo-50 rounded border border-indigo-100 pr-1">
+                                                <span className="text-xs font-mono font-bold text-indigo-600 px-2 py-1" title="Application/Patent Number">
+                                                    {patent.patentNumber}
+                                                </span>
+                                                <button
+                                                    onClick={(e) => handleCopy(e, patent.patentNumber)}
+                                                    className="p-1 text-indigo-400 hover:text-indigo-600 hover:bg-indigo-100 rounded-full transition"
+                                                    title="Copy Patent Number"
+                                                >
+                                                    <Copy className="h-3 w-3" />
+                                                </button>
+                                            </div>
+                                            
                                             <span className={`px-2.5 py-0.5 rounded-full text-[10px] uppercase font-bold border ${getStatusColor(patent.status)}`}>
                                                 {patent.status}
                                             </span>
@@ -210,11 +280,11 @@ const PatentsPage = ({ onViewPatent }) => {
                                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-y-2 gap-x-6 text-sm text-slate-500 mt-3">
                                             <div className="flex items-center gap-2">
                                                 <Building className="h-4 w-4 text-slate-400" />
-                                                <span className="truncate" title={patent.assignee}>{patent.assignee}</span>
+                                                <span className="truncate" title={`Assignee: ${patent.assignee}`}>{patent.assignee}</span>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <User className="h-4 w-4 text-slate-400" />
-                                                <span className="truncate" title={patent.inventors}>{patent.inventors}</span>
+                                                <span className="truncate" title={`Inventor: ${patent.inventors}`}>{patent.inventors}</span>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <Calendar className="h-4 w-4 text-slate-400" />
@@ -230,6 +300,7 @@ const PatentsPage = ({ onViewPatent }) => {
                                         <button 
                                             className="p-2 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-all" 
                                             title="View Details"
+                                            onClick={(e) => { e.stopPropagation(); onViewPatent && onViewPatent(patent); }}
                                         >
                                             <Eye className="h-5 w-5" />
                                         </button>
@@ -243,7 +314,7 @@ const PatentsPage = ({ onViewPatent }) => {
 
             <div className="flex justify-between items-center text-xs font-medium text-slate-400 px-2">
                 <span>Total Records: {filteredPatents.length}</span>
-                <span>Data sourced from Local Database</span>
+                <span>Data sourced from Local Database (User Filings)</span>
             </div>
         </div>
     );

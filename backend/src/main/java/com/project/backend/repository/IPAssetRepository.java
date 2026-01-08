@@ -9,14 +9,21 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface IPAssetRepository extends JpaRepository<IPAsset, Integer> {
 
     // ===========================
-    // 🔐 BASIC CHECKS
+    // 🔐 BASIC CHECKS & SYNCHRONIZATION SUPPORT
     // ===========================
     boolean existsByAssetNumber(String assetNumber);
+
+    /**
+     * Finds an IPAsset by its unique asset number.
+     * Used for de-duplication and updating during synchronization.
+     */
+    Optional<IPAsset> findByAssetNumber(String assetNumber);
 
     // ===========================
     // 🔍 SIMPLE SEARCH METHODS
@@ -36,6 +43,18 @@ public interface IPAssetRepository extends JpaRepository<IPAsset, Integer> {
             String details
     );
 
+    List<IPAsset> findByStatus(String status);
+
+    List<IPAsset> findByJurisdiction(String jurisdiction);
+
+    List<IPAsset> findByAssigneeContaining(String assignee);
+
+    List<IPAsset> findByInventorContaining(String inventor);
+
+    List<IPAsset> findByAssetClassContaining(String assetClass);
+    
+    List<IPAsset> findTop10ByOrderByLastUpdatedDesc();
+
     // ===========================
     // 🔎 CUSTOM KEYWORD SEARCH
     // ===========================
@@ -47,10 +66,11 @@ public interface IPAssetRepository extends JpaRepository<IPAsset, Integer> {
     List<IPAsset> searchByKeyword(@Param("keyword") String keyword);
 
     // ===========================
-    // 📄 MAIN PAGINATED SEARCH
+    // 📄 MAIN PAGINATED SEARCH (Includes FETCH JOIN for performance)
     // ===========================
     @Query("""
         SELECT i FROM IPAsset i
+        LEFT JOIN FETCH i.filings
         WHERE (:keyword IS NULL OR LOWER(i.title) LIKE LOWER(CONCAT('%', :keyword, '%')))
           AND (:type = 'ALL' OR i.type = :type)
           AND (:source = 'all' OR i.apiSource = :source)
@@ -89,4 +109,13 @@ public interface IPAssetRepository extends JpaRepository<IPAsset, Integer> {
         GROUP BY a.jurisdiction
     """)
     List<Object[]> getJurisdictionCounts(@Param("keyword") String keyword);
+
+    // ===========================
+    // 📅 DATE-BASED QUERIES
+    // ===========================
+    @Query("SELECT a FROM IPAsset a WHERE FUNCTION('YEAR', a.filingDate) = :year")
+    List<IPAsset> findByFilingDateYear(@Param("year") int year);
+
+    @Query("SELECT a FROM IPAsset a WHERE FUNCTION('YEAR', a.filingDate) = :year AND FUNCTION('QUARTER', a.filingDate) = :quarter")
+    List<IPAsset> findByFilingDateQuarter(@Param("year") int year, @Param("quarter") int quarter);
 }
