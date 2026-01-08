@@ -792,6 +792,72 @@ const AdminPatentManager = ({ onBack }) => {
     return unreadCount;
   };
 
+  // Activate patent (make it visible to users)
+  const activatePatent = async (patentId) => {
+    setMessage('Activating patent...');
+    try {
+      const response = await fetch(`http://localhost:8080/api/patent-filing/${patentId}/activate`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Activate result:', result);
+        setMessage(`✅ Patent ${patentId} activated successfully!`);
+        
+        // Refresh the list
+        await fetchAllPatents();
+        
+        setTimeout(() => {
+          setMessage('');
+        }, 3000);
+      } else {
+        const errorText = await response.text();
+        setMessage(`❌ Failed to activate patent ${patentId}: ${response.status}`);
+        console.error('Activate error:', errorText);
+      }
+    } catch (error) {
+      console.error('Error activating patent:', error);
+      setMessage(`❌ Error: ${error.message}. Check if backend is running.`);
+    }
+  };
+
+  // Deactivate patent (hide it from users)
+  const deactivatePatent = async (patentId) => {
+    setMessage('Deactivating patent...');
+    try {
+      const response = await fetch(`http://localhost:8080/api/patent-filing/${patentId}/deactivate`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Deactivate result:', result);
+        setMessage(`✅ Patent ${patentId} deactivated successfully!`);
+        
+        // Refresh the list
+        await fetchAllPatents();
+        
+        setTimeout(() => {
+          setMessage('');
+        }, 3000);
+      } else {
+        const errorText = await response.text();
+        setMessage(`❌ Failed to deactivate patent ${patentId}: ${response.status}`);
+        console.error('Deactivate error:', errorText);
+      }
+    } catch (error) {
+      console.error('Error deactivating patent:', error);
+      setMessage(`❌ Error: ${error.message}. Check if backend is running.`);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {!isAuthenticated ? (
@@ -1346,11 +1412,13 @@ const AdminPatentManager = ({ onBack }) => {
                       ].map((stage) => (
                         <button
                           key={stage.key}
-                          onClick={() => !patent.stage5Granted && patent.status !== 'Patent is Rejected' && updateStage(patent.id, stage.name, !patent[stage.key])}
-                          disabled={patent.stage5Granted || patent.status === 'Patent is Rejected'}
+                          onClick={() => !patent.stage5Granted && patent.status !== 'Patent is Rejected' && patent.isActive !== false && updateStage(patent.id, stage.name, !patent[stage.key])}
+                          disabled={patent.stage5Granted || patent.status === 'Patent is Rejected' || patent.isActive === false}
                           className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all transform shadow-md ${
                             patent.stage5Granted || patent.status === 'Patent is Rejected'
                               ? 'bg-gradient-to-br from-green-50 to-emerald-100 border-green-500 text-green-800 shadow-green-200 cursor-not-allowed opacity-75'
+                              : patent.isActive === false
+                              ? 'bg-gradient-to-br from-gray-100 to-gray-200 border-gray-400 text-gray-500 cursor-not-allowed opacity-60'
                               : patent[stage.key]
                               ? 'bg-gradient-to-br from-green-50 to-emerald-100 border-green-500 text-green-800 shadow-green-200 hover:scale-105'
                               : 'bg-white border-gray-300 text-gray-700 hover:border-indigo-400 hover:bg-indigo-50 hover:scale-105'
@@ -1369,13 +1437,15 @@ const AdminPatentManager = ({ onBack }) => {
                       {patent.status !== 'Patent is Rejected' && (
                         <button
                           onClick={() => grantAllStages(patent)}
-                          disabled={patent.stage5Granted}
+                          disabled={patent.stage5Granted || patent.isActive === false}
                           className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all duration-300 transform shadow-2xl font-bold ${
                             patent.stage5Granted
                               ? 'bg-gradient-to-br from-green-50 to-emerald-100 border-green-500 text-green-800 shadow-green-300 cursor-not-allowed opacity-75'
+                              : patent.isActive === false
+                              ? 'bg-gradient-to-br from-gray-100 to-gray-200 border-gray-400 text-gray-500 cursor-not-allowed opacity-60'
                               : 'bg-gradient-to-r from-emerald-500 via-green-500 to-teal-600 text-white border-emerald-400 hover:from-emerald-600 hover:via-green-600 hover:to-teal-700 hover:scale-110 hover:shadow-emerald-400/50 active:scale-95 animate-pulse-slow'
                           }`}
-                          style={!patent.stage5Granted ? {
+                          style={!patent.stage5Granted && patent.isActive !== false ? {
                             boxShadow: '0 10px 40px rgba(16, 185, 129, 0.4), 0 0 20px rgba(16, 185, 129, 0.3)',
                           } : {}}
                         >
@@ -1404,7 +1474,26 @@ const AdminPatentManager = ({ onBack }) => {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className={`grid grid-cols-1 ${patent.stage5Granted ? 'md:grid-cols-3' : 'md:grid-cols-2 lg:grid-cols-4'} gap-3 pt-6 border-t-2 border-indigo-200`}>
+                  <div className={`grid grid-cols-1 ${patent.stage5Granted ? 'md:grid-cols-4' : 'md:grid-cols-2 lg:grid-cols-5'} gap-3 pt-6 border-t-2 border-indigo-200`}>
+                    {/* Activate/Deactivate Button */}
+                    {patent.isActive === false ? (
+                      <button
+                        onClick={() => activatePatent(patent.id)}
+                        className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1"
+                      >
+                        <CheckCircle className="w-5 h-5" />
+                        Activate
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => deactivatePatent(patent.id)}
+                        className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-orange-500 to-amber-600 text-white rounded-xl hover:from-orange-600 hover:to-amber-700 font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1"
+                      >
+                        <X className="w-5 h-5" />
+                        Deactivate
+                      </button>
+                    )}
+                    
                     <button
                       onClick={() => setViewingPatentDetails(patent)}
                       className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1"
@@ -1416,7 +1505,12 @@ const AdminPatentManager = ({ onBack }) => {
                     {!patent.stage5Granted && patent.status !== 'Patent is Rejected' && (
                       <button
                         onClick={() => rejectPatent(patent)}
-                        className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-xl hover:from-red-600 hover:to-rose-700 font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1"
+                        disabled={patent.isActive === false}
+                        className={`flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-bold shadow-lg transition-all transform ${
+                          patent.isActive === false
+                            ? 'bg-gradient-to-r from-gray-400 to-gray-500 text-gray-200 cursor-not-allowed opacity-60'
+                            : 'bg-gradient-to-r from-red-500 to-rose-600 text-white hover:from-red-600 hover:to-rose-700 hover:shadow-xl hover:-translate-y-1'
+                        }`}
                       >
                         <X className="w-5 h-5" />
                         Reject Patent

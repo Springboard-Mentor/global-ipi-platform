@@ -279,6 +279,9 @@ public class PatentFiling {
     @Column(name = "status", length = 50)
     private String status = "submitted";
     
+    @Column(name = "is_active")
+    private Boolean isActive = true; // Active/Deactivated status for admin control
+    
     @Column(name = "filing_date")
     private LocalDateTime filingDate;
     
@@ -576,4 +579,8 @@ public class PatentFiling {
     
     public String getR4() { return r4; }
     public void setR4(String r4) { this.r4 = r4; }
+    
+    // Getters and Setters for Active Status
+    public Boolean getIsActive() { return isActive; }
+    public void setIsActive(Boolean isActive) { this.isActive = isActive; }
 }

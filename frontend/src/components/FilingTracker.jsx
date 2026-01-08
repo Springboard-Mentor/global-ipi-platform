@@ -105,20 +105,28 @@ const FilingTracker = forwardRef(({ userProfile, onBack, onAddNotification }, re
       console.log('Normalized user email:', normalizedUserEmail);
       
       // Filter by email (case-insensitive) - check both userEmail and applicantEmail fields
+      // Also filter out deactivated patents (isActive === false)
       const filteredFilings = data.filter(filing => {
         const filingUserEmail = filing.userEmail?.toLowerCase()?.trim();
         const filingApplicantEmail = filing.applicantEmail?.toLowerCase()?.trim();
+        const isActive = filing.isActive !== false; // Show patent if isActive is true or undefined (for backward compatibility)
         
         console.log(`Checking filing ${filing.id}:`, {
           title: filing.inventionTitle,
           filingUserEmail,
           filingApplicantEmail,
           currentUserEmail: normalizedUserEmail,
+          isActive: filing.isActive,
           userEmailMatch: filingUserEmail === normalizedUserEmail,
           applicantEmailMatch: filingApplicantEmail === normalizedUserEmail
         });
         
-        const matches = filingUserEmail === normalizedUserEmail || filingApplicantEmail === normalizedUserEmail;
+        const emailMatches = filingUserEmail === normalizedUserEmail || filingApplicantEmail === normalizedUserEmail;
+        const matches = emailMatches && isActive;
+        
+        if (emailMatches && !isActive) {
+          console.log(`⚠️ Patent ${filing.id} matches email but is deactivated - filtering out`);
+        }
         
         if (matches) {
           console.log(`✅ MATCH FOUND: ${filing.inventionTitle} (ID: ${filing.id})`);

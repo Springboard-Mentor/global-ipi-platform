@@ -492,4 +492,64 @@ public class PatentFilingController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ArrayList<>());
         }
     }
+    
+    // Activate patent (Admin only)
+    @PutMapping("/{id}/activate")
+    public ResponseEntity<Map<String, Object>> activatePatent(@PathVariable Long id) {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            return patentFilingRepository.findById(id)
+                    .map(filing -> {
+                        filing.setIsActive(true);
+                        PatentFiling savedFiling = patentFilingRepository.save(filing);
+                        
+                        System.out.println("✅ Patent " + id + " activated successfully");
+                        
+                        response.put("success", true);
+                        response.put("message", "Patent activated successfully");
+                        response.put("isActive", savedFiling.getIsActive());
+                        
+                        return ResponseEntity.ok(response);
+                    })
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            System.err.println("❌ ERROR activating patent:");
+            e.printStackTrace();
+            
+            response.put("success", false);
+            response.put("message", "Failed to activate patent: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+    
+    // Deactivate patent (Admin only)
+    @PutMapping("/{id}/deactivate")
+    public ResponseEntity<Map<String, Object>> deactivatePatent(@PathVariable Long id) {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            return patentFilingRepository.findById(id)
+                    .map(filing -> {
+                        filing.setIsActive(false);
+                        PatentFiling savedFiling = patentFilingRepository.save(filing);
+                        
+                        System.out.println("✅ Patent " + id + " deactivated successfully");
+                        
+                        response.put("success", true);
+                        response.put("message", "Patent deactivated successfully");
+                        response.put("isActive", savedFiling.getIsActive());
+                        
+                        return ResponseEntity.ok(response);
+                    })
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            System.err.println("❌ ERROR deactivating patent:");
+            e.printStackTrace();
+            
+            response.put("success", false);
+            response.put("message", "Failed to deactivate patent: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
 }
