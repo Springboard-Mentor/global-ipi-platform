@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, Circle, Mail, RefreshCw, AlertCircle, LogIn, LogOut, User, Shield, Eye, EyeOff, X, ArrowLeft, Lightbulb, FileCheck, Upload, CreditCard, MessageCircle, Send, Bell } from 'lucide-react';
+import { CheckCircle, Circle, Mail, RefreshCw, AlertCircle, LogIn, LogOut, User, Shield, Eye, EyeOff, X, ArrowLeft, Lightbulb, FileCheck, Upload, CreditCard, MessageCircle, Send, Bell, Clock } from 'lucide-react';
 import { addUserNotification } from '../utils/notifications';
 import { db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
@@ -15,7 +15,7 @@ const AdminPatentManager = ({ onBack }) => {
   const itemsPerPage = 10;
   
   // Quick filter state
-  const [quickFilter, setQuickFilter] = useState('all'); // 'all', 'granted', 'non-granted'
+  const [quickFilter, setQuickFilter] = useState('all'); // 'all', 'granted', 'rejected', 'deactivated', 'application'
   
   // Admin authentication states
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -47,9 +47,14 @@ const AdminPatentManager = ({ onBack }) => {
   // Filter patents based on quick filter selection
   const getFilteredPatents = () => {
     if (quickFilter === 'granted') {
-      return patents.filter(patent => patent.stage5Granted === true);
-    } else if (quickFilter === 'non-granted') {
-      return patents.filter(patent => patent.stage5Granted !== true);
+      return patents.filter(patent => patent.stage5Granted === true && patent.status !== 'Patent is Rejected');
+    } else if (quickFilter === 'rejected') {
+      return patents.filter(patent => patent.status === 'Patent is Rejected');
+    } else if (quickFilter === 'deactivated') {
+      return patents.filter(patent => patent.isActive === false);
+    } else if (quickFilter === 'application') {
+      // Patents that are neither granted nor rejected (still in application/processing)
+      return patents.filter(patent => patent.stage5Granted !== true && patent.status !== 'Patent is Rejected');
     }
     return patents;
   };
@@ -829,6 +834,9 @@ const AdminPatentManager = ({ onBack }) => {
   const deactivatePatent = async (patentId) => {
     setMessage('Deactivating patent...');
     try {
+      // Find the patent to get user details
+      const patent = patents.find(p => p.id === patentId);
+      
       const response = await fetch(`http://localhost:8080/api/patent-filing/${patentId}/deactivate`, {
         method: 'PUT',
         headers: {
@@ -840,6 +848,25 @@ const AdminPatentManager = ({ onBack }) => {
         const result = await response.json();
         console.log('Deactivate result:', result);
         setMessage(`✅ Patent ${patentId} deactivated successfully!`);
+        
+        // Send notification to user
+        if (patent && patent.userId) {
+          try {
+            console.log('🔔 Sending deactivation notification to userId:', patent.userId);
+            await addUserNotification(
+              patent.userId,
+              'Patent Deactivated',
+              `Your patent application "${patent.inventionTitle}" (ID: ${patent.id}) has been temporarily deactivated by the admin. Please contact support for more information.`,
+              'warning'
+            );
+            console.log('✅ Deactivation notification sent successfully');
+          } catch (notificationError) {
+            console.error('❌ Failed to send deactivation notification:', notificationError);
+            // Continue even if notification fails
+          }
+        } else {
+          console.warn('⚠️ No userId found for patent, notification not sent');
+        }
         
         // Refresh the list
         await fetchAllPatents();
@@ -1158,68 +1185,182 @@ const AdminPatentManager = ({ onBack }) => {
 
           {/* Quick Filter and Stats Section */}
           {!loading && patents.length > 0 && (
-            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl shadow-md p-6 mb-6 border-2 border-indigo-200">
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                {/* Stats */}
-                <div className="flex flex-wrap items-center gap-4">
-                  <div className="bg-white px-4 py-2 rounded-lg shadow-sm border border-indigo-200">
-                    <span className="text-sm text-gray-600">Total Patents:</span>
-                    <span className="ml-2 text-lg font-bold text-indigo-600">{patents.length}</span>
-                  </div>
-                  <div className="bg-green-50 px-4 py-2 rounded-lg shadow-sm border border-green-300">
-                    <span className="text-sm text-gray-600">Granted:</span>
-                    <span className="ml-2 text-lg font-bold text-green-600">
-                      {patents.filter(p => p.stage5Granted === true).length}
-                    </span>
-                  </div>
-                  <div className="bg-orange-50 px-4 py-2 rounded-lg shadow-sm border border-orange-300">
-                    <span className="text-sm text-gray-600">Pending:</span>
-                    <span className="ml-2 text-lg font-bold text-orange-600">
-                      {patents.filter(p => p.stage5Granted !== true).length}
-                    </span>
+            <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 rounded-2xl shadow-xl p-6 mb-6 border-2 border-indigo-100">
+              {/* Stats Cards Row */}
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+                <div className="bg-white px-4 py-3 rounded-xl shadow-md border-2 border-indigo-200 hover:shadow-lg transition-all">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total</p>
+                      <p className="text-2xl font-bold text-indigo-600">{patents.length}</p>
+                    </div>
+                    <div className="bg-indigo-100 p-2 rounded-lg">
+                      <FileCheck className="w-5 h-5 text-indigo-600" />
+                    </div>
                   </div>
                 </div>
+                
+                <div className="bg-white px-4 py-3 rounded-xl shadow-md border-2 border-green-300 hover:shadow-lg transition-all">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Granted</p>
+                      <p className="text-2xl font-bold text-green-600">
+                        {patents.filter(p => p.stage5Granted === true && p.status !== 'Patent is Rejected').length}
+                      </p>
+                    </div>
+                    <div className="bg-green-100 p-2 rounded-lg">
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-white px-4 py-3 rounded-xl shadow-md border-2 border-red-300 hover:shadow-lg transition-all">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Rejected</p>
+                      <p className="text-2xl font-bold text-red-600">
+                        {patents.filter(p => p.status === 'Patent is Rejected').length}
+                      </p>
+                    </div>
+                    <div className="bg-red-100 p-2 rounded-lg">
+                      <X className="w-5 h-5 text-red-600" />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-white px-4 py-3 rounded-xl shadow-md border-2 border-orange-300 hover:shadow-lg transition-all">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Application</p>
+                      <p className="text-2xl font-bold text-orange-600">
+                        {patents.filter(p => p.stage5Granted !== true && p.status !== 'Patent is Rejected').length}
+                      </p>
+                    </div>
+                    <div className="bg-orange-100 p-2 rounded-lg">
+                      <Clock className="w-5 h-5 text-orange-600" />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-white px-4 py-3 rounded-xl shadow-md border-2 border-gray-400 hover:shadow-lg transition-all">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Deactivated</p>
+                      <p className="text-2xl font-bold text-gray-600">
+                        {patents.filter(p => p.isActive === false).length}
+                      </p>
+                    </div>
+                    <div className="bg-gray-200 p-2 rounded-lg">
+                      <AlertCircle className="w-5 h-5 text-gray-600" />
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-                {/* Quick Filter Buttons */}
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-semibold text-gray-700 mr-2">Quick Filter:</span>
+              {/* Filter Buttons */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-gray-700 bg-white px-3 py-1 rounded-lg shadow-sm">Quick Filter:</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
                   <button
                     onClick={() => setQuickFilter('all')}
-                    className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 transform ${
                       quickFilter === 'all'
-                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg scale-105'
-                        : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-indigo-500 hover:text-indigo-600'
+                        ? 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-xl scale-105 ring-4 ring-indigo-200'
+                        : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-indigo-500 hover:text-indigo-600 hover:scale-105 hover:shadow-lg'
                     }`}
                   >
+                    <FileCheck className="w-4 h-4" />
                     All Patents
+                    <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-bold ${
+                      quickFilter === 'all' ? 'bg-white/20' : 'bg-indigo-100 text-indigo-700'
+                    }`}>
+                      {patents.length}
+                    </span>
                   </button>
+                  
                   <button
                     onClick={() => setQuickFilter('granted')}
-                    className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 transform ${
                       quickFilter === 'granted'
-                        ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg scale-105'
-                        : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-green-500 hover:text-green-600'
+                        ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-xl scale-105 ring-4 ring-green-200'
+                        : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-green-500 hover:text-green-600 hover:scale-105 hover:shadow-lg'
                     }`}
                   >
-                    ✓ Granted Only
+                    <CheckCircle className="w-4 h-4" />
+                    Granted
+                    <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-bold ${
+                      quickFilter === 'granted' ? 'bg-white/20' : 'bg-green-100 text-green-700'
+                    }`}>
+                      {patents.filter(p => p.stage5Granted === true && p.status !== 'Patent is Rejected').length}
+                    </span>
                   </button>
+                  
                   <button
-                    onClick={() => setQuickFilter('non-granted')}
-                    className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${
-                      quickFilter === 'non-granted'
-                        ? 'bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-lg scale-105'
-                        : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-orange-500 hover:text-orange-600'
+                    onClick={() => setQuickFilter('rejected')}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 transform ${
+                      quickFilter === 'rejected'
+                        ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-xl scale-105 ring-4 ring-red-200'
+                        : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-red-500 hover:text-red-600 hover:scale-105 hover:shadow-lg'
                     }`}
                   >
-                    ⏳ Non-Granted Only
+                    <X className="w-4 h-4" />
+                    Rejected
+                    <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-bold ${
+                      quickFilter === 'rejected' ? 'bg-white/20' : 'bg-red-100 text-red-700'
+                    }`}>
+                      {patents.filter(p => p.status === 'Patent is Rejected').length}
+                    </span>
+                  </button>
+                  
+                  <button
+                    onClick={() => setQuickFilter('application')}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 transform ${
+                      quickFilter === 'application'
+                        ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-xl scale-105 ring-4 ring-orange-200'
+                        : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-orange-500 hover:text-orange-600 hover:scale-105 hover:shadow-lg'
+                    }`}
+                  >
+                    <Clock className="w-4 h-4" />
+                    Application
+                    <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-bold ${
+                      quickFilter === 'application' ? 'bg-white/20' : 'bg-orange-100 text-orange-700'
+                    }`}>
+                      {patents.filter(p => p.stage5Granted !== true && p.status !== 'Patent is Rejected').length}
+                    </span>
+                  </button>
+                  
+                  <button
+                    onClick={() => setQuickFilter('deactivated')}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 transform ${
+                      quickFilter === 'deactivated'
+                        ? 'bg-gradient-to-r from-gray-600 to-slate-700 text-white shadow-xl scale-105 ring-4 ring-gray-300'
+                        : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-gray-500 hover:text-gray-600 hover:scale-105 hover:shadow-lg'
+                    }`}
+                  >
+                    <AlertCircle className="w-4 h-4" />
+                    Deactivated
+                    <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-bold ${
+                      quickFilter === 'deactivated' ? 'bg-white/20' : 'bg-gray-200 text-gray-700'
+                    }`}>
+                      {patents.filter(p => p.isActive === false).length}
+                    </span>
                   </button>
                 </div>
               </div>
               
               {/* Filter Results Info */}
               {quickFilter !== 'all' && (
-                <div className="mt-3 text-sm text-gray-600 bg-white px-4 py-2 rounded-lg inline-block">
-                  Showing {filteredPatents.length} of {patents.length} patents
+                <div className="mt-4 flex items-center gap-2 bg-white px-4 py-2 rounded-lg inline-flex shadow-md border-2 border-indigo-100">
+                  <div className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse"></div>
+                  <span className="text-sm font-semibold text-gray-700">
+                    Showing <span className="text-indigo-600">{filteredPatents.length}</span> of <span className="text-gray-900">{patents.length}</span> patents
+                  </span>
+                  {quickFilter === 'granted' && <span className="text-green-600 font-bold">(Granted)</span>}
+                  {quickFilter === 'rejected' && <span className="text-red-600 font-bold">(Rejected)</span>}
+                  {quickFilter === 'application' && <span className="text-orange-600 font-bold">(In Application)</span>}
+                  {quickFilter === 'deactivated' && <span className="text-gray-600 font-bold">(Deactivated)</span>}
                 </div>
               )}
             </div>
