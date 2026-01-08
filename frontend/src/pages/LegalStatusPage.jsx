@@ -57,6 +57,9 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
     year: ''
   });
 
+  const [successRateFilter, setSuccessRateFilter] = useState('all'); // 'all', 'weekly', 'monthly'
+  const [portfolioHealthFilter, setPortfolioHealthFilter] = useState('all'); // 'all', 'weekly', 'monthly'
+
   const [showFilters, setShowFilters] = useState(false);
   const [availableFilters, setAvailableFilters] = useState({
     years: []
@@ -1602,40 +1605,60 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
       </div>
 
       {/* Additional Info Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-[2px]">
         {/* Success Rate Chart */}
-        <div className="group bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 rounded-3xl shadow-2xl p-8 border-4 border-purple-400 hover:border-purple-600 hover:shadow-3xl hover:-translate-y-2 transition-all duration-500">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-4">
-              <div className="bg-gradient-to-br from-purple-500 to-pink-600 p-4 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <TrendingUp className="w-8 h-8 text-white" />
+        <div className="group bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 rounded-3xl shadow-2xl p-4 border-4 border-purple-400 hover:border-purple-600 hover:shadow-3xl hover:-translate-y-2 transition-all duration-500">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="bg-gradient-to-br from-purple-500 to-pink-600 p-3 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <TrendingUp className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="text-2xl font-black bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Success Rate</h3>
-                <p className="text-sm text-purple-700 font-semibold mt-1">Application approval metrics</p>
+                <h3 className="text-lg font-black bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Success Rate</h3>
+                <p className="text-xs text-purple-700 font-semibold">Application approval metrics</p>
               </div>
+            </div>
+            {/* Filter Buttons */}
+            <div className="flex gap-1">
+              <button
+                onClick={() => setSuccessRateFilter('all')}
+                className={`px-2 py-1 text-xs font-bold rounded-lg transition-all ${
+                  successRateFilter === 'all'
+                    ? 'bg-purple-600 text-white shadow-md'
+                    : 'bg-white/60 text-purple-600 hover:bg-purple-100'
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setSuccessRateFilter('weekly')}
+                className={`px-2 py-1 text-xs font-bold rounded-lg transition-all ${
+                  successRateFilter === 'weekly'
+                    ? 'bg-purple-600 text-white shadow-md'
+                    : 'bg-white/60 text-purple-600 hover:bg-purple-100'
+                }`}
+              >
+                Weekly
+              </button>
+              <button
+                onClick={() => setSuccessRateFilter('monthly')}
+                className={`px-2 py-1 text-xs font-bold rounded-lg transition-all ${
+                  successRateFilter === 'monthly'
+                    ? 'bg-purple-600 text-white shadow-md'
+                    : 'bg-white/60 text-purple-600 hover:bg-purple-100'
+                }`}
+              >
+                Monthly
+              </button>
             </div>
           </div>
           
           {!stats.loading && stats.total > 0 ? (
-            <div className="space-y-6">
-              {/* Main Success Rate Display */}
-              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 shadow-inner border-2 border-purple-200">
-                <div className="flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 mb-3 drop-shadow-lg">
-                      {Math.round(((stats.total - stats.rejected) / stats.total) * 100)}%
-                    </div>
-                    <div className="text-base text-purple-700 font-bold uppercase tracking-wider">Overall Success Rate</div>
-                    <div className="text-sm text-gray-600 mt-2">Patent approval performance</div>
-                  </div>
-                </div>
-              </div>
-
+            <div className="space-y-3">
               {/* Pie Chart */}
-              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 shadow-inner border border-purple-100">
-                <h4 className="text-sm font-bold text-purple-800 mb-3 text-center uppercase tracking-wide">Distribution Breakdown</h4>
-                <div className="h-[240px]">
+              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-3 shadow-inner border border-purple-100">
+                <h4 className="text-xs font-bold text-purple-800 mb-2 text-center uppercase tracking-wide">Distribution Breakdown</h4>
+                <div className="h-[120px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -1653,9 +1676,9 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
                         ]}
                         cx="50%"
                         cy="50%"
-                        innerRadius={65}
-                        outerRadius={95}
-                        paddingAngle={6}
+                        innerRadius={30}
+                        outerRadius={50}
+                        paddingAngle={4}
                         dataKey="value"
                         animationDuration={1500}
                         animationBegin={100}
@@ -1695,33 +1718,28 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
                 </div>
               </div>
 
-              {/* Stats Summary */}
-              <div className="grid grid-cols-2 gap-5">
-                <div className="group text-center p-5 bg-gradient-to-br from-purple-100 via-pink-100 to-rose-100 rounded-2xl border-2 border-purple-300 hover:border-purple-500 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                  <div className="text-4xl font-black bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">{stats.total - stats.rejected}</div>
-                  <div className="text-xs text-purple-700 mt-2 font-bold uppercase tracking-wider">Successful</div>
-                  <div className="w-full bg-purple-300 rounded-full h-2 mt-3">
-                    <div className="h-2 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full" style={{ width: '100%' }}></div>
-                  </div>
-                </div>
-                <div className="group text-center p-5 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl border-2 border-gray-400 hover:border-gray-600 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                  <div className="text-4xl font-black text-gray-700">{stats.rejected}</div>
-                  <div className="text-xs text-gray-700 mt-2 font-bold uppercase tracking-wider">Rejected</div>
-                  <div className="w-full bg-gray-300 rounded-full h-2 mt-3">
-                    <div className="h-2 bg-gradient-to-r from-gray-500 to-gray-600 rounded-full" style={{ width: `${stats.total > 0 ? (stats.rejected / stats.total) * 100 : 0}%` }}></div>
+              {/* Success Rate Display - Moved below chart */}
+              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-3 shadow-inner border-2 border-purple-200">
+                <div className="flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 mb-1 drop-shadow-lg">
+                      {Math.round(((stats.total - stats.rejected) / stats.total) * 100)}%
+                    </div>
+                    <div className="text-xs text-purple-700 font-bold uppercase tracking-wider">Overall Success Rate</div>
+                    <div className="text-xs text-gray-600 mt-1">Patent approval performance</div>
                   </div>
                 </div>
               </div>
 
               {/* Description */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-5 border-2 border-purple-200 shadow-inner">
-                <p className="text-sm text-gray-700 leading-relaxed text-center">
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-3 border-2 border-purple-200 shadow-inner">
+                <p className="text-xs text-gray-700 leading-relaxed text-center">
                   <span className="inline-flex items-center gap-1">
-                    <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
-                    <span className="font-black text-purple-700 text-lg">{stats.total - stats.rejected}</span>
+                    <span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
+                    <span className="font-black text-purple-700 text-sm">{stats.total - stats.rejected}</span>
                   </span>
                   {' '}out of{' '}
-                  <span className="font-bold text-gray-800 text-base">{stats.total}</span>
+                  <span className="font-bold text-gray-800 text-xs">{stats.total}</span>
                   {' '}patent applications have not been rejected, demonstrating{' '}
                   <span className="font-bold text-purple-700">strong application quality</span> and{' '}
                   <span className="font-bold text-pink-600">exceptional review success</span>.
@@ -1743,25 +1761,58 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
         </div>
 
         {/* Portfolio Health Chart */}
-        <div className="group bg-gradient-to-br from-indigo-50 via-blue-50 to-cyan-50 rounded-3xl shadow-2xl p-8 border-4 border-indigo-400 hover:border-indigo-600 hover:shadow-3xl hover:-translate-y-2 transition-all duration-500">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-4">
-              <div className="bg-gradient-to-br from-indigo-500 to-blue-600 p-4 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                <AlertCircle className="w-8 h-8 text-white" />
+        <div className="group bg-gradient-to-br from-indigo-50 via-blue-50 to-cyan-50 rounded-3xl shadow-2xl p-4 border-4 border-indigo-400 hover:border-indigo-600 hover:shadow-3xl hover:-translate-y-2 transition-all duration-500">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="bg-gradient-to-br from-indigo-500 to-blue-600 p-3 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <AlertCircle className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="text-2xl font-black bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">Portfolio Health</h3>
-                <p className="text-sm text-indigo-700 font-semibold mt-1">Patent status distribution</p>
+                <h3 className="text-lg font-black bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">Portfolio Health</h3>
+                <p className="text-xs text-indigo-700 font-semibold">Patent status distribution</p>
               </div>
+            </div>
+            {/* Filter Buttons */}
+            <div className="flex gap-1">
+              <button
+                onClick={() => setPortfolioHealthFilter('all')}
+                className={`px-2 py-1 text-xs font-bold rounded-lg transition-all ${
+                  portfolioHealthFilter === 'all'
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'bg-white/60 text-indigo-600 hover:bg-indigo-100'
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setPortfolioHealthFilter('weekly')}
+                className={`px-2 py-1 text-xs font-bold rounded-lg transition-all ${
+                  portfolioHealthFilter === 'weekly'
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'bg-white/60 text-indigo-600 hover:bg-indigo-100'
+                }`}
+              >
+                Weekly
+              </button>
+              <button
+                onClick={() => setPortfolioHealthFilter('monthly')}
+                className={`px-2 py-1 text-xs font-bold rounded-lg transition-all ${
+                  portfolioHealthFilter === 'monthly'
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'bg-white/60 text-indigo-600 hover:bg-indigo-100'
+                }`}
+              >
+                Monthly
+              </button>
             </div>
           </div>
           
           {!stats.loading && stats.total > 0 ? (
-            <div className="space-y-6">
+            <div className="space-y-3">
               {/* Bar Chart */}
-              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-5 shadow-inner border-2 border-indigo-200">
-                <h4 className="text-sm font-bold text-indigo-800 mb-4 text-center uppercase tracking-wide">Patent Status Overview</h4>
-                <div className="h-[300px]">
+              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-3 shadow-inner border-2 border-indigo-200">
+                <h4 className="text-xs font-bold text-indigo-800 mb-2 text-center uppercase tracking-wide">Patent Status Overview</h4>
+                <div className="h-[150px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       data={[
@@ -1781,19 +1832,19 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
                           percentage: (((stats.total - stats.granted - stats.rejected) / stats.total) * 100).toFixed(1)
                         }
                       ]}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                      margin={{ top: 10, right: 15, left: 10, bottom: 30 }}
                     >
                       <CartesianGrid strokeDasharray="5 5" stroke="#cbd5e1" strokeWidth={1.5} />
                       <XAxis 
                         dataKey="name" 
                         angle={-15}
                         textAnchor="end"
-                        height={80}
-                        tick={{ fill: '#1e293b', fontSize: 13, fontWeight: 700 }}
+                        height={40}
+                        tick={{ fill: '#1e293b', fontSize: 10, fontWeight: 700 }}
                       />
                       <YAxis 
-                        tick={{ fill: '#475569', fontSize: 12, fontWeight: 600 }}
-                        label={{ value: 'Number of Patents', angle: -90, position: 'insideLeft', style: { fill: '#1e293b', fontWeight: 700, fontSize: 13 } }}
+                        tick={{ fill: '#475569', fontSize: 10, fontWeight: 600 }}
+                        label={{ value: 'Patents', angle: -90, position: 'insideLeft', style: { fill: '#1e293b', fontWeight: 700, fontSize: 10 } }}
                       />
                       <Tooltip 
                         contentStyle={{ 
@@ -1844,51 +1895,23 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
                 </div>
               </div>
               
-              {/* Summary Stats */}
-              <div className="grid grid-cols-3 gap-5">
-                <div className="group text-center p-5 bg-gradient-to-br from-green-100 to-emerald-100 rounded-2xl border-2 border-green-300 hover:border-green-500 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                  <div className="text-4xl font-black bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">{stats.granted}</div>
-                  <div className="text-xs text-green-700 mt-2 font-bold uppercase tracking-wider">Active</div>
-                  <div className="text-sm text-green-600 font-bold mt-1">{((stats.granted / stats.total) * 100).toFixed(1)}%</div>
-                  <div className="w-full bg-green-300 rounded-full h-2 mt-3">
-                    <div className="h-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full" style={{ width: `${((stats.granted / stats.total) * 100)}%` }}></div>
-                  </div>
-                </div>
-                <div className="group text-center p-5 bg-gradient-to-br from-red-100 to-rose-100 rounded-2xl border-2 border-red-300 hover:border-red-500 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                  <div className="text-4xl font-black bg-gradient-to-r from-red-600 to-rose-600 bg-clip-text text-transparent">{stats.rejected}</div>
-                  <div className="text-xs text-red-700 mt-2 font-bold uppercase tracking-wider">Rejected</div>
-                  <div className="text-sm text-red-600 font-bold mt-1">{((stats.rejected / stats.total) * 100).toFixed(1)}%</div>
-                  <div className="w-full bg-red-300 rounded-full h-2 mt-3">
-                    <div className="h-2 bg-gradient-to-r from-red-500 to-rose-600 rounded-full" style={{ width: `${((stats.rejected / stats.total) * 100)}%` }}></div>
-                  </div>
-                </div>
-                <div className="group text-center p-5 bg-gradient-to-br from-amber-100 to-yellow-100 rounded-2xl border-2 border-amber-300 hover:border-amber-500 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                  <div className="text-4xl font-black bg-gradient-to-r from-amber-600 to-yellow-600 bg-clip-text text-transparent">{stats.total - stats.granted - stats.rejected}</div>
-                  <div className="text-xs text-amber-700 mt-2 font-bold uppercase tracking-wider">Under Review</div>
-                  <div className="text-sm text-amber-600 font-bold mt-1">{(((stats.total - stats.granted - stats.rejected) / stats.total) * 100).toFixed(1)}%</div>
-                  <div className="w-full bg-amber-300 rounded-full h-2 mt-3">
-                    <div className="h-2 bg-gradient-to-r from-amber-500 to-yellow-600 rounded-full" style={{ width: `${(((stats.total - stats.granted - stats.rejected) / stats.total) * 100)}%` }}></div>
-                  </div>
-                </div>
-              </div>
-              
               {/* Description */}
-              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-5 border-2 border-indigo-200 shadow-inner">
-                <p className="text-sm text-gray-700 leading-relaxed text-center">
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-3 border-2 border-indigo-200 shadow-inner">
+                <p className="text-xs text-gray-700 leading-relaxed text-center">
                   Your portfolio contains{' '}
                   <span className="inline-flex items-center gap-1">
-                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                    <span className="font-black text-green-700 text-lg">{stats.granted}</span>
+                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                    <span className="font-black text-green-700 text-sm">{stats.granted}</span>
                   </span>
                   {' '}active patents,{' '}
                   <span className="inline-flex items-center gap-1">
-                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-                    <span className="font-black text-red-700 text-lg">{stats.rejected}</span>
+                    <span className="w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+                    <span className="font-black text-red-700 text-sm">{stats.rejected}</span>
                   </span>
                   {' '}rejected, and{' '}
                   <span className="inline-flex items-center gap-1">
-                    <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
-                    <span className="font-black text-amber-700 text-lg">{stats.total - stats.granted - stats.rejected}</span>
+                    <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
+                    <span className="font-black text-amber-700 text-sm">{stats.total - stats.granted - stats.rejected}</span>
                   </span>
                   {' '}under review. Monitor your{' '}
                   <span className="font-bold text-indigo-700">intellectual property health</span> in real-time.
