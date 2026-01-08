@@ -57,9 +57,6 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
     year: ''
   });
 
-  const [successRateFilter, setSuccessRateFilter] = useState('all'); // 'all', 'weekly', 'monthly'
-  const [portfolioHealthFilter, setPortfolioHealthFilter] = useState('all'); // 'all', 'weekly', 'monthly'
-
   const [showFilters, setShowFilters] = useState(false);
   const [availableFilters, setAvailableFilters] = useState({
     years: []
@@ -768,7 +765,7 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
 
       {/* Search Statistics Card with Two Circles */}
       <div className="mb-8 w-full">
-        <div className="relative group bg-gradient-to-br from-blue-50/80 via-purple-50/60 to-pink-50/80 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 border border-purple-100/50 hover:border-purple-200 overflow-hidden">
+        <div className="relative group bg-gradient-to-br from-blue-50/80 via-purple-50/60 to-pink-50/80 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 border-2 border-purple-300 hover:border-purple-400 overflow-hidden">
           {/* Background Gradient Animation */}
           <div className="absolute inset-0 bg-gradient-to-r from-white/40 via-purple-100/20 to-pink-100/30 opacity-60"></div>
           <div className="absolute inset-0 bg-gradient-to-br from-blue-200/10 via-purple-200/10 to-pink-200/10 opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
@@ -777,25 +774,25 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
           <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-to-br from-blue-200/30 to-purple-200/20 rounded-full blur-3xl opacity-40 -translate-x-1/3 -translate-y-1/3"></div>
           <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-to-tl from-pink-200/30 to-purple-200/20 rounded-full blur-3xl opacity-40 translate-x-1/3 translate-y-1/3"></div>
           
-          <div className="relative p-10">
+          <div className="relative p-6">
             {/* Flex Container - Text Left, Circles Right */}
-            <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
               
               {/* Left Side - Text Content */}
-              <div className="flex-1 lg:max-w-md space-y-6">
+              <div className="flex-1 lg:max-w-md space-y-4">
                 {/* Header */}
                 <div className="text-left">
-                  <h2 className="text-4xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 mb-3 leading-tight">
+                  <h2 className="text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 mb-2 leading-tight">
                     Search Analytics Dashboard
                   </h2>
-                  <p className="text-gray-600 text-lg font-medium leading-relaxed">Track your search activity and global platform usage</p>
+                  <p className="text-gray-600 text-base font-medium leading-relaxed">Track your search activity and global platform usage</p>
                 </div>
                 
                 {/* Stats Summary */}
-                <div className="space-y-4 bg-white/60 backdrop-blur-sm rounded-xl p-6 border border-purple-100/50 shadow-sm">
+                <div className="space-y-3 bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-purple-100/50 shadow-sm">
                   <div className="flex items-center justify-between pb-3 border-b border-gray-200">
-                    <span className="text-gray-600 font-semibold">Your Contribution</span>
-                    <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+                    <span className="text-gray-600 font-semibold text-sm">Your Contribution</span>
+                    <span className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
                       {globalSearchCounters.totalSearchCount > 0 
                         ? ((searchCounters.totalSearchCount / globalSearchCounters.totalSearchCount) * 100).toFixed(1)
                         : 0}%
@@ -803,10 +800,10 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse shadow-lg shadow-green-500/50"></div>
-                      <span className="text-gray-600 font-semibold">Online Users</span>
+                      <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-lg shadow-green-500/50"></div>
+                      <span className="text-gray-600 font-semibold text-sm">Online Users</span>
                     </div>
-                    <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-emerald-600">
+                    <span className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-emerald-600">
                       {userStats.onlineUsers}
                     </span>
                   </div>
@@ -814,7 +811,7 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
               </div>
               
               {/* Right Side - Two Circles */}
-              <div className="flex flex-row lg:flex-row gap-8 lg:gap-12 items-center justify-end flex-1 lg:ml-8">
+              <div className="flex flex-row lg:flex-row gap-6 lg:gap-8 items-center justify-end flex-1 lg:ml-6">
               
               {/* Personal Search Counter Circle */}
               <div className="flex flex-col items-center">
@@ -823,37 +820,37 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
                   <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full opacity-0 group-hover/circle:opacity-40 blur-xl transition-all duration-500"></div>
                   
                   {/* Circle */}
-                  <div className="relative bg-white/90 backdrop-blur-md rounded-full p-8 w-56 h-56 sm:w-64 sm:h-64 lg:w-72 lg:h-72 xl:w-80 xl:h-80 flex flex-col items-center justify-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border-2 border-blue-200/50">
+                  <div className="relative bg-white/90 backdrop-blur-md rounded-full p-6 w-44 h-44 sm:w-48 sm:h-48 lg:w-52 lg:h-52 xl:w-56 xl:h-56 flex flex-col items-center justify-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border-2 border-blue-300">
                     {/* Icon */}
-                    <div className="mb-3 bg-gradient-to-br from-blue-500 to-purple-600 p-3 lg:p-4 rounded-full shadow-lg">
-                      <Search className="w-6 h-6 lg:w-8 lg:h-8 text-white" strokeWidth={2.5} />
+                    <div className="mb-2 bg-gradient-to-br from-blue-500 to-purple-600 p-2.5 lg:p-3 rounded-full shadow-lg">
+                      <Search className="w-5 h-5 lg:w-6 lg:h-6 text-white" strokeWidth={2.5} />
                     </div>
                     
                     {/* Counter */}
                     {searchCounters.loading ? (
                       <div className="flex flex-col items-center gap-2">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-purple-500"></div>
-                        <span className="text-sm text-gray-500 font-medium">Loading...</span>
+                        <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-purple-500"></div>
+                        <span className="text-xs text-gray-500 font-medium">Loading...</span>
                       </div>
                     ) : (
                       <>
-                        <h3 className="text-5xl sm:text-6xl lg:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-2">
+                        <h3 className="text-4xl sm:text-5xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-1">
                           {searchCounters.totalSearchCount}
                         </h3>
-                        <p className="text-xs lg:text-sm font-bold text-gray-600 uppercase tracking-wider mb-3">Your Searches</p>
+                        <p className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">Your Searches</p>
                         
                         {/* Breakdown */}
-                        <div className="space-y-1.5 w-full px-4 lg:px-6">
-                          <div className="flex items-center justify-between text-sm lg:text-base">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        <div className="space-y-1 w-full px-3 lg:px-4">
+                          <div className="flex items-center justify-between text-xs lg:text-sm">
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
                               <span className="font-semibold text-blue-600">API</span>
                             </div>
                             <span className="font-bold text-blue-700">{searchCounters.apiSearchCount}</span>
                           </div>
-                          <div className="flex items-center justify-between text-sm lg:text-base">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                          <div className="flex items-center justify-between text-xs lg:text-sm">
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
                               <span className="font-semibold text-purple-600">Local</span>
                             </div>
                             <span className="font-bold text-purple-700">{searchCounters.localSearchCount}</span>
@@ -898,37 +895,37 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
                   <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full opacity-0 group-hover/circle:opacity-40 blur-xl transition-all duration-500"></div>
                   
                   {/* Circle */}
-                  <div className="relative bg-white/90 backdrop-blur-md rounded-full p-8 w-56 h-56 sm:w-64 sm:h-64 lg:w-72 lg:h-72 xl:w-80 xl:h-80 flex flex-col items-center justify-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border-2 border-purple-200/50">
+                  <div className="relative bg-white/90 backdrop-blur-md rounded-full p-6 w-44 h-44 sm:w-48 sm:h-48 lg:w-52 lg:h-52 xl:w-56 xl:h-56 flex flex-col items-center justify-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border-2 border-purple-300">
                     {/* Icon */}
-                    <div className="mb-3 bg-gradient-to-br from-purple-500 to-pink-600 p-3 lg:p-4 rounded-full shadow-lg">
-                      <Globe className="w-6 h-6 lg:w-8 lg:h-8 text-white" strokeWidth={2.5} />
+                    <div className="mb-2 bg-gradient-to-br from-purple-500 to-pink-600 p-2.5 lg:p-3 rounded-full shadow-lg">
+                      <Globe className="w-5 h-5 lg:w-6 lg:h-6 text-white" strokeWidth={2.5} />
                     </div>
                     
                     {/* Counter */}
                     {globalSearchCounters.loading ? (
                       <div className="flex flex-col items-center gap-2">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-pink-500"></div>
-                        <span className="text-sm text-gray-500 font-medium">Loading...</span>
+                        <div className="animate-spin rounded-full h-10 w-10 border-b-4 border-pink-500"></div>
+                        <span className="text-xs text-gray-500 font-medium">Loading...</span>
                       </div>
                     ) : (
                       <>
-                        <h3 className="text-5xl sm:text-6xl lg:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 mb-2">
+                        <h3 className="text-4xl sm:text-5xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 mb-1">
                           {globalSearchCounters.totalSearchCount}
                         </h3>
-                        <p className="text-xs lg:text-sm font-bold text-gray-600 uppercase tracking-wider mb-3">Global Searches</p>
+                        <p className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-2">Global Searches</p>
                         
                         {/* Breakdown */}
-                        <div className="space-y-1.5 w-full px-4 lg:px-6">
-                          <div className="flex items-center justify-between text-sm lg:text-base">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                        <div className="space-y-1 w-full px-3 lg:px-4">
+                          <div className="flex items-center justify-between text-xs lg:text-sm">
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
                               <span className="font-semibold text-purple-600">API</span>
                             </div>
                             <span className="font-bold text-purple-700">{globalSearchCounters.apiSearchCount}</span>
                           </div>
-                          <div className="flex items-center justify-between text-sm lg:text-base">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-pink-500 rounded-full"></div>
+                          <div className="flex items-center justify-between text-xs lg:text-sm">
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-1.5 h-1.5 bg-pink-500 rounded-full"></div>
                               <span className="font-semibold text-pink-600">Local</span>
                             </div>
                             <span className="font-bold text-pink-700">{globalSearchCounters.localSearchCount}</span>
@@ -974,7 +971,7 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
 
       {/* Patent Portfolio Comparison Chart */}
       <div className="mb-8">
-        <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 rounded-3xl shadow-2xl p-8 border-2 border-indigo-100 hover:shadow-3xl transition-all duration-500">
+        <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 rounded-3xl shadow-2xl p-6 border-2 border-indigo-300 hover:shadow-3xl transition-all duration-500">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-4">
               <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-4 rounded-2xl shadow-lg">
@@ -1605,51 +1602,18 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
       </div>
 
       {/* Additional Info Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-[2px]">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Success Rate Chart */}
         <div className="group bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50 rounded-3xl shadow-2xl p-4 border-4 border-purple-400 hover:border-purple-600 hover:shadow-3xl hover:-translate-y-2 transition-all duration-500">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="bg-gradient-to-br from-purple-500 to-pink-600 p-3 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
                 <TrendingUp className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-black bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Success Rate</h3>
-                <p className="text-xs text-purple-700 font-semibold">Application approval metrics</p>
+                <h3 className="text-xl font-black bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Success Rate</h3>
+                <p className="text-xs text-purple-700 font-semibold mt-0.5">Application approval metrics</p>
               </div>
-            </div>
-            {/* Filter Buttons */}
-            <div className="flex gap-1">
-              <button
-                onClick={() => setSuccessRateFilter('all')}
-                className={`px-2 py-1 text-xs font-bold rounded-lg transition-all ${
-                  successRateFilter === 'all'
-                    ? 'bg-purple-600 text-white shadow-md'
-                    : 'bg-white/60 text-purple-600 hover:bg-purple-100'
-                }`}
-              >
-                All
-              </button>
-              <button
-                onClick={() => setSuccessRateFilter('weekly')}
-                className={`px-2 py-1 text-xs font-bold rounded-lg transition-all ${
-                  successRateFilter === 'weekly'
-                    ? 'bg-purple-600 text-white shadow-md'
-                    : 'bg-white/60 text-purple-600 hover:bg-purple-100'
-                }`}
-              >
-                Weekly
-              </button>
-              <button
-                onClick={() => setSuccessRateFilter('monthly')}
-                className={`px-2 py-1 text-xs font-bold rounded-lg transition-all ${
-                  successRateFilter === 'monthly'
-                    ? 'bg-purple-600 text-white shadow-md'
-                    : 'bg-white/60 text-purple-600 hover:bg-purple-100'
-                }`}
-              >
-                Monthly
-              </button>
             </div>
           </div>
           
@@ -1658,7 +1622,7 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
               {/* Pie Chart */}
               <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-3 shadow-inner border border-purple-100">
                 <h4 className="text-xs font-bold text-purple-800 mb-2 text-center uppercase tracking-wide">Distribution Breakdown</h4>
-                <div className="h-[120px]">
+                <div className="h-[160px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -1676,8 +1640,8 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
                         ]}
                         cx="50%"
                         cy="50%"
-                        innerRadius={30}
-                        outerRadius={50}
+                        innerRadius={45}
+                        outerRadius={65}
                         paddingAngle={4}
                         dataKey="value"
                         animationDuration={1500}
@@ -1735,11 +1699,11 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
               <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-3 border-2 border-purple-200 shadow-inner">
                 <p className="text-xs text-gray-700 leading-relaxed text-center">
                   <span className="inline-flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
-                    <span className="font-black text-purple-700 text-sm">{stats.total - stats.rejected}</span>
+                    <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+                    <span className="font-black text-purple-700 text-lg">{stats.total - stats.rejected}</span>
                   </span>
                   {' '}out of{' '}
-                  <span className="font-bold text-gray-800 text-xs">{stats.total}</span>
+                  <span className="font-bold text-gray-800 text-base">{stats.total}</span>
                   {' '}patent applications have not been rejected, demonstrating{' '}
                   <span className="font-bold text-purple-700">strong application quality</span> and{' '}
                   <span className="font-bold text-pink-600">exceptional review success</span>.
@@ -1762,48 +1726,15 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
 
         {/* Portfolio Health Chart */}
         <div className="group bg-gradient-to-br from-indigo-50 via-blue-50 to-cyan-50 rounded-3xl shadow-2xl p-4 border-4 border-indigo-400 hover:border-indigo-600 hover:shadow-3xl hover:-translate-y-2 transition-all duration-500">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <div className="bg-gradient-to-br from-indigo-500 to-blue-600 p-3 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
                 <AlertCircle className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-black bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">Portfolio Health</h3>
-                <p className="text-xs text-indigo-700 font-semibold">Patent status distribution</p>
+                <h3 className="text-xl font-black bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">Portfolio Health</h3>
+                <p className="text-xs text-indigo-700 font-semibold mt-0.5">Patent status distribution</p>
               </div>
-            </div>
-            {/* Filter Buttons */}
-            <div className="flex gap-1">
-              <button
-                onClick={() => setPortfolioHealthFilter('all')}
-                className={`px-2 py-1 text-xs font-bold rounded-lg transition-all ${
-                  portfolioHealthFilter === 'all'
-                    ? 'bg-indigo-600 text-white shadow-md'
-                    : 'bg-white/60 text-indigo-600 hover:bg-indigo-100'
-                }`}
-              >
-                All
-              </button>
-              <button
-                onClick={() => setPortfolioHealthFilter('weekly')}
-                className={`px-2 py-1 text-xs font-bold rounded-lg transition-all ${
-                  portfolioHealthFilter === 'weekly'
-                    ? 'bg-indigo-600 text-white shadow-md'
-                    : 'bg-white/60 text-indigo-600 hover:bg-indigo-100'
-                }`}
-              >
-                Weekly
-              </button>
-              <button
-                onClick={() => setPortfolioHealthFilter('monthly')}
-                className={`px-2 py-1 text-xs font-bold rounded-lg transition-all ${
-                  portfolioHealthFilter === 'monthly'
-                    ? 'bg-indigo-600 text-white shadow-md'
-                    : 'bg-white/60 text-indigo-600 hover:bg-indigo-100'
-                }`}
-              >
-                Monthly
-              </button>
             </div>
           </div>
           
@@ -1812,7 +1743,7 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
               {/* Bar Chart */}
               <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-3 shadow-inner border-2 border-indigo-200">
                 <h4 className="text-xs font-bold text-indigo-800 mb-2 text-center uppercase tracking-wide">Patent Status Overview</h4>
-                <div className="h-[150px]">
+                <div className="h-[200px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       data={[
@@ -1832,19 +1763,19 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
                           percentage: (((stats.total - stats.granted - stats.rejected) / stats.total) * 100).toFixed(1)
                         }
                       ]}
-                      margin={{ top: 10, right: 15, left: 10, bottom: 30 }}
+                      margin={{ top: 10, right: 20, left: 10, bottom: 40 }}
                     >
                       <CartesianGrid strokeDasharray="5 5" stroke="#cbd5e1" strokeWidth={1.5} />
                       <XAxis 
                         dataKey="name" 
                         angle={-15}
                         textAnchor="end"
-                        height={40}
-                        tick={{ fill: '#1e293b', fontSize: 10, fontWeight: 700 }}
+                        height={60}
+                        tick={{ fill: '#1e293b', fontSize: 11, fontWeight: 700 }}
                       />
                       <YAxis 
                         tick={{ fill: '#475569', fontSize: 10, fontWeight: 600 }}
-                        label={{ value: 'Patents', angle: -90, position: 'insideLeft', style: { fill: '#1e293b', fontWeight: 700, fontSize: 10 } }}
+                        label={{ value: 'Number of Patents', angle: -90, position: 'insideLeft', style: { fill: '#1e293b', fontWeight: 700, fontSize: 11 } }}
                       />
                       <Tooltip 
                         contentStyle={{ 
@@ -1900,18 +1831,18 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
                 <p className="text-xs text-gray-700 leading-relaxed text-center">
                   Your portfolio contains{' '}
                   <span className="inline-flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                    <span className="font-black text-green-700 text-sm">{stats.granted}</span>
+                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                    <span className="font-black text-green-700 text-lg">{stats.granted}</span>
                   </span>
                   {' '}active patents,{' '}
                   <span className="inline-flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 bg-red-500 rounded-full"></span>
-                    <span className="font-black text-red-700 text-sm">{stats.rejected}</span>
+                    <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                    <span className="font-black text-red-700 text-lg">{stats.rejected}</span>
                   </span>
                   {' '}rejected, and{' '}
                   <span className="inline-flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
-                    <span className="font-black text-amber-700 text-sm">{stats.total - stats.granted - stats.rejected}</span>
+                    <span className="w-2 h-2 bg-amber-500 rounded-full"></span>
+                    <span className="font-black text-amber-700 text-lg">{stats.total - stats.granted - stats.rejected}</span>
                   </span>
                   {' '}under review. Monitor your{' '}
                   <span className="font-bold text-indigo-700">intellectual property health</span> in real-time.
