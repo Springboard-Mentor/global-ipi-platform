@@ -431,16 +431,20 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
           console.log(`Patent ${p.id} status:`, p.status);
           return p.status === 'Patent is Rejected';
         }).length;
+        const activated = filteredPatents.filter(p => p.isActive === true || p.isActive === undefined).length;
+        const deactivated = filteredPatents.filter(p => p.isActive === false).length;
         
         const underReview = total - granted - rejected;
         
-        console.log('Legal Status - Stats:', { total, granted, rejected, underReview });
+        console.log('Legal Status - Stats:', { total, granted, rejected, underReview, activated, deactivated });
         
         setStats({
           total,
           granted,
           rejected,
           underReview,
+          activated,
+          deactivated,
           loading: false
         });
       } else {
@@ -450,6 +454,8 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
           granted: 0,
           rejected: 0,
           underReview: 0,
+          activated: 0,
+          deactivated: 0,
           loading: false
         });
       }
@@ -1019,6 +1025,18 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
                           count: stats.underReview,
                           percentage: stats.total > 0 ? Math.round((stats.underReview / stats.total) * 100) : 0,
                           color: '#f59e0b'
+                        },
+                        {
+                          status: 'Activated\nPatents',
+                          count: stats.activated,
+                          percentage: stats.total > 0 ? Math.round((stats.activated / stats.total) * 100) : 0,
+                          color: '#06b6d4'
+                        },
+                        {
+                          status: 'Deactivated\nPatents',
+                          count: stats.deactivated,
+                          percentage: stats.total > 0 ? Math.round((stats.deactivated / stats.total) * 100) : 0,
+                          color: '#64748b'
                         }
                       ]}
                       margin={{ top: 30, right: 40, bottom: 60, left: 40 }}
@@ -1039,6 +1057,14 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
                         <linearGradient id="reviewGradient" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.9}/>
                           <stop offset="100%" stopColor="#fbbf24" stopOpacity={0.6}/>
+                        </linearGradient>
+                        <linearGradient id="activatedGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#06b6d4" stopOpacity={0.9}/>
+                          <stop offset="100%" stopColor="#22d3ee" stopOpacity={0.6}/>
+                        </linearGradient>
+                        <linearGradient id="deactivatedGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#64748b" stopOpacity={0.9}/>
+                          <stop offset="100%" stopColor="#94a3b8" stopOpacity={0.6}/>
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e0e7ff" strokeWidth={1.5} />
@@ -1095,14 +1121,16 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
                         radius={[12, 12, 0, 0]}
                         animationDuration={1500}
                       >
-                        {[0, 1, 2, 3].map((index) => (
+                        {[0, 1, 2, 3, 4, 5].map((index) => (
                           <Cell 
                             key={`cell-${index}`} 
                             fill={
                               index === 0 ? 'url(#totalGradient)' :
                               index === 1 ? 'url(#grantedGradient)' :
                               index === 2 ? 'url(#rejectedGradient)' :
-                              'url(#reviewGradient)'
+                              index === 3 ? 'url(#reviewGradient)' :
+                              index === 4 ? 'url(#activatedGradient)' :
+                              'url(#deactivatedGradient)'
                             }
                           />
                         ))}
@@ -1134,83 +1162,7 @@ const LegalStatusPage = ({ userProfile, onNavigateToPatentFiling }) => {
                 </div>
               </div>
 
-              {/* Beautiful Stats Summary Cards */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {/* Total Patents */}
-                <div className="group bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-6 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 border-2 border-indigo-300">
-                  <div className="flex flex-col items-center text-white">
-                    <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl mb-3 group-hover:bg-white/30 transition-all">
-                      <FileText className="w-7 h-7" />
-                    </div>
-                    <p className="text-xs font-black uppercase tracking-wider mb-2 text-white/90">Total Patents</p>
-                    <h4 className="text-5xl font-black mb-2">{stats.total}</h4>
-                    <div className="w-full bg-white/20 rounded-full h-2 mt-2">
-                      <div className="h-2 bg-white rounded-full shadow-lg" style={{ width: '100%' }}></div>
-                    </div>
-                    <p className="text-xs text-white/80 font-semibold mt-2">100%</p>
-                  </div>
-                </div>
-
-                {/* Granted Patents */}
-                <div className="group bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-6 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 border-2 border-green-300">
-                  <div className="flex flex-col items-center text-white">
-                    <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl mb-3 group-hover:bg-white/30 transition-all">
-                      <CheckCircle className="w-7 h-7" />
-                    </div>
-                    <p className="text-xs font-black uppercase tracking-wider mb-2 text-white/90">Granted</p>
-                    <h4 className="text-5xl font-black mb-2">{stats.granted}</h4>
-                    <div className="w-full bg-white/20 rounded-full h-2 mt-2">
-                      <div 
-                        className="h-2 bg-white rounded-full shadow-lg transition-all duration-1000" 
-                        style={{ width: `${stats.total > 0 ? (stats.granted / stats.total) * 100 : 0}%` }}
-                      ></div>
-                    </div>
-                    <p className="text-xs text-white/80 font-semibold mt-2">
-                      {stats.total > 0 ? Math.round((stats.granted / stats.total) * 100) : 0}%
-                    </p>
-                  </div>
-                </div>
-
-                {/* Rejected Patents */}
-                <div className="group bg-gradient-to-br from-red-500 to-rose-600 rounded-2xl p-6 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 border-2 border-red-300">
-                  <div className="flex flex-col items-center text-white">
-                    <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl mb-3 group-hover:bg-white/30 transition-all">
-                      <XCircle className="w-7 h-7" />
-                    </div>
-                    <p className="text-xs font-black uppercase tracking-wider mb-2 text-white/90">Rejected</p>
-                    <h4 className="text-5xl font-black mb-2">{stats.rejected}</h4>
-                    <div className="w-full bg-white/20 rounded-full h-2 mt-2">
-                      <div 
-                        className="h-2 bg-white rounded-full shadow-lg transition-all duration-1000" 
-                        style={{ width: `${stats.total > 0 ? (stats.rejected / stats.total) * 100 : 0}%` }}
-                      ></div>
-                    </div>
-                    <p className="text-xs text-white/80 font-semibold mt-2">
-                      {stats.total > 0 ? Math.round((stats.rejected / stats.total) * 100) : 0}%
-                    </p>
-                  </div>
-                </div>
-
-                {/* Under Review */}
-                <div className="group bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-6 shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 border-2 border-amber-300">
-                  <div className="flex flex-col items-center text-white">
-                    <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl mb-3 group-hover:bg-white/30 transition-all">
-                      <AlertCircle className="w-7 h-7" />
-                    </div>
-                    <p className="text-xs font-black uppercase tracking-wider mb-2 text-white/90">Under Review</p>
-                    <h4 className="text-5xl font-black mb-2">{stats.underReview}</h4>
-                    <div className="w-full bg-white/20 rounded-full h-2 mt-2">
-                      <div 
-                        className="h-2 bg-white rounded-full shadow-lg transition-all duration-1000" 
-                        style={{ width: `${stats.total > 0 ? (stats.underReview / stats.total) * 100 : 0}%` }}
-                      ></div>
-                    </div>
-                    <p className="text-xs text-white/80 font-semibold mt-2">
-                      {stats.total > 0 ? Math.round((stats.underReview / stats.total) * 100) : 0}%
-                    </p>
-                  </div>
-                </div>
-              </div>
+              {/* Stats cards removed as per user request - only chart is shown */}
 
               {/* Insights Section */}
               <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl p-6 text-white shadow-xl">
