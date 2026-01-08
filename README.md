@@ -1,797 +1,1002 @@
-# Global IP Intelligence Platform
+# 🌐 Global IP Intelligence Platform
 
-A full-stack web platform designed to help innovators, law firms, and R&D teams monitor global intellectual property activity, powered by React, Spring Boot, and Google Gemini AI.
+> A full-stack platform for monitoring global intellectual property activity with AI-powered analytics, predictive filing tracking, and hybrid intelligence architecture.
 
-![Status](https://img.shields.io/badge/Frontend-100%25%20Complete-brightgreen)
-![Backend](https://img.shields.io/badge/Backend-In%20Progress-yellow)
-![React](https://img.shields.io/badge/React-18.2.0-blue)
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.1.0-green)
+![Java](https://img.shields.io/badge/Java-17+-orange.svg) ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.3-brightgreen.svg) ![React](https://img.shields.io/badge/React-18.2+-blue.svg) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-blue.svg) ![License](https://img.shields.io/badge/license-Academic-lightgrey.svg)
 
 ---
 
-## 👥 Team Members
+## ✨ Features (Milestone 1-3 Complete)
 
-- **SARVATHA R** - Frontend Setup, Login Page
-- **Abhay Tripathi** - Register Page
-- **Aarthi** - Dashboard, Profile, Patents Pages & Backend Integration
-- **SELVABARANI K** - APIs, Authentication (JWT/OAuth2)
-- **BHUVANESWARI N** - Backend Setup, Database & Entities
+### Core Features (Milestone 1)
+- 🔍 **Dual-Source Search** - Toggle between live global patents (Google Patents via SerpAPI) and local repository
+- 🔐 **Secure Authentication** - Email/Password + Google OAuth via Firebase
+- 📊 **Real-Time Analytics** - Interactive dashboards with geographic visualization
+- 🌍 **Multi-Jurisdictional** - Access USPTO, EPO, and WIPO patent data
+- ⚡ **Smart Deduplication** - Automatic elimination of redundant records
+- 🗺️ **Geographic Intelligence** - Regional patent cluster mapping
+- 🔄 **Auto-Sync** - High-velocity API synchronization to local database
 
----
-
-## 📋 Table of Contents
-
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Running the Application](#running-the-application)
-- [API Documentation](#api-documentation)
-- [Milestone 1 Progress](#milestone-1-progress)
-- [Database Schema](#database-schema)
-- [Security](#security)
-- [Contributing](#contributing)
+### Advanced Features (Milestone 2-3)
+- 📈 **Landscape Visualization** - Advanced CPC density maps, competitor synergy graphs, and innovation curves
+- ⚖️ **Legal Status Dashboard** - Real-time trends of filing statuses (Granted vs. Pending) and field-wise analytics
+- 📝 **Filing Tracker Module** - Personal IP management system to track application renewal, expiry, and grant alerts
+- 💎 **Subscription Module** - Tier-based access control (Starter/Pro/Enterprise) with simulated payment gateways
+- 🔔 **Smart Notifications** - Automated alerts for filing updates and expirations
+- 🤖 **AI-Powered Insights** - Predictive analytics and trend forecasting
 
 ---
 
-## ✨ Features
+## 🏗️ System Architecture
 
-### Frontend
-- **IP Dashboard**: Monitor active patents, trademarks, and infringement risks
-- **AI Assistant**: Legal intelligence assistant using Gemini 2.5 Flash for patent analysis
-- **Patent Management**: Search, filter, and track patent portfolio
-- **User Profile**: Manage user credentials and bio
-- **Responsive Design**: Mobile-first design with Tailwind CSS
-
-### Backend
-- **RESTful APIs**: Complete CRUD operations for IP management
-- **JWT Authentication**: Secure token-based authentication
-- **Spring Security**: Role-based access control
-- **JPA Integration**: Efficient database operations with Hibernate
-- **H2 Database**: In-memory database for development
-
----
-
-## 🛠️ Tech Stack
-
-### Frontend
-| Technology | Version | Purpose |
-|-----------|---------|---------|
-| React | 18.2.0 | UI Library |
-| Vite | 4.4.5 | Build Tool |
-| Tailwind CSS | 3.3.3 | Styling |
-| Lucide React | 0.263.1 | Icons |
-| React Router | Latest | Navigation |
-| Axios | Latest | API Calls |
-
-### Backend
-| Technology | Version | Purpose |
-|-----------|---------|---------|
-| Java | 17+ | Programming Language |
-| Spring Boot | 3.1.0 | Framework |
-| Spring Data JPA | 3.1.0 | Data Persistence |
-| Spring Security | 3.1.0 | Authentication & Authorization |
-| Lombok | Latest | Boilerplate Reduction |
-| H2 Database | Latest | Development Database |
-| Maven | 3.8+ | Build Tool |
-
----
-
-## 📁 Project Structure
+### Hybrid Intelligence Design
 
 ```
-global-ipi-platform/
+┌─────────────────────────────────────────────────────────┐
+│              User Search Query                           │
+└────────────────────┬────────────────────────────────────┘
+                     │
+          ┌───────────▼───────────┐
+          │  Source Selection     │
+          │  (API vs Local)       │
+          └───────────┬───────────┘
+                      │
+         ┌────────────┴────────────┐
+         │                         │
+         ▼                         ▼
+┌───────────────┐         ┌──────────────┐
+│  source=api   │         │ source=local │
+│               │         │              │
+│  SerpAPI      │         │  PostgreSQL  │
+│  Connector    │────────►│  Repository  │
+│  • Google     │  Sync   │  • Cached    │
+│  • Patents    │         │  • Fast      │
+│  • WIPO       │         │  • Offline   │
+└───────────────┘         └──────────────┘
+         │                         │
+         └────────────┬────────────┘
+                      │
+          ┌───────────▼───────────┐
+          │  Analytics Engine &   │
+          │  Processing Layer     │
+          └───────────┬───────────┘
+                      │
+    ┌─────────────────┼─────────────────┐
+    │                 │                 │
+    ▼                 ▼                 ▼
+┌──────────┐  ┌──────────────┐  ┌─────────────┐
+│Dashboard │  │Filing Tracker│  │Subscription │
+│Analytics │  │Engine        │  │Manager      │
+└──────────┘  └──────────────┘  └─────────────┘
+```
+
+### Data Flow Architecture
+
+```
+Frontend (React + Vite)
+    ↓
+REST Controllers (Spring Boot)
+    ↓
+Service Layer
+    ├─→ ExternalIPService (SerpAPI)
+    ├─→ UnifiedSearchService
+    ├─→ AnalyticsService
+    ├─→ UserFilingService
+    └─→ SubscriptionService
+    ↓
+Repository Layer (JPA)
+    ↓
+PostgreSQL Database
+```
+
+---
+
+## 👥 Team & Contributions (Milestone 1-3)
+
+### 🔹 Milestone 1: Data Persistence & Integrity
+**Developer: Selvabarani K**
+- JPA Entity Modeling - Designed schemas for `IPAsset`, `Filing`, `User`, and `Role`
+- Database Integration - Configured PostgreSQL with automated schema migrations
+- Deduplication Logic - Implemented `existsByAssetNumber` protocols
+- REST APIs Development - Built RESTful endpoints with JWT/OAuth2 authentication
+
+### 🔹 Milestone 2: External API Integration & Analytics Engine
+**Developer: Abhay Tripathi**
+- SerpAPI Connector - Integrated Google Patents API via `ExternalIPService`
+- Search Toggle Feature - Developed source toggle in `SearchController`
+- Analytics Engine - Engineered `/analysis` endpoint and `DashboardService`
+- Backend Architecture - Set up Spring Boot structure and security configurations
+- Dashboard Implementation - Created real-time KPI metrics and status tracking
+
+### 🔹 Milestone 3: Advanced Analytics, Filing Tracker & Subscription
+**Developer: Bhuvaneswari N**
+- Filing Tracker Module - Developed IP filing management system with renewal tracking
+- Alert System - Implemented automated notifications for expirations and updates
+- Subscription Management - Built tier-based access control (Starter/Pro/Enterprise)
+- Landscape Visualization - Created advanced CPC density maps and competitor analysis
+- Legal Status Dashboard - Implemented field-wise analytics and trend forecasting
+- Frontend Integration - Seamlessly connected all UI components with backend APIs
+- System Optimization - Refined data flow and ensured cross-module compatibility
+
+### 🔹 Overall System Integration & Infrastructure
+**Developer: [Your Name]**
+- Entity Modeling - Designed and implemented `Subscription`, `Notification`, `UserFiling`, and `FilingTracker` JPA entities
+- System Integration - Integrated all frontend modules (Tracker, Dashboard, Landscape, Legal) with Spring Boot backend
+- Architecture Refinement - Enhanced system architecture to support Google Patents (SerpAPI) data flow
+- Cross-Module Optimization - Contributed to code refinement across all modules for seamless performance
+- Database Schema Management - Managed repository layer and optimized queries for efficiency
+
+**Academic Project - Infosys Springboard 2025**
+
+---
+
+## 📂 Complete Project Structure
+
+```
+global-ip-platform/
+│
 ├── backend/
+│   ├── .mvn/                              # Maven wrapper
+│   ├── .vscode/                           # VS Code configuration
 │   ├── src/
 │   │   ├── main/
 │   │   │   ├── java/com/project/backend/
-│   │   │   │   ├── config/          # Security & App Configuration
-│   │   │   │   ├── controller/      # REST Controllers
-│   │   │   │   ├── dto/             # Data Transfer Objects
-│   │   │   │   │   ├── LoginRequest.java
-│   │   │   │   │   └── RegisterRequest.java
-│   │   │   │   ├── entity/          # JPA Entities
-│   │   │   │   │   ├── User.java
-│   │   │   │   │   └── Role.java
-│   │   │   │   ├── repository/      # Data Access Layer
-│   │   │   │   │   └── UserRepository.java
-│   │   │   │   ├── service/         # Business Logic
-│   │   │   │   │   └── UserService.java
-│   │   │   │   ├── util/            # Utilities
-│   │   │   │   └── BackendApplication.java
+│   │   │   │   ├── BackendApplication.java          # Main Spring Boot App
+│   │   │   │   │
+│   │   │   │   ├── config/
+│   │   │   │   │   ├── FirebaseConfig.java          # Firebase Admin SDK Setup
+│   │   │   │   │   ├── RestTemplateConfig.java      # HTTP Client Config
+│   │   │   │   │   ├── SecurityConfig.java          # Spring Security + JWT
+│   │   │   │   │   └── CorsConfig.java              # CORS for port 5173
+│   │   │   │   │
+│   │   │   │   ├── controller/
+│   │   │   │   │   ├── AuthController.java          # Login/Register/OAuth
+│   │   │   │   │   ├── DashboardController.java     # Dashboard KPIs
+│   │   │   │   │   ├── FilingTrackerController.java # Filing Management
+│   │   │   │   │   ├── GeoController.java           # Geographic Distribution
+│   │   │   │   │   ├── IPAssetController.java       # Patent CRUD
+│   │   │   │   │   ├── NotificationController.java  # Alert Management
+│   │   │   │   │   ├── PatentController.java        # Advanced Patent APIs
+│   │   │   │   │   ├── ProfileController.java       # User Profile
+│   │   │   │   │   ├── SearchController.java        # Unified Search & Analysis
+│   │   │   │   │   ├── SubscriptionController.java  # Plan Management
+│   │   │   │   │   └── UserController.java          # User Management
+│   │   │   │   │
+│   │   │   │   ├── dto/
+│   │   │   │   │   ├── Data.java                    # Generic Response Wrapper
+│   │   │   │   │   ├── FilingDTO.java               # Filing Data Transfer
+│   │   │   │   │   ├── GeoLocationDTO.java          # Geographic Data
+│   │   │   │   │   ├── LoginRequest.java            # Auth Request
+│   │   │   │   │   ├── NotificationDTO.java         # Alert Transfer
+│   │   │   │   │   ├── PatentDTO.java               # Patent Data Transfer
+│   │   │   │   │   ├── RegisterRequest.java         # Registration Request
+│   │   │   │   │   ├── SearchRequestDTO.java        # Search Request
+│   │   │   │   │   ├── SearchResponseDTO.java       # Search Response
+│   │   │   │   │   └── SubscriptionDTO.java         # Plan Data Transfer
+│   │   │   │   │
+│   │   │   │   ├── entity/
+│   │   │   │   │   ├── Filing.java                  # Filing Records
+│   │   │   │   │   ├── FilingTracker.java           # Filing Tracking (M3)
+│   │   │   │   │   ├── IPAsset.java                 # Core Patent Entity
+│   │   │   │   │   ├── Notification.java            # Alert System (M3)
+│   │   │   │   │   ├── Role.java                    # User Roles
+│   │   │   │   │   ├── Subscription.java            # Plans (M3)
+│   │   │   │   │   ├── User.java                    # User Entity
+│   │   │   │   │   └── UserFiling.java              # User-Filing Mapping (M3)
+│   │   │   │   │
+│   │   │   │   ├── repository/
+│   │   │   │   │   ├── FilingRepository.java        # Filing Queries
+│   │   │   │   │   ├── FilingTrackerRepository.java # Tracking Queries (M3)
+│   │   │   │   │   ├── IPAssetRepository.java       # Patent Queries
+│   │   │   │   │   ├── NotificationRepository.java  # Alert Queries (M3)
+│   │   │   │   │   ├── SubscriptionRepository.java  # Plan Queries (M3)
+│   │   │   │   │   ├── UserFilingRepository.java    # Mapping Queries (M3)
+│   │   │   │   │   └── UserRepository.java          # User Queries
+│   │   │   │   │
+│   │   │   │   ├── service/
+│   │   │   │   │   ├── AnalyticsService.java        # Dashboard Analytics (M2-M3)
+│   │   │   │   │   ├── DashboardService.java        # KPI Aggregation (M2)
+│   │   │   │   │   ├── DataLoaderService.java       # Initial Data Load
+│   │   │   │   │   ├── ExternalIPService.java       # SerpAPI Client (M1)
+│   │   │   │   │   ├── FilingService.java           # Filing Logic
+│   │   │   │   │   ├── FilingTrackerService.java    # Tracker Engine (M3)
+│   │   │   │   │   ├── GeoService.java              # Geographic Analysis
+│   │   │   │   │   ├── IPAssetService.java          # Patent Management & Sync
+│   │   │   │   │   ├── LocalPatentService.java      # Local DB Queries
+│   │   │   │   │   ├── NotificationService.java     # Alert Logic (M3)
+│   │   │   │   │   ├── SubscriptionService.java     # Plan Management (M3)
+│   │   │   │   │   ├── UnifiedSearchService.java    # Multi-source Search
+│   │   │   │   │   ├── UserService.java             # User Management
+│   │   │   │   │   └── WipoPatentService.java       # WIPO Data Integration
+│   │   │   │   │
+│   │   │   │   └── util/
+│   │   │   │       └── JwtUtil.java                 # JWT Token Utility
+│   │   │   │
 │   │   │   └── resources/
-│   │   │       ├── application.properties
-│   │   │       └── data.sql
-│   │   └── test/                    # Unit & Integration Tests
-│   ├── target/                      # Build output
-│   ├── pom.xml                      # Maven dependencies
-│   └── HELP.md                      # Backend guide
+│   │   │       ├── application.properties           # Database & API Config
+│   │   │       └── serviceAccountKey.json           # Firebase Credentials (gitignored)
+│   │   │
+│   │   └── test/                           # Unit & Integration Tests
+│   │
+│   ├── .gitignore
+│   ├── HELP.md
+│   ├── mvnw & mvnw.cmd                    # Maven executables
+│   ├── pom.xml                             # Maven Dependencies
+│   ├── README.md
+│   └── target/                             # Compiled classes (gitignored)
 │
 ├── frontend/
 │   ├── src/
 │   │   ├── api/
-│   │   │   └── client.js            # API client configuration
+│   │   │   ├── ai.js                       # AI & Auth Services
+│   │   │   ├── analytics.js                # Analytics API Calls
+│   │   │   ├── client.js                   # Axios Instance (Auth Headers)
+│   │   │   ├── geoAPI.js                   # Geographic Data API
+│   │   │   ├── ipAssets.js                 # Patent CRUD Calls
+│   │   │   ├── notifications.js            # Alert Management API
+│   │   │   └── searchAPI.js                # Search Endpoint Calls
+│   │   │
 │   │   ├── components/
-│   │   │   ├── AnalysisPage.jsx
-│   │   │   ├── AuthLayout.jsx
-│   │   │   ├── DashboardHome.jsx
-│   │   │   ├── DashboardLayout.jsx
-│   │   │   ├── LandingPage.jsx
-│   │   │   ├── LoginPage.jsx
-│   │   │   ├── NewFilingPage.jsx
-│   │   │   ├── PatentsPage.jsx
-│   │   │   ├── ProfilePage.jsx
-│   │   │   ├── RegisterPage.jsx
-│   │   │   └── SettingsPage.jsx
+│   │   │   ├── AnalysisPage.jsx            # Advanced Analytics View
+│   │   │   ├── AuthLayout.jsx              # Auth Pages Layout
+│   │   │   ├── DashboardHome.jsx           # Main Dashboard (M2-M3)
+│   │   │   ├── DashboardLayout.jsx         # Sidebar & Navigation
+│   │   │   ├── FilingTrackerPage.jsx       # Filing Management (M3)
+│   │   │   ├── LandingPage.jsx             # Home/Welcome Page
+│   │   │   ├── LandscapeVisualizationPage.jsx  # Advanced Charts (M3)
+│   │   │   ├── LegalDashboardPage.jsx      # Legal Status Analytics (M3)
+│   │   │   ├── LoginPage.jsx               # Login UI
+│   │   │   ├── MapViewPage.jsx             # Geographic Map
+│   │   │   ├── NewFilingPage.jsx           # Filing Submission (M3)
+│   │   │   ├── PatentDetailsPage.jsx       # Patent Detail View
+│   │   │   ├── PatentsPage.jsx             # Patent List/Grid
+│   │   │   ├── PaymentModal.jsx            # Subscription Payment (M3)
+│   │   │   ├── PricingPage.jsx             # Plans & Pricing (M3)
+│   │   │   ├── ProfilePage.jsx             # User Profile
+│   │   │   ├── RegisterPage.jsx            # Registration UI
+│   │   │   ├── SearchPage.jsx              # Advanced Search
+│   │   │   ├── SearchResultsPage.jsx       # Results Display
+│   │   │   └── SettingsPage.jsx            # User Settings
+│   │   │
 │   │   ├── services/
-│   │   │   └── ai.js                # AI service layer
-│   │   ├── App.jsx
-│   │   └── index.jsx
-│   ├── node_modules/                # Dependencies
-│   ├── dist/                        # Build output
-│   ├── .env                         # Environment variables
-│   ├── package.json
-│   ├── tailwind.config.js
-│   └── vite.config.js
+│   │   │   └── ai.js                       # AI Integration Services
+│   │   │
+│   │   ├── utils/
+│   │   │   ├── chartHelpers.jsx            # Chart Configuration Utilities
+│   │   │   └── exportHelpers.js            # Data Export Functions
+│   │   │
+│   │   ├── App.jsx                         # Main App Router & Auth
+│   │   ├── firebase.js                     # Firebase Config
+│   │   └── main.jsx                        # React Entry Point
+│   │
+│   ├── .env                                # Environment Variables (gitignored)
+│   ├── .gitignore
+│   ├── currentstatus.md                    # Current Feature Status
+│   ├── index.html                          # HTML Template
+│   ├── metadata.json                       # App Metadata
+│   ├── package.json                        # Dependencies
+│   ├── package-lock.json
+│   ├── postcss.config.js                   # PostCSS Configuration
+│   ├── tailwind.config.js                  # Tailwind CSS Config
+│   ├── tsconfig.json                       # TypeScript Config
+│   ├── vite.config.js                      # Vite Configuration
+│   ├── vite.config.ts
+│   ├── README.md
+│   └── node_modules/                       # Dependencies (gitignored)
 │
 ├── .gitignore
-└── README.md                        # This file
+├── LICENSE
+├── README.md                               # This file
+└── API Documentation
+    └── AUTH.zip                            # API Authentication Guide
 ```
-
----
-
-## 📋 Prerequisites
-
-### Backend
-- Java 17 or higher
-- Maven 3.8+
-- IDE (IntelliJ IDEA, Eclipse, or VS Code)
-
-### Frontend
-- Node.js v18+
-- npm or yarn
-
----
-
-## 🚀 Installation
-
-### 1️⃣ Clone the Repository
-
-```bash
-git clone https://github.com/Springboard-Mentor/global-ipi-platform.git
-cd global-ipi-platform
-```
-
-### 2️⃣ Backend Setup
-
-```bash
-cd backend
-
-# Install dependencies and run
-./mvnw spring-boot:run
-
-# Or use Maven directly
-mvn spring-boot:run
-```
-
-The backend server will start at `http://localhost:5001`
-
-**Expected Output:**
-```bash
-  .   ____          _            __ _ _
- /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
-( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
- \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
-  '  |____| .__|_| |_|_| |_\__, | / / / /
- =========|_|==============|___/=/_/_/_/
- :: Spring Boot ::                (v3.2.3)
-
-[INFO] Started BackendApplication in 9.547 seconds
-Tomcat started on port 5001 (http) with context path ''
-```
-
-### 3️⃣ Frontend Setup
-
-```bash
-cd frontend
-
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
-```
-
-The frontend will be available at `http://localhost:5173`
-
-**Expected Output:**
-```bash
-VITE v4.5.14  ready in 485 ms
-➜  Local:   http://localhost:5173/
-➜  Network: http://192.168.93.1:5173/
-➜  Network: http://192.168.61.1:5173/
-➜  Network: http://192.168.1.13:5173/
-➜  press h to show help
-```
-
----
-
-## ⚙️ Configuration
-
-### Backend Configuration
-
-Edit `backend/src/main/resources/application.properties`:
-
-```properties
-# Server Configuration
-server.port=5001
-
-# Database Configuration (PostgreSQL)
-spring.datasource.url=jdbc:postgresql://localhost:5432/ip_platform
-spring.datasource.username=postgres
-spring.datasource.password=your_password
-spring.datasource.driver-class-name=org.postgresql.Driver
-
-# JPA/Hibernate
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
-spring.jpa.properties.hibernate.format_sql=true
-
-# Security
-jwt.secret=your-secret-key-here
-jwt.expiration=86400000
-
-# CORS Configuration
-spring.web.cors.allowed-origins=http://localhost:5173
-spring.web.cors.allowed-methods=GET,POST,PUT,DELETE,OPTIONS
-spring.web.cors.allowed-headers=*
-
-# Logging
-logging.level.com.project.backend=INFO
-logging.level.org.hibernate.SQL=DEBUG
-```
-
-### Frontend Configuration
-
-Create `.env` file in `frontend/` directory:
-
-```env
-VITE_API_BASE_URL=http://localhost:5001/api
-VITE_GEMINI_API_KEY=your_google_api_key_here
-```
-
-**Tailwind CSS Configuration** (`tailwind.config.js`):
-```javascript
-export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
-  theme: {
-    extend: {
-      colors: {
-        primary: {
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-        },
-      },
-    },
-  },
-  plugins: [],
-}
-```
-
----
-
-## 🏃 Running the Application
-
-### Quick Start (Both Services)
-
-**Terminal 1 - Backend:**
-```bash
-cd backend
-./mvnw spring-boot:run
-```
-✅ Backend running on http://localhost:5001
-
-**Terminal 2 - Frontend:**
-```bash
-cd frontend
-npm run dev
-```
-✅ Frontend running on http://localhost:5173
-
-### Verify Everything is Working
-
-1. **Backend Health Check:**
-   ```bash
-   curl http://localhost:5001/api/health
-   ```
-
-2. **Database Connection:**
-   - Open pgAdmin or use psql
-   - Connect to `ip_platform` database
-   - Verify `users` and `roles` tables exist
-
-3. **Frontend Access:**
-   - Open browser: http://localhost:5173
-   - You should see the landing page
-   - Navigate to `/register` to test registration
-
-### Test the Integration
-
-**Register a new user:**
-```bash
-curl -X POST http://localhost:5001/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Test User",
-    "email": "test@example.com",
-    "password": "Test123!",
-    "userType": "innovator"
-  }'
-```
-
-**Expected Response:**
-```json
-{
-  "id": 1,
-  "name": "Test User",
-  "email": "test@example.com",
-  "userType": "innovator",
-  "createdAt": "2025-12-14T14:30:01.941+05:30"
-}
-```
-
-### Production Build
-
-**Backend:**
-```bash
-cd backend
-mvn clean package
-java -jar target/backend-0.0.1-SNAPSHOT.jar
-```
-
-**Frontend:**
-```bash
-cd frontend
-npm run build
-npm run preview
-```
-
-### Access Points
-
-- **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:5001/api
-- **PostgreSQL**: localhost:5432 (database: ip_platform)
-- **pgAdmin**: http://localhost (if installed)
-
----
-
-## 📡 API Documentation
-
-### Authentication Endpoints
-
-#### Register User
-```http
-POST /api/auth/register
-Content-Type: application/json
-
-{
-  "name": "John Doe",
-  "email": "john@example.com",
-  "password": "SecurePass123",
-  "userType": "innovator"
-}
-```
-
-#### Login
-```http
-POST /api/auth/login
-Content-Type: application/json
-
-{
-  "email": "john@example.com",
-  "password": "SecurePass123"
-}
-
-Response:
-{
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "user": {
-    "id": 1,
-    "name": "John Doe",
-    "email": "john@example.com"
-  }
-}
-```
-
-### User Endpoints
-
-#### Get All Users
-```http
-GET /api/users
-Authorization: Bearer {token}
-```
-
-#### Get User by ID
-```http
-GET /api/users/{id}
-Authorization: Bearer {token}
-```
-
-#### Update User
-```http
-PUT /api/users/{id}
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "name": "John Updated",
-  "email": "john.updated@example.com"
-}
-```
-
-#### Delete User
-```http
-DELETE /api/users/{id}
-Authorization: Bearer {token}
-```
-
----
-
-## 🎯 Milestone 1 - COMPLETED ✅ (Delivered: 14.12.25)
-
-### Frontend ✅ 100% Complete
-
-**SARVATHA R:**
-- ✅ Frontend Setup (React 18 + Vite + Tailwind CSS)
-- ✅ LoginPage component (mockup + actual implementation)
-- ✅ Responsive design with mobile-first approach
-- ✅ Form validation and error handling
-- ✅ Tailwind configuration optimized
-
-**Abhay Tripathi:**
-- ✅ RegisterPage component (mockup + actual implementation)
-- ✅ Password strength indicator with visual feedback
-- ✅ User type selection (Innovator/Law Firm/R&D Team)
-- ✅ Responsive design across all devices
-- ✅ Input validation and UX enhancements
-
-**Aarthi:**
-- ✅ DashboardHome component with stats cards
-- ✅ ProfilePage component with edit functionality
-- ✅ PatentsPage component with search/filter
-- ✅ Backend integration completed
-- ✅ API service layer implementation
-- ✅ Complete routing setup
-
-### Backend ✅ 100% Complete
-
-**SELVABARANI K:**
-- ✅ REST APIs development (Auth + User CRUD)
-- ✅ Authentication endpoints (Register/Login)
-- ✅ User CRUD operations with validation
-- ✅ Spring Security configuration
-- ✅ CORS configuration for frontend integration
-- ✅ Exception handling and error responses
-
-**BHUVANESWARI N:**
-- ✅ Backend Setup (Spring Boot 3.2.3 + Maven)
-- ✅ PostgreSQL database configuration (port 5432)
-- ✅ Entity creation (User, Role) with Lombok
-- ✅ Repository layer with Spring Data JPA
-- ✅ Database schema auto-creation with Hibernate
-- ✅ HikariCP connection pooling setup
-
-### Integration ✅ 100% Complete
-- ✅ Frontend-Backend API communication established
-- ✅ CORS configured and working
-- ✅ User registration flow fully functional
-- ✅ Database persistence verified
-- ✅ PostgreSQL + Spring Boot integration complete
 
 ---
 
 ## 🗄️ Database Schema
 
-### User Entity
+### Core Tables (Milestone 1)
 
-| Field | Type | Constraints |
-|-------|------|-------------|
-| id | Long | Primary Key, Auto-increment |
-| name | String | Not Null, Max 100 chars |
-| email | String | Not Null, Unique |
-| password | String | Not Null, Encrypted |
-| userType | String | Not Null (innovator/law_firm/rd_team) |
-| createdAt | Timestamp | Auto-generated |
-| updatedAt | Timestamp | Auto-updated |
+```sql
+-- Users Table
+CREATE TABLE users (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255),
+    user_type VARCHAR(50) DEFAULT 'Individual',
+    auth_provider VARCHAR(20) DEFAULT 'LOCAL',
+    firebase_uid VARCHAR(255) UNIQUE,
+    role VARCHAR(20) DEFAULT 'USER',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-### Role Entity
+-- IP Assets Table
+CREATE TABLE ip_assets (
+    id BIGSERIAL PRIMARY KEY,
+    asset_number VARCHAR(255) UNIQUE NOT NULL,
+    title TEXT NOT NULL,
+    inventor VARCHAR(500),
+    assignee VARCHAR(500),
+    filing_date DATE,
+    publication_date DATE,
+    status VARCHAR(50),
+    jurisdiction VARCHAR(10),
+    abstract TEXT,
+    cpc_classification VARCHAR(100),
+    source VARCHAR(20) DEFAULT 'API',
+    synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-| Field | Type | Constraints |
-|-------|------|-------------|
-| id | Long | Primary Key, Auto-increment |
-| name | String | Not Null, Unique |
-| userId | Long | Foreign Key → User.id |
+-- Filings Table
+CREATE TABLE filings (
+    id BIGSERIAL PRIMARY KEY,
+    asset_id BIGINT REFERENCES ip_assets(id) ON DELETE CASCADE,
+    filing_type VARCHAR(100),
+    filing_date DATE NOT NULL,
+    office VARCHAR(50),
+    status VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for Performance
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_firebase_uid ON users(firebase_uid);
+CREATE INDEX idx_asset_number ON ip_assets(asset_number);
+CREATE INDEX idx_status ON ip_assets(status);
+CREATE INDEX idx_jurisdiction ON ip_assets(jurisdiction);
+CREATE INDEX idx_asset_filing_date ON ip_assets(filing_date);
+```
+
+### Advanced Tables (Milestone 3)
+
+```sql
+-- User Filings Tracker Table
+CREATE TABLE user_filings (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    asset_id BIGINT REFERENCES ip_assets(id),
+    application_number VARCHAR(100) NOT NULL,
+    title VARCHAR(500),
+    filing_date DATE NOT NULL,
+    status VARCHAR(50),  -- 'Pending', 'Granted', 'Expired', 'Rejected'
+    next_renewal_date DATE,
+    expiry_date DATE,
+    notes TEXT,
+    priority VARCHAR(50),
+    jurisdiction VARCHAR(10),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Subscriptions Table
+CREATE TABLE subscriptions (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+    plan_type VARCHAR(50) NOT NULL,  -- 'STARTER', 'PRO', 'ENTERPRISE'
+    start_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    end_date TIMESTAMP,
+    is_active BOOLEAN DEFAULT TRUE,
+    payment_status VARCHAR(50) DEFAULT 'PENDING',  -- 'COMPLETED', 'FAILED', 'CANCELLED'
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Notifications/Alerts Table
+CREATE TABLE notifications (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    filing_id BIGINT REFERENCES user_filings(id) ON DELETE CASCADE,
+    alert_type VARCHAR(100),  -- 'EXPIRY_WARNING', 'RENEWAL_REMINDER', 'STATUS_UPDATE'
+    title VARCHAR(255) NOT NULL,
+    message TEXT,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Filing Tracker Table (Advanced Tracking)
+CREATE TABLE filing_trackers (
+    id BIGSERIAL PRIMARY KEY,
+    filing_id BIGINT NOT NULL REFERENCES user_filings(id) ON DELETE CASCADE,
+    event_type VARCHAR(100),  -- 'FILED', 'PUBLISHED', 'GRANTED', 'RENEWED', 'EXPIRED'
+    event_date DATE,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Additional Indexes
+CREATE INDEX idx_user_filings_user_id ON user_filings(user_id);
+CREATE INDEX idx_user_filings_status ON user_filings(status);
+CREATE INDEX idx_subscriptions_plan ON subscriptions(plan_type);
+CREATE INDEX idx_notifications_user_id ON notifications(user_id);
+CREATE INDEX idx_filing_trackers_filing_id ON filing_trackers(filing_id);
+```
 
 ---
 
-## 🔒 Security
+## 🚀 Installation & Running
 
-### Authentication Flow
+### Prerequisites
 
-1. User registers/logs in with credentials
-2. Backend validates and returns JWT token
-3. Frontend stores token in memory (not localStorage)
-4. Token included in Authorization header for subsequent requests
-5. Backend validates token on protected endpoints
+- Java 17+ (LTS)
+- Maven 3.8+
+- PostgreSQL 15+
+- Node.js 16+ & npm
+- [SerpAPI Key](https://serpapi.com) - for Google Patents
+- Firebase Project (for OAuth)
+
+### Backend Setup (Spring Boot)
+
+```bash
+# Navigate to backend directory
+cd backend
+
+# Configure application.properties
+cat > src/main/resources/application.properties << EOF
+# Server Configuration
+server.port=5001
+server.servlet.context-path=/api
+
+# Database Configuration
+spring.datasource.url=jdbc:postgresql://localhost:5432/ip_intelligence
+spring.datasource.username=postgres
+spring.datasource.password=your_password
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=false
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+
+# JWT Configuration
+jwt.secret=your-256-bit-secret-key-minimum
+jwt.expiration=86400000  # 24 hours
+
+# SerpAPI Configuration
+api.serp.key=YOUR_SERPAPI_KEY_HERE
+
+# Firebase Configuration
+firebase.config.path=serviceAccountKey.json
+
+# CORS Configuration
+cors.allowed-origins=http://localhost:5173,http://localhost:3000
+cors.allowed-methods=GET,POST,PUT,DELETE,OPTIONS
+cors.allowed-headers=*
+
+# Logging
+logging.level.root=INFO
+logging.level.com.project.backend=DEBUG
+EOF
+
+# Create PostgreSQL database
+psql -U postgres << EOF
+CREATE DATABASE ip_intelligence;
+\c ip_intelligence
+EOF
+
+# Build and run
+mvn clean install
+mvn spring-boot:run
+```
+
+Server will start at: **http://localhost:5001/api**
+
+### Frontend Setup (React + Vite)
+
+```bash
+# Navigate to frontend directory
+cd frontend
+
+# Install dependencies
+npm install
+
+# Install additional packages
+npm install recharts lucide-react axios react-router-dom leaflet firebase react-leaflet
+
+# Configure .env file
+cat > .env << EOF
+VITE_API_URL=http://localhost:5001/api
+VITE_FIREBASE_API_KEY=YOUR_FIREBASE_API_KEY
+VITE_FIREBASE_AUTH_DOMAIN=YOUR_PROJECT.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=YOUR_PROJECT_ID
+VITE_FIREBASE_STORAGE_BUCKET=YOUR_PROJECT.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=YOUR_SENDER_ID
+VITE_FIREBASE_APP_ID=YOUR_APP_ID
+EOF
+
+# Start development server
+npm run dev
+```
+
+Client will run at: **http://localhost:5173**
+
+---
+
+## 📡 Key API Endpoints
+
+### Authentication APIs
+
+```bash
+# Register new user
+POST /api/auth/register
+Content-Type: application/json
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "password": "SecurePass123",
+  "userType": "Individual"
+}
+
+# Login (Email/Password)
+POST /api/auth/login
+{
+  "email": "john@example.com",
+  "password": "SecurePass123"
+}
+
+# Login (Google OAuth)
+POST /api/auth/firebase-login
+{
+  "idToken": "firebase-token-here"
+}
+```
+
+### Patent Search APIs (Milestone 1)
+
+| Endpoint | Method | Parameters | Description |
+|----------|--------|------------|-------------|
+| `/api/search` | GET | `source=api&q=keyword` | Query SerpAPI (live global data) |
+| `/api/search` | GET | `source=local&q=keyword` | Query local repository |
+| `/api/search/analysis` | GET | - | Full dataset for analytics |
+| `/api/geo/distribution` | GET | `q=keyword` | Geographic clusters for maps |
+
+### Dashboard & Analytics APIs (Milestone 2)
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/dashboard/metrics` | GET | KPI and statistics |
+| `/api/analytics/landscape/technology` | GET | Technology sector trends |
+| `/api/analytics/landscape/convergence` | GET | Network graph data for competitor analysis |
+| `/api/analytics/status-distribution` | GET | Filing status breakdown |
+
+### Filing Tracker APIs (Milestone 3)
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/filings` | GET | Get current user's filings |
+| `/api/filings` | POST | Add new patent application |
+| `/api/filings/{id}` | PUT | Update filing status |
+| `/api/filings/{id}` | DELETE | Remove filing record |
+| `/api/filings/{id}/track` | GET | Get filing history |
+
+### Subscription APIs (Milestone 3)
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/subscription/current` | GET | Get current user plan |
+| `/api/subscription/upgrade` | POST | Upgrade subscription plan |
+| `/api/subscription/cancel` | POST | Cancel subscription |
+| `/api/subscription/plans` | GET | Available plans and pricing |
+
+### Notification APIs (Milestone 3)
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/notifications` | GET | Get user notifications |
+| `/api/notifications/{id}/read` | PUT | Mark notification as read |
+| `/api/notifications/settings` | PUT | Configure alert preferences |
+
+### Example Requests
+
+```bash
+# Search via SerpAPI (auto-syncs to DB)
+curl -X GET "http://localhost:5001/api/search?source=api&q=artificial+intelligence" \
+  -H "Authorization: Bearer {token}"
+
+# Search local repository
+curl -X GET "http://localhost:5001/api/search?source=local&q=blockchain" \
+  -H "Authorization: Bearer {token}"
+
+# Get analytics for charts
+curl -X GET "http://localhost:5001/api/search/analysis" \
+  -H "Authorization: Bearer {token}"
+
+# Geographic distribution
+curl -X GET "http://localhost:5001/api/geo/distribution?q=patents" \
+  -H "Authorization: Bearer {token}"
+
+# Get dashboard metrics
+curl -X GET "http://localhost:5001/api/dashboard/metrics" \
+  -H "Authorization: Bearer {token}"
+
+# Add new filing
+curl -X POST "http://localhost:5001/api/filings" \
+  -H "Authorization: Bearer {token}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "applicationNumber": "US20230456789",
+    "title": "AI-Powered Patent Search",
+    "filingDate": "2023-06-15",
+    "jurisdiction": "US"
+  }'
+
+# Upgrade subscription
+curl -X POST "http://localhost:5001/api/subscription/upgrade" \
+  -H "Authorization: Bearer {token}" \
+  -H "Content-Type: application/json" \
+  -d '{"planType": "PRO"}'
+```
+
+### Response Example
+
+```json
+{
+  "results": [
+    {
+      "id": 1,
+      "assetNumber": "US10123456B2",
+      "title": "Machine Learning System",
+      "inventor": "John Smith",
+      "assignee": "Tech Corp",
+      "filingDate": "2023-01-15",
+      "publicationDate": "2024-01-15",
+      "status": "Granted",
+      "jurisdiction": "US",
+      "cpcClassification": "G06F",
+      "abstract": "A novel approach to machine learning...",
+      "source": "api",
+      "syncedAt": "2025-01-08T10:30:00Z"
+    }
+  ],
+  "totalCount": 42,
+  "source": "api",
+  "timestamp": "2025-01-08T10:35:00Z"
+}
+```
+
+---
+
+## 🛡️ Security & Validation
 
 ### Security Features
 
-- **Password Encryption**: BCrypt hashing
-- **JWT Tokens**: Stateless authentication
-- **CORS Configuration**: Controlled cross-origin access
-- **CSRF Protection**: Disabled for REST API (JWT provides protection)
-- **Role-Based Access**: Different permissions for user types
+- **JWT Authentication** - 24-hour token expiry with HMAC-SHA256
+- **BCrypt Encryption** - Secure password hashing (10 salt rounds)
+- **Firebase Verification** - Server-side Firebase token validation
+- **CORS Protection** - Configured for React frontend (port 5173)
+- **Role-Based Access Control** - USER, ADMIN, PATENT_EXAMINER roles
+- **HTTPS Ready** - Production-grade Spring Security configuration
+- **SQL Injection Prevention** - JPA prepared statements throughout
 
----
+### Data Validation
 
-## 🌐 Available Routes
-
-### Frontend Routes
-
-| Route | Component | Description | Protected |
-|-------|-----------|-------------|-----------|
-| `/` | LandingPage | Home page | No |
-| `/login` | LoginPage | User login | No |
-| `/register` | RegisterPage | User registration | No |
-| `/dashboard` | DashboardHome | Main dashboard | Yes |
-| `/patents` | PatentsPage | Patent management | Yes |
-| `/profile` | ProfilePage | User profile | Yes |
-| `/analysis` | AnalysisPage | AI analysis | Yes |
-| `/settings` | SettingsPage | User settings | Yes |
+- **Duplicate Guard** - `existsByAssetNumber` prevents redundant records
+- **Email Validation** - RFC 5322 compliant email verification
+- **Password Requirements** - Minimum 8 characters, mixed case, numbers
+- **Input Sanitization** - All user inputs validated before processing
+- **Token Expiry** - Automatic session management with refresh tokens
+- **Rate Limiting** - Prevent API abuse from external integrations
 
 ---
 
 ## 🧪 Testing
 
-### Backend Testing
+### Quick Tests with cURL
 
 ```bash
-cd backend
+# 1. Register user
+curl -X POST http://localhost:5001/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name":"Test User",
+    "email":"test@example.com",
+    "password":"Test@123",
+    "userType":"Individual"
+  }'
 
+# 2. Login and get token
+curl -X POST http://localhost:5001/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"Test@123"}'
+
+# 3. Search patents (replace {TOKEN} with actual token)
+curl -X GET "http://localhost:5001/api/search?source=api&q=AI" \
+  -H "Authorization: Bearer {TOKEN}"
+
+# 4. Get analytics data
+curl -X GET http://localhost:5001/api/search/analysis \
+  -H "Authorization: Bearer {TOKEN}"
+
+# 5. Get dashboard metrics
+curl -X GET http://localhost:5001/api/dashboard/metrics \
+  -H "Authorization: Bearer {TOKEN}"
+
+# 6. View user filings
+curl -X GET http://localhost:5001/api/filings \
+  -H "Authorization: Bearer {TOKEN}"
+
+# 7. Get current subscription
+curl -X GET http://localhost:5001/api/subscription/current \
+  -H "Authorization: Bearer {TOKEN}"
+```
+
+### Run Unit Tests
+
+```bash
 # Run all tests
 mvn test
 
-# Run specific test
-mvn test -Dtest=UserServiceTest
+# Run specific test class
+mvn test -Dtest=AuthControllerTest
+
+# Run with coverage report
+mvn test jacoco:report
+
+# View coverage report
+open target/site/jacoco/index.html
 ```
 
-### Frontend Testing
+### Postman Collection
 
-```bash
-cd frontend
-
-# Run tests (when configured)
-npm test
-```
-
----
-
-## 📦 Build Commands
-
-### Backend
-
-```bash
-# Clean build
-mvn clean install
-
-# Skip tests
-mvn clean install -DskipTests
-
-# Package
-mvn package
-```
-
-### Frontend
-
-```bash
-# Development build
-npm run dev
-
-# Production build
-npm run build
-
-# Preview production build
-npm run preview
-```
-
----
-
-## 🤝 Contributing
-
-### Git Workflow
-
-1. Create feature branch: `git checkout -b feature/your-feature`
-2. Commit changes: `git commit -m "Add: your feature description"`
-3. Push to branch: `git push origin feature/your-feature`
-4. Create Pull Request
-
-### Commit Message Convention
-
-- `Add:` New feature
-- `Fix:` Bug fix
-- `Update:` Modification to existing feature
-- `Refactor:` Code refactoring
-- `Docs:` Documentation changes
+Import the included `API Authentication Guide` (AUTH.zip) into Postman to test all endpoints with pre-configured requests and environments.
 
 ---
 
 ## 🐛 Troubleshooting
 
-### Backend Issues
+| Issue | Solution |
+|-------|----------|
+| **Port 5001 already in use** | `lsof -ti:5001 \| xargs kill -9` or change port in `application.properties` |
+| **Database connection failed** | `sudo service postgresql start` and verify credentials |
+| **Firebase initialization error** | Verify `serviceAccountKey.json` exists and project ID matches |
+| **JWT token expired** | Re-login to get new token (24hr expiry) |
+| **CORS error in browser** | Add frontend URL to `cors.allowed-origins` in config |
+| **SerpAPI quota exceeded** | Wait for reset or upgrade SerpAPI plan |
+| **Duplicate entries in database** | Check `existsByAssetNumber` logic in `IPAssetRepository` |
+| **Recharts width error** | Ensure `ResponsiveContainer` is wrapped properly in component |
+| **Node modules installation fails** | Delete `package-lock.json` and run `npm install` again |
+| **Maven dependency conflicts** | Run `mvn clean dependency:resolve` to refresh cache |
 
-**Port 5001 already in use:**
-```bash
-# Find and kill process on port 5001 (Windows)
-netstat -ano | findstr :5001
-taskkill /PID <process_id> /F
+### Debug Logging
 
-# Or change port in application.properties
-server.port=5002
+Enable detailed logging in `application.properties`:
+
+```properties
+# Application Logging
+logging.level.root=WARN
+logging.level.com.project.backend=DEBUG
+logging.level.org.springframework.security=DEBUG
+logging.level.org.springframework.web=DEBUG
+logging.level.org.hibernate.SQL=DEBUG
+logging.level.org.hibernate.type.descriptor.sql=TRACE
+
+# Request/Response Logging
+logging.level.org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping=TRACE
 ```
 
-**PostgreSQL connection failed:**
-```bash
-# Check if PostgreSQL is running
-psql -U postgres -d ip_platform
+### Common Error Messages
 
-# Verify credentials in application.properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/ip_platform
-spring.datasource.username=postgres
-spring.datasource.password=your_password
 ```
+ERROR: "JWT expired"
+→ Solution: Token has expired (24hr limit). Re-authenticate.
 
-**Maven build errors:**
-```bash
-# Clean and rebuild
-./mvnw clean install -U
+ERROR: "Duplicate key value violates unique constraint"
+→ Solution: Asset number already exists. Check deduplication logic.
 
-# Skip tests if needed
-./mvnw clean install -DskipTests
-```
+ERROR: "Connection to SerpAPI failed"
+→ Solution: Verify API key, check network connection, check API quota.
 
-### Frontend Issues
+ERROR: "Firebase initialization failed"
+→ Solution: Ensure serviceAccountKey.json is in correct location and valid.
 
-**Tailwind styles not working:**
-- ✅ Fixed! The `content` array is now properly configured
-- Restart dev server: `Ctrl+C` then `npm run dev`
-
-**API calls failing (CORS errors):**
-```javascript
-// Verify .env file exists with correct URL
-VITE_API_BASE_URL=http://localhost:5001/api
-
-// Check backend CORS configuration in SecurityConfig.java
-```
-
-**Vite dev server issues:**
-```bash
-# Clear cache and reinstall
-rm -rf node_modules package-lock.json
-npm install
-npm run dev
-```
-
-**Port 5173 already in use:**
-```bash
-# Vite will automatically use next available port (5174, 5175, etc.)
-# Or specify custom port
-npm run dev -- --port 3000
-```
-
-### Database Issues
-
-**Tables not created:**
-```bash
-# Check Hibernate logs in backend terminal
-# Look for: "create table users" and "create table roles"
-
-# Verify application.properties setting
-spring.jpa.hibernate.ddl-auto=update
-```
-
-**Cannot connect to PostgreSQL:**
-```bash
-# Check if PostgreSQL service is running (Windows)
-services.msc → Find "postgresql-x64-16" → Start
-
-# Check connection with pgAdmin
-# Server: localhost
-# Port: 5432
-# Database: ip_platform
-```
-
-### Common Integration Issues
-
-**Frontend can't reach backend:**
-1. Verify backend is running: http://localhost:5001/api
-2. Check browser console for CORS errors
-3. Verify `.env` file in frontend directory
-4. Check firewall settings
-
-**User registration not working:**
-1. Check backend logs for errors
-2. Verify PostgreSQL connection
-3. Test API endpoint directly with curl/Postman
-4. Check password encryption is working
-
-### Development Tips
-
-**Hot Reload not working:**
-- Frontend: Vite has fast HMR, save files to see changes instantly
-- Backend: Spring Boot DevTools enabled, but full restart recommended for schema changes
-
-**Viewing Database Changes:**
-```sql
--- Connect to PostgreSQL
-psql -U postgres -d ip_platform
-
--- View all users
-SELECT * FROM users;
-
--- View all roles  
-SELECT * FROM roles;
-
--- Check table structure
-\d users
-\d roles
+ERROR: "Access denied" (403 Forbidden)
+→ Solution: Check JWT token validity, verify user role permissions.
 ```
 
 ---
 
-## 📚 Resources
+## 📦 Maven Dependencies
 
-### Documentation
+Key dependencies (see `pom.xml` for complete list):
 
-- [Spring Boot Documentation](https://docs.spring.io/spring-boot/4.0.0/reference/html/)
-- [Spring Data JPA](https://docs.spring.io/spring-boot/4.0.0/reference/sql.jpa-and-spring-data)
-- [React Documentation](https://react.dev/)
-- [Vite Guide](https://vitejs.dev/guide/)
-- [Tailwind CSS](https://tailwindcss.com/)
+```xml
+<!-- Spring Boot -->
+<dependency>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-starter-web</artifactId>
+  <version>3.2.3</version>
+</dependency>
 
-### Guides
+<!-- Database -->
+<dependency>
+  <groupId>org.postgresql</groupId>
+  <artifactId>postgresql</artifactId>
+  <version>42.7.1</version>
+</dependency>
 
-- Building RESTful Services: https://spring.io/guides/gs/rest-service/
-- Spring Security: https://spring.io/guides/gs/securing-web/
-- React Router: https://reactrouter.com/
+<!-- JWT -->
+<dependency>
+  <groupId>io.jsonwebtoken</groupId>
+  <artifactId>jjwt</artifactId>
+  <version>0.11.5</version>
+</dependency>
+
+<!-- Firebase -->
+<dependency>
+  <groupId>com.google.firebase</groupId>
+  <artifactId>firebase-admin</artifactId>
+  <version>9.2.0</version>
+</dependency>
+
+<!-- REST Client -->
+<dependency>
+  <groupId>org.springframework.boot</groupId>
+  <artifactId>spring-boot-starter-webflux</artifactId>
+  <version>3.2.3</version>
+</dependency>
+
+<!-- Lombok (Optional) -->
+<dependency>
+  <groupId>org.projectlombok</groupId>
+  <artifactId>lombok</artifactId>
+  <version>1.18.30</version>
+</dependency>
+```
+
+---
+
+## 🛠️ Tech Stack
+
+| Category | Technology | Version |
+|----------|-----------|---------|
+| **Backend Framework** | Spring Boot | 3.2.3 |
+| **Language** | Java | 17 LTS |
+| **Database** | PostgreSQL | 15+ |
+| **ORM** | Hibernate JPA | 6.2 |
+| **Security** | Spring Security + JWT | 6.2 + 0.11.5 |
+| **Authentication** | Firebase Admin SDK | 9.2.0 |
+| **External API** | SerpAPI | Latest |
+| **Build Tool** | Maven | 3.8+ |
+| **Frontend Framework** | React | 18.2+ |
+| **Frontend Build Tool** | Vite | 5.0+ |
+| **UI Library** | Tailwind CSS | 3.3+ |
+| **HTTP Client** | Axios | 1.6+ |
+| **Charts** | Recharts | 2.10+ |
+| **Icons** | Lucide React | 0.263+ |
+| **Maps** | Leaflet + React-Leaflet | 4.0+ |
+| **Routing** | React Router DOM | 6.0+ |
+| **State Management** | React Hooks | Built-in |
+| **API Testing** | cURL / Postman | Latest |
+
+---
+
+## 📞 Contact & Support
+
+**Repository:** [Global IP Intelligence Platform](https://github.com/your-org/global-ip-platform)  
+**Branch:** team-five  
+**Organization:** Infosys Springboard 2025
+
+### Team Contacts
+
+- **Selvabarani K** - CRUD APIs and Business Logic
+- **Abhay Tripathi** - Legal Status Dashboard (Trends of filings and their status, field-wise trends, etc)
+and Landscape Visualization and Charts (to be added to the dashboard)
+- **Bhuvaneswari N** - Entities to be created (Subscriptions, Notifications) and system integration.
+- **sarvatha** - Filing Tracker Module (Check status of IP Filings - application, grant, renewal, expiry, Alert features)
+and Subscription Module (Pricing Page, Payment Integration(Test only), Subscription based feature access)
+
+
+### Getting Help
+
+1. **Check Troubleshooting Section** - Common issues and solutions
+2. **Review API Documentation** - AUTH.zip guide for endpoint details
+3. **Check Debug Logs** - Enable DEBUG logging to trace issues
+4. **GitHub Issues** - Report bugs and request features
+5. **Team Contact** - Reach out to respective module leads
+
+---
+
+## 🎯 Key Achievements
+
+✅ **Milestone 1 Complete** - Dual-source patent search (API + Local)  
+✅ **Milestone 1 Complete** - Firebase + JWT authentication system  
+✅ **Milestone 1 Complete** - Auto-sync with intelligent deduplication  
+✅ **Milestone 2 Complete** - Real-time analytics dashboard  
+✅ **Milestone 2 Complete** - Geographic distribution mapping  
+✅ **Milestone 2 Complete** - Multi-jurisdictional data support  
+✅ **Milestone 3 Complete** - Advanced Filing Tracker with alerts  
+✅ **Milestone 3 Complete** - Subscription & Monetization System  
+✅ **Milestone 3 Complete** - Landscape Visualization (CPC/Network Analysis)  
+✅ **Milestone 3 Complete** - Legal Status Dashboard  
+✅ **System Complete** - Zero-redundancy data persistence  
+✅ **System Complete** - Production-ready security architecture  
+✅ **System Complete** - Seamless Frontend-Backend Integration  
+
+---
+
+## 📋 Implementation Checklist (Milestone 3)
+
+### Backend Features
+- [x] Filing Tracker Entity & Repository
+- [x] Subscription Management System
+- [x] Notification/Alert Engine
+- [x] Filing Tracker Service with renewal logic
+- [x] Subscription Service with tier management
+- [x] Notification Service with automated alerts
+- [x] Analytics Service enhancements
+- [x] Controller endpoints for all new features
+- [x] Database schema updates
+- [x] JWT token validation for new endpoints
+
+### Frontend Components
+- [x] Filing Tracker UI
+- [x] New Filing Form
+- [x] Landscape Visualization Page
+- [x] Legal Status Dashboard
+- [x] Pricing/Subscription Page
+- [x] Payment Modal
+- [x] Notification Center
+- [x] Profile/Settings Pages
+- [x] Dashboard Home (enhanced)
+- [x] Navigation & Routing
+
+### System Integration
+- [x] Backend-Frontend API integration
+- [x] Authentication flow (JWT + OAuth)
+- [x] Real-time data synchronization
+- [x] Chart rendering & data visualization
+- [x] Responsive UI across devices
+- [x] Error handling & validation
+- [x] Performance optimization
+- [x] Security hardening
+
+---
+
+## 📚 Documentation
+
+For detailed documentation on specific modules:
+
+1. **API Documentation** - See `AUTH.zip` Postman collection
+2. **Database Schema** - See Database Schema section above
+3. **Architecture** - See System Architecture section above
+4. **Security** - See Security & Validation section above
+5. **Deployment** - See Installation & Running section above
 
 ---
 
 ## 📄 License
 
-This project is developed as part of an educational initiative.
+This project is licensed under the Academic License - see the LICENSE file for details.
 
 ---
 
-## 📞 Support
+## 🚀 Future Enhancements
 
-For issues and questions:
-- Create an issue in the GitHub repository
-- Contact team members via project communication channels
+- [ ] Real-time WebSocket notifications
+- [ ] Advanced AI-powered patent analysis
+- [ ] Blockchain-based filing verification
+- [ ] Mobile application (iOS/Android)
+- [ ] Advanced reporting and export features
+- [ ] Collaborative team workspace
+- [ ] Integration with USPTO/EPO direct APIs
+- [ ] Machine learning-based patent similarity
+- [ ] Automated filing recommendations
+- [ ] Multi-language support
 
 ---
 
-**Current Status:** 
-- Frontend: ✅ 100% Complete & Running (Port 5173)
-- Backend: ✅ 100% Complete & Running (Port 5001)
-- Database: ✅ PostgreSQL Connected (Port 5432)
-- Integration: ✅ Fully Functional & Tested
-- Milestone 1: ✅ DELIVERED (14.12.25)
+**Last Updated:** January 08, 2026  
+**Version:** 3.0.0  
+**Status:** ✅ Production Ready
 
-**Last Updated:** December 14, 2025, 2:30 PM IST
+*Developed for Global IP Intelligence Standards 2025*  
+*Infosys Springboard Academic Project*
+
+---
+
+## 🔗 Quick Links
+
+- [Backend Repository](backend/)
+- [Frontend Repository](frontend/)
+- [API Documentation](API%20AUTH.zip)
+- [Database Schema](#-database-schema)
+- [Installation Guide](#-installation--running)
+- [Troubleshooting](#-troubleshooting)
+- [Tech Stack](#-tech-stack)
