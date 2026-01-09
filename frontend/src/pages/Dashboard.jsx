@@ -865,7 +865,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
           </div>
           <div className="mb-3 pb-3 border-b border-indigo-200">
             <p className="text-sm text-indigo-700 font-medium">Track daily premium plan adoptions</p>
-            <p className="text-xs text-indigo-600 mt-1">Monitor user upgrades to Pro ($49) and Enterprise ($199) subscriptions over the last 30 days</p>
+            <p className="text-xs text-indigo-600 mt-1">Monitor user upgrades to Pro (₹49) and Enterprise (₹199) subscriptions over the last 30 days</p>
           </div>
           <div className="h-[280px]">
             {revenueStatus === 'loading' ? (
