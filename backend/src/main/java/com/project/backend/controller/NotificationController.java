@@ -14,40 +14,38 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 public class NotificationController {
 
-    @Autowired
-    private NotificationService notificationService;
+    @Autowired private NotificationService notificationService;
 
-    // ✅ EXISTING GET ENDPOINT
+    // ✅ GET NOTIFICATIONS: Returns Unread + Recent History (2 Days)
+    // Used by the Dashboard Bell Icon
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<Notification>> getUserNotifications(@PathVariable Integer userId) {
         return ResponseEntity.ok(notificationService.getUserNotifications(userId));
     }
 
-    /**
-     * ✅ NEW POST ENDPOINT (Fixed Type Mismatch)
-     * Handles manual notification creation from the frontend "Save Alerts" button.
-     */
-    @PostMapping("/create")
-    public ResponseEntity<?> createNotification(@RequestBody Map<String, Object> payload) {
-        try {
-            // 🔒 FIX: Convert to Integer directly to match NotificationService.sendAlert(Integer, ...)
-            Integer userId = Integer.valueOf(payload.get("userId").toString());
-            
-            String message = (String) payload.get("message");
-            String type = (String) payload.get("type");
-            
-            // Handle optional assetId safely
-            Integer assetId = null;
-            if (payload.get("assetId") != null) {
-                assetId = Integer.valueOf(payload.get("assetId").toString());
-            }
+    // ✅ MARK AS READ
+    // Called when a user clicks a notification in the UI
+    @PutMapping("/read/{id}")
+    public ResponseEntity<?> markAsRead(@PathVariable Integer id) {
+        notificationService.markAsRead(id);
+        return ResponseEntity.ok("Read");
+    }
 
-            // Now passing (Integer, Integer, String, String) -> Matches Service perfectly
-            notificationService.sendAlert(userId, assetId, message, type);
+    // ✅ NOTIFY ADMIN
+    // Called when a User sets up alerts for a filing in the Tracker
+    @PostMapping("/notify-admin")
+    public ResponseEntity<?> notifyAdmin(@RequestBody Map<String, Object> payload) {
+        try {
+            String userEmail = (String) payload.get("userEmail");
+            String filingId = (String) payload.get("filingId");
             
-            return ResponseEntity.ok("Notification saved successfully");
+            // Handle triggers safely (default to "General" if null)
+            String triggers = payload.get("triggers") != null ? payload.get("triggers").toString() : "General";
+
+            notificationService.sendAdminAlert(userEmail, filingId, triggers);
+            return ResponseEntity.ok("Admin notified");
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Error saving notification: " + e.getMessage());
+            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
         }
     }
 }

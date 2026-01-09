@@ -25,7 +25,7 @@ public class FilingTrackerController {
     }
 
     /**
-     * ✅ RESTORED: GET FILINGS (Fixes 405 Error on PatentsPage.jsx)
+     * ✅ GET FILINGS (Fixes 405 Error on PatentsPage.jsx)
      * This allows the "My Patents" page to fetch the list of filings again.
      */
     @GetMapping("/filings")
@@ -35,6 +35,7 @@ public class FilingTrackerController {
 
     /**
      * ✅ TRACK ASSET
+     * Links a public patent asset to a user's tracking list.
      */
     @PostMapping("/tracker/add/{assetId}")
     public ResponseEntity<?> trackAsset(@PathVariable Integer assetId, @RequestBody Map<String, String> payload) {
@@ -50,16 +51,21 @@ public class FilingTrackerController {
     }
 
     /**
-     * ✅ UPDATE STATUS
+     * ✅ UPDATE STATUS (Updated to handle Remarks)
+     * Now accepts both 'status' and optional 'remarks' for admin notifications.
      */
     @PutMapping("/tracker/update/{id}")
     public ResponseEntity<?> updateStatus(@PathVariable Long id, @RequestBody Map<String, String> payload) {
         String status = payload.get("status");
-        return ResponseEntity.ok(filingTrackerService.updateStatus(id, status));
+        String remarks = payload.get("remarks"); // ✅ Extract remarks
+        
+        // Calls the service method: updateStatus(Long id, String status, String remarks)
+        return ResponseEntity.ok(filingTrackerService.updateStatus(id, status, remarks));
     }
 
     /**
      * ✅ CREATE NEW FILING (For New Filing Form)
+     * Handles manual creation of a user filing record.
      */
     @PostMapping("/filings")
     public ResponseEntity<?> createFiling(@RequestBody UserFiling filing) {
@@ -73,6 +79,7 @@ public class FilingTrackerController {
 
     /**
      * ✅ DELETE FILING
+     * Permanently removes a tracking record.
      */
     @DeleteMapping("/tracker/delete/{id}")
     public ResponseEntity<?> deleteFiling(@PathVariable Long id) {

@@ -14,12 +14,12 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
     // --- CONFIGURATION ---
     const API_BASE = "http://192.168.43.45:5001/api";
 
-    // --- 1. REFS (Execution Guards) ---
+    // --- REFS ---
     const isInitialMount = useRef(true);
     const searchInProgress = useRef(false);
     const isSyncingRef = useRef(false);
 
-    // --- 2. STATE MANAGEMENT ---
+    // --- STATE ---
     const loadSavedState = () => {
         try {
             const saved = sessionStorage.getItem('searchPageParams');
@@ -33,7 +33,7 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
     const [results, setResults] = useState(shouldRestore ? (savedState.results || []) : []);
     const [loading, setLoading] = useState(false);
     const [trackingLoading, setTrackingLoading] = useState(null);
-    const [error, setError] = useState(null);
+    const [error, setError] = useState(null); // Keep error state for potential use
     const [viewMode, setViewMode] = useState(shouldRestore ? savedState.viewMode : 'list'); 
     const [showFilters, setShowFilters] = useState(true);
     const [trackedIds, setTrackedIds] = useState(shouldRestore ? savedState.trackedIds : {});
@@ -57,7 +57,7 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
         statuses: shouldRestore ? (savedState.filters.statuses || []) : [],
     });
 
-    // --- 3. PERSISTENCE ---
+    // --- PERSISTENCE ---
     useEffect(() => {
         const stateToSave = {
             results, filters, currentPage, itemsPerPage, totalResults, totalPages, 
@@ -66,64 +66,79 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
         sessionStorage.setItem('searchPageParams', JSON.stringify(stateToSave));
     }, [results, filters, currentPage, itemsPerPage, totalResults, totalPages, trackedIds, viewMode, activeSource, searchTrigger, hasSearched, keywordInput]);
 
-    // --- 4. CORE LOGIC (Local -> API -> Sync) ---
+    // --- CORE LOGIC (Local -> API -> Sync) ---
     const fetchResults = useCallback(async () => {
         const query = filters.keyword ? filters.keyword.trim() : '';
         const hasActiveFilters = (filters.jurisdictions && filters.jurisdictions.length > 0) || 
                                  (filters.statuses && filters.statuses.length > 0);
 
+        // Don't search if empty and no filters
         if (!query && !hasActiveFilters) return;
         
-        // LOCK: Prevent double execution
-        if (searchInProgress.current || isSyncingRef.current) return;
+        // Prevent double execution
+        if (searchInProgress.current) return;
         searchInProgress.current = true;
 
         setLoading(true);
         setError(null);
 
         try {
+            // ✅ PARAMETER ALIGNMENT: Ensure frontend matches backend expectations
             const params = {
                 keyword: query || null,
-                ipType: filters.ipType,
+                q: query || null, // Send both aliases
+                ipType: filters.ipType === 'both' ? null : filters.ipType.toUpperCase(),
                 jurisdictions: filters.jurisdictions?.length > 0 ? filters.jurisdictions.join(',') : null,
                 statuses: filters.statuses?.length > 0 ? filters.statuses.join(',') : null,
                 page: currentPage - 1,
                 size: itemsPerPage,
             };
 
-            // 1. Try Local Database
+            // 1. CHECK LOCAL DB FIRST
+            console.log("🔍 Checking Local DB...");
             const localRes = await searchAPI.searchAll({ ...params, source: 'local' });
             
+            // Extract response parts safely
             let content = localRes?.content || [];
             let totalElements = localRes?.totalElements || 0;
             let totalPagesResult = localRes?.totalPages || 0;
 
             if (totalElements > 0) {
                 // ✅ Found in Local DB -> Show results, NO API CALL.
+                console.log(`✅ Found ${totalElements} items locally.`);
                 setResults(content);
                 setTotalResults(totalElements);
                 setTotalPages(totalPagesResult);
                 setActiveSource('local');
-                if (filters.source !== 'local') setFilters(prev => ({...prev, source: 'local'}));
+                if (filters.source !== 'local') setFilters(prev => ({...prev, source: 'local'})); // Implicitly update state source if needed
             } else {
-                // ❌ Not in Local -> Call API
+                // 2. Not in Local -> CHECK EXTERNAL API
+                console.log("⚠️ Local empty. Fetching from External API...");
+                
+                // Note: API wrapper handles source param
                 const apiRes = await searchAPI.searchAll({ ...params, source: 'api' });
                 const apiContent = apiRes?.content || [];
                 
                 if (apiContent.length > 0) {
+                    console.log(`🌐 API found ${apiContent.length} items. Syncing...`);
+                    
+                    // Display API Results immediately
                     setResults(apiContent);
                     setTotalResults(apiRes.totalElements || apiContent.length);
                     setTotalPages(apiRes.totalPages || 1);
                     setActiveSource('api');
                     if (filters.source !== 'api') setFilters(prev => ({...prev, source: 'api'}));
 
-                    // ⚡ AUTO-SYNC: Save these items to DB so next search is Local
-                    isSyncingRef.current = true;
-                    axios.post(`${API_BASE}/ipassets/sync`, apiContent)
-                        .then(() => console.log(`✅ Cached ${apiContent.length} items to database.`))
-                        .catch(e => console.error("Sync Error:", e))
-                        .finally(() => { isSyncingRef.current = false; });
+                    // 3. AUTO-SYNC: Save items to DB (Backend handles deduplication)
+                    if (!isSyncingRef.current) {
+                        isSyncingRef.current = true;
+                        axios.post(`${API_BASE}/ipassets/sync`, apiContent)
+                            .then(res => console.log("Sync Response:", res.data))
+                            .catch(e => console.error("Sync Error:", e))
+                            .finally(() => { isSyncingRef.current = false; });
+                    }
                 } else {
+                    // No results found anywhere
                     setResults([]);
                     setTotalResults(0);
                     setTotalPages(0);
@@ -132,18 +147,19 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
             }
             setHasSearched(true);
         } catch (err) {
-            console.error('Search Error:', err);
+            console.error('Search Workflow Error:', err);
             setError("Connection disrupted. Please retry.");
         } finally {
             setLoading(false);
-            setTimeout(() => { searchInProgress.current = false; }, 300);
+            setTimeout(() => { searchInProgress.current = false; }, 500); // Small delay
         }
     }, [filters, currentPage, itemsPerPage]);
 
-    // --- 5. EFFECTS ---
+    // --- EFFECTS ---
     useEffect(() => {
         if (isInitialMount.current) {
             isInitialMount.current = false;
+            // Trigger search on mount if keyword exists (e.g. from nav)
             if (initialKeyword) setSearchTrigger(t => t + 1);
             return;
         }
@@ -151,9 +167,9 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
 
     useEffect(() => {
         if (searchTrigger > 0) fetchResults();
-    }, [searchTrigger, currentPage, itemsPerPage]); 
+    }, [searchTrigger, currentPage, itemsPerPage]);
 
-    // --- 6. HANDLERS ---
+    // --- HANDLERS ---
     const handleManualSearch = () => {
         setFilters(prev => ({ ...prev, keyword: keywordInput }));
         setCurrentPage(1);
@@ -187,14 +203,10 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
         sessionStorage.removeItem('searchPageParams');
     };
 
-    // ✅ UPDATED: Handle Track now uses User Email from LocalStorage
     const handleTrack = async (e, id) => {
         e.stopPropagation();
-        
-        // 1. Check if already tracked locally
         if (trackedIds[id]) return;
 
-        // 2. Get User from Local Storage
         const storedUser = localStorage.getItem('user');
         if (!storedUser) {
             alert("Please log in to sync assets to your dashboard.");
@@ -213,12 +225,7 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
         setTrackingLoading(id);
         
         try {
-            // 3. Send request with Email in body
-            await axios.post(`${API_BASE}/tracker/add/${id}`, {
-                email: userEmail
-            });
-            
-            // 4. Update UI
+            await axios.post(`${API_BASE}/tracker/add/${id}`, { email: userEmail });
             setTrackedIds(prev => ({ ...prev, [id]: true }));
         } catch (err) { 
             console.error("Tracking Error:", err);
@@ -243,9 +250,9 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
     // UI Styles
     const getStatusColor = (s) => {
         const val = (s || '').toUpperCase();
-        if (['ACTIVE', 'GRANTED'].includes(val)) return 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20';
-        if (['PENDING', 'UNDER REVIEW'].includes(val)) return 'bg-amber-500/10 text-amber-600 border-amber-500/20';
-        if (['EXPIRED', 'ABANDONED'].includes(val)) return 'bg-rose-500/10 text-rose-600 border-rose-500/20';
+        if (['ACTIVE', 'GRANTED'].some(v => val.includes(v))) return 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20';
+        if (['PENDING', 'UNDER REVIEW', 'PUBLISHED'].some(v => val.includes(v))) return 'bg-amber-500/10 text-amber-600 border-amber-500/20';
+        if (['EXPIRED', 'ABANDONED', 'WITHDRAWN'].some(v => val.includes(v))) return 'bg-rose-500/10 text-rose-600 border-rose-500/20';
         return 'bg-slate-100 text-slate-500 border-slate-200';
     };
 
@@ -316,7 +323,7 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
                                     value={keywordInput} 
                                     onChange={(e) => setKeywordInput(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleManualSearch()}
-                                    className="w-full h-full pl-4 pr-4 bg-transparent border-none focus:ring-0 text-slate-800 font-bold text-lg placeholder-slate-400" 
+                                    className="w-full h-full pl-4 pr-4 bg-transparent border-none focus:ring-0 text-slate-800 font-bold text-lg placeholder-slate-400 outline-none" 
                                     placeholder="Search Patent ID, Assignee, or Keywords..."
                                 />
                             </div>
@@ -375,8 +382,9 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
                                                     </div>
                                                     <input 
                                                         type="radio" 
+                                                        name="ipType" 
                                                         checked={filters.ipType === type} 
-                                                        onChange={() => handleFilterUpdate('ipType', type)}
+                                                        onChange={() => { setFilters(prev => ({...prev, ipType: type})); setSearchTrigger(prev => prev + 1); }} 
                                                         className="hidden" 
                                                     />
                                                     <span className="text-sm font-medium text-slate-700 capitalize">{type}</span>
@@ -389,7 +397,7 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
                                     
                                     <FilterGroup label="Status">
                                         <div className="space-y-1">
-                                            {['ACTIVE', 'PENDING', 'EXPIRED'].map(status => (
+                                            {['ACTIVE', 'PENDING', 'EXPIRED', 'GRANTED'].map(status => (
                                                 <div key={status} className="flex items-center">
                                                     <Checkbox 
                                                         label={status} 

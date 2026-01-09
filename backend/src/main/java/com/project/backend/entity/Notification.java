@@ -3,7 +3,7 @@ package com.project.backend.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties; //
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties; // ✅ IMPORT THIS
 
 @Entity
 @Table(name = "notifications")
@@ -12,26 +12,34 @@ public class Notification {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id; // Primary Key
+    private Integer id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user; // Recipient of the notification
+    // ✅ FIX: Ignore the proxy fields causing the 500 error
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "password", "role"}) 
+    private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ip_asset_id")
-    private IPAsset ipAsset; // Associated IP asset
+    // ✅ FIX: Ignore proxy fields here too
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    private IPAsset ipAsset;
 
     @Column(columnDefinition = "TEXT")
-    private String message; // The notification text
+    private String message;
 
     @Column(length = 50)
-    private String type; // Type of alert (e.g., 'Status Update', 'Expiry')
+    private String type;
 
-    private LocalDateTime timestamp; // When the notification was sent
+    @Column(name = "is_read")
+    private Boolean isRead = false; 
+
+    private LocalDateTime timestamp;
 
     @PrePersist
     protected void onSend() {
         timestamp = LocalDateTime.now();
+        if (isRead == null) isRead = false;
     }
 }

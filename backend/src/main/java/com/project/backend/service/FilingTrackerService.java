@@ -20,6 +20,9 @@ public class FilingTrackerService {
     @Autowired private UserFilingRepository userFilingRepository;
     @Autowired private IPAssetRepository ipAssetRepository;
     @Autowired private UserRepository userRepository;
+    
+    // ✅ Inject Notification Service to trigger alerts
+    @Autowired private NotificationService notificationService; 
 
     /**
      * ✅ FETCH ALL: Returns the shared watchlist
@@ -29,16 +32,35 @@ public class FilingTrackerService {
     }
 
     /**
-     * ✅ UPDATE STATUS: Updates the status of a filing
+     * ✅ UPDATE STATUS: Updates the status AND Creates Notification
+     * Now accepts remarks for the notification message.
      */
     @Transactional
-    public UserFiling updateStatus(Long filingId, String newStatus) {
+    public UserFiling updateStatus(Long filingId, String newStatus, String remarks) {
         UserFiling filing = userFilingRepository.findById(filingId)
             .orElseThrow(() -> new RuntimeException("Filing not found with ID: " + filingId));
         
+        String oldStatus = filing.getStatus();
         filing.setStatus(newStatus);
         
-        return userFilingRepository.save(filing);
+        UserFiling savedFiling = userFilingRepository.save(filing);
+
+        // ✅ TRIGGER NOTIFICATION
+        // Check if user exists for this filing
+        if (filing.getUserId() != null) {
+            String message = "Status updated to " + newStatus + " for filing: " + filing.getTitle();
+            if (remarks != null && !remarks.isEmpty()) {
+                message += ". Admin Remarks: " + remarks;
+            }
+            
+            // Convert Long userId to Integer for NotificationService compatibility
+            Integer userIdInt = filing.getUserId().intValue();
+            
+            // Send Alert (UserId, AssetId (null here), Message, Type)
+            notificationService.sendAlert(userIdInt, null, message, "Status Update");
+        }
+
+        return savedFiling;
     }
 
     /**
@@ -112,7 +134,7 @@ public class FilingTrackerService {
     }
 
     /**
-     * ✅ NEW: DELETE A FILING
+     * ✅ DELETE A FILING
      */
     @Transactional
     public void deleteFiling(Long id) {

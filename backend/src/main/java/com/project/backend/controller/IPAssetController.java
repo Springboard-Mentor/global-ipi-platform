@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List; 
 
 @RestController
-@RequestMapping("/api/assets")
+@RequestMapping("/api/ipassets")
 @CrossOrigin(origins = "*") // Allows your React app to access these APIs
 public class IPAssetController {
 

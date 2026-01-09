@@ -1,23 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import {
   FileText, TrendingUp, Shield, AlertCircle, Globe, Clock,
-  CheckCircle, BarChart3, Calendar, DollarSign,
-  Plus, Loader2, Search, MapPin, Database, Activity, Crown, Menu, X, Settings, LogOut, LayoutDashboard, SearchCode, FolderKanban, FilePlus
+  CheckCircle, Calendar,
+  Plus, Loader2, Search, MapPin, Database, Activity, Crown, Menu, X, Settings, LogOut, LayoutDashboard, SearchCode, FolderKanban, FilePlus, 
+  Bell, BellRing 
 } from 'lucide-react';
 import axios from 'axios';
 
 /**
  * PREMIUM GLOBAL IP DASHBOARD 
- * Fix: Added Authorization Headers to resolve 403 Forbidden Errors
+ * Features: Interactive Notifications, Dynamic Stats, Mobile Menu
  */
 const DashboardHome = ({ onNavigate, user }) => {
   const currentYear = new Date().getFullYear();
-  const API_BASE = "http://192.168.43.45:5001/api/dashboard";
+  const API_BASE = "http://192.168.43.45:5001/api"; 
 
   // --- 1. STATE MANAGEMENT ---
   const [localSearchTerm, setLocalSearchTerm] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
+  // ✅ Notification State
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
   // Dynamic Data State
   const [dbStats, setDbStats] = useState({
     totalPatents: 0, activeFilings: 0, protectedAssets: 0,
@@ -33,46 +39,74 @@ const DashboardHome = ({ onNavigate, user }) => {
     const fetchDashboardContext = async () => {
       setLoading(true);
       
-      // ✅ FIX: Retrieve Token & Create Config
       const token = localStorage.getItem('token');
       const config = {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+        headers: { 'Authorization': `Bearer ${token}` }
       };
 
       try {
-        // ✅ FIX: Pass 'config' to every axios call
+        // 1. Fetch Core Dashboard Data (Parallel)
         const [stats, activity, reach, tasks] = await Promise.all([
-          axios.get(`${API_BASE}/stats`, config),
-          axios.get(`${API_BASE}/recent-activity`, config),
-          axios.get(`${API_BASE}/global-coverage`, config),
-          axios.get(`${API_BASE}/upcoming-deadlines`, config)
+          axios.get(`${API_BASE}/dashboard/stats`, config).catch(() => ({ data: {} })),
+          axios.get(`${API_BASE}/dashboard/recent-activity`, config).catch(() => ({ data: [] })),
+          axios.get(`${API_BASE}/dashboard/global-coverage`, config).catch(() => ({ data: [] })),
+          axios.get(`${API_BASE}/dashboard/upcoming-deadlines`, config).catch(() => ({ data: [] }))
         ]);
 
-        setDbStats(stats.data);
+        setDbStats(stats.data || {});
         setActivities(activity.data || []);
         setCoverage(reach.data || []);
         setDeadlines(tasks.data || []);
-      } catch (err) {
-        console.error("Dashboard Sync Failed:", err.message);
-        if (err.response && err.response.status === 403) {
-            console.error("Access Denied: Token missing or invalid.");
+
+        // 2. ✅ Fetch Notifications (Only if User is logged in)
+        if (user && user.id) {
+            console.log("Fetching notifications for user:", user.id);
+            const notifRes = await axios.get(`${API_BASE}/notifications/user/${user.id}`, config);
+            const activeNotifs = notifRes.data || [];
+            
+            setNotifications(activeNotifs);
+            // Count items where isRead is false or null
+            const count = activeNotifs.filter(n => !n.isRead).length;
+            setUnreadCount(count);
         }
+
+      } catch (err) {
+        console.error("Dashboard Sync Failed:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchDashboardContext();
-  }, [API_BASE]);
+    if (user) {
+        fetchDashboardContext();
+    }
+  }, [API_BASE, user]);
 
   // --- 3. HANDLERS ---
   const handleSearchNavigation = (e) => {
     e.preventDefault();
     if (localSearchTerm.trim()) {
       onNavigate('search', localSearchTerm);
+    }
+  };
+
+  // ✅ MARK AS READ LOGIC
+  const handleNotificationClick = async (id) => {
+    // 1. Optimistic Update (Instant UI change)
+    const updatedNotifs = notifications.map(n => 
+        n.id === id ? { ...n, isRead: true } : n
+    );
+    setNotifications(updatedNotifs);
+    setUnreadCount(prev => Math.max(0, prev - 1));
+
+    // 2. Send request to backend
+    try {
+        const token = localStorage.getItem('token');
+        await axios.put(`${API_BASE}/notifications/read/${id}`, {}, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+    } catch (e) {
+        console.error("Failed to mark notification as read", e);
     }
   };
 
@@ -85,24 +119,20 @@ const DashboardHome = ({ onNavigate, user }) => {
   const isPremium = user?.planType === 'PRO' || user?.planType === 'ENTERPRISE';
   const activePlanName = user?.planType ? user.planType : "STARTER";
 
-  // --- 5. LOADING STATE ---
+  // --- 5. RENDER ---
   if (loading) {
     return (
-      <div className="h-[70vh] flex flex-col items-center justify-center space-y-6 px-4 text-center">
-        <div className="relative flex items-center justify-center">
-          <div className="absolute w-20 h-20 border-4 border-indigo-100 rounded-full animate-ping"></div>
-          <Loader2 className="w-10 h-10 animate-spin text-indigo-600 relative z-10" />
-        </div>
-        <p className="text-slate-400 font-black uppercase tracking-[0.4em] text-[10px]">Syncing Intelligence Node...</p>
+      <div className="h-screen flex flex-col items-center justify-center bg-slate-50">
+        <Loader2 className="w-12 h-12 animate-spin text-indigo-600 mb-4" />
+        <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Loading Intelligence...</p>
       </div>
     );
   }
 
-  // --- 6. RENDER ---
   return (
     <div className="relative min-h-screen bg-slate-50">
       
-      {/* MOBILE OVERLAY FOR SIDEBAR */}
+      {/* MOBILE OVERLAY */}
       {isMobileMenuOpen && (
         <div 
           className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 lg:hidden"
@@ -110,44 +140,26 @@ const DashboardHome = ({ onNavigate, user }) => {
         />
       )}
 
-      {/* MOBILE SIDEBAR (Hamburger Menu Content) */}
+      {/* MOBILE SIDEBAR */}
       <aside className={`fixed top-0 left-0 h-full w-72 bg-[#0F172A] z-50 transform transition-transform duration-300 ease-in-out lg:hidden ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-6 flex flex-col h-full">
           <div className="flex items-center justify-between mb-10">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                <Shield size={18} className="text-white" />
-              </div>
+              <Shield size={24} className="text-indigo-500" />
               <span className="font-black text-white tracking-tighter text-lg uppercase">Global IP</span>
             </div>
             <button onClick={() => setIsMobileMenuOpen(false)} className="text-slate-400 hover:text-white">
               <X size={24} />
             </button>
           </div>
-
+          {/* Navigation Items (Mobile) */}
           <nav className="space-y-2 flex-1">
-            {[
-              { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
-              { id: 'patents', label: 'My Patents', icon: FolderKanban },
-              { id: 'search', label: 'Search IP Analysis', icon: SearchCode },
-              { id: 'filing-tracker', label: 'Filing Tracker', icon: Clock },
-              { id: 'new-filing', label: 'New Filing', icon: FilePlus },
-              { id: 'settings', label: 'Settings', icon: Settings },
-            ].map((item) => (
-              <button
-                key={item.id}
-                onClick={() => { onNavigate(item.id); setIsMobileMenuOpen(false); }}
-                className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-slate-400 hover:bg-white/5 hover:text-white transition-all font-bold text-xs uppercase tracking-widest"
-              >
-                <item.icon size={18} />
-                {item.label}
+            {['dashboard', 'patents', 'search', 'filing-tracker', 'new-filing', 'settings'].map((id) => (
+              <button key={id} onClick={() => onNavigate(id)} className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-slate-400 hover:bg-white/10 hover:text-white font-bold text-xs uppercase tracking-widest capitalize">
+                {id.replace('-', ' ')}
               </button>
             ))}
           </nav>
-
-          <button className="mt-auto flex items-center gap-4 px-4 py-4 text-rose-400 font-black text-xs uppercase tracking-widest hover:bg-rose-500/10 rounded-xl transition-all">
-            <LogOut size={18} /> Logout
-          </button>
         </div>
       </aside>
 
@@ -156,35 +168,114 @@ const DashboardHome = ({ onNavigate, user }) => {
         
         {/* ===== 1. RESPONSIVE HEADER & NAVIGATION ===== */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 border-b border-slate-200 pb-8">
+          
+          {/* Left: Title & Mobile Menu */}
           <div className="flex justify-between items-center w-full lg:w-auto">
             <div className="space-y-1">
               <div className="flex items-center gap-3 mb-1">
                  <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight uppercase leading-none">Intelligence Overview</h2>
-                 {/* DYNAMIC PLAN BADGE */}
                  <span className="bg-indigo-600 text-[8px] text-white font-black px-2 py-0.5 rounded flex items-center gap-1 tracking-[0.1em]">
                     <Crown size={8} /> {activePlanName}
                  </span>
               </div>
               <p className="text-slate-400 text-[10px] font-bold tracking-[0.3em] uppercase underline decoration-indigo-500 underline-offset-4">Live Asset Repository • {currentYear}</p>
             </div>
-
-            {/* Hamburger for Mobile Trigger */}
-            <button 
-              className="lg:hidden p-2.5 bg-white border border-slate-200 rounded-xl shadow-sm hover:bg-slate-50 transition-colors"
-              onClick={() => setIsMobileMenuOpen(true)}
-            >
+            <button className="lg:hidden p-2 bg-white border rounded-xl" onClick={() => setIsMobileMenuOpen(true)}>
               <Menu size={22} className="text-slate-600" />
             </button>
           </div>
 
-          {/* Action Bar (Search & Subscription Button) */}
-          <div className="flex flex-col md:flex-row items-center gap-4 w-full lg:w-auto">
+          {/* Right: Actions & Notifications */}
+          <div className="flex flex-col md:flex-row items-center gap-4 w-full lg:w-auto relative">
             
+            {/* 🔥 NOTIFICATION BELL (Fixed Visibility) */}
+            <div className="relative z-50">
+                <button 
+                    onClick={() => setShowNotifications(!showNotifications)}
+                    className={`p-3.5 rounded-2xl transition-all shadow-sm relative focus:outline-none ${showNotifications ? 'bg-indigo-50 text-indigo-600 border-indigo-200' : 'bg-white text-slate-500 border-slate-200 border hover:border-indigo-200 hover:text-indigo-600'}`}
+                >
+                    <Bell size={20} />
+                    
+                    {/* 🔴 RED BADGE FOR UNREAD COUNT */}
+                    {unreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center rounded-full border-2 border-slate-50 animate-bounce">
+                            {unreadCount}
+                        </span>
+                    )}
+                </button>
+
+                {/* 🔔 DROPDOWN PANEL */}
+                {showNotifications && (
+                    <div className="absolute right-0 mt-4 w-80 md:w-96 bg-white rounded-[1.5rem] shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 ring-1 ring-black/5">
+                        
+                        {/* Dropdown Header */}
+                        <div className="p-5 border-b border-slate-50 bg-slate-50/80 flex justify-between items-center backdrop-blur-md">
+                            <h3 className="text-xs font-black text-slate-700 uppercase tracking-widest flex items-center gap-2">
+                                <BellRing size={14} className="text-indigo-600"/> Notifications
+                            </h3>
+                            {unreadCount > 0 ? (
+                                <span className="text-[9px] font-bold bg-rose-50 text-rose-600 px-2 py-1 rounded border border-rose-100 shadow-sm">{unreadCount} Unread</span>
+                            ) : (
+                                <span className="text-[9px] font-bold text-slate-400">All caught up</span>
+                            )}
+                        </div>
+                        
+                        {/* Notification List */}
+                        <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
+                            {notifications.length > 0 ? (
+                                notifications.map((n) => (
+                                    <div 
+                                        key={n.id} 
+                                        onClick={() => handleNotificationClick(n.id)}
+                                        className={`p-4 border-b border-slate-50 transition-colors cursor-pointer group ${
+                                            !n.isRead ? 'bg-indigo-50/40 hover:bg-indigo-50' : 'hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        <div className="flex justify-between items-start mb-1.5">
+                                            <div className="flex items-center gap-2">
+                                                {!n.isRead && <div className="w-1.5 h-1.5 rounded-full bg-rose-500"></div>}
+                                                <span className={`text-[10px] font-black uppercase tracking-wide ${n.type === 'Status Update' ? 'text-indigo-600' : 'text-amber-600'}`}>
+                                                    {n.type || 'System Alert'}
+                                                </span>
+                                            </div>
+                                            <span className="text-[9px] text-slate-400 font-medium whitespace-nowrap ml-2">
+                                                {new Date(n.timestamp).toLocaleDateString()}
+                                            </span>
+                                        </div>
+                                        <p className={`text-xs leading-relaxed ${!n.isRead ? 'font-bold text-slate-800' : 'text-slate-500'}`}>
+                                            {n.message}
+                                        </p>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="py-12 px-8 text-center flex flex-col items-center opacity-50">
+                                    <div className="p-4 bg-slate-50 rounded-full mb-3">
+                                        <Bell size={24} className="text-slate-300" />
+                                    </div>
+                                    <p className="text-xs font-bold text-slate-400">No notifications yet.</p>
+                                </div>
+                            )}
+                        </div>
+                        
+                        {/* Footer */}
+                        <div className="p-3 border-t border-slate-50 bg-slate-50 text-center">
+                            <button 
+                                onClick={() => setShowNotifications(false)} 
+                                className="text-[10px] font-black text-indigo-600 uppercase tracking-widest hover:text-indigo-800 transition-colors"
+                            >
+                                Close Panel
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Upgrade Button */}
             <button 
               onClick={() => onNavigate('pricing')} 
-              className={`flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg transition-all active:scale-95 whitespace-nowrap w-full md:w-auto ${
+              className={`hidden md:flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg transition-all active:scale-95 whitespace-nowrap ${
                 isPremium 
-                  ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 shadow-emerald-100 border border-emerald-200' 
+                  ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border border-emerald-200' 
                   : 'bg-gradient-to-r from-amber-400 to-orange-500 text-white hover:brightness-110 shadow-orange-200'
               }`}
             >
@@ -192,6 +283,7 @@ const DashboardHome = ({ onNavigate, user }) => {
               {isPremium ? 'Premium Active' : 'Upgrade to Pro'}
             </button>
 
+            {/* Search Bar */}
             <form onSubmit={handleSearchNavigation} className="relative group w-full md:w-80">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={18} />
               <input 
@@ -203,6 +295,7 @@ const DashboardHome = ({ onNavigate, user }) => {
               />
             </form>
             
+            {/* New Filing Button */}
             <button 
               onClick={() => onNavigate('new-filing')} 
               className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3.5 rounded-2xl flex items-center gap-2 font-black text-[10px] uppercase tracking-widest shadow-xl shadow-indigo-100 transition-all active:scale-95 whitespace-nowrap w-full md:w-auto"
@@ -212,6 +305,9 @@ const DashboardHome = ({ onNavigate, user }) => {
           </div>
         </div>
 
+        {/* ... Rest of the Dashboard (Hero, KPI Grid, Charts) ... */}
+        {/* Use the previously provided layout for the rest of the dashboard content */}
+        
         {/* ===== 2. HERO BANNER ===== */}
         <div className="bg-gradient-to-br from-[#1E293B] via-[#0F172A] to-[#1E1B4B] rounded-[2rem] md:rounded-[3rem] p-8 md:p-12 text-white shadow-2xl relative overflow-hidden group border border-white/5">
           <div className="relative z-10">
@@ -284,22 +380,6 @@ const DashboardHome = ({ onNavigate, user }) => {
               </div>
           </div>
         )}
-
-        {/* ===== 5. PORTFOLIO VALUATION ===== */}
-        <div className="bg-slate-900 text-white rounded-[2rem] md:rounded-[3rem] p-8 md:p-12 flex flex-col md:flex-row justify-between items-center shadow-2xl relative overflow-hidden border-b-8 border-indigo-500">
-          <div className="relative z-10 text-center md:text-left w-full md:w-auto">
-            <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.5em] mb-4 font-mono">Cumulative Asset Assessment</p>
-            <div className="flex items-baseline justify-center md:justify-start gap-2">
-              <span className="text-5xl md:text-7xl font-black tracking-tighter">${dbStats.portfolioValue}</span>
-              <span className="text-2xl md:text-3xl font-black text-indigo-500 ml-1">M</span>
-            </div>
-            <div className="flex items-center gap-4 mt-8 bg-white/5 border border-white/10 px-6 py-3 rounded-2xl w-fit mx-auto md:mx-0">
-               <div className="p-1.5 bg-emerald-500/10 rounded-lg"><TrendingUp size={18} className="text-emerald-400" /></div>
-               <span className="uppercase text-[10px] font-black tracking-widest">+{dbStats.growth}% quarterly expansion</span>
-            </div>
-          </div>
-          <DollarSign className="w-40 h-40 md:w-56 md:h-56 text-white opacity-5 absolute -right-8 top-0 md:static md:opacity-10" />
-        </div>
 
         {/* ===== 6. LOGS & COMPLIANCE GRID ===== */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-10">

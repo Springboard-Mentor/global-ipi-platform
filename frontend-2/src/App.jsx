@@ -23,7 +23,31 @@ import PricingPage from './components/PricingPage.jsx';
 import { authAPI } from './services/ai.js';
 import 'leaflet/dist/leaflet.css';
 
-// --- WRAPPER COMPONENTS ---
+// --- HELPER: AUTH NAVIGATION WRAPPERS ---
+// These wrappers inject the 'navigate' function into Login/Register pages
+// so that buttons like "Create Account" or "Forgot Password" work correctly.
+
+const LoginWithNav = ({ onLogin }) => {
+  const navigate = useNavigate();
+  return (
+    <LoginPage 
+      onLogin={onLogin} 
+      onNavigate={(path) => navigate(`/${path}`)} 
+    />
+  );
+};
+
+const RegisterWithNav = ({ onLogin }) => {
+  const navigate = useNavigate();
+  return (
+    <RegisterPage 
+      onLogin={onLogin} 
+      onNavigate={(path) => navigate(`/${path}`)} 
+    />
+  );
+};
+
+// --- WRAPPER COMPONENTS FOR DASHBOARD ---
 
 const DashboardWithRouter = ({ user, handleLogout, handleUpdateUser }) => {
   const navigate = useNavigate();
@@ -160,13 +184,14 @@ const App = () => {
         {/* Public Routes */}
         <Route path="/" element={<LandingPage onNavigate={(path) => window.location.href = path} />} />
         
+        {/* Auth Routes with Navigation Wrapper */}
         <Route 
           path="/login" 
-          element={!user ? <LoginPage onLogin={handleLogin} /> : <Navigate to="/overview" />} 
+          element={!user ? <LoginWithNav onLogin={handleLogin} /> : <Navigate to="/overview" />} 
         />
         <Route 
           path="/register" 
-          element={!user ? <RegisterPage onLogin={handleLogin} /> : <Navigate to="/overview" />} 
+          element={!user ? <RegisterWithNav onLogin={handleLogin} /> : <Navigate to="/overview" />} 
         />
 
         {/* Protected Dashboard Routes */}
