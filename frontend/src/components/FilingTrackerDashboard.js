@@ -1,23 +1,35 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { mockFilings } from '../data/mockFilings';
+
+const BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8081';
 
 const FilingTrackerDashboard = () => {
   const navigate = useNavigate();
-  
-  const stats = {
-    total: mockFilings.length,
-    granted: mockFilings.filter(f => f.status === 'Granted').length,
-    expired: mockFilings.filter(f => f.status === 'Expired').length,
-    expiringSoon: mockFilings.filter(f => {
-      if (!f.expiryDate) return false;
-      const expiry = new Date(f.expiryDate);
-      const today = new Date();
-      const diffTime = expiry - today;
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      return diffDays <= 365 && diffDays > 0;
-    }).length
-  };
+  const [stats, setStats] = useState({ total:0, granted:0, renewalDue:0, expired:0 });
+  const [recent, setRecent] = useState([]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        const resp = await fetch(`${BASE_URL}/api/filing-tracker/dashboard`, { credentials: 'include', headers });
+        if (resp.ok) {
+          const data = await resp.json();
+          setStats({ total: data.total, granted: data.granted, renewalDue: data.renewalDue, expired: data.expired });
+        }
+        const r = await fetch(`${BASE_URL}/api/filing-tracker/my-filings`, { credentials: 'include', headers });
+        if (r.ok) {
+          const list = await r.json();
+          setRecent(list.slice(0,3));
+        }
+      } catch (e) {
+        console.error('Failed to load filings', e);
+      }
+    };
+    load();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#2A1A4A] via-[#301B55] to-[#4B1F70] text-white p-6">
@@ -42,7 +54,7 @@ const FilingTrackerDashboard = () => {
         </div>
         <div className="bg-white/10 backdrop-blur-xl rounded-xl p-6 border border-white/20">
           <h3 className="text-lg font-semibold mb-2">Expiring Soon</h3>
-          <p className="text-3xl font-bold text-yellow-400">{stats.expiringSoon}</p>
+          <p className="text-3xl font-bold text-yellow-400">{stats.renewalDue}</p>
         </div>
         <div className="bg-white/10 backdrop-blur-xl rounded-xl p-6 border border-white/20">
           <h3 className="text-lg font-semibold mb-2">Expired</h3>
@@ -61,18 +73,18 @@ const FilingTrackerDashboard = () => {
           </button>
         </div>
         <div className="space-y-3">
-          {mockFilings.slice(0, 3).map(filing => (
+          {recent.map(filing => (
             <div key={filing.id} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
               <div>
                 <h3 className="font-medium">{filing.title}</h3>
                 <p className="text-sm text-white/70">{filing.applicationNumber}</p>
               </div>
               <span className={`px-3 py-1 rounded-full text-xs ${
-                filing.status === 'Granted' ? 'bg-green-500/20 text-green-400' :
-                filing.status === 'Expired' ? 'bg-red-500/20 text-red-400' :
+                filing.currentStatus === 'GRANTED' ? 'bg-green-500/20 text-green-400' :
+                filing.currentStatus === 'EXPIRED' ? 'bg-red-500/20 text-red-400' :
                 'bg-yellow-500/20 text-yellow-400'
               }`}>
-                {filing.status}
+                {filing.currentStatus}
               </span>
             </div>
           ))}

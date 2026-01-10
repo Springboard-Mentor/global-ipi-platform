@@ -197,6 +197,73 @@ Generated from IP Portal
             Subscribe
           </button>
 
+          {/* Track */}
+          {localStorage.getItem('token') ? (
+            <button
+              onClick={async () => {
+                try {
+                  const BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8081';
+                  const payload = {
+                    title: ip.title,
+                    applicationNumber: ip.number || ip.applicationNumber || null,
+                    jurisdiction: ip.jurisdiction || null,
+                    ipType: ip.type || ip.kind || 'Patent',
+                    filingDate: filingDate !== 'N/A' ? filingDate : null,
+                    grantDate: grantDate || null,
+                  };
+
+                  const token = localStorage.getItem('token');
+
+                  // Debug: ensure token is present and headers built correctly
+                  console.debug('Track: token present?', !!token);
+
+                  const headers = { 'Content-Type': 'application/json' };
+                  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+                  // Send CORS request; do not use credentials: 'include' here for token-based auth
+                  const resp = await fetch(`${BASE_URL}/api/filing-tracker/track`, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers,
+                    body: JSON.stringify(payload),
+                  });
+
+                  if (resp.status === 401) {
+                    // Not authorized — force login
+                    console.warn('Track request unauthorized (401). Redirecting to login.');
+                    navigate('/login');
+                    return;
+                  }
+
+                  if (resp.ok) {
+                    const data = await resp.json();
+                    if (data && data.id) navigate(`/filing-detail/${data.id}`);
+                  } else {
+                    const text = await resp.text();
+                    console.error('Failed to track filing', text);
+                    alert('Failed to track filing. Please try again.');
+                  }
+                } catch (err) {
+                  console.error('Error tracking filing', err);
+                  alert('Error tracking filing');
+                }
+              }}
+              className="flex items-center gap-2 px-4 py-2 text-sm bg-green-600/80 hover:bg-green-700 rounded-lg text-white transition"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              Track
+            </button>
+          ) : (
+            <button
+              onClick={() => navigate('/login')}
+              className="flex items-center gap-2 px-4 py-2 text-sm bg-gray-600/80 hover:bg-gray-700 rounded-lg text-white transition"
+            >
+              Log in to Track
+            </button>
+          )}
+
           {/* Export */}
           <button
             onClick={exportAsTextFile}
