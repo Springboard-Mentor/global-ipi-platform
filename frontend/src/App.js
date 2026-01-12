@@ -23,6 +23,7 @@ import IPSearch from "./components/IPSearch";
 import SearchResults from "./components/dashboardComponents/ipSearchComponents/SearchResults.js";
 import IPDetails from "./components/dashboardComponents/ipSearchComponents/IPDetails.jsx";
 import LegalStatusDashboard from "./components/LegalStatusDashboard.jsx";
+import PatentFiling from "./components/PatentFiling";
 
 function App() {
   return (
@@ -35,9 +36,14 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/ipActivity" element={<IPActivity />} />
+          
           <Route path="/filing-tracker-dashboard" element={<ProtectedFilingTracker><FilingTrackerDashboard /></ProtectedFilingTracker>} />
           <Route path="/filing-list" element={<ProtectedFilingTracker><FilingList /></ProtectedFilingTracker>} />
           <Route path="/filing-detail/:id" element={<ProtectedFilingTracker><FilingDetail /></ProtectedFilingTracker>} />
+          
+          {/* --- CHANGE MADE HERE: Removed <ProtectedFilingTracker> --- */}
+          <Route path="/patent-filing" element={<PatentFiling />} />
+
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/checkout/:planKey" element={<CheckoutPage />} />
           <Route path="/subscription-status" element={<SubscriptionStatus />} />
