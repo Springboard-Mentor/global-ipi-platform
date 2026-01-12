@@ -1614,7 +1614,7 @@ const AdminPatentManager = ({ onBack }) => {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className={`grid grid-cols-1 ${patent.stage5Granted ? 'md:grid-cols-4' : 'md:grid-cols-2 lg:grid-cols-5'} gap-3 pt-6 border-t-2 border-indigo-200`}>
+                  <div className={`grid grid-cols-1 ${patent.status === 'Patent is Rejected' ? 'md:grid-cols-4' : patent.stage5Granted ? 'md:grid-cols-4' : 'md:grid-cols-2 lg:grid-cols-5'} gap-3 pt-6 border-t-2 border-indigo-200`}>
                     {/* Activate/Deactivate Button */}
                     {patent.isActive === false ? (
                       <button
