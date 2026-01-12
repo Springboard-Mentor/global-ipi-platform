@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, Circle, Mail, RefreshCw, AlertCircle, LogIn, LogOut, User, Shield, Eye, EyeOff, X, ArrowLeft, Lightbulb, FileCheck, Upload, CreditCard, MessageCircle, Send, Bell, Clock, List, Filter, BarChart3 } from 'lucide-react';
+import { CheckCircle, Circle, Mail, RefreshCw, AlertCircle, LogIn, LogOut, User, Shield, Eye, EyeOff, X, ArrowLeft, Lightbulb, FileCheck, Upload, CreditCard, MessageCircle, Send, Bell, Clock, List, Filter, BarChart3, Users, Activity, Search, Database, Globe, Trophy, Award, Medal } from 'lucide-react';
 import { addUserNotification } from '../utils/notifications';
 import { db } from '../firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
 
 const AdminPatentManager = ({ onBack }) => {
   const [patents, setPatents] = useState([]);
@@ -48,6 +48,19 @@ const AdminPatentManager = ({ onBack }) => {
   const [showPatentsList, setShowPatentsList] = useState(false);
   const [toasts, setToasts] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Online users and statistics
+  const [onlineUsersCount, setOnlineUsersCount] = useState(0);
+  const [searchStats, setSearchStats] = useState({
+    localSearchCount: 0,
+    apiSearchCount: 0,
+    totalSearchCount: 0
+  });
+  
+  // Leaderboard states
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [leaderboardFilter, setLeaderboardFilter] = useState('granted'); // 'granted', 'rejected', 'deactivated', 'activated'
+  const [leaderboardData, setLeaderboardData] = useState([]);
   const [statusFilter, setStatusFilter] = useState('all');
   
   // Toast notification helper
@@ -860,6 +873,93 @@ const AdminPatentManager = ({ onBack }) => {
     return unreadCount;
   };
 
+  // Fetch online users count from Firestore
+  const fetchOnlineUsers = () => {
+    try {
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('isOnline', '==', true));
+      
+      // Real-time listener for online users
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        setOnlineUsersCount(snapshot.size);
+      });
+      
+      return unsubscribe;
+    } catch (error) {
+      console.error('Error fetching online users:', error);
+      return null;
+    }
+  };
+
+  // Fetch search statistics from Firestore
+  const fetchSearchStats = async () => {
+    try {
+      const statsDoc = await getDoc(doc(db, 'globalStats', 'searchCounter'));
+      if (statsDoc.exists()) {
+        const data = statsDoc.data();
+        setSearchStats({
+          localSearchCount: data.localSearchCount || 0,
+          apiSearchCount: data.apiSearchCount || 0,
+          totalSearchCount: data.totalSearchCount || 0
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching search stats:', error);
+    }
+  };
+
+  // Fetch leaderboard data from backend
+  const fetchLeaderboard = async () => {
+    try {
+      const response = await fetch('http://localhost:8080/api/admin/all', {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const admins = await response.json();
+        // Sort based on current filter
+        const sorted = admins.sort((a, b) => {
+          const aValue = a[`patents_${leaderboardFilter}`] || 0;
+          const bValue = b[`patents_${leaderboardFilter}`] || 0;
+          return bValue - aValue;
+        }).slice(0, 5); // Get top 5
+        
+        setLeaderboardData(sorted);
+      }
+    } catch (error) {
+      console.error('Error fetching leaderboard:', error);
+    }
+  };
+
+  // Effect to fetch online users and search stats when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      // Fetch online users with real-time updates
+      const unsubscribe = fetchOnlineUsers();
+      
+      // Fetch search stats initially
+      fetchSearchStats();
+      
+      // Refresh search stats every 30 seconds
+      const statsInterval = setInterval(fetchSearchStats, 30000);
+      
+      return () => {
+        if (unsubscribe) unsubscribe();
+        clearInterval(statsInterval);
+      };
+    }
+  }, [isAuthenticated]);
+
+  // Effect to fetch leaderboard when filter changes
+  useEffect(() => {
+    if (showLeaderboard) {
+      fetchLeaderboard();
+    }
+  }, [leaderboardFilter, showLeaderboard]);
+
   // Activate patent (make it visible to users)
   const activatePatent = async (patentId) => {
     setMessage('Activating patent...');
@@ -1214,6 +1314,80 @@ const AdminPatentManager = ({ onBack }) => {
             </p>
           </div>
 
+          {/* Real-time Statistics Dashboard */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            {/* Online Users Card */}
+            <div className="bg-gradient-to-br from-green-50 to-emerald-100 rounded-xl shadow-lg p-6 border-2 border-green-300">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 text-green-600 mb-2">
+                    <Users className="w-5 h-5" />
+                    <p className="text-sm font-semibold uppercase tracking-wide">Online Users</p>
+                  </div>
+                  <p className="text-4xl font-bold text-green-700">{onlineUsersCount}</p>
+                  <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
+                    <Activity className="w-3 h-3 animate-pulse" />
+                    Live status • Real-time
+                  </p>
+                </div>
+                <div className="bg-green-200 p-4 rounded-xl">
+                  <Users className="w-10 h-10 text-green-700" />
+                </div>
+              </div>
+            </div>
+
+            {/* Local Database Searches Card */}
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-xl shadow-lg p-6 border-2 border-blue-300">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 text-blue-600 mb-2">
+                    <Database className="w-5 h-5" />
+                    <p className="text-sm font-semibold uppercase tracking-wide">Local DB Searches</p>
+                  </div>
+                  <p className="text-4xl font-bold text-blue-700">{searchStats.localSearchCount}</p>
+                  <p className="text-xs text-blue-600 mt-2">Database mode searches</p>
+                </div>
+                <div className="bg-blue-200 p-4 rounded-xl">
+                  <Database className="w-10 h-10 text-blue-700" />
+                </div>
+              </div>
+            </div>
+
+            {/* External API Searches Card */}
+            <div className="bg-gradient-to-br from-purple-50 to-pink-100 rounded-xl shadow-lg p-6 border-2 border-purple-300">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 text-purple-600 mb-2">
+                    <Globe className="w-5 h-5" />
+                    <p className="text-sm font-semibold uppercase tracking-wide">External API Searches</p>
+                  </div>
+                  <p className="text-4xl font-bold text-purple-700">{searchStats.apiSearchCount}</p>
+                  <p className="text-xs text-purple-600 mt-2">External API searches</p>
+                </div>
+                <div className="bg-purple-200 p-4 rounded-xl">
+                  <Globe className="w-10 h-10 text-purple-700" />
+                </div>
+              </div>
+            </div>
+
+            {/* Total Searches Card */}
+            <div className="bg-gradient-to-br from-orange-50 to-amber-100 rounded-xl shadow-lg p-6 border-2 border-orange-300">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 text-orange-600 mb-2">
+                    <Search className="w-5 h-5" />
+                    <p className="text-sm font-semibold uppercase tracking-wide">Total Searches</p>
+                  </div>
+                  <p className="text-4xl font-bold text-orange-700">{searchStats.totalSearchCount}</p>
+                  <p className="text-xs text-orange-600 mt-2">Combined all searches</p>
+                </div>
+                <div className="bg-orange-200 p-4 rounded-xl">
+                  <Search className="w-10 h-10 text-orange-700" />
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Admin Users Table */}
           {showAdminTable && (
             <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
@@ -1268,17 +1442,32 @@ const AdminPatentManager = ({ onBack }) => {
                   </div>
                 </div>
                 
-                {/* Show Patents Button */}
-                <button
-                  onClick={() => setShowPatentsList(true)}
-                  className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-xl font-bold text-base shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300"
-                >
-                  <List className="w-5 h-5" />
-                  Show All Patents
-                  <span className="ml-1 px-2.5 py-0.5 bg-white/20 rounded-full text-sm">
-                    {patents.length}
-                  </span>
-                </button>
+                {/* Action Buttons */}
+                <div className="flex gap-3">
+                  {/* Leaderboard Button */}
+                  <button
+                    onClick={() => {
+                      setShowLeaderboard(true);
+                      fetchLeaderboard();
+                    }}
+                    className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 text-white rounded-xl font-bold text-base shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300"
+                  >
+                    <Trophy className="w-5 h-5" />
+                    Admin Leaderboard
+                  </button>
+                  
+                  {/* Show Patents Button */}
+                  <button
+                    onClick={() => setShowPatentsList(true)}
+                    className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-xl font-bold text-base shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300"
+                  >
+                    <List className="w-5 h-5" />
+                    Show All Patents
+                    <span className="ml-1 px-2.5 py-0.5 bg-white/20 rounded-full text-sm">
+                      {patents.length}
+                    </span>
+                  </button>
+                </div>
               </div>
               
               {/* Chart Visualization */}
@@ -2712,6 +2901,184 @@ const AdminPatentManager = ({ onBack }) => {
                   Send
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Admin Leaderboard Modal */}
+      {showLeaderboard && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center p-4" onClick={() => setShowLeaderboard(false)}>
+          <div className="bg-gradient-to-br from-white via-amber-50 to-yellow-50 rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col border-4 border-amber-300" onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 px-8 py-6 rounded-t-3xl flex items-center justify-between flex-shrink-0 border-b-4 border-amber-400">
+              <div className="flex items-center gap-4">
+                <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+                  <Trophy className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-3xl font-bold text-white">Admin Leaderboard</h2>
+                  <p className="text-amber-100 font-medium mt-1">Top 5 performing admins</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowLeaderboard(false)}
+                className="group bg-white/10 hover:bg-red-500 p-3 rounded-xl transition-all duration-300 backdrop-blur-sm border-2 border-white/20 hover:border-red-400 hover:scale-110"
+              >
+                <X className="w-8 h-8 text-white group-hover:rotate-90 transition-transform duration-300" />
+              </button>
+            </div>
+            
+            {/* Filter Buttons */}
+            <div className="bg-gradient-to-r from-amber-100 to-yellow-100 px-8 py-5 border-b-2 border-amber-200 flex-shrink-0">
+              <div className="flex items-center gap-3 justify-center flex-wrap">
+                <button
+                  onClick={() => setLeaderboardFilter('granted')}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-base transition-all duration-300 transform ${
+                    leaderboardFilter === 'granted'
+                      ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-xl scale-105 ring-4 ring-green-300'
+                      : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-green-500 hover:text-green-600 hover:scale-105 hover:shadow-lg'
+                  }`}
+                >
+                  <CheckCircle className="w-5 h-5" />
+                  Patents Granted
+                </button>
+                
+                <button
+                  onClick={() => setLeaderboardFilter('rejected')}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-base transition-all duration-300 transform ${
+                    leaderboardFilter === 'rejected'
+                      ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-xl scale-105 ring-4 ring-red-300'
+                      : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-red-500 hover:text-red-600 hover:scale-105 hover:shadow-lg'
+                  }`}
+                >
+                  <X className="w-5 h-5" />
+                  Patents Rejected
+                </button>
+                
+                <button
+                  onClick={() => setLeaderboardFilter('deactivated')}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-base transition-all duration-300 transform ${
+                    leaderboardFilter === 'deactivated'
+                      ? 'bg-gradient-to-r from-gray-600 to-slate-700 text-white shadow-xl scale-105 ring-4 ring-gray-400'
+                      : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-gray-500 hover:text-gray-600 hover:scale-105 hover:shadow-lg'
+                  }`}
+                >
+                  <AlertCircle className="w-5 h-5" />
+                  Patents Deactivated
+                </button>
+                
+                <button
+                  onClick={() => setLeaderboardFilter('activated')}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-base transition-all duration-300 transform ${
+                    leaderboardFilter === 'activated'
+                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xl scale-105 ring-4 ring-blue-300'
+                      : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-blue-500 hover:text-blue-600 hover:scale-105 hover:shadow-lg'
+                  }`}
+                >
+                  <CheckCircle className="w-5 h-5" />
+                  Patents Activated
+                </button>
+              </div>
+            </div>
+            
+            {/* Leaderboard Content - Top 3 in Ladder Format */}
+            <div className="flex-1 overflow-y-auto p-8">
+              {leaderboardData.length === 0 ? (
+                <div className="text-center py-12">
+                  <Trophy className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 text-lg">No leaderboard data available</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Podium Display for Top 3 */}
+                  <div className="flex items-end justify-center gap-4 mb-8">
+                    {/* 2nd Place */}
+                    {leaderboardData[1] && (
+                      <div className="flex flex-col items-center">
+                        <div className="bg-gradient-to-br from-gray-300 to-gray-400 text-white rounded-2xl p-6 shadow-xl border-4 border-gray-500 w-48 text-center transform hover:scale-105 transition-all">
+                          <div className="bg-white/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <Medal className="w-10 h-10 text-white" />
+                          </div>
+                          <p className="text-4xl font-bold mb-2">2nd</p>
+                          <p className="text-lg font-bold mb-1">{leaderboardData[1].adminName}</p>
+                          <p className="text-sm opacity-90">{leaderboardData[1].email}</p>
+                          <div className="mt-4 bg-white/20 rounded-lg p-3">
+                            <p className="text-3xl font-bold">{leaderboardData[1][`patents_${leaderboardFilter}`] || 0}</p>
+                            <p className="text-xs uppercase mt-1">Patents</p>
+                          </div>
+                        </div>
+                        <div className="bg-gray-400 w-48 h-32 rounded-t-xl mt-2"></div>
+                      </div>
+                    )}
+                    
+                    {/* 1st Place */}
+                    {leaderboardData[0] && (
+                      <div className="flex flex-col items-center">
+                        <div className="bg-gradient-to-br from-yellow-400 to-amber-500 text-white rounded-2xl p-8 shadow-2xl border-4 border-yellow-600 w-56 text-center transform hover:scale-105 transition-all relative">
+                          <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-yellow-500 rounded-full p-3 shadow-lg">
+                            <Trophy className="w-8 h-8 text-white animate-pulse" />
+                          </div>
+                          <div className="bg-white/20 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-3 mt-4">
+                            <Award className="w-12 h-12 text-white" />
+                          </div>
+                          <p className="text-5xl font-bold mb-2">1st</p>
+                          <p className="text-xl font-bold mb-1">{leaderboardData[0].adminName}</p>
+                          <p className="text-sm opacity-90">{leaderboardData[0].email}</p>
+                          <div className="mt-4 bg-white/25 rounded-xl p-4">
+                            <p className="text-4xl font-bold">{leaderboardData[0][`patents_${leaderboardFilter}`] || 0}</p>
+                            <p className="text-sm uppercase mt-1">Patents</p>
+                          </div>
+                        </div>
+                        <div className="bg-yellow-500 w-56 h-48 rounded-t-xl mt-2"></div>
+                      </div>
+                    )}
+                    
+                    {/* 3rd Place */}
+                    {leaderboardData[2] && (
+                      <div className="flex flex-col items-center">
+                        <div className="bg-gradient-to-br from-orange-400 to-orange-500 text-white rounded-2xl p-6 shadow-xl border-4 border-orange-600 w-48 text-center transform hover:scale-105 transition-all">
+                          <div className="bg-white/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <Medal className="w-10 h-10 text-white" />
+                          </div>
+                          <p className="text-4xl font-bold mb-2">3rd</p>
+                          <p className="text-lg font-bold mb-1">{leaderboardData[2].adminName}</p>
+                          <p className="text-sm opacity-90">{leaderboardData[2].email}</p>
+                          <div className="mt-4 bg-white/20 rounded-lg p-3">
+                            <p className="text-3xl font-bold">{leaderboardData[2][`patents_${leaderboardFilter}`] || 0}</p>
+                            <p className="text-xs uppercase mt-1">Patents</p>
+                          </div>
+                        </div>
+                        <div className="bg-orange-500 w-48 h-24 rounded-t-xl mt-2"></div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Remaining Admins (4th and 5th) */}
+                  {leaderboardData.length > 3 && (
+                    <div className="mt-8 space-y-3">
+                      <h3 className="text-xl font-bold text-gray-800 mb-4 text-center">Other Top Performers</h3>
+                      {leaderboardData.slice(3, 5).map((admin, index) => (
+                        <div key={admin.adminId} className="bg-white rounded-xl p-5 shadow-lg border-2 border-gray-200 hover:border-indigo-400 transition-all flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl">
+                              {index + 4}
+                            </div>
+                            <div>
+                              <p className="font-bold text-lg text-gray-800">{admin.adminName}</p>
+                              <p className="text-sm text-gray-600">{admin.email}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-3xl font-bold text-indigo-600">{admin[`patents_${leaderboardFilter}`] || 0}</p>
+                            <p className="text-xs text-gray-500 uppercase mt-1">Patents</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
