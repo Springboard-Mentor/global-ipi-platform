@@ -40,7 +40,7 @@ const UpgradeModal = ({ isOpen, onClose, userProfile, onAddNotification }) => {
     {
       id: "pro",
       name: "Pro",
-      price: "$49",
+      price: "₹49",
       priceAmount: 49,
       period: "/month",
       icon: Crown,
@@ -60,7 +60,7 @@ const UpgradeModal = ({ isOpen, onClose, userProfile, onAddNotification }) => {
     {
       id: "enterprise",
       name: "Enterprise",
-      price: "$199",
+      price: "₹199",
       priceAmount: 199,
       period: "/month",
       icon: Crown,
