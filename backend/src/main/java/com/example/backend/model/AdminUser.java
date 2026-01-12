@@ -26,6 +26,19 @@ public class AdminUser {
     
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+    
+    // Admin action tracking fields
+    @Column(name = "patents_granted", columnDefinition = "integer default 0")
+    private Integer patentsGranted = 0;
+    
+    @Column(name = "patents_rejected", columnDefinition = "integer default 0")
+    private Integer patentsRejected = 0;
+    
+    @Column(name = "patents_activated", columnDefinition = "integer default 0")
+    private Integer patentsActivated = 0;
+    
+    @Column(name = "patents_deactivated", columnDefinition = "integer default 0")
+    private Integer patentsDeactivated = 0;
 
     // Constructors
     public AdminUser() {
@@ -97,5 +110,38 @@ public class AdminUser {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+    
+    // Getters and Setters for tracking fields
+    public Integer getPatentsGranted() {
+        return patentsGranted != null ? patentsGranted : 0;
+    }
+
+    public void setPatentsGranted(Integer patentsGranted) {
+        this.patentsGranted = patentsGranted;
+    }
+
+    public Integer getPatentsRejected() {
+        return patentsRejected != null ? patentsRejected : 0;
+    }
+
+    public void setPatentsRejected(Integer patentsRejected) {
+        this.patentsRejected = patentsRejected;
+    }
+
+    public Integer getPatentsActivated() {
+        return patentsActivated != null ? patentsActivated : 0;
+    }
+
+    public void setPatentsActivated(Integer patentsActivated) {
+        this.patentsActivated = patentsActivated;
+    }
+
+    public Integer getPatentsDeactivated() {
+        return patentsDeactivated != null ? patentsDeactivated : 0;
+    }
+
+    public void setPatentsDeactivated(Integer patentsDeactivated) {
+        this.patentsDeactivated = patentsDeactivated;
     }
 }

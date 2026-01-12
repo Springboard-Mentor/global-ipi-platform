@@ -99,16 +99,16 @@ mvnw.cmd
 **/UI-*.md
 **/CHATBOT-*.md
 **/NOTIFICATION-*.md
-**/*-STARTUP-*.html
-**/START-*.html
+# **/*-STARTUP-*.html
+# **/START-*.html
 **/START-*.md
-**/test-api.html
+# **/test-api.html
 
 # Analytics Documentation Files
 ANALYTICS-*.md
 GROWTH-ANALYTICS-*.md
 QUICK-REFERENCE.txt
-**/test-analytics.html
+# **/test-analytics.html
 **/setup-analytics.bat
 **/verify-analytics.ps1
 **/create-analytics-table.sql

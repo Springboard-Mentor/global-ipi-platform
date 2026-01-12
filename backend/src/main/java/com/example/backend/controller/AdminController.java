@@ -118,4 +118,48 @@ public class AdminController {
                 .body("Error fetching admin: " + e.getMessage());
         }
     }
+    
+    /**
+     * Track admin action (granted, rejected, activated, deactivated)
+     */
+    @PostMapping("/{adminId}/track-action")
+    public ResponseEntity<?> trackAdminAction(
+            @PathVariable Long adminId,
+            @RequestBody java.util.Map<String, String> request) {
+        try {
+            Optional<AdminUser> adminOptional = adminUserRepository.findById(adminId);
+            
+            if (adminOptional.isPresent()) {
+                AdminUser admin = adminOptional.get();
+                String actionType = request.get("actionType");
+                
+                // Increment the appropriate counter
+                switch (actionType.toLowerCase()) {
+                    case "granted":
+                        admin.setPatentsGranted(admin.getPatentsGranted() + 1);
+                        break;
+                    case "rejected":
+                        admin.setPatentsRejected(admin.getPatentsRejected() + 1);
+                        break;
+                    case "activated":
+                        admin.setPatentsActivated(admin.getPatentsActivated() + 1);
+                        break;
+                    case "deactivated":
+                        admin.setPatentsDeactivated(admin.getPatentsDeactivated() + 1);
+                        break;
+                    default:
+                        return ResponseEntity.badRequest().body("Invalid action type");
+                }
+                
+                adminUserRepository.save(admin);
+                return ResponseEntity.ok("Action tracked successfully");
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Error tracking action: " + e.getMessage());
+        }
+    }
 }
