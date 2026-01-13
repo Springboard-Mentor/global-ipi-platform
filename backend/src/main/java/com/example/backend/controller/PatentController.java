@@ -90,4 +90,11 @@ public class PatentController {
         long count = patentService.getPatentCountByState(state);
         return ResponseEntity.ok(count);
     }
+    
+    @GetMapping("/revenue")
+    public ResponseEntity<java.util.Map<String, Object>> getPatentFilingRevenue(@RequestParam String filter) {
+        // Get patent filing revenue with filter (weekly or monthly)
+        java.util.Map<String, Object> revenue = patentService.getPatentFilingRevenue(filter);
+        return ResponseEntity.ok(revenue);
+    }
 }

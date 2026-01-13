@@ -57,4 +57,8 @@ public interface PatentFilingRepository extends JpaRepository<PatentFiling, Long
     // Count patents by specific state (case-insensitive)
     @Query("SELECT COUNT(p) FROM PatentFiling p WHERE LOWER(p.applicantState) = LOWER(:state)")
     long countByApplicantState(@org.springframework.data.repository.query.Param("state") String state);
+    
+    // Count filings since date
+    @Query("SELECT COUNT(p) FROM PatentFiling p WHERE p.applicationDate >= :startDate")
+    long countFilingsSince(@org.springframework.data.repository.query.Param("startDate") java.time.LocalDate startDate);
 }

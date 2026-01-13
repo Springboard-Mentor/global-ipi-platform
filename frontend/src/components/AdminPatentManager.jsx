@@ -75,6 +75,18 @@ const AdminPatentManager = ({ onBack }) => {
   const [statePatentCount, setStatePatentCount] = useState(0);
   const [loadingStateData, setLoadingStateData] = useState(false);
   
+  // Revenue states
+  const [revenueFilter, setRevenueFilter] = useState('monthly'); // 'weekly' or 'monthly'
+  const [subscriptionRevenue, setSubscriptionRevenue] = useState({
+    total: 0,
+    byPlan: [] // [{planName, amount, count}]
+  });
+  const [patentFilingRevenue, setPatentFilingRevenue] = useState({
+    total: 0,
+    count: 0
+  });
+  const [loadingRevenue, setLoadingRevenue] = useState(false);
+  
   // Toast notification helper
   const showToast = (message, type = 'success') => {
     const id = Date.now();
@@ -1020,6 +1032,88 @@ const AdminPatentManager = ({ onBack }) => {
     }
   };
 
+  // Fetch subscription revenue from Firestore
+  const fetchSubscriptionRevenue = async (filter) => {
+    try {
+      setLoadingRevenue(true);
+      const subscriptionsRef = collection(db, 'subscriptions');
+      const snapshot = await getDocs(subscriptionsRef);
+      
+      const now = new Date();
+      const filterDate = new Date();
+      
+      if (filter === 'weekly') {
+        filterDate.setDate(now.getDate() - 7);
+      } else {
+        filterDate.setMonth(now.getMonth() - 1);
+      }
+      
+      const planPrices = {
+        'Pro': 49,
+        'Enterprise': 199
+      };
+      
+      let totalRevenue = 0;
+      const planRevenue = { 'Pro': { amount: 0, count: 0 }, 'Enterprise': { amount: 0, count: 0 } };
+      
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const createdAt = data.createdAt?.toDate();
+        
+        if (createdAt && createdAt >= filterDate && data.status === 'active') {
+          const planName = data.planName || '';
+          
+          if (planName === 'Pro' || planName === 'Enterprise') {
+            const amount = planPrices[planName];
+            totalRevenue += amount;
+            planRevenue[planName].amount += amount;
+            planRevenue[planName].count += 1;
+          }
+        }
+      });
+      
+      const byPlan = Object.entries(planRevenue)
+        .filter(([_, data]) => data.count > 0)
+        .map(([planName, data]) => ({
+          planName,
+          amount: data.amount,
+          count: data.count
+        }));
+      
+      setSubscriptionRevenue({ total: totalRevenue, byPlan });
+    } catch (error) {
+      console.error('Error fetching subscription revenue:', error);
+      setSubscriptionRevenue({ total: 0, byPlan: [] });
+    }
+  };
+
+  // Fetch patent filing revenue from backend
+  const fetchPatentFilingRevenue = async (filter) => {
+    try {
+      const response = await fetch(`http://localhost:8080/api/patents/revenue?filter=${filter}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setPatentFilingRevenue(data);
+      } else {
+        setPatentFilingRevenue({ total: 0, count: 0 });
+      }
+    } catch (error) {
+      console.error('Error fetching patent filing revenue:', error);
+      setPatentFilingRevenue({ total: 0, count: 0 });
+    }
+  };
+
+  // Fetch all revenue data
+  const fetchRevenueData = async (filter) => {
+    setLoadingRevenue(true);
+    await Promise.all([
+      fetchSubscriptionRevenue(filter),
+      fetchPatentFilingRevenue(filter)
+    ]);
+    setLoadingRevenue(false);
+  };
+
   // Effect to fetch online users and search stats when authenticated
   useEffect(() => {
     if (isAuthenticated) {
@@ -1059,6 +1153,13 @@ const AdminPatentManager = ({ onBack }) => {
       fetchStatePatentCount(selectedState);
     }
   }, [selectedState]);
+  
+  // Effect to fetch revenue data when filter changes or authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchRevenueData(revenueFilter);
+    }
+  }, [revenueFilter, isAuthenticated]);
 
   // Activate patent (make it visible to users)
   const activatePatent = async (patentId) => {
@@ -1838,6 +1939,163 @@ const AdminPatentManager = ({ onBack }) => {
                   </p>
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* Revenue Analytics Section */}
+          <div className="mb-6">
+            {/* Filter Bar */}
+            <div className="bg-white rounded-2xl shadow-lg p-4 mb-6 border-2 border-indigo-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <CreditCard className="w-6 h-6 text-indigo-600" />
+                  <h2 className="text-xl font-bold text-gray-800">Revenue Analytics</h2>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setRevenueFilter('weekly')}
+                    className={`px-6 py-2 rounded-lg font-semibold transition-all ${
+                      revenueFilter === 'weekly'
+                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    Weekly
+                  </button>
+                  <button
+                    onClick={() => setRevenueFilter('monthly')}
+                    className={`px-6 py-2 rounded-lg font-semibold transition-all ${
+                      revenueFilter === 'monthly'
+                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    Monthly
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Revenue Graphs */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Subscription Revenue */}
+              <div className="bg-gradient-to-br from-white via-indigo-50 to-purple-50 rounded-2xl shadow-xl p-5 border-2 border-indigo-200">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-2 rounded-lg">
+                      <CreditCard className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-indigo-700">Subscription Revenue</h3>
+                      <p className="text-xs text-gray-600">{revenueFilter === 'weekly' ? 'Last 7 days' : 'Last 30 days'}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-3xl font-bold text-indigo-600">₹{subscriptionRevenue.total.toLocaleString()}</p>
+                    <p className="text-xs text-gray-600 font-medium">{subscriptionRevenue.byPlan.reduce((sum, p) => sum + p.count, 0)} users</p>
+                  </div>
+                </div>
+
+                {loadingRevenue ? (
+                  <div className="flex justify-center items-center h-40">
+                    <RefreshCw className="w-8 h-8 text-indigo-500 animate-spin" />
+                  </div>
+                ) : subscriptionRevenue.byPlan.length > 0 ? (
+                  <div className="space-y-3">
+                    {subscriptionRevenue.byPlan.map((plan) => {
+                      const maxAmount = Math.max(...subscriptionRevenue.byPlan.map(p => p.amount));
+                      const barWidth = maxAmount > 0 ? (plan.amount / maxAmount) * 100 : 0;
+                      const isPro = plan.planName === 'Pro';
+                      
+                      return (
+                        <div key={plan.planName} className="relative">
+                          <div className="flex items-center justify-between mb-1 text-sm font-semibold">
+                            <span className={isPro ? 'text-blue-700' : 'text-purple-700'}>{plan.planName}</span>
+                            <span className="text-gray-700">₹{plan.amount.toLocaleString()}</span>
+                          </div>
+                          <div className="relative h-12 bg-white rounded-lg overflow-hidden border-2 border-gray-200 shadow-sm">
+                            <div 
+                              className={`h-full flex items-center justify-between px-3 transition-all duration-700 ${
+                                isPro 
+                                  ? 'bg-gradient-to-r from-blue-400 to-cyan-500' 
+                                  : 'bg-gradient-to-r from-purple-400 to-pink-500'
+                              }`}
+                              style={{ width: `${barWidth}%`, minWidth: '120px' }}
+                            >
+                              <span className="text-white font-bold text-sm drop-shadow-lg">{plan.count} user{plan.count !== 1 ? 's' : ''}</span>
+                              <span className="text-white font-bold drop-shadow-lg">
+                                {subscriptionRevenue.total > 0 ? Math.round((plan.amount / subscriptionRevenue.total) * 100) : 0}%
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <CreditCard className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm font-medium">No subscription revenue</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Patent Filing Revenue */}
+              <div className="bg-gradient-to-br from-white via-green-50 to-emerald-50 rounded-2xl shadow-xl p-5 border-2 border-green-200">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-2 rounded-lg">
+                      <FileCheck className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-green-700">Patent Filing Revenue</h3>
+                      <p className="text-xs text-gray-600">{revenueFilter === 'weekly' ? 'Last 7 days' : 'Last 30 days'}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-3xl font-bold text-green-600">₹{patentFilingRevenue.total.toLocaleString()}</p>
+                    <p className="text-xs text-gray-600 font-medium">{patentFilingRevenue.count} filing{patentFilingRevenue.count !== 1 ? 's' : ''}</p>
+                  </div>
+                </div>
+
+                {loadingRevenue ? (
+                  <div className="flex justify-center items-center h-40">
+                    <RefreshCw className="w-8 h-8 text-green-500 animate-spin" />
+                  </div>
+                ) : patentFilingRevenue.count > 0 ? (
+                  <div className="space-y-3">
+                    {/* Single bar showing filing count with segments */}
+                    <div className="relative">
+                      <div className="flex items-center justify-between mb-1 text-sm font-semibold">
+                        <span className="text-green-700">Patent Filings</span>
+                        <span className="text-gray-700">{patentFilingRevenue.count} × ₹500</span>
+                      </div>
+                      <div className="relative h-12 bg-white rounded-lg overflow-hidden border-2 border-gray-200 shadow-sm">
+                        <div 
+                          className="h-full flex items-center justify-between px-3 bg-gradient-to-r from-green-400 to-emerald-500"
+                          style={{ width: '100%' }}
+                        >
+                          <span className="text-white font-bold text-sm drop-shadow-lg">{patentFilingRevenue.count} filing{patentFilingRevenue.count !== 1 ? 's' : ''}</span>
+                          <span className="text-white font-bold drop-shadow-lg">₹{patentFilingRevenue.total.toLocaleString()}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Breakdown */}
+                    <div className="bg-white rounded-lg p-3 border border-green-200">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600 font-medium">Rate per filing:</span>
+                        <span className="text-green-700 font-bold">₹500</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <FileCheck className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm font-medium">No patent filing revenue</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

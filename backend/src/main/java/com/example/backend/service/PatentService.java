@@ -330,4 +330,34 @@ public class PatentService {
         logger.info("Found {} patents for state: '{}'", count, state);
         return count;
     }
+    
+    /**
+     * Get patent filing revenue with filter (weekly or monthly)
+     */
+    public java.util.Map<String, Object> getPatentFilingRevenue(String filter) {
+        logger.info("Getting patent filing revenue with filter: '{}'", filter);
+        
+        java.time.LocalDate startDate;
+        java.time.LocalDate now = java.time.LocalDate.now();
+        
+        if ("weekly".equalsIgnoreCase(filter)) {
+            startDate = now.minusDays(7);
+        } else {
+            startDate = now.minusMonths(1);
+        }
+        
+        // Get count of filings in the date range
+        long count = patentFilingRepository.countFilingsSince(startDate);
+        
+        // Calculate revenue as count * 500
+        double totalRevenue = count * 500.0;
+        
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        response.put("total", totalRevenue);
+        response.put("count", count);
+        
+        logger.info("Found {} filings with total revenue: {}", count, totalRevenue);
+        
+        return response;
+    }
 }
