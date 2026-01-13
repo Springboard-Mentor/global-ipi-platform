@@ -63,6 +63,18 @@ const AdminPatentManager = ({ onBack }) => {
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [statusFilter, setStatusFilter] = useState('all');
   
+  // User statistics states
+  const [userStats, setUserStats] = useState({
+    totalUsers: 0,
+    activeUsers: 0,
+    deactivatedUsers: 0
+  });
+  
+  // State-wise patent states
+  const [selectedState, setSelectedState] = useState('');
+  const [statePatentCount, setStatePatentCount] = useState(0);
+  const [loadingStateData, setLoadingStateData] = useState(false);
+  
   // Toast notification helper
   const showToast = (message, type = 'success') => {
     const id = Date.now();
@@ -948,6 +960,65 @@ const AdminPatentManager = ({ onBack }) => {
       console.error('Error fetching leaderboard:', error);
     }
   };
+  
+  // Fetch user statistics from Firebase Firestore
+  const fetchUserStatistics = async () => {
+    try {
+      const usersRef = collection(db, 'users');
+      const usersSnapshot = await getDocs(usersRef);
+      
+      let total = 0;
+      let active = 0;
+      let deactivated = 0;
+      
+      usersSnapshot.forEach((doc) => {
+        const userData = doc.data();
+        total++;
+        
+        // Check if user is deactivated
+        if (userData.isDeactivated === true || userData.accountStatus === 'deactivated') {
+          deactivated++;
+        } else {
+          active++;
+        }
+      });
+      
+      setUserStats({
+        totalUsers: total,
+        activeUsers: active,
+        deactivatedUsers: deactivated
+      });
+      
+      console.log('User statistics fetched:', { total, active, deactivated });
+    } catch (error) {
+      console.error('Error fetching user statistics:', error);
+    }
+  };
+  
+  // Fetch patent count by state
+  const fetchStatePatentCount = async (state) => {
+    if (!state) {
+      setStatePatentCount(0);
+      return;
+    }
+    
+    try {
+      setLoadingStateData(true);
+      const response = await fetch(`http://localhost:8080/api/patents/count-by-state?state=${encodeURIComponent(state)}`);
+      
+      if (response.ok) {
+        const count = await response.json();
+        setStatePatentCount(count || 0);
+      } else {
+        setStatePatentCount(0);
+      }
+    } catch (error) {
+      console.error('Error fetching state patent count:', error);
+      setStatePatentCount(0);
+    } finally {
+      setLoadingStateData(false);
+    }
+  };
 
   // Effect to fetch online users and search stats when authenticated
   useEffect(() => {
@@ -958,12 +1029,19 @@ const AdminPatentManager = ({ onBack }) => {
       // Fetch search stats initially
       fetchSearchStats();
       
+      // Fetch user statistics
+      fetchUserStatistics();
+      
       // Refresh search stats every 30 seconds
       const statsInterval = setInterval(fetchSearchStats, 30000);
+      
+      // Refresh user stats every 60 seconds
+      const userStatsInterval = setInterval(fetchUserStatistics, 60000);
       
       return () => {
         if (unsubscribe) unsubscribe();
         clearInterval(statsInterval);
+        clearInterval(userStatsInterval);
       };
     }
   }, [isAuthenticated]);
@@ -974,6 +1052,13 @@ const AdminPatentManager = ({ onBack }) => {
       fetchLeaderboard();
     }
   }, [leaderboardFilter, showLeaderboard]);
+  
+  // Effect to fetch patent count when state is selected
+  useEffect(() => {
+    if (selectedState) {
+      fetchStatePatentCount(selectedState);
+    }
+  }, [selectedState]);
 
   // Activate patent (make it visible to users)
   const activatePatent = async (patentId) => {
@@ -1559,6 +1644,202 @@ const AdminPatentManager = ({ onBack }) => {
               </div>
             </div>
           )}
+
+          {/* User Statistics and State-wise Patents Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {/* User Statistics Chart */}
+            <div className="bg-gradient-to-br from-white via-blue-50 to-cyan-50 rounded-2xl shadow-2xl p-6 border-2 border-blue-200">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="bg-gradient-to-r from-blue-500 to-cyan-600 p-3 rounded-xl shadow-lg">
+                  <Users className="w-7 h-7 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                    User Statistics
+                  </h2>
+                  <p className="text-xs text-gray-600 font-medium">Real-time user data from Firestore</p>
+                </div>
+              </div>
+              
+              {/* Chart Bars */}
+              <div className="grid grid-cols-3 gap-4 h-56">
+                {/* Total Users */}
+                <div className="flex flex-col items-center justify-end">
+                  <div className="w-full bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-xl shadow-lg relative group hover:from-blue-600 hover:to-blue-500 transition-all"
+                       style={{ height: `${userStats.totalUsers > 0 ? (userStats.totalUsers / Math.max(userStats.totalUsers, 10)) * 100 : 20}%`, minHeight: '60px' }}>
+                    <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-3 py-1 rounded-lg font-bold text-sm shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                      {userStats.totalUsers}
+                    </div>
+                  </div>
+                  <div className="mt-3 text-center">
+                    <p className="text-2xl font-bold text-blue-600">{userStats.totalUsers}</p>
+                    <p className="text-xs font-semibold text-gray-600 uppercase mt-1">Total Users</p>
+                  </div>
+                </div>
+                
+                {/* Active Users */}
+                <div className="flex flex-col items-center justify-end">
+                  <div className="w-full bg-gradient-to-t from-green-500 to-green-400 rounded-t-xl shadow-lg relative group hover:from-green-600 hover:to-green-500 transition-all"
+                       style={{ height: `${userStats.totalUsers > 0 ? (userStats.activeUsers / userStats.totalUsers) * 100 : 20}%`, minHeight: '60px' }}>
+                    <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-3 py-1 rounded-lg font-bold text-sm shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                      {userStats.activeUsers}
+                    </div>
+                  </div>
+                  <div className="mt-3 text-center">
+                    <p className="text-2xl font-bold text-green-600">{userStats.activeUsers}</p>
+                    <p className="text-xs font-semibold text-gray-600 uppercase mt-1">Active Users</p>
+                  </div>
+                </div>
+                
+                {/* Deactivated Users */}
+                <div className="flex flex-col items-center justify-end">
+                  <div className="w-full bg-gradient-to-t from-red-500 to-red-400 rounded-t-xl shadow-lg relative group hover:from-red-600 hover:to-red-500 transition-all"
+                       style={{ height: `${userStats.totalUsers > 0 ? (userStats.deactivatedUsers / userStats.totalUsers) * 100 : 20}%`, minHeight: '60px' }}>
+                    <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-red-600 text-white px-3 py-1 rounded-lg font-bold text-sm shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                      {userStats.deactivatedUsers}
+                    </div>
+                  </div>
+                  <div className="mt-3 text-center">
+                    <p className="text-2xl font-bold text-red-600">{userStats.deactivatedUsers}</p>
+                    <p className="text-xs font-semibold text-gray-600 uppercase mt-1">Deactivated</p>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Summary Cards */}
+              <div className="mt-6 pt-6 border-t-2 border-blue-200">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-gradient-to-r from-green-100 to-green-200 rounded-lg p-3 border border-green-300">
+                    <p className="text-xs text-green-700 font-semibold mb-1">Active Rate</p>
+                    <p className="text-xl font-bold text-green-700">
+                      {userStats.totalUsers > 0 ? Math.round((userStats.activeUsers / userStats.totalUsers) * 100) : 0}%
+                    </p>
+                  </div>
+                  <div className="bg-gradient-to-r from-red-100 to-red-200 rounded-lg p-3 border border-red-300">
+                    <p className="text-xs text-red-700 font-semibold mb-1">Deactivation Rate</p>
+                    <p className="text-xl font-bold text-red-700">
+                      {userStats.totalUsers > 0 ? Math.round((userStats.deactivatedUsers / userStats.totalUsers) * 100) : 0}%
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* State-wise Patent Counter */}
+            <div className="bg-gradient-to-br from-white via-purple-50 to-pink-50 rounded-2xl shadow-2xl p-6 border-2 border-purple-200">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="bg-gradient-to-r from-purple-500 to-pink-600 p-3 rounded-xl shadow-lg">
+                  <Globe className="w-7 h-7 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                    State-wise Patents
+                  </h2>
+                  <p className="text-xs text-gray-600 font-medium">Patents by Indian States & UTs</p>
+                </div>
+              </div>
+              
+              {/* State Selector */}
+              <div className="mb-6">
+                <label className="block text-sm font-bold text-gray-700 mb-2">
+                  Select State/UT
+                </label>
+                <select
+                  value={selectedState}
+                  onChange={(e) => setSelectedState(e.target.value)}
+                  className="w-full px-4 py-3 bg-white border-2 border-purple-300 rounded-xl focus:ring-4 focus:ring-purple-300 focus:border-purple-500 transition-all text-gray-700 font-medium shadow-md"
+                >
+                  <option value="">-- Select a State or UT --</option>
+                  <optgroup label="States">
+                    <option value="Andhra Pradesh">Andhra Pradesh</option>
+                    <option value="Arunachal Pradesh">Arunachal Pradesh</option>
+                    <option value="Assam">Assam</option>
+                    <option value="Bihar">Bihar</option>
+                    <option value="Chhattisgarh">Chhattisgarh</option>
+                    <option value="Goa">Goa</option>
+                    <option value="Gujarat">Gujarat</option>
+                    <option value="Haryana">Haryana</option>
+                    <option value="Himachal Pradesh">Himachal Pradesh</option>
+                    <option value="Jharkhand">Jharkhand</option>
+                    <option value="Karnataka">Karnataka</option>
+                    <option value="Kerala">Kerala</option>
+                    <option value="Madhya Pradesh">Madhya Pradesh</option>
+                    <option value="Maharashtra">Maharashtra</option>
+                    <option value="Manipur">Manipur</option>
+                    <option value="Meghalaya">Meghalaya</option>
+                    <option value="Mizoram">Mizoram</option>
+                    <option value="Nagaland">Nagaland</option>
+                    <option value="Odisha">Odisha</option>
+                    <option value="Punjab">Punjab</option>
+                    <option value="Rajasthan">Rajasthan</option>
+                    <option value="Sikkim">Sikkim</option>
+                    <option value="Tamil Nadu">Tamil Nadu</option>
+                    <option value="Telangana">Telangana</option>
+                    <option value="Tripura">Tripura</option>
+                    <option value="Uttar Pradesh">Uttar Pradesh</option>
+                    <option value="Uttarakhand">Uttarakhand</option>
+                    <option value="West Bengal">West Bengal</option>
+                  </optgroup>
+                  <optgroup label="Union Territories">
+                    <option value="Andaman and Nicobar Islands">Andaman and Nicobar Islands</option>
+                    <option value="Chandigarh">Chandigarh</option>
+                    <option value="Dadra and Nagar Haveli and Daman and Diu">Dadra and Nagar Haveli and Daman and Diu</option>
+                    <option value="Delhi">Delhi</option>
+                    <option value="Jammu and Kashmir">Jammu and Kashmir</option>
+                    <option value="Ladakh">Ladakh</option>
+                    <option value="Lakshadweep">Lakshadweep</option>
+                    <option value="Puducherry">Puducherry</option>
+                  </optgroup>
+                </select>
+              </div>
+              
+              {/* Patent Count Display */}
+              {selectedState ? (
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl p-8 text-center shadow-2xl border-2 border-purple-400 transform hover:scale-105 transition-all">
+                    {loadingStateData ? (
+                      <div className="flex justify-center items-center">
+                        <RefreshCw className="w-12 h-12 text-white animate-spin" />
+                      </div>
+                    ) : (
+                      <>
+                        <div className="bg-white/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
+                          <FileCheck className="w-9 h-9 text-white" />
+                        </div>
+                        <p className="text-6xl font-bold text-white mb-3 drop-shadow-2xl">{statePatentCount}</p>
+                        <p className="text-lg font-semibold text-white/90 uppercase tracking-wide drop-shadow-lg">
+                          {statePatentCount === 1 ? 'Patent' : 'Patents'}
+                        </p>
+                        <p className="text-sm text-white/80 mt-2 font-medium">
+                          from {selectedState}
+                        </p>
+                      </>
+                    )}
+                  </div>
+                  
+                  {/* Additional Info */}
+                  <div className="bg-white rounded-xl p-4 border-2 border-purple-200 shadow-md">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Database className="w-5 h-5 text-purple-600" />
+                        <span className="text-sm font-semibold text-gray-700">Data Source</span>
+                      </div>
+                      <span className="text-xs font-medium text-purple-600 bg-purple-100 px-3 py-1 rounded-full">
+                        PostgreSQL Database
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-gradient-to-r from-purple-100 to-pink-100 rounded-xl p-8 text-center border-2 border-purple-200">
+                  <Globe className="w-16 h-16 text-purple-400 mx-auto mb-4 opacity-50" />
+                  <p className="text-gray-600 font-medium">
+                    Select a state or UT from the dropdown to view patent count
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Patents Modal */}
           {showPatentsList && (

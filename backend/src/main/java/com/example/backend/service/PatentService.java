@@ -4,6 +4,7 @@ import com.example.backend.model.Patent;
 import com.example.backend.model.SearchRequest;
 import com.example.backend.model.YearlyPatentCount;
 import com.example.backend.repository.PatentRepository;
+import com.example.backend.repository.PatentFilingRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -26,6 +27,7 @@ public class PatentService {
 
     private final RestTemplate restTemplate;
     private final PatentRepository patentRepository;
+    private final PatentFilingRepository patentFilingRepository;
     
     @Value("${serpapi.key}")
     private String serpApiKey;
@@ -33,9 +35,10 @@ public class PatentService {
     @Value("${serpapi.base.url}")
     private String serpApiBaseUrl;
 
-    public PatentService(PatentRepository patentRepository) {
+    public PatentService(PatentRepository patentRepository, PatentFilingRepository patentFilingRepository) {
         this.restTemplate = new RestTemplate();
         this.patentRepository = patentRepository;
+        this.patentFilingRepository = patentFilingRepository;
     }
 
     public List<Patent> getAllPatents() {
@@ -316,5 +319,15 @@ public class PatentService {
                 return map;
             })
             .collect(Collectors.toList());
+    }
+
+    /**
+     * Get count of patents from a specific state
+     */
+    public long getPatentCountByState(String state) {
+        logger.info("Getting patent count for state: '{}'", state);
+        long count = patentFilingRepository.countByApplicantState(state);
+        logger.info("Found {} patents for state: '{}'", count, state);
+        return count;
     }
 }

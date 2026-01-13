@@ -53,4 +53,8 @@ public interface PatentFilingRepository extends JpaRepository<PatentFiling, Long
     // Leaderboard query - Get top users by patent count (with date filter) - Groups by userId only for accurate distinct counting
     @Query("SELECT p.userId, MAX(p.userName) as userName, COUNT(p) as patentCount FROM PatentFiling p WHERE p.userId IS NOT NULL AND p.userId != '' AND p.applicationDate >= :startDate GROUP BY p.userId ORDER BY patentCount DESC")
     List<Object[]> findTopUsersByPatentCountSince(@org.springframework.data.repository.query.Param("startDate") java.time.LocalDate startDate);
+    
+    // Count patents by specific state (case-insensitive)
+    @Query("SELECT COUNT(p) FROM PatentFiling p WHERE LOWER(p.applicantState) = LOWER(:state)")
+    long countByApplicantState(@org.springframework.data.repository.query.Param("state") String state);
 }

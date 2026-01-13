@@ -83,4 +83,11 @@ public class PatentController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @GetMapping("/count-by-state")
+    public ResponseEntity<Long> getPatentCountByState(@RequestParam String state) {
+        // Get count of patents from a specific state
+        long count = patentService.getPatentCountByState(state);
+        return ResponseEntity.ok(count);
+    }
 }
