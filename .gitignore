@@ -68,9 +68,8 @@ mvnw.cmd
 **/*.secret
 .credentials/
 
-# Documentation files (Markdown and HTML guides)
+# Documentation files (Markdown guides)
 *.md
-*.html
 # Keep only root README and essential docs
 !README.md
 !LICENSE.md
