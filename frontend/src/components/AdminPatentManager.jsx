@@ -1,8 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, Circle, Mail, RefreshCw, AlertCircle, LogIn, LogOut, User, Shield, Eye, EyeOff, X, ArrowLeft, Lightbulb, FileCheck, Upload, CreditCard, MessageCircle, Send, Bell, Clock, List, Filter, BarChart3, Users, Activity, Search, Database, Globe, Trophy, Award, Medal, Sparkles } from 'lucide-react';
+import { CheckCircle, Circle, Mail, RefreshCw, AlertCircle, LogIn, LogOut, User, Shield, Eye, EyeOff, X, ArrowLeft, Lightbulb, FileCheck, Upload, CreditCard, MessageCircle, Send, Bell, Clock, List, Filter, BarChart3, Users, Activity, Search, Database, Globe, Trophy, Award, Medal, Sparkles, UserCheck, UserX } from 'lucide-react';
 import { addUserNotification } from '../utils/notifications';
 import { db } from '../firebase';
 import { doc, getDoc, collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
+import { 
+  RadarChart, 
+  Radar, 
+  PolarGrid, 
+  PolarAngleAxis, 
+  PolarRadiusAxis, 
+  ResponsiveContainer, 
+  Tooltip, 
+  Legend,
+  RadialBarChart,
+  RadialBar
+} from 'recharts';
 
 const AdminPatentManager = ({ onBack }) => {
   const [patents, setPatents] = useState([]);
@@ -66,6 +78,9 @@ const AdminPatentManager = ({ onBack }) => {
   // User statistics states
   const [userStats, setUserStats] = useState({
     totalUsers: 0,
+    basicUsers: 0,
+    proUsers: 0,
+    enterpriseUsers: 0,
     activeUsers: 0,
     deactivatedUsers: 0
   });
@@ -980,12 +995,28 @@ const AdminPatentManager = ({ onBack }) => {
       const usersSnapshot = await getDocs(usersRef);
       
       let total = 0;
+      let basic = 0;
+      let pro = 0;
+      let enterprise = 0;
       let active = 0;
       let deactivated = 0;
       
       usersSnapshot.forEach((doc) => {
         const userData = doc.data();
         total++;
+        
+        // Count by subscription type
+        const subscription = (userData.subscriptionType || 'basic').toLowerCase();
+        if (subscription === 'basic') {
+          basic++;
+        } else if (subscription === 'pro') {
+          pro++;
+        } else if (subscription === 'enterprise') {
+          enterprise++;
+        } else {
+          // Default to basic if unknown
+          basic++;
+        }
         
         // Check if user is deactivated
         if (userData.isDeactivated === true || userData.accountStatus === 'deactivated') {
@@ -997,11 +1028,14 @@ const AdminPatentManager = ({ onBack }) => {
       
       setUserStats({
         totalUsers: total,
+        basicUsers: basic,
+        proUsers: pro,
+        enterpriseUsers: enterprise,
         activeUsers: active,
         deactivatedUsers: deactivated
       });
       
-      console.log('User statistics fetched:', { total, active, deactivated });
+      console.log('User statistics fetched:', { total, basic, pro, enterprise, active, deactivated });
     } catch (error) {
       console.error('Error fetching user statistics:', error);
     }
@@ -1036,8 +1070,8 @@ const AdminPatentManager = ({ onBack }) => {
   const fetchSubscriptionRevenue = async (filter) => {
     try {
       setLoadingRevenue(true);
-      const subscriptionsRef = collection(db, 'subscriptions');
-      const snapshot = await getDocs(subscriptionsRef);
+      const usersRef = collection(db, 'users');
+      const snapshot = await getDocs(usersRef);
       
       const now = new Date();
       const filterDate = new Date();
@@ -1050,22 +1084,30 @@ const AdminPatentManager = ({ onBack }) => {
       
       const planPrices = {
         'Pro': 49,
-        'Enterprise': 199
+        'Enterprise': 199,
+        'Basic': 0
       };
       
       let totalRevenue = 0;
-      const planRevenue = { 'Pro': { amount: 0, count: 0 }, 'Enterprise': { amount: 0, count: 0 } };
+      const planRevenue = { 
+        'Basic': { amount: 0, count: 0 },
+        'Pro': { amount: 0, count: 0 }, 
+        'Enterprise': { amount: 0, count: 0 }
+      };
       
       snapshot.forEach((doc) => {
         const data = doc.data();
         const createdAt = data.createdAt?.toDate();
         
-        if (createdAt && createdAt >= filterDate && data.status === 'active') {
-          const planName = data.planName || '';
+        // Check if user was created/upgraded in the selected period
+        if (createdAt && createdAt >= filterDate) {
+          const planName = data.planName || data.plan || 'Basic';
           
-          if (planName === 'Pro' || planName === 'Enterprise') {
+          if (planRevenue[planName]) {
             const amount = planPrices[planName];
-            totalRevenue += amount;
+            if (planName === 'Pro' || planName === 'Enterprise') {
+              totalRevenue += amount;
+            }
             planRevenue[planName].amount += amount;
             planRevenue[planName].count += 1;
           }
@@ -1942,6 +1984,354 @@ const AdminPatentManager = ({ onBack }) => {
             </div>
           </div>
 
+          {/* Subscription Details with Radar Chart */}
+          <div className="mb-8">
+            <div className="bg-gradient-to-br from-white via-blue-50/30 to-cyan-50/30 rounded-2xl shadow-2xl p-8 border-2 border-blue-200/50 hover:shadow-3xl hover:border-blue-300 transition-all duration-500">
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-4">
+                  <div className="bg-gradient-to-br from-blue-500 to-cyan-500 p-4 rounded-2xl shadow-lg transform hover:scale-110 transition-transform duration-300">
+                    <Users className="w-8 h-8 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-3xl font-black bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                      Subscription Details
+                    </h3>
+                    <p className="text-sm text-gray-600 font-medium mt-1">User distribution across subscription tiers</p>
+                  </div>
+                </div>
+                <div className="bg-blue-100 px-4 py-2 rounded-xl border-2 border-blue-300">
+                  <p className="text-xs text-blue-600 font-bold uppercase">Total Users</p>
+                  <p className="text-2xl font-black text-blue-900">{userStats.totalUsers}</p>
+                </div>
+              </div>
+
+              {userStats.totalUsers === 0 ? (
+                <div className="animate-pulse space-y-6">
+                  <div className="h-96 bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl"></div>
+                  <div className="grid grid-cols-4 gap-4">
+                    <div className="h-32 bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl"></div>
+                    <div className="h-32 bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl"></div>
+                    <div className="h-32 bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl"></div>
+                    <div className="h-32 bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl"></div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-8">
+                  {/* Radar Chart */}
+                  <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-inner border border-blue-100">
+                    <h4 className="text-lg font-bold text-gray-800 mb-4 text-center flex items-center justify-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-blue-500 animate-pulse"></div>
+                      User Distribution Overview
+                      <div className="w-3 h-3 rounded-full bg-cyan-500 animate-pulse"></div>
+                    </h4>
+                    <div className="h-[450px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <RadarChart 
+                          cx="50%" 
+                          cy="50%" 
+                          outerRadius="70%" 
+                          data={[
+                            {
+                              category: 'Total Users',
+                              value: userStats.totalUsers,
+                              fullMark: userStats.totalUsers || 100
+                            },
+                            {
+                              category: 'Basic',
+                              value: userStats.basicUsers,
+                              fullMark: userStats.totalUsers || 100
+                            },
+                            {
+                              category: 'Pro',
+                              value: userStats.proUsers,
+                              fullMark: userStats.totalUsers || 100
+                            },
+                            {
+                              category: 'Enterprise',
+                              value: userStats.enterpriseUsers,
+                              fullMark: userStats.totalUsers || 100
+                            },
+                            {
+                              category: 'Active',
+                              value: userStats.activeUsers,
+                              fullMark: userStats.totalUsers || 100
+                            }
+                          ]}
+                        >
+                          <defs>
+                            <linearGradient id="radarGradient" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.9}/>
+                              <stop offset="50%" stopColor="#06b6d4" stopOpacity={0.7}/>
+                              <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.5}/>
+                            </linearGradient>
+                          </defs>
+                          <PolarGrid 
+                            stroke="#cbd5e1" 
+                            strokeWidth={2} 
+                            strokeDasharray="5 5"
+                          />
+                          <PolarAngleAxis 
+                            dataKey="category" 
+                            tick={{ fill: '#1e293b', fontSize: 14, fontWeight: 700 }}
+                          />
+                          <PolarRadiusAxis 
+                            angle={90} 
+                            domain={[0, userStats.totalUsers || 100]}
+                            tick={{ fill: '#475569', fontSize: 12, fontWeight: 600 }}
+                          />
+                          <Radar 
+                            name="User Distribution" 
+                            dataKey="value" 
+                            stroke="#2563eb" 
+                            strokeWidth={4}
+                            fill="url(#radarGradient)" 
+                            fillOpacity={0.7}
+                            animationDuration={2000}
+                            animationBegin={200}
+                          />
+                          <Tooltip 
+                            contentStyle={{ 
+                              backgroundColor: 'rgba(255, 255, 255, 0.98)', 
+                              border: '3px solid #3b82f6',
+                              borderRadius: '16px',
+                              padding: '16px',
+                              boxShadow: '0 20px 40px rgba(59, 130, 246, 0.3)'
+                            }}
+                            labelStyle={{ fontWeight: 'bold', fontSize: '14px', color: '#1e293b' }}
+                            formatter={(value, name, props) => [
+                              <span className="font-bold text-blue-700 text-base">
+                                {value} users
+                                {props.payload.category !== 'Total Users' && userStats.totalUsers > 0 
+                                  ? ` (${Math.round((value / userStats.totalUsers) * 100)}%)`
+                                  : ''
+                                }
+                              </span>,
+                              props.payload.category
+                            ]}
+                          />
+                          <Legend 
+                            wrapperStyle={{ paddingTop: '24px' }}
+                            iconType="circle"
+                            formatter={() => <span className="font-bold text-gray-700 text-sm">User Distribution</span>}
+                          />
+                        </RadarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  {/* Stats Summary Cards - Numbers visible only on hover */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    {/* Total Users */}
+                    <div className="group relative bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-100 rounded-2xl p-6 border-4 border-blue-400 hover:border-blue-600 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-hidden">
+                      <div className="flex flex-col items-center text-center">
+                        <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-5 rounded-2xl mb-4 shadow-xl group-hover:scale-110 transition-transform duration-300">
+                          <Users className="w-8 h-8 text-white" />
+                        </div>
+                        <p className="text-sm font-black text-blue-700 uppercase tracking-wider">Total Users</p>
+                        {/* Hidden by default, visible on hover */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/95 via-indigo-500/95 to-blue-600/95 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl">
+                          <h4 className="text-5xl font-black text-white drop-shadow-lg">
+                            {userStats.totalUsers}
+                          </h4>
+                          <p className="text-lg text-white/90 font-bold mt-3">100% Platform Users</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Basic Users */}
+                    <div className="group relative bg-gradient-to-br from-gray-50 via-gray-100 to-slate-100 rounded-2xl p-6 border-4 border-gray-500 hover:border-gray-700 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-hidden">
+                      <div className="flex flex-col items-center text-center">
+                        <div className="bg-gradient-to-br from-gray-500 to-slate-600 p-5 rounded-2xl mb-4 shadow-xl group-hover:scale-110 transition-transform duration-300">
+                          <Users className="w-8 h-8 text-white" />
+                        </div>
+                        <p className="text-sm font-black text-gray-700 uppercase tracking-wider">Basic</p>
+                        {/* Hidden by default, visible on hover */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-gray-600/95 via-slate-600/95 to-gray-700/95 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl">
+                          <h4 className="text-5xl font-black text-white drop-shadow-lg">
+                            {userStats.basicUsers}
+                          </h4>
+                          <p className="text-lg text-white/90 font-bold mt-3">
+                            {userStats.totalUsers > 0 ? Math.round((userStats.basicUsers / userStats.totalUsers) * 100) : 0}% of Total
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Pro Users */}
+                    <div className="group relative bg-gradient-to-br from-purple-50 via-purple-100 to-pink-100 rounded-2xl p-6 border-4 border-purple-500 hover:border-purple-700 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-hidden">
+                      <div className="flex flex-col items-center text-center">
+                        <div className="bg-gradient-to-br from-purple-500 to-pink-600 p-5 rounded-2xl mb-4 shadow-xl group-hover:scale-110 transition-transform duration-300">
+                          <Award className="w-8 h-8 text-white" />
+                        </div>
+                        <p className="text-sm font-black text-purple-700 uppercase tracking-wider">Pro</p>
+                        {/* Hidden by default, visible on hover */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-purple-600/95 via-pink-600/95 to-purple-700/95 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl">
+                          <h4 className="text-5xl font-black text-white drop-shadow-lg">
+                            {userStats.proUsers}
+                          </h4>
+                          <p className="text-lg text-white/90 font-bold mt-3">
+                            {userStats.totalUsers > 0 ? Math.round((userStats.proUsers / userStats.totalUsers) * 100) : 0}% of Total
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Enterprise Users */}
+                    <div className="group relative bg-gradient-to-br from-amber-50 via-amber-100 to-orange-100 rounded-2xl p-6 border-4 border-amber-500 hover:border-amber-700 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 overflow-hidden">
+                      <div className="flex flex-col items-center text-center">
+                        <div className="bg-gradient-to-br from-amber-500 to-orange-600 p-5 rounded-2xl mb-4 shadow-xl group-hover:scale-110 transition-transform duration-300">
+                          <Award className="w-8 h-8 text-white" />
+                        </div>
+                        <p className="text-sm font-black text-amber-700 uppercase tracking-wider">Enterprise</p>
+                        {/* Hidden by default, visible on hover */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-amber-600/95 via-orange-600/95 to-amber-700/95 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl">
+                          <h4 className="text-5xl font-black text-white drop-shadow-lg">
+                            {userStats.enterpriseUsers}
+                          </h4>
+                          <p className="text-lg text-white/90 font-bold mt-3">
+                            {userStats.totalUsers > 0 ? Math.round((userStats.enterpriseUsers / userStats.totalUsers) * 100) : 0}% of Total
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Account Status Section */}
+                  <div className="border-t-2 border-gradient-to-r from-blue-200 via-purple-200 to-pink-200 pt-8 mt-2">
+                    <div className="bg-gradient-to-r from-blue-50 via-purple-50 to-pink-50 rounded-2xl p-6 mb-6 border-2 border-blue-200">
+                      <h4 className="text-2xl font-black bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-2 flex items-center gap-3">
+                        <AlertCircle className="w-7 h-7 text-purple-600" />
+                        Account Status Overview
+                      </h4>
+                      <p className="text-sm text-gray-600 font-medium">Real-time monitoring of active and deactivated accounts</p>
+                    </div>
+                    
+                    {/* Account Status Charts */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      {/* Active Users - Radial Chart */}
+                      <div className="group bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 rounded-2xl p-8 border-4 border-green-400 hover:border-green-600 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500">
+                        <div className="flex items-center gap-4 mb-6">
+                          <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-4 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                            <UserCheck className="w-8 h-8 text-white" />
+                          </div>
+                          <div>
+                            <p className="text-base font-black text-green-700 uppercase tracking-wider">Active Users</p>
+                            <p className="text-sm text-green-600 font-semibold">Currently active accounts</p>
+                          </div>
+                        </div>
+
+                        <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 shadow-inner border border-green-200">
+                          <div className="h-[280px]">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <RadialBarChart 
+                                cx="50%" 
+                                cy="50%" 
+                                innerRadius="25%" 
+                                outerRadius="85%" 
+                                barSize={35}
+                                data={[
+                                  {
+                                    name: 'Active',
+                                    value: userStats.totalUsers > 0 ? (userStats.activeUsers / userStats.totalUsers) * 100 : 0,
+                                    fill: 'url(#activeRadialGradient)',
+                                    count: userStats.activeUsers
+                                  }
+                                ]}
+                                startAngle={90}
+                                endAngle={-270}
+                              >
+                                <RadialBar
+                                  background={{ fill: '#d1fae5', opacity: 0.3 }}
+                                  dataKey="value"
+                                  cornerRadius={15}
+                                  animationDuration={2000}
+                                  animationBegin={200}
+                                />
+                                <text 
+                                  x="50%" 
+                                  y="42%" 
+                                  textAnchor="middle" 
+                                  dominantBaseline="middle"
+                                  className="text-5xl font-black fill-green-900"
+                                >
+                                  {userStats.activeUsers}
+                                </text>
+                                <text 
+                                  x="50%" 
+                                  y="58%" 
+                                  textAnchor="middle" 
+                                  dominantBaseline="middle"
+                                  className="text-xl font-bold fill-green-600"
+                                >
+                                  ({userStats.totalUsers > 0 ? Math.round((userStats.activeUsers / userStats.totalUsers) * 100) : 0}%)
+                                </text>
+                                <Tooltip 
+                                  contentStyle={{ 
+                                    backgroundColor: 'rgba(255, 255, 255, 0.98)', 
+                                    border: '3px solid #10b981',
+                                    borderRadius: '16px',
+                                    padding: '16px',
+                                    boxShadow: '0 20px 40px rgba(16, 185, 129, 0.3)'
+                                  }}
+                                  labelStyle={{ fontWeight: 'bold', fontSize: '14px', color: '#065f46' }}
+                                  formatter={(value, name, props) => [
+                                    <span className="font-bold text-green-700 text-base">
+                                      {props.payload.count} users ({value.toFixed(1)}% of total)
+                                    </span>,
+                                    'Active Users'
+                                  ]}
+                                />
+                                <defs>
+                                  <linearGradient id="activeRadialGradient" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stopColor="#10b981" stopOpacity={1}/>
+                                    <stop offset="50%" stopColor="#059669" stopOpacity={0.95}/>
+                                    <stop offset="100%" stopColor="#047857" stopOpacity={0.9}/>
+                                  </linearGradient>
+                                </defs>
+                              </RadialBarChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Deactivated Users */}
+                      <div className="group bg-gradient-to-br from-red-50 via-rose-50 to-pink-50 rounded-2xl p-8 border-4 border-red-400 hover:border-red-600 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500">
+                        <div className="flex items-center gap-4 mb-6">
+                          <div className="bg-gradient-to-br from-red-500 to-rose-600 p-4 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                            <UserX className="w-8 h-8 text-white" />
+                          </div>
+                          <div>
+                            <p className="text-base font-black text-red-700 uppercase tracking-wider">Deactivated Users</p>
+                            <p className="text-sm text-red-600 font-semibold">Inactive accounts</p>
+                          </div>
+                        </div>
+
+                        <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 shadow-inner border border-red-200">
+                          <div className="h-[280px] flex flex-col items-center justify-center">
+                            <div className="text-center">
+                              <div className="inline-block bg-gradient-to-br from-red-500 to-rose-600 p-8 rounded-full mb-6 shadow-2xl">
+                                <UserX className="w-16 h-16 text-white" />
+                              </div>
+                              <h4 className="text-6xl font-black text-red-600 mb-4">
+                                {userStats.deactivatedUsers}
+                              </h4>
+                              <p className="text-2xl font-bold text-red-700">
+                                {userStats.totalUsers > 0 ? Math.round((userStats.deactivatedUsers / userStats.totalUsers) * 100) : 0}% of Total
+                              </p>
+                              <p className="text-sm text-gray-600 font-medium mt-4">
+                                Deactivated Accounts
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Revenue Analytics Section */}
           <div className="mb-6">
             {/* Filter Bar */}
@@ -2003,29 +2393,49 @@ const AdminPatentManager = ({ onBack }) => {
                 ) : subscriptionRevenue.byPlan.length > 0 ? (
                   <div className="space-y-3">
                     {subscriptionRevenue.byPlan.map((plan) => {
-                      const maxAmount = Math.max(...subscriptionRevenue.byPlan.map(p => p.amount));
-                      const barWidth = maxAmount > 0 ? (plan.amount / maxAmount) * 100 : 0;
-                      const isPro = plan.planName === 'Pro';
+                      const maxCount = Math.max(...subscriptionRevenue.byPlan.map(p => p.count));
+                      const barWidth = maxCount > 0 ? (plan.count / maxCount) * 100 : 0;
+                      
+                      // Color coding for different plans
+                      const planColors = {
+                        'Basic': { 
+                          bg: 'from-gray-400 to-gray-500', 
+                          text: 'text-gray-700',
+                          icon: '🆓'
+                        },
+                        'Pro': { 
+                          bg: 'from-blue-400 to-cyan-500', 
+                          text: 'text-blue-700',
+                          icon: '⭐'
+                        },
+                        'Enterprise': { 
+                          bg: 'from-purple-400 to-pink-500', 
+                          text: 'text-purple-700',
+                          icon: '👑'
+                        }
+                      };
+                      
+                      const colors = planColors[plan.planName] || planColors['Basic'];
                       
                       return (
                         <div key={plan.planName} className="relative">
                           <div className="flex items-center justify-between mb-1 text-sm font-semibold">
-                            <span className={isPro ? 'text-blue-700' : 'text-purple-700'}>{plan.planName}</span>
-                            <span className="text-gray-700">₹{plan.amount.toLocaleString()}</span>
+                            <span className={colors.text}>{colors.icon} {plan.planName}</span>
+                            <span className="text-gray-700">
+                              {plan.amount > 0 ? `₹${plan.amount.toLocaleString()}` : 'Free'}
+                            </span>
                           </div>
                           <div className="relative h-12 bg-white rounded-lg overflow-hidden border-2 border-gray-200 shadow-sm">
                             <div 
-                              className={`h-full flex items-center justify-between px-3 transition-all duration-700 ${
-                                isPro 
-                                  ? 'bg-gradient-to-r from-blue-400 to-cyan-500' 
-                                  : 'bg-gradient-to-r from-purple-400 to-pink-500'
-                              }`}
-                              style={{ width: `${barWidth}%`, minWidth: '120px' }}
+                              className={`h-full flex items-center justify-between px-3 transition-all duration-700 bg-gradient-to-r ${colors.bg}`}
+                              style={{ width: `${Math.max(barWidth, 15)}%`, minWidth: '100px' }}
                             >
                               <span className="text-white font-bold text-sm drop-shadow-lg">{plan.count} user{plan.count !== 1 ? 's' : ''}</span>
-                              <span className="text-white font-bold drop-shadow-lg">
-                                {subscriptionRevenue.total > 0 ? Math.round((plan.amount / subscriptionRevenue.total) * 100) : 0}%
-                              </span>
+                              {subscriptionRevenue.total > 0 && plan.amount > 0 && (
+                                <span className="text-white font-bold drop-shadow-lg">
+                                  {Math.round((plan.amount / subscriptionRevenue.total) * 100)}%
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -2035,7 +2445,7 @@ const AdminPatentManager = ({ onBack }) => {
                 ) : (
                   <div className="text-center py-8 text-gray-500">
                     <CreditCard className="w-10 h-10 mx-auto mb-2 opacity-30" />
-                    <p className="text-sm font-medium">No subscription revenue</p>
+                    <p className="text-sm font-medium">No subscription data</p>
                   </div>
                 )}
               </div>
