@@ -107,6 +107,12 @@ const Dashboard = () => {
           </button>
           <button
             className="hover:text-purple-300"
+            onClick={() => navigate('/my-filings')}
+          >
+            My Filings
+          </button>
+          <button
+            className="hover:text-purple-300"
             onClick={() => navigate("/pricing")}
           >
             Pricing
@@ -232,7 +238,17 @@ const Dashboard = () => {
         </div>
       </nav>
 
-      <h2 className="text-3xl font-bold mb-6">Dashboard</h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-3xl font-bold">Dashboard</h2>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate('/file-patent')}
+            className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold rounded-lg shadow-lg"
+          >
+            File New Patent
+          </button>
+        </div>
+      </div>
 
       {/* TOP GRID SECTION */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
