@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { auth } from "../firebase";
+import { auth, db } from "../firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
+import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import "../App.css";
 
@@ -23,6 +24,22 @@ function Verification() {
 
   const handleLogout = async () => {
     try {
+      // Update user's online status in Firestore before signing out
+      if (user?.uid) {
+        try {
+          const userRef = doc(db, "users", user.uid);
+          await updateDoc(userRef, {
+            isOnline: false,
+            lastLogout: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          });
+          console.log("User online status set to false");
+        } catch (firestoreError) {
+          console.error("Error updating online status:", firestoreError);
+          // Continue with logout even if Firestore update fails
+        }
+      }
+      
       await signOut(auth);
       navigate("/");
     } catch (error) {
@@ -43,6 +60,17 @@ function Verification() {
 
   const handleContinueToDashboard = async () => {
     try {
+      // Update Firestore with current email verification status
+      if (user.uid) {
+        const userDocRef = doc(db, 'users', user.uid);
+        await updateDoc(userDocRef, {
+          emailVerified: user.emailVerified,
+          lastLogin: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+        console.log('✅ Updated emailVerified status in Firestore:', user.emailVerified);
+      }
+
       const userProfile = {
         uid: user.uid,
         email: user.email,
@@ -57,15 +85,11 @@ function Verification() {
       localStorage.setItem('userProfile', JSON.stringify(userProfile));
       
       const idToken = await user.getIdToken();
+      localStorage.setItem('firebaseAuthToken', idToken);
       
-      // Navigate to the dashboard URL in the same window
-      const dashboardURL = new URL('http://localhost:5173/');
-      dashboardURL.searchParams.set('token', idToken);
-      dashboardURL.searchParams.set('uid', user.uid);
-      dashboardURL.searchParams.set('email', user.email);
-      
-      window.location.href = dashboardURL.toString();
-      console.log('✅ Navigating to advanced dashboard');
+      // Navigate to the dashboard route
+      console.log('✅ Navigating to dashboard');
+      navigate('/dashboard');
     } catch (error) {
       console.error('❌ Error:', error);
       alert('Error opening dashboard. Please try again.');
@@ -74,119 +98,147 @@ function Verification() {
 
   if (loading) {
     return (
-      <div className="dashboard-container">
-        <div style={{ textAlign: 'center', padding: '2rem' }}>
-          <div style={{ 
-            width: '40px', 
-            height: '40px', 
-            border: '4px solid #f3f3f3',
-            borderTop: '4px solid #667eea',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto 1rem'
-          }}></div>
-          <p>Loading...</p>
+      <div className="verification-page-wrapper">
+        <div className="loading-container">
+          <div className="spinner"></div>
+          <p>Verifying your identity...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="dashboard-container">
-      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <h2 className="dashboard-title" style={{ fontSize: '1.8rem', marginBottom: '0.5rem' }}>
-          🔐 Identity Verification in Progress
-        </h2>
-        <p style={{ fontSize: '1.1rem', color: '#555', marginBottom: '1rem' }}>
-          Please confirm your account details
-        </p>
+    <div className="verification-page-wrapper">
+      <div className="verification-container-wide">
+        {/* Header Section - Compact with inline icon */}
+        <div className="verification-header-compact">
+          <h1 className="verification-title-compact">
+            <span className="icon-shield-inline">🛡️</span>
+            Identity Verification
+          </h1>
+          <p className="verification-subtitle-compact">
+            Please confirm your account details before proceeding to the dashboard
+          </p>
+        </div>
         
+        {user && (
+          <>
+            {/* Split Content Section */}
+            <div className="verification-split-content">
+              {/* Left Side - Account Verification Details */}
+              <div className="verification-left-section">
+                <div className="verification-card-compact">
+                  <div className="card-header-compact">
+                    <h2>
+                      <span className="header-icon">✓</span>
+                      Account Verification Details
+                    </h2>
+                  </div>
+                  
+                  <div className="info-grid-compact">
+                    <div className="info-item">
+                      <div className="info-label">
+                        <span className="label-icon">📧</span>
+                        Registered Email
+                      </div>
+                      <div className="info-value">{user.email}</div>
+                    </div>
+                    
+                    <div className="info-item">
+                      <div className="info-label">
+                        <span className="label-icon">🆔</span>
+                        User Identification Code
+                      </div>
+                      <div className="info-value info-code">{user.uid.substring(0, 16)}...</div>
+                    </div>
+                    
+                    <div className="info-item">
+                      <div className="info-label">
+                        <span className="label-icon">📅</span>
+                        Account Created On
+                      </div>
+                      <div className="info-value">{formatDate(user.metadata?.creationTime)}</div>
+                    </div>
+                    
+                    <div className="info-item">
+                      <div className="info-label">
+                        <span className="label-icon">⏰</span>
+                        Last Login Activity
+                      </div>
+                      <div className="info-value">{formatDate(user.metadata?.lastSignInTime)}</div>
+                    </div>
+                    
+                    <div className="info-item full-width">
+                      <div className="info-label">
+                        <span className="label-icon">✉️</span>
+                        Email Verification Status
+                      </div>
+                      <div className={`info-value verification-status ${user.emailVerified ? 'verified' : 'unverified'}`}>
+                        {user.emailVerified ? (
+                          <><span className="status-icon">✓</span> Verified</>
+                        ) : (
+                          <><span className="status-icon">⚠</span> Not Verified</>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Right Side - Security Checkpoint, Actions & Footer */}
+              <div className="verification-right-section">
+                {/* Security Notice */}
+                <div className="security-notice-compact">
+                  <div className="notice-icon-compact">🔒</div>
+                  <div className="notice-content-compact">
+                    <h3>Security Checkpoint</h3>
+                    <p>
+                      We're verifying this login attempt for your protection. If you don't recognize 
+                      this activity, please click "No, This Is Not Me" to sign out immediately.
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Action Buttons */}
+                <div className="verification-actions-compact">
+                  <button
+                    onClick={handleContinueToDashboard}
+                    className="btn-verify-compact btn-verify-success"
+                  >
+                    <span className="btn-icon-compact">✔</span>
+                    <div className="btn-content-compact">
+                      <div className="btn-main-text-compact">Yes, This Is My Account</div>
+                      <div className="btn-sub-text-compact">Continue to Dashboard</div>
+                    </div>
+                  </button>
+                  
+                  <button
+                    onClick={handleLogout}
+                    className="btn-verify-compact btn-verify-danger"
+                  >
+                    <span className="btn-icon-compact">✖</span>
+                    <div className="btn-content-compact">
+                      <div className="btn-main-text-compact">No, This Is Not Me</div>
+                      <div className="btn-sub-text-compact">Sign Out Immediately</div>
+                    </div>
+                  </button>
+                </div>
+                
+                {/* Why am I seeing this - moved here below buttons */}
+                <div className="verification-footer-right">
+                  <p className="footer-text-right">
+                    <strong>Why am I seeing this?</strong>
+                  </p>
+                  <p className="footer-description-right">
+                    This verification step helps protect your account from unauthorized access. 
+                    We authenticate every login to ensure the security of your IP research data.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
-      
-      {user && (
-        <>
-          <div className="user-info" style={{ marginBottom: '2rem' }}>
-            <h3 style={{ marginBottom: '1rem', color: '#333', fontSize: '1.2rem' }}>
-              ✅ Account Verification Details
-            </h3>
-            <div style={{ textAlign: 'left' }}>
-              <p style={{ marginBottom: '0.8rem' }}>
-                <strong>Registered Email:</strong><br />
-                <span style={{ color: '#007bff' }}>{user.email}</span>
-              </p>
-              <p style={{ marginBottom: '0.8rem' }}>
-                <strong>User Identification Code:</strong><br />
-                <span style={{ color: '#007bff', fontFamily: 'monospace' }}>{user.uid.substring(0, 8)}...</span>
-              </p>
-              <p style={{ marginBottom: '0.8rem' }}>
-                <strong>Account Created On:</strong><br />
-                <span style={{ color: '#007bff' }}>{formatDate(user.metadata?.creationTime)}</span>
-              </p>
-              <p style={{ marginBottom: '0.8rem' }}>
-                <strong>Last Login Activity:</strong><br />
-                <span style={{ color: '#007bff' }}>{formatDate(user.metadata?.lastSignInTime)}</span>
-              </p>
-              <p style={{ marginBottom: '0.8rem' }}>
-                <strong>Email Verification Status:</strong><br />
-                <span style={{ color: user.emailVerified ? '#28a745' : '#dc3545' }}>
-                  {user.emailVerified ? "✔ Verified" : "❌ Not Verified"}
-                </span>
-              </p>
-            </div>
-          </div>
-        
-          
-          <div style={{ textAlign: 'center' }}>
-            
-            
-            <div style={{ marginBottom: '1rem' }}>
-              <button
-                onClick={handleContinueToDashboard}
-                style={{
-                  background: 'linear-gradient(45deg, #28a745 0%, #20c997 100%)',
-                  color: 'white',
-                  border: 'none',
-                  padding: '15px 30px',
-                  borderRadius: '10px',
-                  cursor: 'pointer',
-                  fontSize: '1rem',
-                  fontWeight: 'bold',
-                  marginBottom: '15px',
-                  boxShadow: '0 4px 15px rgba(40, 167, 69, 0.3)',
-                  width: '100%',
-                  maxWidth: '300px'
-                }}
-              >
-                🚀 Yes, This Is My Account<br />
-                <small style={{ fontSize: '0.85rem', opacity: '0.9' }}>➡️ Continue to Dashboard</small>
-              </button>
-            </div>
-            
-            <div>
-              <button
-                className="btn-logout"
-                onClick={handleLogout}
-                style={{
-                  background: 'linear-gradient(45deg, #dc3545 0%, #fd7e7e 100%)',
-                  color: 'white',
-                  border: 'none',
-                  padding: '15px 30px',
-                  borderRadius: '10px',
-                  cursor: 'pointer',
-                  fontSize: '1rem',
-                  fontWeight: 'bold',
-                  boxShadow: '0 4px 15px rgba(220, 53, 69, 0.3)',
-                  width: '100%',
-                  maxWidth: '300px'
-                }}
-              >
-                🚪 No, This Is Not Me<br />
-                <small style={{ fontSize: '0.85rem', opacity: '0.9' }}>➡️ Sign Out</small>
-              </button>
-            </div>
-          </div>
-        </>
-      )}
     </div>
   );
 }
