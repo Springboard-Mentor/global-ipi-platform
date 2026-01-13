@@ -4,16 +4,17 @@ import { addUserNotification } from '../utils/notifications';
 import { db } from '../firebase';
 import { doc, getDoc, collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
 import { 
-  RadarChart, 
-  Radar, 
-  PolarGrid, 
-  PolarAngleAxis, 
-  PolarRadiusAxis, 
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
   ResponsiveContainer, 
   Tooltip, 
   Legend,
   RadialBarChart,
-  RadialBar
+  RadialBar,
+  Cell
 } from 'recharts';
 
 const AdminPatentManager = ({ onBack }) => {
@@ -86,7 +87,7 @@ const AdminPatentManager = ({ onBack }) => {
   });
   
   // State-wise patent states
-  const [selectedState, setSelectedState] = useState('');
+  const [selectedState, setSelectedState] = useState('Uttar Pradesh');
   const [statePatentCount, setStatePatentCount] = useState(0);
   const [loadingStateData, setLoadingStateData] = useState(false);
   
@@ -1026,16 +1027,23 @@ const AdminPatentManager = ({ onBack }) => {
         }
       });
       
-      setUserStats({
+      const newStats = {
         totalUsers: total,
         basicUsers: basic,
         proUsers: pro,
         enterpriseUsers: enterprise,
         activeUsers: active,
         deactivatedUsers: deactivated
-      });
+      };
+      
+      setUserStats(newStats);
       
       console.log('User statistics fetched:', { total, basic, pro, enterprise, active, deactivated });
+      
+      // Calculate subscription revenue based on updated stats
+      if (isAuthenticated) {
+        calculateSubscriptionRevenue(newStats);
+      }
     } catch (error) {
       console.error('Error fetching user statistics:', error);
     }
@@ -1066,65 +1074,50 @@ const AdminPatentManager = ({ onBack }) => {
     }
   };
 
-  // Fetch subscription revenue from Firestore
-  const fetchSubscriptionRevenue = async (filter) => {
+  // Calculate subscription revenue based on user stats
+  const calculateSubscriptionRevenue = (stats) => {
     try {
-      setLoadingRevenue(true);
-      const usersRef = collection(db, 'users');
-      const snapshot = await getDocs(usersRef);
-      
-      const now = new Date();
-      const filterDate = new Date();
-      
-      if (filter === 'weekly') {
-        filterDate.setDate(now.getDate() - 7);
-      } else {
-        filterDate.setMonth(now.getMonth() - 1);
-      }
-      
       const planPrices = {
         'Pro': 49,
         'Enterprise': 199,
         'Basic': 0
       };
       
-      let totalRevenue = 0;
-      const planRevenue = { 
-        'Basic': { amount: 0, count: 0 },
-        'Pro': { amount: 0, count: 0 }, 
-        'Enterprise': { amount: 0, count: 0 }
-      };
+      // Calculate revenue based on passed stats
+      const proRevenue = stats.proUsers * planPrices['Pro'];
+      const enterpriseRevenue = stats.enterpriseUsers * planPrices['Enterprise'];
+      const totalRevenue = proRevenue + enterpriseRevenue;
       
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        const createdAt = data.createdAt?.toDate();
-        
-        // Check if user was created/upgraded in the selected period
-        if (createdAt && createdAt >= filterDate) {
-          const planName = data.planName || data.plan || 'Basic';
-          
-          if (planRevenue[planName]) {
-            const amount = planPrices[planName];
-            if (planName === 'Pro' || planName === 'Enterprise') {
-              totalRevenue += amount;
-            }
-            planRevenue[planName].amount += amount;
-            planRevenue[planName].count += 1;
-          }
-        }
-      });
+      const byPlan = [];
       
-      const byPlan = Object.entries(planRevenue)
-        .filter(([_, data]) => data.count > 0)
-        .map(([planName, data]) => ({
-          planName,
-          amount: data.amount,
-          count: data.count
-        }));
+      if (stats.basicUsers > 0) {
+        byPlan.push({
+          planName: 'Basic',
+          amount: 0,
+          count: stats.basicUsers
+        });
+      }
+      
+      if (stats.proUsers > 0) {
+        byPlan.push({
+          planName: 'Pro',
+          amount: proRevenue,
+          count: stats.proUsers
+        });
+      }
+      
+      if (stats.enterpriseUsers > 0) {
+        byPlan.push({
+          planName: 'Enterprise',
+          amount: enterpriseRevenue,
+          count: stats.enterpriseUsers
+        });
+      }
       
       setSubscriptionRevenue({ total: totalRevenue, byPlan });
+      console.log('Subscription revenue calculated:', { totalRevenue, byPlan });
     } catch (error) {
-      console.error('Error fetching subscription revenue:', error);
+      console.error('Error calculating subscription revenue:', error);
       setSubscriptionRevenue({ total: 0, byPlan: [] });
     }
   };
@@ -1149,10 +1142,7 @@ const AdminPatentManager = ({ onBack }) => {
   // Fetch all revenue data
   const fetchRevenueData = async (filter) => {
     setLoadingRevenue(true);
-    await Promise.all([
-      fetchSubscriptionRevenue(filter),
-      fetchPatentFilingRevenue(filter)
-    ]);
+    await fetchPatentFilingRevenue(filter);
     setLoadingRevenue(false);
   };
 
@@ -2017,91 +2007,92 @@ const AdminPatentManager = ({ onBack }) => {
                 </div>
               ) : (
                 <div className="space-y-8">
-                  {/* Radar Chart */}
+                  {/* Bar Chart */}
                   <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-inner border border-blue-100">
                     <h4 className="text-lg font-bold text-gray-800 mb-4 text-center flex items-center justify-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-blue-500 animate-pulse"></div>
+                      <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 animate-pulse"></div>
                       User Distribution Overview
-                      <div className="w-3 h-3 rounded-full bg-cyan-500 animate-pulse"></div>
+                      <div className="w-3 h-3 rounded-full bg-gradient-to-r from-cyan-500 to-pink-500 animate-pulse"></div>
                     </h4>
                     <div className="h-[450px]">
                       <ResponsiveContainer width="100%" height="100%">
-                        <RadarChart 
-                          cx="50%" 
-                          cy="50%" 
-                          outerRadius="70%" 
+                        <BarChart 
                           data={[
                             {
-                              category: 'Total Users',
+                              category: 'Total',
                               value: userStats.totalUsers,
-                              fullMark: userStats.totalUsers || 100
+                              color: '#6366f1'
                             },
                             {
                               category: 'Basic',
                               value: userStats.basicUsers,
-                              fullMark: userStats.totalUsers || 100
+                              color: '#94a3b8'
                             },
                             {
                               category: 'Pro',
                               value: userStats.proUsers,
-                              fullMark: userStats.totalUsers || 100
+                              color: '#3b82f6'
                             },
                             {
                               category: 'Enterprise',
                               value: userStats.enterpriseUsers,
-                              fullMark: userStats.totalUsers || 100
+                              color: '#a855f7'
                             },
                             {
                               category: 'Active',
                               value: userStats.activeUsers,
-                              fullMark: userStats.totalUsers || 100
+                              color: '#10b981'
                             }
                           ]}
+                          margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
                         >
                           <defs>
-                            <linearGradient id="radarGradient" x1="0" y1="0" x2="0" y2="1">
+                            <linearGradient id="barGradient1" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#6366f1" stopOpacity={0.9}/>
+                              <stop offset="100%" stopColor="#4f46e5" stopOpacity={0.7}/>
+                            </linearGradient>
+                            <linearGradient id="barGradient2" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#94a3b8" stopOpacity={0.9}/>
+                              <stop offset="100%" stopColor="#64748b" stopOpacity={0.7}/>
+                            </linearGradient>
+                            <linearGradient id="barGradient3" x1="0" y1="0" x2="0" y2="1">
                               <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.9}/>
-                              <stop offset="50%" stopColor="#06b6d4" stopOpacity={0.7}/>
-                              <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.5}/>
+                              <stop offset="100%" stopColor="#2563eb" stopOpacity={0.7}/>
+                            </linearGradient>
+                            <linearGradient id="barGradient4" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#a855f7" stopOpacity={0.9}/>
+                              <stop offset="100%" stopColor="#9333ea" stopOpacity={0.7}/>
+                            </linearGradient>
+                            <linearGradient id="barGradient5" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#10b981" stopOpacity={0.9}/>
+                              <stop offset="100%" stopColor="#059669" stopOpacity={0.7}/>
                             </linearGradient>
                           </defs>
-                          <PolarGrid 
-                            stroke="#cbd5e1" 
-                            strokeWidth={2} 
-                            strokeDasharray="5 5"
-                          />
-                          <PolarAngleAxis 
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" strokeWidth={2} />
+                          <XAxis 
                             dataKey="category" 
-                            tick={{ fill: '#1e293b', fontSize: 14, fontWeight: 700 }}
+                            tick={{ fill: '#1e293b', fontSize: 13, fontWeight: 700 }}
+                            angle={-15}
+                            textAnchor="end"
+                            height={80}
                           />
-                          <PolarRadiusAxis 
-                            angle={90} 
-                            domain={[0, userStats.totalUsers || 100]}
+                          <YAxis 
                             tick={{ fill: '#475569', fontSize: 12, fontWeight: 600 }}
-                          />
-                          <Radar 
-                            name="User Distribution" 
-                            dataKey="value" 
-                            stroke="#2563eb" 
-                            strokeWidth={4}
-                            fill="url(#radarGradient)" 
-                            fillOpacity={0.7}
-                            animationDuration={2000}
-                            animationBegin={200}
+                            label={{ value: 'Number of Users', angle: -90, position: 'insideLeft', style: { fill: '#1e293b', fontWeight: 'bold' } }}
                           />
                           <Tooltip 
                             contentStyle={{ 
                               backgroundColor: 'rgba(255, 255, 255, 0.98)', 
-                              border: '3px solid #3b82f6',
+                              border: '3px solid #6366f1',
                               borderRadius: '16px',
                               padding: '16px',
-                              boxShadow: '0 20px 40px rgba(59, 130, 246, 0.3)'
+                              boxShadow: '0 20px 40px rgba(99, 102, 241, 0.3)'
                             }}
                             labelStyle={{ fontWeight: 'bold', fontSize: '14px', color: '#1e293b' }}
                             formatter={(value, name, props) => [
-                              <span className="font-bold text-blue-700 text-base">
+                              <span className="font-bold text-indigo-700 text-base">
                                 {value} users
-                                {props.payload.category !== 'Total Users' && userStats.totalUsers > 0 
+                                {props.payload.category !== 'Total' && userStats.totalUsers > 0 
                                   ? ` (${Math.round((value / userStats.totalUsers) * 100)}%)`
                                   : ''
                                 }
@@ -2109,12 +2100,23 @@ const AdminPatentManager = ({ onBack }) => {
                               props.payload.category
                             ]}
                           />
-                          <Legend 
-                            wrapperStyle={{ paddingTop: '24px' }}
-                            iconType="circle"
-                            formatter={() => <span className="font-bold text-gray-700 text-sm">User Distribution</span>}
-                          />
-                        </RadarChart>
+                          <Bar 
+                            dataKey="value" 
+                            radius={[12, 12, 0, 0]}
+                            animationDuration={1500}
+                            animationBegin={100}
+                          >
+                            {[
+                              { color: 'url(#barGradient1)' },
+                              { color: 'url(#barGradient2)' },
+                              { color: 'url(#barGradient3)' },
+                              { color: 'url(#barGradient4)' },
+                              { color: 'url(#barGradient5)' }
+                            ].map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Bar>
+                        </BarChart>
                       </ResponsiveContainer>
                     </div>
                   </div>
@@ -2197,136 +2199,7 @@ const AdminPatentManager = ({ onBack }) => {
                   </div>
 
                   {/* Account Status Section */}
-                  <div className="border-t-2 border-gradient-to-r from-blue-200 via-purple-200 to-pink-200 pt-8 mt-2">
-                    <div className="bg-gradient-to-r from-blue-50 via-purple-50 to-pink-50 rounded-2xl p-6 mb-6 border-2 border-blue-200">
-                      <h4 className="text-2xl font-black bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-2 flex items-center gap-3">
-                        <AlertCircle className="w-7 h-7 text-purple-600" />
-                        Account Status Overview
-                      </h4>
-                      <p className="text-sm text-gray-600 font-medium">Real-time monitoring of active and deactivated accounts</p>
-                    </div>
-                    
-                    {/* Account Status Charts */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      {/* Active Users - Radial Chart */}
-                      <div className="group bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 rounded-2xl p-8 border-4 border-green-400 hover:border-green-600 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500">
-                        <div className="flex items-center gap-4 mb-6">
-                          <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-4 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                            <UserCheck className="w-8 h-8 text-white" />
-                          </div>
-                          <div>
-                            <p className="text-base font-black text-green-700 uppercase tracking-wider">Active Users</p>
-                            <p className="text-sm text-green-600 font-semibold">Currently active accounts</p>
-                          </div>
-                        </div>
 
-                        <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 shadow-inner border border-green-200">
-                          <div className="h-[280px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <RadialBarChart 
-                                cx="50%" 
-                                cy="50%" 
-                                innerRadius="25%" 
-                                outerRadius="85%" 
-                                barSize={35}
-                                data={[
-                                  {
-                                    name: 'Active',
-                                    value: userStats.totalUsers > 0 ? (userStats.activeUsers / userStats.totalUsers) * 100 : 0,
-                                    fill: 'url(#activeRadialGradient)',
-                                    count: userStats.activeUsers
-                                  }
-                                ]}
-                                startAngle={90}
-                                endAngle={-270}
-                              >
-                                <RadialBar
-                                  background={{ fill: '#d1fae5', opacity: 0.3 }}
-                                  dataKey="value"
-                                  cornerRadius={15}
-                                  animationDuration={2000}
-                                  animationBegin={200}
-                                />
-                                <text 
-                                  x="50%" 
-                                  y="42%" 
-                                  textAnchor="middle" 
-                                  dominantBaseline="middle"
-                                  className="text-5xl font-black fill-green-900"
-                                >
-                                  {userStats.activeUsers}
-                                </text>
-                                <text 
-                                  x="50%" 
-                                  y="58%" 
-                                  textAnchor="middle" 
-                                  dominantBaseline="middle"
-                                  className="text-xl font-bold fill-green-600"
-                                >
-                                  ({userStats.totalUsers > 0 ? Math.round((userStats.activeUsers / userStats.totalUsers) * 100) : 0}%)
-                                </text>
-                                <Tooltip 
-                                  contentStyle={{ 
-                                    backgroundColor: 'rgba(255, 255, 255, 0.98)', 
-                                    border: '3px solid #10b981',
-                                    borderRadius: '16px',
-                                    padding: '16px',
-                                    boxShadow: '0 20px 40px rgba(16, 185, 129, 0.3)'
-                                  }}
-                                  labelStyle={{ fontWeight: 'bold', fontSize: '14px', color: '#065f46' }}
-                                  formatter={(value, name, props) => [
-                                    <span className="font-bold text-green-700 text-base">
-                                      {props.payload.count} users ({value.toFixed(1)}% of total)
-                                    </span>,
-                                    'Active Users'
-                                  ]}
-                                />
-                                <defs>
-                                  <linearGradient id="activeRadialGradient" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stopColor="#10b981" stopOpacity={1}/>
-                                    <stop offset="50%" stopColor="#059669" stopOpacity={0.95}/>
-                                    <stop offset="100%" stopColor="#047857" stopOpacity={0.9}/>
-                                  </linearGradient>
-                                </defs>
-                              </RadialBarChart>
-                            </ResponsiveContainer>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Deactivated Users */}
-                      <div className="group bg-gradient-to-br from-red-50 via-rose-50 to-pink-50 rounded-2xl p-8 border-4 border-red-400 hover:border-red-600 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500">
-                        <div className="flex items-center gap-4 mb-6">
-                          <div className="bg-gradient-to-br from-red-500 to-rose-600 p-4 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                            <UserX className="w-8 h-8 text-white" />
-                          </div>
-                          <div>
-                            <p className="text-base font-black text-red-700 uppercase tracking-wider">Deactivated Users</p>
-                            <p className="text-sm text-red-600 font-semibold">Inactive accounts</p>
-                          </div>
-                        </div>
-
-                        <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-4 shadow-inner border border-red-200">
-                          <div className="h-[280px] flex flex-col items-center justify-center">
-                            <div className="text-center">
-                              <div className="inline-block bg-gradient-to-br from-red-500 to-rose-600 p-8 rounded-full mb-6 shadow-2xl">
-                                <UserX className="w-16 h-16 text-white" />
-                              </div>
-                              <h4 className="text-6xl font-black text-red-600 mb-4">
-                                {userStats.deactivatedUsers}
-                              </h4>
-                              <p className="text-2xl font-bold text-red-700">
-                                {userStats.totalUsers > 0 ? Math.round((userStats.deactivatedUsers / userStats.totalUsers) * 100) : 0}% of Total
-                              </p>
-                              <p className="text-sm text-gray-600 font-medium mt-4">
-                                Deactivated Accounts
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               )}
             </div>
@@ -2377,7 +2250,7 @@ const AdminPatentManager = ({ onBack }) => {
                     </div>
                     <div>
                       <h3 className="text-lg font-bold text-indigo-700">Subscription Revenue</h3>
-                      <p className="text-xs text-gray-600">{revenueFilter === 'weekly' ? 'Last 7 days' : 'Last 30 days'}</p>
+                      <p className="text-xs text-gray-600">Total from all subscriptions</p>
                     </div>
                   </div>
                   <div className="text-right">
