@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Mail, Phone, User, MessageSquare, Send, CheckCircle2, X } from "lucide-react";
-import { API_BASE, API_BASE_URL } from '../config/api';
 
 const ContactForm = ({ onClose }) => {
   const [formData, setFormData] = useState({
@@ -23,7 +22,7 @@ const ContactForm = ({ onClose }) => {
 
     try {
       // Call backend API
-      const response = await fetch(`${API_BASE}/contact/submit`, {
+      const response = await fetch("http://localhost:8080/api/contact/submit", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

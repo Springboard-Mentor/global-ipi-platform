@@ -13,6 +13,7 @@ const TermsOfServicePage = () => {
       setIsLoading(true);
       setError(null);
       try {
+        const API_BASE = 'http://localhost:8080/api';
         const response = await fetch(`${API_BASE}/terms`);
         
         if (response.ok) {

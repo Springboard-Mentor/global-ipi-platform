@@ -2,21 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { 
   Lock, Key, Activity, LogOut, Bell, Palette, Globe, FileText, 
   HelpCircle, Trash, CreditCard, Download, Moon, Sun, Settings, Clock, 
-  AlertCircle, Calendar, Crown, Shield, User, ChevronUp, ChevronDown, Mail
+  AlertCircle, Calendar, Crown, Shield, User, Mail, ChevronDown, ChevronUp
 } from 'lucide-react';
+import UpgradeModal from '../components/UpgradeModal';
 import { db, auth } from '../firebase';
 import { doc, updateDoc, serverTimestamp, getDoc, deleteDoc, setDoc } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
-import { updatePassword, reauthenticateWithCredential, EmailAuthProvider, signOut } from 'firebase/auth';
-import { API_BASE } from '../config/api';
+import { sendPasswordResetEmail, signOut } from 'firebase/auth';
 import { storage } from '../firebase';
 
 const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
   const [activeTab, setActiveTab] = useState('security');
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
+  const [userDetails, setUserDetails] = useState({
+    name: '',
+    email: '',
+    lastUpdated: null
   });
   const [notificationSettings, setNotificationSettings] = useState({
     emailNotifications: true,
@@ -62,6 +62,22 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
         if (userDocSnap.exists()) {
           const data = userDocSnap.data();
           
+          // Update userProfile with latest Firestore data including lastPayment
+          if (setUserProfile) {
+            setUserProfile(prev => ({
+              ...prev,
+              ...data,
+              uid: currentUID
+            }));
+          }
+          
+          // Set user basic details
+          setUserDetails({
+            name: data.firstName || data.name || auth.currentUser?.displayName || 'User',
+            email: data.email || auth.currentUser?.email || '',
+            lastUpdated: data.updatedAt?.toDate ? data.updatedAt.toDate() : (data.updatedAt || null)
+          });
+          
           if (data.notificationSettings) {
             setNotificationSettings(data.notificationSettings);
           }
@@ -69,6 +85,13 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
           if (data.preferences) {
             setPreferences(data.preferences);
           }
+        } else {
+          // If no Firestore data, use auth data
+          setUserDetails({
+            name: auth.currentUser?.displayName || 'User',
+            email: auth.currentUser?.email || '',
+            lastUpdated: null
+          });
         }
       } catch (error) {
         console.error('Error loading settings:', error);
@@ -87,6 +110,8 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
       
       setLegalLoading(true);
       try {
+        const API_BASE = 'http://localhost:8080/api';
+        
         // Fetch FAQs
         const faqResponse = await fetch(`${API_BASE}/faq`);
         if (faqResponse.ok) {
@@ -136,86 +161,73 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
     // Button will be disabled in this case
   };
 
-  const handleChangePassword = async () => {
-    if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
-      alert('Please fill all password fields');
-      return;
-    }
-
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      alert('New passwords do not match');
-      return;
-    }
-
-    if (passwordData.newPassword.length < 6) {
-      alert('Password must be at least 6 characters long');
-      return;
-    }
-
-    try {
-      const user = auth.currentUser;
-      const credential = EmailAuthProvider.credential(user.email, passwordData.currentPassword);
-      
-      await reauthenticateWithCredential(user, credential);
-      await updatePassword(user, passwordData.newPassword);
-      
-      alert('Password changed successfully!');
-      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    } catch (error) {
-      console.error('Error changing password:', error);
-      if (error.code === 'auth/wrong-password') {
-        alert('Current password is incorrect');
-      } else {
-        alert('Error: ' + error.message);
-      }
-    }
-  };
-
   const handleCancelSubscription = async () => {
     if (!confirm('Are you sure you want to cancel your subscription? All your subscription data including payment history will be permanently deleted.')) {
       return;
     }
-
+    
     try {
-      const user = auth.currentUser;
-      const userId = user.uid;
-
-      // Delete subscription data from Firestore
-      const userDocRef = doc(db, 'users', userId);
-      await updateDoc(userDocRef, {
+      const userRef = doc(db, 'users', currentUID);
+      
+      // Delete all subscription-related data from Firestore
+      await updateDoc(userRef, {
         subscriptionType: 'basic',
+        subscriptionPrice: 0,
         subscriptionEndDate: null,
-        subscriptionId: null,
-        paymentHistory: [],
-        updatedAt: new Date()
+        subscriptionStartDate: null,
+        lastPayment: null,  // Delete payment history completely
+        updatedAt: serverTimestamp()
       });
-
+      
       // Update local state
-      setUserProfile(prev => ({
-        ...prev,
-        subscriptionType: 'basic',
-        subscriptionEndDate: null,
-        subscriptionId: null,
-        paymentHistory: []
-      }));
-
-      alert('Subscription cancelled successfully. You have been downgraded to the Basic plan.');
+      if (setUserProfile) {
+        setUserProfile(prev => ({
+          ...prev,
+          subscriptionType: 'basic',
+          subscriptionPrice: 0,
+          subscriptionEndDate: null,
+          subscriptionStartDate: null,
+          lastPayment: null
+        }));
+      }
+      
+      alert('Subscription cancelled successfully. All subscription data has been removed.');
+      window.location.reload();
     } catch (error) {
       console.error('Error cancelling subscription:', error);
       alert('Error cancelling subscription: ' + error.message);
     }
   };
 
-  const handleLogoutAllDevices = async () => {
-    if (!confirm('This will log you out from all devices. Continue?')) return;
-    
+  // Security Settings Handlers
+  const handleSendPasswordReset = async () => {
     try {
-      await signOut(auth);
-      window.location.href = '/';
+      const email = userDetails.email || auth.currentUser?.email;
+      
+      if (!email) {
+        alert('Email not found. Please login again.');
+        return;
+      }
+
+      await sendPasswordResetEmail(auth, email);
+      setResetEmailSent(true);
+      alert(`Password reset email sent to ${email}. Please check your inbox.`);
+      
+      // Reset the message after 5 seconds
+      setTimeout(() => {
+        setResetEmailSent(false);
+      }, 5000);
     } catch (error) {
-      alert('Error: ' + error.message);
+      console.error('Error sending password reset email:', error);
+      if (error.code === 'auth/too-many-requests') {
+        alert('Too many requests. Please try again later.');
+      } else {
+        alert('Error: ' + error.message);
+      }
     }
   };
+
+
 
   // Notification Settings Handler
   const handleSaveNotifications = async () => {
@@ -371,116 +383,94 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
   // Render Security Tab Content
   const renderSecurityTab = () => (
     <div className="space-y-6">
-      {/* Change Password */}
+      {/* User Basic Details */}
+      <div className="bg-gradient-to-br from-white to-indigo-50 border-2 border-indigo-200 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-3 bg-indigo-100 rounded-xl">
+            <User className="text-indigo-600" size={24} />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-gray-800">User Details</h3>
+            <p className="text-sm text-gray-500">Your basic account information</p>
+          </div>
+        </div>
+        
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-4 bg-white/70 backdrop-blur-sm rounded-xl border border-indigo-100 hover:border-indigo-300 transition-all">
+            <div className="flex items-center gap-3">
+              <User className="text-indigo-500" size={20} />
+              <div>
+                <p className="text-sm font-semibold text-gray-500">First Name</p>
+                <p className="font-bold text-gray-800">{userDetails.name}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-between p-4 bg-white/70 backdrop-blur-sm rounded-xl border border-indigo-100 hover:border-indigo-300 transition-all">
+            <div className="flex items-center gap-3">
+              <Mail className="text-indigo-500" size={20} />
+              <div>
+                <p className="text-sm font-semibold text-gray-500">Email</p>
+                <p className="font-bold text-gray-800">{userDetails.email}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-between p-4 bg-white/70 backdrop-blur-sm rounded-xl border border-indigo-100 hover:border-indigo-300 transition-all">
+            <div className="flex items-center gap-3">
+              <Clock className="text-indigo-500" size={20} />
+              <div>
+                <p className="text-sm font-semibold text-gray-500">Last Updated</p>
+                <p className="font-bold text-gray-800">
+                  {userDetails.lastUpdated ? new Date(userDetails.lastUpdated).toLocaleString() : 'N/A'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Reset Password */}
       <div className="bg-gradient-to-br from-white to-blue-50 border-2 border-blue-200 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-3 bg-blue-100 rounded-xl">
             <Lock className="text-blue-600" size={24} />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-gray-800">Change Password</h3>
-            <p className="text-sm text-gray-500">Update your account password</p>
+            <h3 className="text-lg font-bold text-gray-800">Reset Password</h3>
+            <p className="text-sm text-gray-500">Send password reset link to your email</p>
           </div>
         </div>
         
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Current Password</label>
-            <input
-              type="password"
-              value={passwordData.currentPassword}
-              onChange={(e) => setPasswordData({...passwordData, currentPassword: e.target.value})}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-              placeholder="Enter current password"
-            />
+          <div className="p-4 bg-blue-50/50 border border-blue-200 rounded-xl">
+            <p className="text-gray-700 mb-2">
+              Click the button below to receive a password reset link at:
+            </p>
+            <p className="font-bold text-blue-600 flex items-center gap-2">
+              <Mail size={18} />
+              {userDetails.email}
+            </p>
           </div>
           
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">New Password</label>
-            <input
-              type="password"
-              value={passwordData.newPassword}
-              onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-              placeholder="Enter new password (min 6 characters)"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Confirm New Password</label>
-            <input
-              type="password"
-              value={passwordData.confirmPassword}
-              onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-              placeholder="Confirm new password"
-            />
-          </div>
+          {resetEmailSent && (
+            <div className="p-4 bg-green-50 border-2 border-green-300 rounded-xl flex items-center gap-3">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <p className="text-green-700 font-semibold">
+                ✓ Reset email sent! Check your inbox.
+              </p>
+            </div>
+          )}
           
           <button
-            onClick={handleChangePassword}
+            onClick={handleSendPasswordReset}
             className="px-8 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-300 font-bold shadow-lg hover:shadow-xl hover:scale-105"
           >
-            Change Password
+            Send Reset Password Email
           </button>
         </div>
       </div>
 
-      {/* Login Activity */}
-      <div className="bg-gradient-to-br from-white to-green-50 border-2 border-green-200 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-3 bg-green-100 rounded-xl">
-            <Activity className="text-green-600" size={24} />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-gray-800">Login Activity</h3>
-            <p className="text-sm text-gray-500">Track your account access</p>
-          </div>
-        </div>
-        
-        <div className="space-y-3">
-          <div className="flex items-center justify-between p-4 bg-white/70 backdrop-blur-sm rounded-xl border border-green-100 hover:border-green-300 transition-all">
-            <div>
-              <p className="font-semibold text-gray-800">Last Login</p>
-              <p className="text-sm text-gray-600">
-                {userProfile?.lastSignInTime ? new Date(userProfile.lastSignInTime).toLocaleString() : 'N/A'}
-              </p>
-            </div>
-            <Clock className="text-green-500" size={24} />
-          </div>
-          
-          <div className="flex items-center justify-between p-4 bg-white/70 backdrop-blur-sm rounded-xl border border-green-100 hover:border-green-300 transition-all">
-            <div>
-              <p className="font-semibold text-gray-800">Account Created</p>
-              <p className="text-sm text-gray-600">
-                {userProfile?.creationTime ? new Date(userProfile.creationTime).toLocaleString() : 'N/A'}
-              </p>
-            </div>
-            <Calendar className="text-green-500" size={24} />
-          </div>
-        </div>
-      </div>
-
-      {/* Logout All Devices */}
-      <div className="bg-gradient-to-br from-white to-red-50 border-2 border-red-200 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-3 bg-red-100 rounded-xl">
-            <LogOut className="text-red-600" size={24} />
-          </div>
-          <div>
-            <h3 className="text-lg font-bold text-gray-800">Session Management</h3>
-            <p className="text-sm text-gray-500">Control your active sessions</p>
-          </div>
-        </div>
-        
-        <p className="text-gray-600 mb-4">Log out from all devices where you're currently signed in.</p>
-        <button
-          onClick={handleLogoutAllDevices}
-          className="px-8 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all duration-300 font-bold shadow-lg hover:shadow-xl hover:scale-105"
-        >
-          Logout from All Devices
-        </button>
-      </div>
     </div>
   );
 
@@ -527,41 +517,83 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
           )}
         </div>
 
-        {/* Payment History */}
+        {/* Active Subscription History */}
         <div className="bg-white border border-gray-200 rounded-xl p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
             <CreditCard className="text-green-500" size={24} />
-            Payment History
+            Active Subscription History
           </h3>
           
-          {userProfile?.lastPayment ? (
+          {userProfile?.subscriptionType && userProfile.subscriptionType.toLowerCase() !== 'basic' ? (
             <div className="space-y-3">
               <div className="flex justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
                 <div>
-                  <p className="font-medium text-gray-800">Last Payment</p>
+                  <p className="font-medium text-gray-800">Active Subscription</p>
                   <p className="text-sm text-gray-500">
-                    ₹{userProfile.lastPayment.amount} {userProfile.lastPayment.currency}
+                    ₹{subscriptionPrice} / month
                   </p>
                 </div>
-                <span className="px-3 py-1 bg-green-500 text-white text-sm rounded-full h-fit">Success</span>
+                <span className="px-3 py-1 bg-green-500 text-white text-sm rounded-full h-fit">Active</span>
               </div>
               
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-gray-500">Payment ID</p>
-                  <p className="font-mono text-xs text-gray-800 break-all">{userProfile.lastPayment.razorpayPaymentId}</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-gray-500 font-medium mb-1">Transaction ID</p>
+                  <p className="font-mono text-xs text-gray-800 break-all">
+                    {(userProfile && userProfile.lastPayment && userProfile.lastPayment.razorpayPaymentId) || 'N/A'}
+                  </p>
                 </div>
                 
-                {userProfile.lastPayment.razorpayOrderId && (
-                  <div>
-                    <p className="text-gray-500">Order ID</p>
-                    <p className="font-mono text-xs text-gray-800 break-all">{userProfile.lastPayment.razorpayOrderId}</p>
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-gray-500 font-medium mb-1">Amount Paid</p>
+                  <p className="font-semibold text-gray-800">
+                    ₹{userProfile?.lastPayment?.amount || subscriptionPrice} {userProfile?.lastPayment?.currency || 'INR'}
+                  </p>
+                </div>
+                
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-gray-500 font-medium mb-1">Subscription Start Date</p>
+                  <p className="font-semibold text-gray-800">
+                    {userProfile?.subscriptionStartDate ? 
+                      (userProfile.subscriptionStartDate.toDate ? 
+                        userProfile.subscriptionStartDate.toDate().toLocaleDateString() : 
+                        new Date(userProfile.subscriptionStartDate).toLocaleDateString()
+                      ) : 'N/A'}
+                  </p>
+                </div>
+                
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <p className="text-gray-500 font-medium mb-1">Subscription End Date</p>
+                  <p className="font-semibold text-gray-800">
+                    {endDate ? endDate.toLocaleDateString() : 'N/A'}
+                  </p>
+                </div>
+                
+                {userProfile?.lastPayment?.razorpayOrderId && (
+                  <div className="p-3 bg-gray-50 rounded-lg md:col-span-2">
+                    <p className="text-gray-500 font-medium mb-1">Order ID</p>
+                    <p className="font-mono text-xs text-gray-800 break-all">
+                      {userProfile.lastPayment.razorpayOrderId}
+                    </p>
+                  </div>
+                )}
+                
+                {userProfile?.lastPayment?.timestamp && (
+                  <div className="p-3 bg-gray-50 rounded-lg md:col-span-2">
+                    <p className="text-gray-500 font-medium mb-1">Payment Date</p>
+                    <p className="font-semibold text-gray-800">
+                      {userProfile.lastPayment.timestamp.toDate ? 
+                        userProfile.lastPayment.timestamp.toDate().toLocaleString() : 
+                        new Date(userProfile.lastPayment.timestamp).toLocaleString()}
+                    </p>
                   </div>
                 )}
               </div>
             </div>
           ) : (
-            <p className="text-gray-500">No payment history available</p>
+            <div className="text-center py-6">
+              <p className="text-gray-500">You do not have any active subscriptions</p>
+            </div>
           )}
         </div>
 
@@ -569,12 +601,26 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
         <div className="bg-white border border-gray-200 rounded-xl p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Manage Subscription</h3>
           <div className="space-y-3">
-            <button className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:shadow-lg transition">
-              Upgrade Plan
+            <button 
+              onClick={handleUpgradeClick}
+              disabled={subscriptionType.toLowerCase() !== 'basic'}
+              className={`w-full px-6 py-3 rounded-lg transition ${
+                subscriptionType.toLowerCase() === 'basic'
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:shadow-lg hover:from-blue-600 hover:to-purple-700'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              {subscriptionType.toLowerCase() === 'basic' ? 'Upgrade Plan' : 'Cancel Current Plan to Upgrade'}
             </button>
-            <button className="w-full px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
-              Cancel Subscription
-            </button>
+            
+            {subscriptionType.toLowerCase() !== 'basic' && (
+              <button 
+                onClick={handleCancelSubscription}
+                className="w-full px-6 py-3 border-2 border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition font-semibold"
+              >
+                Cancel Subscription
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -714,53 +760,18 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
   );
 
   // Render Legal & Support Tab Content
-  const renderLegalTab = () => {
-    if (legalLoading) {
-      return (
-        <div className="space-y-6">
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <FileText className="text-blue-500" size={24} />
-              Legal Documents
-            </h3>
-            
-            <div className="space-y-3">
-              <a href="#" className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                <span className="font-medium text-gray-800">Terms & Conditions</span>
-                <Download size={18} className="text-gray-500" />
-              </a>
-              <a href="#" className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                <span className="font-medium text-gray-800">Privacy Policy</span>
-                <Download size={18} className="text-gray-500" />
-              </a>
-            </div>
-          </div>
-
-          <div className="bg-white border border-gray-200 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <HelpCircle className="text-green-500" size={24} />
-              Help & Support
-            </h3>
-            
-            <div className="space-y-3">
-              <a href="#" className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                <span className="font-medium text-gray-800">FAQ / Help Center</span>
-              </a>
-              <a href="#" className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                <span className="font-medium text-gray-800">Contact Support</span>
-              </a>
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-gray-600">Version: 1.0.0</p>
-                <p className="text-sm text-gray-600">© 2025 Global IP Intelligence Platform</p>
-              </div>
-            </div>
+  const renderLegalTab = () => (
+    <div className="space-y-4">
+      {legalLoading ? (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-300 rounded-xl p-4 shadow-sm">
+          <div className="flex items-center">
+            <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent mr-3"></div>
+            <p className="text-blue-900 font-medium">Loading legal documents...</p>
           </div>
         </div>
-      );
-    }
-
-    return (
-      <div className="space-y-6">{/* Legal Documents */}
+      ) : (
+        <>
+          {/* Legal Documents */}
           <div className="bg-gradient-to-br from-white to-gray-50 border border-gray-300 rounded-xl shadow-lg overflow-hidden">
             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-4">
               <h3 className="text-lg font-bold text-white flex items-center gap-3">
@@ -957,9 +968,10 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
               </div>
             </div>
           </div>
-      </div>
-    );
-  };
+        </>
+      )}
+    </div>
+  );
 
   // Render Account Management Tab Content
   const renderAccountTab = () => (
@@ -1046,6 +1058,19 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
     </div>
   );
 
+  if (isLoading) {
+    return (
+      <div className="max-w-6xl mx-auto">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent mr-3"></div>
+            <p className="text-blue-800">Loading settings...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-6xl mx-auto">
       <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
@@ -1099,6 +1124,14 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
           {activeTab === 'account' && renderAccountTab()}
         </div>
       </div>
+      
+      {/* Upgrade Modal */}
+      <UpgradeModal 
+        isOpen={showUpgradeModal} 
+        onClose={() => setShowUpgradeModal(false)} 
+        userProfile={userProfile}
+        onAddNotification={(msg) => console.log(msg)}
+      />
     </div>
   );
 };

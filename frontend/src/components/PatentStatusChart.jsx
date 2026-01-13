@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, Sector } from 'recharts';
 import { Filter, Download, RefreshCw, TrendingUp, Calendar } from 'lucide-react';
-import { API_BASE, API_BASE_URL } from '../config/api';
 
 const PatentStatusChart = () => {
   const [allData, setAllData] = useState([]);
@@ -33,7 +32,7 @@ const PatentStatusChart = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_BASE}/patents/status-counts-by-date`);
+      const response = await fetch('http://localhost:8080/api/patents/status-counts-by-date');
       
       if (response.ok) {
         const data = await response.json();

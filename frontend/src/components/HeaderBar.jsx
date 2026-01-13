@@ -167,54 +167,61 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
                 </div>
               </div>
 
-              {/* Hover Details Popup */}
-              <div className="absolute left-0 top-full mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 p-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
-                <div className="flex items-center gap-2 mb-3 pb-3 border-b">
-                  <Crown className="text-orange-500" size={20} />
-                  <h3 className="font-bold text-gray-800">Subscription Details</h3>
+              {/* Hover Tooltip - Subscription Details */}
+              <div className="absolute left-0 top-full mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 p-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <div className="flex items-center justify-between mb-3 pb-3 border-b">
+                  <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                    <Crown size={18} className="text-purple-600" />
+                    {subscriptionDetails.type.toUpperCase()} Plan
+                  </h3>
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
+                    Active
+                  </span>
                 </div>
-                
+
                 <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Days Remaining:</span>
-                  <span className="font-semibold text-gray-800">{subscriptionDetails.daysLeft} days</span>
-                </div>
-                
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Start Date:</span>
-                  <span className="font-medium text-gray-800 text-xs">{subscriptionDetails.startDate}</span>
-                </div>
-                
-                <div className="flex justify-between">
-                  <span className="text-gray-600">End Date:</span>
-                  <span className="font-medium text-gray-800 text-xs">{subscriptionDetails.endDate}</span>
-                </div>
-
-                <div className="border-t pt-2 mt-2">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Amount Paid:</span>
-                    <span className="font-bold text-green-600">
-                      ₹{subscriptionDetails.amount} {subscriptionDetails.currency}
-                    </span>
+                    <span className="text-gray-600">Days Remaining:</span>
+                    <span className="font-semibold text-gray-800">{subscriptionDetails.daysLeft} days</span>
                   </div>
-                </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Start Date:</span>
+                    <span className="font-medium text-gray-800 text-xs">{subscriptionDetails.startDate}</span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">End Date:</span>
+                    <span className="font-medium text-gray-800 text-xs">{subscriptionDetails.endDate}</span>
+                  </div>
 
-                {subscriptionDetails.paymentId !== 'N/A' && (
-                  <>
+                  <div className="border-t pt-2 mt-2">
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Payment ID:</span>
-                      <span className="font-mono text-xs text-gray-700">{subscriptionDetails.paymentId}</span>
+                      <span className="text-gray-600">Amount Paid:</span>
+                      <span className="font-bold text-green-600">
+                        ₹{subscriptionDetails.amount} {subscriptionDetails.currency}
+                      </span>
                     </div>
-                    
-                    {subscriptionDetails.orderId !== 'N/A' && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Order ID:</span>
-                        <span className="font-mono text-xs text-gray-700">{subscriptionDetails.orderId}</span>
+                  </div>
+
+                  {subscriptionDetails.paymentId !== 'N/A' && (
+                    <>
+                      <div className="border-t pt-2 mt-2">
+                        <div className="flex justify-between items-start">
+                          <span className="text-gray-600">Transaction ID:</span>
+                          <span className="font-mono text-xs text-gray-700 break-all text-right max-w-[180px]">{subscriptionDetails.paymentId}</span>
+                        </div>
                       </div>
-                    )}
-                  </>
-                )}
-              </div>
+                      
+                      {subscriptionDetails.orderId !== 'N/A' && (
+                        <div className="flex justify-between items-start">
+                          <span className="text-gray-600">Order ID:</span>
+                          <span className="font-mono text-xs text-gray-700 break-all text-right max-w-[180px]">{subscriptionDetails.orderId}</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           ) : (
@@ -252,7 +259,8 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
               type="submit"
               className="absolute right-1 top-1/2 -translate-y-1/2 px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs sm:text-sm rounded-lg hover:shadow-xl transition-all duration-300 font-bold hover:scale-105"
             >
-              Search
+              <span className="hidden sm:inline">Search</span>
+              <Search className="sm:hidden" size={14} />
             </button>
           </div>
         </form>
@@ -270,9 +278,9 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
           <div className="relative" ref={notificationRef}>
             <button 
               onClick={() => setShowNotifications(!showNotifications)}
-              className="p-2 sm:p-2.5 hover:bg-white/20 rounded-xl relative transition"
+              className="p-1.5 sm:p-2 hover:bg-white/20 rounded-xl relative transition"
             >
-              <Bell size={18} className="text-white" />
+              <Bell size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
               {notifications.length > 0 && (
                 <span className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 w-2 h-2 bg-yellow-400 rounded-full animate-pulse shadow-lg"></span>
               )}

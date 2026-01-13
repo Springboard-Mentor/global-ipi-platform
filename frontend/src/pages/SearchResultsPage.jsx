@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, History, Filter, Globe, Database, Share2, Copy, Download, X } from 'lucide-react';
 import { getSearchCounters, incrementSearchCounter } from '../utils/searchCounters';
-import { API_BASE, API_BASE_URL } from '../config/api';
 
 const SearchResultsPage = ({ query, onBack, searchMode = 'api', setSearchMode, userProfile }) => {
   const [results, setResults] = useState([]);
@@ -654,32 +653,95 @@ const SearchResultsPage = ({ query, onBack, searchMode = 'api', setSearchMode, u
 
       {/* Search Info and Actions */}
       {query && (
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold">Search Results for "{query}"</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="text-sm text-gray-600 bg-blue-50 px-3 py-1 rounded">
-              API Searches: <span className="font-semibold">{apiSearchCounter}</span>
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-4">
+              <h1 className="text-2xl font-bold">Search Results for "{query}"</h1>
             </div>
-            <div className="text-sm text-gray-600 bg-green-50 px-3 py-1 rounded">
-              Local Searches: <span className="font-semibold">{localSearchCounter}</span>
+            <div className="flex items-center gap-4">
+              <div className="text-sm text-gray-600 bg-blue-50 px-3 py-1 rounded">
+                API Searches: <span className="font-semibold">{apiSearchCounter}</span>
+              </div>
+              <div className="text-sm text-gray-600 bg-green-50 px-3 py-1 rounded">
+                Local Searches: <span className="font-semibold">{localSearchCounter}</span>
+              </div>
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-100 hover:bg-purple-200 rounded-lg"
+              >
+                <Filter size={16} />
+                {showFilters ? 'Hide' : 'Show'} Filters
+              </button>
+              <button
+                onClick={() => setShowHistory(!showHistory)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-100 hover:bg-blue-200 rounded-lg"
+              >
+                <History size={16} />
+                {showHistory ? 'Hide' : 'View'} History
+              </button>
             </div>
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-100 hover:bg-purple-200 rounded-lg"
-            >
-              <Filter size={16} />
-              {showFilters ? 'Hide' : 'Show'} Filters
-            </button>
-            <button
-              onClick={() => setShowHistory(!showHistory)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-100 hover:bg-blue-200 rounded-lg"
-            >
-              <History size={16} />
-              {showHistory ? 'Hide' : 'View'} History
-            </button>
           </div>
+          
+          {/* Results Summary Banner */}
+          {!loading && results.length > 0 && (
+            <div className={`p-4 rounded-xl border-2 ${
+              searchMode === 'local' 
+                ? 'bg-gradient-to-r from-purple-50 to-purple-100 border-purple-300'
+                : 'bg-gradient-to-r from-blue-50 to-blue-100 border-blue-300'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {searchMode === 'local' ? (
+                    <Database className="text-purple-600" size={24} />
+                  ) : (
+                    <Globe className="text-blue-600" size={24} />
+                  )}
+                  <div>
+                    <p className="font-bold text-lg">
+                      {searchMode === 'local' 
+                        ? `Found ${results.length} patents in Local Database (my_project_db)`
+                        : `Found ${results.length} patents from API Search`
+                      }
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      {filteredResults.length < results.length 
+                        ? `Showing ${filteredResults.length} filtered results`
+                        : 'Showing all results'
+                      }
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-gray-500">Source:</p>
+                  <p className="font-semibold text-sm">
+                    {searchMode === 'local' ? 'PostgreSQL Database' : 'External API'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* No Results Message */}
+          {!loading && results.length === 0 && (
+            <div className="p-6 rounded-xl border-2 border-orange-200 bg-orange-50">
+              <div className="flex items-center gap-3">
+                <svg className="w-8 h-8 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div>
+                  <p className="font-bold text-lg text-orange-800">
+                    No patents found {searchMode === 'local' ? 'in local database (my_project_db)' : 'from API'}
+                  </p>
+                  <p className="text-sm text-orange-600">
+                    {searchMode === 'local' 
+                      ? 'Try searching with API mode or add patents to your local database first'
+                      : 'Try a different search query or check your API connection'
+                    }
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

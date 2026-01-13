@@ -249,7 +249,6 @@ const ProfilePage = ({ userProfile, setUserProfile, onBack }) => {
     }
     
     setIsSaving(true);
-    let photoUrlToSave = formData.photoURL;
 
     try {
       // Use only the current authenticated user's UID - no fallbacks

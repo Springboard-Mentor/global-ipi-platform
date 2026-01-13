@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy, Medal, Award, TrendingUp, Sparkles, RefreshCw } from 'lucide-react';
 import { db } from '../firebase';
-import { API_BASE, API_BASE_URL } from '../config/api';
 import { doc, getDoc } from 'firebase/firestore';
 
 const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
@@ -26,7 +25,7 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
       setLoading(true);
       setError(null);
       
-      const url = `${API_BASE}/leaderboard/top-users?filter=${timeFilter}`;
+      const url = `http://localhost:8080/api/leaderboard/top-users?filter=${timeFilter}`;
       const response = await fetch(url, {
         method: 'GET',
         headers: {

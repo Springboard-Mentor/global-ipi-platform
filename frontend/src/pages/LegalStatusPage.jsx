@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { FileText, CheckCircle, XCircle, TrendingUp, Award, AlertCircle, Users, UserCheck, UserX, Filter, X, Search, Globe } from 'lucide-react';
 import { collection, getDocs, onSnapshot, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
-import { API_BASE, API_BASE_URL } from '../config/api';
 import { getSearchCounters, getGlobalSearchStats } from '../utils/searchCounters';
 import IndiaPatentPanel from '../components/IndiaPatentPanel';
 import StateFilingsComparisonChart from '../components/StateFilingsComparisonChart';

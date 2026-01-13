@@ -1,29 +1,46 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { signInWithEmailAndPassword, signInWithPopup, deleteUser } from "firebase/auth";
 import { auth, googleProvider, db } from "../firebase";
 import { doc, setDoc, getDoc, serverTimestamp, deleteDoc } from "firebase/firestore";
 import { useNavigate, Link } from "react-router-dom";
 import "../App.css";
 
-export default function Login() {
+function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
   const navigate = useNavigate();
 
-  const handleEmailLogin = async () => {
-    if (!email || !password) return setError("Please fill all fields");
+  const validateEmail = (email) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  };
+
+  const handleLogin = async () => {
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedEmail || !trimmedPassword) {
+      setError("Please fill all fields");
+      return;
+    }
+
+    if (!validateEmail(trimmedEmail)) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
+    if (trimmedPassword.length < 6) {
+      setError("Password must be at least 6 characters long");
+      return;
+    }
 
     setLoading(true);
     setError("");
-
+    
     try {
-      const trimmedEmail = email.trim();
-      const trimmedPassword = password.trim();
-      
       const userCredential = await signInWithEmailAndPassword(auth, trimmedEmail, trimmedPassword);
       console.log("Login successful:", userCredential.user);
       
@@ -95,7 +112,8 @@ export default function Login() {
         navigate("/verification");
       }, 1000);
     } catch (err) {
-      setError("Invalid email or password");
+      console.error('Login error:', err);
+      setError("Invalid email or password. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -104,7 +122,7 @@ export default function Login() {
   const handleGoogleLogin = async () => {
     setLoading(true);
     setError("");
-
+    
     try {
       const result = await signInWithPopup(auth, googleProvider);
       console.log("Google user:", result.user);
@@ -173,15 +191,22 @@ export default function Login() {
       } else {
         // Create new user document
         await setDoc(userRef, {
+          firstName: firstName,
+          lastName: lastName,
           email: result.user.email,
+          phoneNumber: result.user.phoneNumber || "",
+          photoURL: result.user.photoURL || "",
           uid: result.user.uid,
           authProvider: "google",
+          accountStatus: "active",
           createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
           lastLogin: serverTimestamp(),
-          isOnline: true
+          isOnline: true,
+          updatedAt: serverTimestamp()
         });
       }
+      
+      console.log("Google user data saved to Firestore");
       
       // Get ID token and save to localStorage for verification
       const idToken = await result.user.getIdToken();
@@ -194,23 +219,18 @@ export default function Login() {
         navigate("/verification");
       }, 1000);
     } catch (err) {
-      setError("Google login failed");
+      setError("Google login failed. Please try again.");
+      console.error("Google login error:", err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleLogin = () => {
-    handleEmailLogin();
-  };
-
   const handleKeyPress = (e) => {
-    if (e.key === "Enter") {
-      handleEmailLogin();
+    if (e.key === 'Enter') {
+      handleLogin();
     }
   };
-
-  const handleEnter = (e) => e.key === "Enter" && handleEmailLogin();
 
   return (
     <div className="auth-page-wrapper">
@@ -355,3 +375,5 @@ export default function Login() {
     </div>
   );
 }
+
+export default Login;
