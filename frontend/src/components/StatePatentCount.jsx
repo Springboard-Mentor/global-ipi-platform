@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, TrendingUp } from 'lucide-react';
+import { API_BASE, API_BASE_URL } from '../config/api';
 
 const INDIAN_STATES = [
   'Andhra Pradesh',

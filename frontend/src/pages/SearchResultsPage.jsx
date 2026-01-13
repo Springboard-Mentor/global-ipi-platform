@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, History, Filter, Globe, Database, Share2, Copy, Download, X } from 'lucide-react';
 import { getSearchCounters, incrementSearchCounter } from '../utils/searchCounters';
+import { API_BASE, API_BASE_URL } from '../config/api';
 
 const SearchResultsPage = ({ query, onBack, searchMode = 'api', setSearchMode, userProfile }) => {
   const [results, setResults] = useState([]);

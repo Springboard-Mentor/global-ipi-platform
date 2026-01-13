@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, Circle, Mail, RefreshCw, AlertCircle, LogIn, LogOut, User, Shield, Eye, EyeOff, X, ArrowLeft, Lightbulb, FileCheck, Upload, CreditCard, MessageCircle, Send, Bell, Clock, List, Filter, BarChart3, Users, Activity, Search, Database, Globe, Trophy, Award, Medal, Sparkles, UserCheck, UserX } from 'lucide-react';
 import { addUserNotification } from '../utils/notifications';
+import { API_BASE, API_BASE_URL } from '../config/api';
 import { db } from '../firebase';
 import { doc, getDoc, collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
 import { 
@@ -118,7 +119,7 @@ const AdminPatentManager = ({ onBack }) => {
     if (!adminData) return;
     
     try {
-      const response = await fetch(`http://localhost:8080/api/admin/${adminData.adminId}/track-action`, {
+      const response = await fetch(`${API_BASE}/admin/${adminData.adminId}/track-action`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -211,7 +212,7 @@ const AdminPatentManager = ({ onBack }) => {
         password: '***'
       });
 
-      const response = await fetch('http://localhost:8080/api/admin/login', {
+      const response = await fetch(`${API_BASE}/admin/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -243,7 +244,7 @@ const AdminPatentManager = ({ onBack }) => {
       }
     } catch (error) {
       console.error('Login error:', error);
-      setLoginError(`Cannot connect to backend at http://localhost:8080. Please ensure backend server is running. Error: ${error.message}`);
+      setLoginError(`Cannot connect to backend at ${API_BASE_URL}. Please ensure backend server is running. Error: ${error.message}`);
     }
   };
 
@@ -258,7 +259,7 @@ const AdminPatentManager = ({ onBack }) => {
   // Fetch all admins for display
   const fetchAllAdmins = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/admin/all', {
+      const response = await fetch(`${API_BASE}/admin/all`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -280,7 +281,7 @@ const AdminPatentManager = ({ onBack }) => {
 
   const checkBackendHealth = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/health', {
+      const response = await fetch(`${API_BASE}/health`, {
         method: 'GET',
         headers: { 'Accept': 'application/json' },
       });
@@ -293,7 +294,7 @@ const AdminPatentManager = ({ onBack }) => {
       }
     } catch (error) {
       setBackendStatus('error');
-      setMessage('❌ Cannot connect to backend at http://localhost:8080. Please restart the backend server.');
+      setMessage(`❌ Cannot connect to backend at ${API_BASE_URL}. Please restart the backend server.`);
       console.error('Backend health check failed:', error);
     }
   };
@@ -302,8 +303,8 @@ const AdminPatentManager = ({ onBack }) => {
     setLoading(true);
     setMessage('');
     try {
-      console.log('Fetching from: http://localhost:8080/api/patent-filing/all');
-      const response = await fetch('http://localhost:8080/api/patent-filing/all', {
+      console.log(`Fetching from: ${API_BASE}/patent-filing/all`);
+      const response = await fetch(`${API_BASE}/patent-filing/all`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -328,7 +329,7 @@ const AdminPatentManager = ({ onBack }) => {
       }
     } catch (error) {
       console.error('Fetch error details:', error);
-      setMessage(`❌ Error: ${error.message}. Try: 1) Check browser console (F12), 2) Clear cache and hard reload (Ctrl+Shift+R), 3) Verify backend is at http://localhost:8080`);
+      setMessage(`❌ Error: ${error.message}. Try: 1) Check browser console (F12), 2) Clear cache and hard reload (Ctrl+Shift+R), 3) Verify backend is at ${API_BASE_URL}`);
     } finally {
       setLoading(false);
     }
@@ -355,7 +356,7 @@ const AdminPatentManager = ({ onBack }) => {
 
       console.log('Updating stage with cascade:', patentId, stageUpdates);
 
-      const response = await fetch(`http://localhost:8080/api/patent-filing/${patentId}/stages`, {
+      const response = await fetch(`${API_BASE}/patent-filing/${patentId}/stages`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -443,7 +444,7 @@ const AdminPatentManager = ({ onBack }) => {
       console.log('Granting all stages for patent:', patent.id);
       console.log('Patent details:', details);
 
-      const response = await fetch(`http://localhost:8080/api/patent-filing/${patent.id}/stages`, {
+      const response = await fetch(`${API_BASE}/patent-filing/${patent.id}/stages`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -636,7 +637,7 @@ const AdminPatentManager = ({ onBack }) => {
     
     setMessage('Rejecting patent and sending email...');
     try {
-      const response = await fetch(`http://localhost:8080/api/patent-filing/${patent.id}/reject`, {
+      const response = await fetch(`${API_BASE}/patent-filing/${patent.id}/reject`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -802,7 +803,7 @@ const AdminPatentManager = ({ onBack }) => {
         stage5Granted: false
       };
 
-      const response = await fetch(`http://localhost:8080/api/patent-filing/${patentId}/stages`, {
+      const response = await fetch(`${API_BASE}/patent-filing/${patentId}/stages`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -864,7 +865,7 @@ const AdminPatentManager = ({ onBack }) => {
       const replyField = `r${replyCount + 1}`;
       console.log(`Sending admin reply to ${replyField}:`, adminReply);
 
-      const response = await fetch(`http://localhost:8080/api/patent-filing/${selectedPatentForChat.id}/reply`, {
+      const response = await fetch(`${API_BASE}/patent-filing/${selectedPatentForChat.id}/reply`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -951,7 +952,7 @@ const AdminPatentManager = ({ onBack }) => {
   // Fetch leaderboard data from backend
   const fetchLeaderboard = async () => {
     try {
-      const response = await fetch('http://localhost:8080/api/admin/all', {
+      const response = await fetch(`${API_BASE}/admin/all`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -1058,7 +1059,7 @@ const AdminPatentManager = ({ onBack }) => {
     
     try {
       setLoadingStateData(true);
-      const response = await fetch(`http://localhost:8080/api/patents/count-by-state?state=${encodeURIComponent(state)}`);
+      const response = await fetch(`${API_BASE}/patents/count-by-state?state=${encodeURIComponent(state)}`);
       
       if (response.ok) {
         const count = await response.json();
@@ -1125,7 +1126,7 @@ const AdminPatentManager = ({ onBack }) => {
   // Fetch patent filing revenue from backend
   const fetchPatentFilingRevenue = async (filter) => {
     try {
-      const response = await fetch(`http://localhost:8080/api/patents/revenue?filter=${filter}`);
+      const response = await fetch(`${API_BASE}/patents/revenue?filter=${filter}`);
       
       if (response.ok) {
         const data = await response.json();
@@ -1197,7 +1198,7 @@ const AdminPatentManager = ({ onBack }) => {
   const activatePatent = async (patentId) => {
     setMessage('Activating patent...');
     try {
-      const response = await fetch(`http://localhost:8080/api/patent-filing/${patentId}/activate`, {
+      const response = await fetch(`${API_BASE}/patent-filing/${patentId}/activate`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -1237,7 +1238,7 @@ const AdminPatentManager = ({ onBack }) => {
       // Find the patent to get user details
       const patent = patents.find(p => p.id === patentId);
       
-      const response = await fetch(`http://localhost:8080/api/patent-filing/${patentId}/deactivate`, {
+      const response = await fetch(`${API_BASE}/patent-filing/${patentId}/deactivate`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

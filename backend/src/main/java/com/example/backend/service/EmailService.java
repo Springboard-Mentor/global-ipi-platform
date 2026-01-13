@@ -4,30 +4,38 @@ import com.example.backend.model.Contact;
 import com.example.backend.model.Feedback;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class EmailService {
     
-    private final JavaMailSender mailSender;
+    @Autowired(required = false)
+    private JavaMailSender mailSender;
     
-    @Value("${spring.mail.username}")
+    @Value("${spring.mail.username:noreply@example.com}")
     private String fromEmail;
     
     @Value("${app.admin.email:vikaskumaryadav068@gmail.com}")
     private String adminEmail;
     
+    @Value("${app.email.enabled:false}")
+    private boolean emailEnabled;
+    
     /**
      * Send confirmation email to user who submitted contact form
      */
     public void sendContactConfirmation(Contact contact) throws MessagingException {
+        if (!emailEnabled) {
+            log.info("Email service is disabled. Skipping contact confirmation email to: {}", contact.getEmail());
+            return;
+        }
+        
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
         
@@ -46,6 +54,11 @@ public class EmailService {
      * Send notification to admin about new contact form submission
      */
     public void sendContactNotificationToAdmin(Contact contact) throws MessagingException {
+        if (!emailEnabled) {
+            log.info("Email service is disabled. Skipping contact notification to admin");
+            return;
+        }
+        
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
         
@@ -64,6 +77,11 @@ public class EmailService {
      * Send confirmation email to user who submitted feedback
      */
     public void sendFeedbackConfirmation(Feedback feedback) throws MessagingException {
+        if (!emailEnabled) {
+            log.info("Email service is disabled. Skipping feedback confirmation email");
+            return;
+        }
+        
         if (feedback.getUserEmail() == null || feedback.getUserEmail().isEmpty()) {
             log.warn("No email address for feedback, skipping confirmation email");
             return;
@@ -87,6 +105,11 @@ public class EmailService {
      * Send notification to admin about new feedback submission
      */
     public void sendFeedbackNotificationToAdmin(Feedback feedback) throws MessagingException {
+        if (!emailEnabled) {
+            log.info("Email service is disabled. Skipping feedback notification to admin");
+            return;
+        }
+        
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
         
@@ -348,6 +371,11 @@ public class EmailService {
      * Send patent granted notification email to applicant
      */
     public void sendPatentGrantedEmail(String applicantEmail, String applicantName, String inventionTitle, Long filingId) throws MessagingException {
+        if (!emailEnabled) {
+            log.info("Email service is disabled. Skipping patent granted notification");
+            return;
+        }
+        
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
         
@@ -368,6 +396,11 @@ public class EmailService {
     public void sendPatentRejectedEmail(String applicantEmail, String applicantName, String inventionTitle, 
                                        Long filingId, String rejectedPatentNumber, String rejectedPersonName, 
                                        String location) throws MessagingException {
+        if (!emailEnabled) {
+            log.info("Email service is disabled. Skipping patent rejection notification");
+            return;
+        }
+        
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
         

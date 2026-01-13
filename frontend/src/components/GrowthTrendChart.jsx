@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { TrendingUp, CheckCircle2 } from 'lucide-react';
+import { API_BASE } from '../config/api';
 
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = API_BASE;
 
 const GrowthTrendChart = ({ 
   totalUsers, 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { TrendingUp, CheckCircle, Database, Globe, Crown, Zap, Calendar, Info } from "lucide-react";
 import { doc, getDoc, collection, getDocs, onSnapshot } from "firebase/firestore";
 import { db, auth } from "../firebase";
+import { API_BASE, API_BASE_URL } from '../config/api';
 
 import {
   LineChart,

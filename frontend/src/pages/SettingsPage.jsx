@@ -8,6 +8,7 @@ import { db, auth } from '../firebase';
 import { doc, updateDoc, serverTimestamp, getDoc, deleteDoc, setDoc } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider, signOut } from 'firebase/auth';
+import { API_BASE } from '../config/api';
 import { storage } from '../firebase';
 
 const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
@@ -86,8 +87,6 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
       
       setLegalLoading(true);
       try {
-        const API_BASE = 'http://localhost:8080/api';
-        
         // Fetch FAQs
         const faqResponse = await fetch(`${API_BASE}/faq`);
         if (faqResponse.ok) {

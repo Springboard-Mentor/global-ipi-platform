@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, TrendingUp, BarChart3 } from 'lucide-react';
+import { API_BASE, API_BASE_URL } from '../config/api';
 import { 
   BarChart, 
   Bar, 

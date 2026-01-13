@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { MapPin, TrendingUp, Globe } from 'lucide-react';
+import { API_BASE, API_BASE_URL } from '../config/api';
 
 const IndiaPatentMap = ({ selectedState = null, showHeatMap = false }) => {
   const mapRef = useRef(null);

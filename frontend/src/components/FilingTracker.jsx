@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { FileText, Calendar, User, DollarSign, CheckCircle, Clock, Eye, X, ArrowLeft, Download, Share2, Linkedin, Lock, Crown, Sparkles, MessageCircle, Send } from 'lucide-react';
 import { auth } from '../firebase';
+import { API_BASE, API_BASE_URL } from '../config/api';
 import PatentProgressTracker from './PatentProgressTracker';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -56,7 +57,7 @@ const FilingTracker = forwardRef(({ userProfile, onBack, onAddNotification }, re
       console.log('Profile email:', userProfile?.email);
       
       // Fetch ALL patent filings
-      const response = await fetch(`http://localhost:8080/api/patent-filing/all`);
+      const response = await fetch(`${API_BASE}/patent-filing/all`);
       console.log('API Response status:', response.status);
       
       if (!response.ok) {
@@ -464,7 +465,7 @@ Note: PDF document has been downloaded. Please attach it manually to your Linked
       }
 
       // Update the patent filing with the message
-      const response = await fetch(`http://localhost:8080/api/patent-filing/${selectedPatent.id}/message`, {
+      const response = await fetch(`${API_BASE}/patent-filing/${selectedPatent.id}/message`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
