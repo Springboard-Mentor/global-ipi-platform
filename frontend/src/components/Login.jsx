@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import React, { useState } from "react";
+import { signInWithEmailAndPassword, signInWithPopup, deleteUser } from "firebase/auth";
 import { auth, googleProvider, db } from "../firebase";
-import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, getDoc, serverTimestamp, deleteDoc } from "firebase/firestore";
 import { useNavigate, Link } from "react-router-dom";
 import "../App.css";
 
@@ -21,6 +21,9 @@ export default function Login() {
     setError("");
 
     try {
+      const trimmedEmail = email.trim();
+      const trimmedPassword = password.trim();
+      
       const userCredential = await signInWithEmailAndPassword(auth, trimmedEmail, trimmedPassword);
       console.log("Login successful:", userCredential.user);
       
@@ -170,25 +173,40 @@ export default function Login() {
       } else {
         // Create new user document
         await setDoc(userRef, {
-          email: user.email,
-          uid: user.uid,
+          email: result.user.email,
+          uid: result.user.uid,
           authProvider: "google",
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
           lastLogin: serverTimestamp(),
-          isOnline: true,
-          updatedAt: serverTimestamp()
+          isOnline: true
         });
       }
-
-      const token = await user.getIdToken();
-      localStorage.setItem("firebaseAuthToken", token);
-
-      navigate("/verification");
+      
+      // Get ID token and save to localStorage for verification
+      const idToken = await result.user.getIdToken();
+      localStorage.setItem('firebaseAuthToken', idToken);
+      console.log("Auth token saved to localStorage");
+      
+      // Redirect to verification
+      setTimeout(() => {
+        console.log("Redirecting to verification...");
+        navigate("/verification");
+      }, 1000);
     } catch (err) {
       setError("Google login failed");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleLogin = () => {
+    handleEmailLogin();
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter") {
+      handleEmailLogin();
     }
   };
 

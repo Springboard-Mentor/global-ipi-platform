@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Lock, Key, Activity, LogOut, Bell, Palette, Globe, FileText, 
   HelpCircle, Trash, CreditCard, Download, Moon, Sun, Settings, Clock, 
-  AlertCircle, Calendar, Crown, Shield, User
+  AlertCircle, Calendar, Crown, Shield, User, ChevronUp, ChevronDown, Mail
 } from 'lucide-react';
 import { db, auth } from '../firebase';
 import { doc, updateDoc, serverTimestamp, getDoc, deleteDoc, setDoc } from 'firebase/firestore';
@@ -137,8 +137,14 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
     // Button will be disabled in this case
   };
 
-  const handleCancelSubscription = async () => {
-    if (!confirm('Are you sure you want to cancel your subscription? All your subscription data including payment history will be permanently deleted.')) {
+  const handleChangePassword = async () => {
+    if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+      alert('Please fill all password fields');
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      alert('New passwords do not match');
       return;
     }
 
@@ -163,6 +169,41 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
       } else {
         alert('Error: ' + error.message);
       }
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    if (!confirm('Are you sure you want to cancel your subscription? All your subscription data including payment history will be permanently deleted.')) {
+      return;
+    }
+
+    try {
+      const user = auth.currentUser;
+      const userId = user.uid;
+
+      // Delete subscription data from Firestore
+      const userDocRef = doc(db, 'users', userId);
+      await updateDoc(userDocRef, {
+        subscriptionType: 'basic',
+        subscriptionEndDate: null,
+        subscriptionId: null,
+        paymentHistory: [],
+        updatedAt: new Date()
+      });
+
+      // Update local state
+      setUserProfile(prev => ({
+        ...prev,
+        subscriptionType: 'basic',
+        subscriptionEndDate: null,
+        subscriptionId: null,
+        paymentHistory: []
+      }));
+
+      alert('Subscription cancelled successfully. You have been downgraded to the Basic plan.');
+    } catch (error) {
+      console.error('Error cancelling subscription:', error);
+      alert('Error cancelling subscription: ' + error.message);
     }
   };
 
@@ -674,47 +715,53 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
   );
 
   // Render Legal & Support Tab Content
-  const renderLegalTab = () => (
-    <div className="space-y-6">
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-          <FileText className="text-blue-500" size={24} />
-          Legal Documents
-        </h3>
-        
-        <div className="space-y-3">
-          <a href="#" className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-            <span className="font-medium text-gray-800">Terms & Conditions</span>
-            <Download size={18} className="text-gray-500" />
-          </a>
-          <a href="#" className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-            <span className="font-medium text-gray-800">Privacy Policy</span>
-            <Download size={18} className="text-gray-500" />
-          </a>
-        </div>
-      </div>
+  const renderLegalTab = () => {
+    if (legalLoading) {
+      return (
+        <div className="space-y-6">
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <FileText className="text-blue-500" size={24} />
+              Legal Documents
+            </h3>
+            
+            <div className="space-y-3">
+              <a href="#" className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                <span className="font-medium text-gray-800">Terms & Conditions</span>
+                <Download size={18} className="text-gray-500" />
+              </a>
+              <a href="#" className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                <span className="font-medium text-gray-800">Privacy Policy</span>
+                <Download size={18} className="text-gray-500" />
+              </a>
+            </div>
+          </div>
 
-      <div className="bg-white border border-gray-200 rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-          <HelpCircle className="text-green-500" size={24} />
-          Help & Support
-        </h3>
-        
-        <div className="space-y-3">
-          <a href="#" className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-            <span className="font-medium text-gray-800">FAQ / Help Center</span>
-          </a>
-          <a href="#" className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-            <span className="font-medium text-gray-800">Contact Support</span>
-          </a>
-          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-gray-600">Version: 1.0.0</p>
-            <p className="text-sm text-gray-600">© 2025 Global IP Intelligence Platform</p>
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <HelpCircle className="text-green-500" size={24} />
+              Help & Support
+            </h3>
+            
+            <div className="space-y-3">
+              <a href="#" className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                <span className="font-medium text-gray-800">FAQ / Help Center</span>
+              </a>
+              <a href="#" className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                <span className="font-medium text-gray-800">Contact Support</span>
+              </a>
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-gray-600">Version: 1.0.0</p>
+                <p className="text-sm text-gray-600">© 2025 Global IP Intelligence Platform</p>
+              </div>
+            </div>
           </div>
         </div>
-      ) : (
-        <>
-          {/* Legal Documents */}
+      );
+    }
+
+    return (
+      <div className="space-y-6">{/* Legal Documents */}
           <div className="bg-gradient-to-br from-white to-gray-50 border border-gray-300 rounded-xl shadow-lg overflow-hidden">
             <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-4">
               <h3 className="text-lg font-bold text-white flex items-center gap-3">
@@ -911,10 +958,9 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
               </div>
             </div>
           </div>
-        </>
-      )}
-    </div>
-  );
+      </div>
+    );
+  };
 
   // Render Account Management Tab Content
   const renderAccountTab = () => (
@@ -1000,19 +1046,6 @@ const SettingsPage = ({ userProfile, setUserProfile, onBack }) => {
       </div>
     </div>
   );
-
-  if (isLoading) {
-    return (
-      <div className="max-w-6xl mx-auto">
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-center">
-            <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent mr-3"></div>
-            <p className="text-blue-800">Loading settings...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-6xl mx-auto">
