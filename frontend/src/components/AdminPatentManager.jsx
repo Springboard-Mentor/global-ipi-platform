@@ -3014,25 +3014,25 @@ const AdminPatentManager = ({ onBack }) => {
               ) : (
                 <div className="space-y-6">
                   {/* Podium Display for Top 3 */}
-                  <div className="flex items-end justify-center gap-3 w-full">
+                  <div className="flex items-end justify-center gap-4 max-w-5xl mx-auto">
                     {/* 2nd Place */}
                     {leaderboardData[1] && (
-                      <div className="flex flex-col items-center flex-1">
-                        <div className="bg-gradient-to-br from-gray-300 to-gray-400 text-white rounded-lg p-4 shadow-lg border-2 border-gray-500 w-full text-center transform hover:scale-105 transition-all ring-2 ring-gray-300/50">
-                          <div className="bg-white/20 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2 ring-2 ring-white/20">
-                            <Medal className="w-8 h-8 text-white" />
+                      <div className="flex flex-col items-center w-64">
+                        <div className="bg-gradient-to-br from-gray-300 to-gray-500 text-white rounded-xl p-5 shadow-2xl border-3 border-gray-600 w-full text-center transform hover:scale-105 transition-all ring-4 ring-gray-400/50">
+                          <div className="bg-white/30 w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3 ring-2 ring-white/40 shadow-lg">
+                            <Medal className="w-9 h-9 text-white drop-shadow-md" />
                           </div>
-                          <p className="text-2xl font-bold mb-1 drop-shadow">🥈 2nd</p>
-                          <p className="text-sm font-bold mb-1">{leaderboardData[1].adminName}</p>
-                          <p className="text-xs opacity-90 truncate">{leaderboardData[1].email}</p>
-                          <div className="mt-2 bg-white/20 rounded-lg p-2">
-                            <p className="text-xl font-bold">{leaderboardData[1][{
+                          <p className="text-3xl font-bold mb-2 drop-shadow-lg">🥈 2nd</p>
+                          <p className="text-base font-bold mb-1 drop-shadow-md">{leaderboardData[1].adminName}</p>
+                          <p className="text-xs opacity-95 truncate drop-shadow">{leaderboardData[1].email}</p>
+                          <div className="mt-3 bg-white/30 rounded-lg p-3 backdrop-blur-sm shadow-inner">
+                            <p className="text-2xl font-bold drop-shadow-lg">{leaderboardData[1][{
                               'granted': 'patentsGranted',
                               'rejected': 'patentsRejected',
                               'activated': 'patentsActivated',
                               'deactivated': 'patentsDeactivated'
                             }[leaderboardFilter]] || 0}</p>
-                            <p className="text-xs uppercase mt-0.5">Patents</p>
+                            <p className="text-xs uppercase mt-1 font-semibold tracking-wide drop-shadow">Patents</p>
                           </div>
                         </div>
                       </div>
@@ -3040,35 +3040,35 @@ const AdminPatentManager = ({ onBack }) => {
                     
                     {/* 1st Place */}
                     {leaderboardData[0] && (
-                      <div className="flex flex-col items-center flex-1">
-                        <div className="bg-gradient-to-br from-yellow-400 to-amber-500 text-white rounded-lg p-5 shadow-2xl border-2 border-yellow-600 w-full text-center transform hover:scale-105 transition-all relative ring-4 ring-yellow-300/50">
+                      <div className="flex flex-col items-center w-72">
+                        <div className="bg-gradient-to-br from-yellow-400 via-yellow-500 to-amber-600 text-white rounded-xl p-6 shadow-2xl border-3 border-yellow-700 w-full text-center transform hover:scale-105 transition-all relative ring-4 ring-yellow-400/60">
                           {/* Floating trophy */}
-                          <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-yellow-500 rounded-full p-2 shadow-lg animate-bounce">
-                            <Trophy className="w-6 h-6 text-white" />
+                          <div className="absolute -top-5 left-1/2 transform -translate-x-1/2 bg-yellow-600 rounded-full p-3 shadow-xl animate-bounce ring-4 ring-yellow-400/50">
+                            <Trophy className="w-7 h-7 text-white drop-shadow-md" />
                           </div>
                           
                           {/* Sparkle effects */}
-                          <div className="absolute top-2 right-2 text-yellow-200 animate-pulse">
+                          <div className="absolute top-3 right-3 text-white animate-pulse drop-shadow-lg">
+                            <Sparkles className="w-6 h-6" />
+                          </div>
+                          <div className="absolute top-3 left-3 text-white animate-pulse drop-shadow-lg" style={{animationDelay: '0.5s'}}>
                             <Sparkles className="w-5 h-5" />
                           </div>
-                          <div className="absolute top-2 left-2 text-yellow-200 animate-pulse" style={{animationDelay: '0.5s'}}>
-                            <Sparkles className="w-4 h-4" />
-                          </div>
                           
-                          <div className="bg-white/20 w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-2 mt-2 ring-2 ring-white/30">
-                            <Award className="w-10 h-10 text-white" />
+                          <div className="bg-white/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 mt-3 ring-2 ring-white/40 shadow-lg">
+                            <Award className="w-11 h-11 text-white drop-shadow-md" />
                           </div>
-                          <p className="text-3xl font-bold mb-1 drop-shadow-lg">🥇 1st</p>
-                          <p className="text-base font-bold mb-1">{leaderboardData[0].adminName}</p>
-                          <p className="text-xs opacity-90 truncate">{leaderboardData[0].email}</p>
-                          <div className="mt-2 bg-white/25 rounded-lg p-2">
-                            <p className="text-2xl font-bold">{leaderboardData[0][{
+                          <p className="text-4xl font-bold mb-2 drop-shadow-xl">🥇 1st</p>
+                          <p className="text-lg font-bold mb-2 drop-shadow-lg">{leaderboardData[0].adminName}</p>
+                          <p className="text-sm opacity-95 truncate drop-shadow-md px-2">{leaderboardData[0].email}</p>
+                          <div className="mt-4 bg-white/35 rounded-xl p-4 backdrop-blur-sm shadow-lg">
+                            <p className="text-3xl font-bold drop-shadow-xl">{leaderboardData[0][{
                               'granted': 'patentsGranted',
                               'rejected': 'patentsRejected',
                               'activated': 'patentsActivated',
                               'deactivated': 'patentsDeactivated'
                             }[leaderboardFilter]] || 0}</p>
-                            <p className="text-xs uppercase mt-0.5">Patents</p>
+                            <p className="text-sm uppercase mt-1 font-semibold tracking-wider drop-shadow-md">Patents</p>
                           </div>
                         </div>
                       </div>
@@ -3076,22 +3076,22 @@ const AdminPatentManager = ({ onBack }) => {
                     
                     {/* 3rd Place */}
                     {leaderboardData[2] && (
-                      <div className="flex flex-col items-center flex-1">
-                        <div className="bg-gradient-to-br from-orange-400 to-orange-500 text-white rounded-lg p-4 shadow-lg border-2 border-orange-600 w-full text-center transform hover:scale-105 transition-all ring-2 ring-orange-300/50">
-                          <div className="bg-white/20 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2 ring-2 ring-white/20">
-                            <Medal className="w-8 h-8 text-white" />
+                      <div className="flex flex-col items-center w-64">
+                        <div className="bg-gradient-to-br from-orange-400 to-orange-600 text-white rounded-xl p-5 shadow-2xl border-3 border-orange-700 w-full text-center transform hover:scale-105 transition-all ring-4 ring-orange-400/50">
+                          <div className="bg-white/30 w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3 ring-2 ring-white/40 shadow-lg">
+                            <Medal className="w-9 h-9 text-white drop-shadow-md" />
                           </div>
-                          <p className="text-2xl font-bold mb-1 drop-shadow">🥉 3rd</p>
-                          <p className="text-sm font-bold mb-1">{leaderboardData[2].adminName}</p>
-                          <p className="text-xs opacity-90 truncate">{leaderboardData[2].email}</p>
-                          <div className="mt-2 bg-white/20 rounded-lg p-2">
-                            <p className="text-xl font-bold">{leaderboardData[2][{
+                          <p className="text-3xl font-bold mb-2 drop-shadow-lg">🥉 3rd</p>
+                          <p className="text-base font-bold mb-1 drop-shadow-md">{leaderboardData[2].adminName}</p>
+                          <p className="text-xs opacity-95 truncate drop-shadow">{leaderboardData[2].email}</p>
+                          <div className="mt-3 bg-white/30 rounded-lg p-3 backdrop-blur-sm shadow-inner">
+                            <p className="text-2xl font-bold drop-shadow-lg">{leaderboardData[2][{
                               'granted': 'patentsGranted',
                               'rejected': 'patentsRejected',
                               'activated': 'patentsActivated',
                               'deactivated': 'patentsDeactivated'
                             }[leaderboardFilter]] || 0}</p>
-                            <p className="text-xs uppercase mt-0.5">Patents</p>
+                            <p className="text-xs uppercase mt-1 font-semibold tracking-wide drop-shadow">Patents</p>
                           </div>
                         </div>
                       </div>
