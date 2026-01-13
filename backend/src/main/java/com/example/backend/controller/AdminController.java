@@ -69,7 +69,7 @@ public class AdminController {
     }
 
     /**
-     * Get all admin users (without passwords)
+     * Get all admin users (without passwords) with patent tracking data
      */
     @GetMapping("/all")
     public ResponseEntity<List<AdminResponse>> getAllAdmins() {
@@ -81,7 +81,11 @@ public class AdminController {
                     admin.getAdminId(),
                     admin.getAdminName(),
                     admin.getEmail(),
-                    admin.getCreatedAt()
+                    admin.getCreatedAt(),
+                    admin.getPatentsGranted(),
+                    admin.getPatentsRejected(),
+                    admin.getPatentsActivated(),
+                    admin.getPatentsDeactivated()
                 ))
                 .collect(Collectors.toList());
             

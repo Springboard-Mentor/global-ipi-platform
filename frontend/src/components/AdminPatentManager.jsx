@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, Circle, Mail, RefreshCw, AlertCircle, LogIn, LogOut, User, Shield, Eye, EyeOff, X, ArrowLeft, Lightbulb, FileCheck, Upload, CreditCard, MessageCircle, Send, Bell, Clock, List, Filter, BarChart3, Users, Activity, Search, Database, Globe, Trophy, Award, Medal } from 'lucide-react';
+import { CheckCircle, Circle, Mail, RefreshCw, AlertCircle, LogIn, LogOut, User, Shield, Eye, EyeOff, X, ArrowLeft, Lightbulb, FileCheck, Upload, CreditCard, MessageCircle, Send, Bell, Clock, List, Filter, BarChart3, Users, Activity, Search, Database, Globe, Trophy, Award, Medal, Sparkles } from 'lucide-react';
 import { addUserNotification } from '../utils/notifications';
 import { db } from '../firebase';
 import { doc, getDoc, collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
@@ -920,13 +920,28 @@ const AdminPatentManager = ({ onBack }) => {
 
       if (response.ok) {
         const admins = await response.json();
-        // Sort based on current filter
+        console.log('Fetched admins:', admins); // Debug log
+        
+        // Convert snake_case to camelCase for field names
+        const filterFieldMap = {
+          'granted': 'patentsGranted',
+          'rejected': 'patentsRejected',
+          'activated': 'patentsActivated',
+          'deactivated': 'patentsDeactivated'
+        };
+        
+        const fieldName = filterFieldMap[leaderboardFilter];
+        console.log('Sorting by field:', fieldName); // Debug log
+        
+        // Sort based on current filter using camelCase field names
         const sorted = admins.sort((a, b) => {
-          const aValue = a[`patents_${leaderboardFilter}`] || 0;
-          const bValue = b[`patents_${leaderboardFilter}`] || 0;
+          const aValue = a[fieldName] || 0;
+          const bValue = b[fieldName] || 0;
+          console.log(`${a.adminName}: ${aValue}, ${b.adminName}: ${bValue}`); // Debug log
           return bValue - aValue;
         }).slice(0, 5); // Get top 5
         
+        console.log('Sorted leaderboard:', sorted); // Debug log
         setLeaderboardData(sorted);
       }
     } catch (error) {
@@ -2909,16 +2924,19 @@ const AdminPatentManager = ({ onBack }) => {
       {/* Admin Leaderboard Modal */}
       {showLeaderboard && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center p-4" onClick={() => setShowLeaderboard(false)}>
-          <div className="bg-gradient-to-br from-white via-amber-50 to-yellow-50 rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col border-4 border-amber-300" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-gradient-to-br from-white via-amber-50 to-yellow-50 rounded-3xl shadow-2xl w-full max-w-7xl max-h-[90vh] flex flex-col border-4 border-amber-300" onClick={(e) => e.stopPropagation()}>
             {/* Modal Header */}
-            <div className="bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 px-8 py-6 rounded-t-3xl flex items-center justify-between flex-shrink-0 border-b-4 border-amber-400">
-              <div className="flex items-center gap-4">
-                <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+            <div className="bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 px-8 py-6 rounded-t-3xl flex items-center justify-between flex-shrink-0 border-b-4 border-amber-400 relative overflow-hidden">
+              {/* Animated background effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 via-transparent to-orange-400/20 animate-pulse"></div>
+              
+              <div className="flex items-center gap-4 relative z-10">
+                <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl shadow-lg animate-bounce">
                   <Trophy className="w-8 h-8 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-3xl font-bold text-white">Admin Leaderboard</h2>
-                  <p className="text-amber-100 font-medium mt-1">Top 5 performing admins</p>
+                  <h2 className="text-3xl font-bold text-white drop-shadow-lg">Admin Leaderboard</h2>
+                  <p className="text-amber-100 font-medium mt-1 drop-shadow">🏆 Top 5 performing admins</p>
                 </div>
               </div>
               <button
@@ -2985,93 +3003,128 @@ const AdminPatentManager = ({ onBack }) => {
             {/* Leaderboard Content - Top 3 in Ladder Format */}
             <div className="flex-1 overflow-y-auto p-8">
               {leaderboardData.length === 0 ? (
-                <div className="text-center py-12">
-                  <Trophy className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600 text-lg">No leaderboard data available</p>
+                <div className="text-center py-20">
+                  <div className="relative inline-block mb-4">
+                    <div className="absolute inset-0 bg-yellow-400 rounded-full blur-xl opacity-30 animate-pulse"></div>
+                    <Trophy className="relative w-20 h-20 text-gray-400 mx-auto" />
+                  </div>
+                  <p className="text-gray-600 text-xl font-semibold mb-2">No leaderboard data available</p>
+                  <p className="text-gray-500 text-sm">Patent actions will appear here once admins start processing patents</p>
                 </div>
               ) : (
                 <div className="space-y-6">
                   {/* Podium Display for Top 3 */}
-                  <div className="flex items-end justify-center gap-4 mb-8">
+                  <div className="flex items-end justify-center gap-3 w-full">
                     {/* 2nd Place */}
                     {leaderboardData[1] && (
-                      <div className="flex flex-col items-center">
-                        <div className="bg-gradient-to-br from-gray-300 to-gray-400 text-white rounded-2xl p-6 shadow-xl border-4 border-gray-500 w-48 text-center transform hover:scale-105 transition-all">
-                          <div className="bg-white/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
-                            <Medal className="w-10 h-10 text-white" />
+                      <div className="flex flex-col items-center flex-1">
+                        <div className="bg-gradient-to-br from-gray-300 to-gray-400 text-white rounded-lg p-4 shadow-lg border-2 border-gray-500 w-full text-center transform hover:scale-105 transition-all ring-2 ring-gray-300/50">
+                          <div className="bg-white/20 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2 ring-2 ring-white/20">
+                            <Medal className="w-8 h-8 text-white" />
                           </div>
-                          <p className="text-4xl font-bold mb-2">2nd</p>
-                          <p className="text-lg font-bold mb-1">{leaderboardData[1].adminName}</p>
-                          <p className="text-sm opacity-90">{leaderboardData[1].email}</p>
-                          <div className="mt-4 bg-white/20 rounded-lg p-3">
-                            <p className="text-3xl font-bold">{leaderboardData[1][`patents_${leaderboardFilter}`] || 0}</p>
-                            <p className="text-xs uppercase mt-1">Patents</p>
+                          <p className="text-2xl font-bold mb-1 drop-shadow">🥈 2nd</p>
+                          <p className="text-sm font-bold mb-1">{leaderboardData[1].adminName}</p>
+                          <p className="text-xs opacity-90 truncate">{leaderboardData[1].email}</p>
+                          <div className="mt-2 bg-white/20 rounded-lg p-2">
+                            <p className="text-xl font-bold">{leaderboardData[1][{
+                              'granted': 'patentsGranted',
+                              'rejected': 'patentsRejected',
+                              'activated': 'patentsActivated',
+                              'deactivated': 'patentsDeactivated'
+                            }[leaderboardFilter]] || 0}</p>
+                            <p className="text-xs uppercase mt-0.5">Patents</p>
                           </div>
                         </div>
-                        <div className="bg-gray-400 w-48 h-32 rounded-t-xl mt-2"></div>
                       </div>
                     )}
                     
                     {/* 1st Place */}
                     {leaderboardData[0] && (
-                      <div className="flex flex-col items-center">
-                        <div className="bg-gradient-to-br from-yellow-400 to-amber-500 text-white rounded-2xl p-8 shadow-2xl border-4 border-yellow-600 w-56 text-center transform hover:scale-105 transition-all relative">
-                          <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 bg-yellow-500 rounded-full p-3 shadow-lg">
-                            <Trophy className="w-8 h-8 text-white animate-pulse" />
+                      <div className="flex flex-col items-center flex-1">
+                        <div className="bg-gradient-to-br from-yellow-400 to-amber-500 text-white rounded-lg p-5 shadow-2xl border-2 border-yellow-600 w-full text-center transform hover:scale-105 transition-all relative ring-4 ring-yellow-300/50">
+                          {/* Floating trophy */}
+                          <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-yellow-500 rounded-full p-2 shadow-lg animate-bounce">
+                            <Trophy className="w-6 h-6 text-white" />
                           </div>
-                          <div className="bg-white/20 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-3 mt-4">
-                            <Award className="w-12 h-12 text-white" />
+                          
+                          {/* Sparkle effects */}
+                          <div className="absolute top-2 right-2 text-yellow-200 animate-pulse">
+                            <Sparkles className="w-5 h-5" />
                           </div>
-                          <p className="text-5xl font-bold mb-2">1st</p>
-                          <p className="text-xl font-bold mb-1">{leaderboardData[0].adminName}</p>
-                          <p className="text-sm opacity-90">{leaderboardData[0].email}</p>
-                          <div className="mt-4 bg-white/25 rounded-xl p-4">
-                            <p className="text-4xl font-bold">{leaderboardData[0][`patents_${leaderboardFilter}`] || 0}</p>
-                            <p className="text-sm uppercase mt-1">Patents</p>
+                          <div className="absolute top-2 left-2 text-yellow-200 animate-pulse" style={{animationDelay: '0.5s'}}>
+                            <Sparkles className="w-4 h-4" />
+                          </div>
+                          
+                          <div className="bg-white/20 w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-2 mt-2 ring-2 ring-white/30">
+                            <Award className="w-10 h-10 text-white" />
+                          </div>
+                          <p className="text-3xl font-bold mb-1 drop-shadow-lg">🥇 1st</p>
+                          <p className="text-base font-bold mb-1">{leaderboardData[0].adminName}</p>
+                          <p className="text-xs opacity-90 truncate">{leaderboardData[0].email}</p>
+                          <div className="mt-2 bg-white/25 rounded-lg p-2">
+                            <p className="text-2xl font-bold">{leaderboardData[0][{
+                              'granted': 'patentsGranted',
+                              'rejected': 'patentsRejected',
+                              'activated': 'patentsActivated',
+                              'deactivated': 'patentsDeactivated'
+                            }[leaderboardFilter]] || 0}</p>
+                            <p className="text-xs uppercase mt-0.5">Patents</p>
                           </div>
                         </div>
-                        <div className="bg-yellow-500 w-56 h-48 rounded-t-xl mt-2"></div>
                       </div>
                     )}
                     
                     {/* 3rd Place */}
                     {leaderboardData[2] && (
-                      <div className="flex flex-col items-center">
-                        <div className="bg-gradient-to-br from-orange-400 to-orange-500 text-white rounded-2xl p-6 shadow-xl border-4 border-orange-600 w-48 text-center transform hover:scale-105 transition-all">
-                          <div className="bg-white/20 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
-                            <Medal className="w-10 h-10 text-white" />
+                      <div className="flex flex-col items-center flex-1">
+                        <div className="bg-gradient-to-br from-orange-400 to-orange-500 text-white rounded-lg p-4 shadow-lg border-2 border-orange-600 w-full text-center transform hover:scale-105 transition-all ring-2 ring-orange-300/50">
+                          <div className="bg-white/20 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2 ring-2 ring-white/20">
+                            <Medal className="w-8 h-8 text-white" />
                           </div>
-                          <p className="text-4xl font-bold mb-2">3rd</p>
-                          <p className="text-lg font-bold mb-1">{leaderboardData[2].adminName}</p>
-                          <p className="text-sm opacity-90">{leaderboardData[2].email}</p>
-                          <div className="mt-4 bg-white/20 rounded-lg p-3">
-                            <p className="text-3xl font-bold">{leaderboardData[2][`patents_${leaderboardFilter}`] || 0}</p>
-                            <p className="text-xs uppercase mt-1">Patents</p>
+                          <p className="text-2xl font-bold mb-1 drop-shadow">🥉 3rd</p>
+                          <p className="text-sm font-bold mb-1">{leaderboardData[2].adminName}</p>
+                          <p className="text-xs opacity-90 truncate">{leaderboardData[2].email}</p>
+                          <div className="mt-2 bg-white/20 rounded-lg p-2">
+                            <p className="text-xl font-bold">{leaderboardData[2][{
+                              'granted': 'patentsGranted',
+                              'rejected': 'patentsRejected',
+                              'activated': 'patentsActivated',
+                              'deactivated': 'patentsDeactivated'
+                            }[leaderboardFilter]] || 0}</p>
+                            <p className="text-xs uppercase mt-0.5">Patents</p>
                           </div>
                         </div>
-                        <div className="bg-orange-500 w-48 h-24 rounded-t-xl mt-2"></div>
                       </div>
                     )}
                   </div>
                   
                   {/* Remaining Admins (4th and 5th) */}
                   {leaderboardData.length > 3 && (
-                    <div className="mt-8 space-y-3">
-                      <h3 className="text-xl font-bold text-gray-800 mb-4 text-center">Other Top Performers</h3>
+                    <div className="mt-6 space-y-2">
+                      <h3 className="text-lg font-bold text-gray-800 mb-3 text-center flex items-center justify-center gap-2">
+                        <Award className="w-5 h-5 text-indigo-600" />
+                        Other Top Performers
+                        <Award className="w-5 h-5 text-indigo-600" />
+                      </h3>
                       {leaderboardData.slice(3, 5).map((admin, index) => (
-                        <div key={admin.adminId} className="bg-white rounded-xl p-5 shadow-lg border-2 border-gray-200 hover:border-indigo-400 transition-all flex items-center justify-between">
-                          <div className="flex items-center gap-4">
-                            <div className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl">
+                        <div key={admin.adminId} className="bg-gradient-to-r from-white to-indigo-50 rounded-lg p-3 shadow-md border border-indigo-200 hover:border-indigo-400 hover:shadow-lg transition-all flex items-center justify-between transform hover:scale-[1.02]">
+                          <div className="flex items-center gap-3">
+                            <div className="bg-gradient-to-br from-indigo-500 to-purple-600 text-white w-10 h-10 rounded-full flex items-center justify-center font-bold text-base">
                               {index + 4}
                             </div>
                             <div>
-                              <p className="font-bold text-lg text-gray-800">{admin.adminName}</p>
-                              <p className="text-sm text-gray-600">{admin.email}</p>
+                              <p className="font-bold text-sm text-gray-800">{admin.adminName}</p>
+                              <p className="text-xs text-gray-600 truncate">{admin.email}</p>
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="text-3xl font-bold text-indigo-600">{admin[`patents_${leaderboardFilter}`] || 0}</p>
-                            <p className="text-xs text-gray-500 uppercase mt-1">Patents</p>
+                            <p className="text-xl font-bold text-indigo-600">{admin[{
+                              'granted': 'patentsGranted',
+                              'rejected': 'patentsRejected',
+                              'activated': 'patentsActivated',
+                              'deactivated': 'patentsDeactivated'
+                            }[leaderboardFilter]] || 0}</p>
+                            <p className="text-xs text-gray-500 uppercase mt-0.5">Patents</p>
                           </div>
                         </div>
                       ))}

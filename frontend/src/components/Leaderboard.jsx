@@ -117,22 +117,22 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
     if (rank === 1) {
       return (
         <div className="relative">
-          <div className="absolute inset-0 bg-yellow-400 rounded-full blur-xl opacity-60 animate-pulse"></div>
-          <Trophy className="relative text-yellow-500 w-16 h-16 drop-shadow-2xl" />
+          <div className="absolute inset-0 bg-yellow-400 rounded-full blur-lg opacity-50 animate-pulse"></div>
+          <Trophy className="relative text-yellow-500 w-10 h-10 drop-shadow-lg" />
         </div>
       );
     } else if (rank === 2) {
       return (
         <div className="relative">
-          <div className="absolute inset-0 bg-gray-400 rounded-full blur-xl opacity-60 animate-pulse"></div>
-          <Medal className="relative text-gray-400 w-14 h-14 drop-shadow-xl" />
+          <div className="absolute inset-0 bg-gray-400 rounded-full blur-lg opacity-50 animate-pulse"></div>
+          <Medal className="relative text-gray-400 w-8 h-8 drop-shadow-md" />
         </div>
       );
     } else if (rank === 3) {
       return (
         <div className="relative">
-          <div className="absolute inset-0 bg-orange-500 rounded-full blur-xl opacity-60 animate-pulse"></div>
-          <Award className="relative text-orange-600 w-14 h-14 drop-shadow-xl" />
+          <div className="absolute inset-0 bg-orange-500 rounded-full blur-lg opacity-50 animate-pulse"></div>
+          <Award className="relative text-orange-600 w-8 h-8 drop-shadow-md" />
         </div>
       );
     }
@@ -244,39 +244,39 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
   }
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 rounded-2xl shadow-2xl p-6 border-2 border-blue-200">
+    <div className="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 rounded-2xl shadow-2xl p-4 border-2 border-blue-200 w-full">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <button
           onClick={onBack}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
+          className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 text-sm"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
           Back to Dashboard
         </button>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full blur-md opacity-50"></div>
-            <Trophy className="relative text-yellow-500 w-8 h-8" />
+            <Trophy className="relative text-yellow-500 w-6 h-6" />
           </div>
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-yellow-600 via-orange-600 to-red-600 bg-clip-text text-transparent">
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-yellow-600 via-orange-600 to-red-600 bg-clip-text text-transparent">
             Patent Filing Leaderboard
           </h2>
         </div>
         <button
           onClick={handleRefresh}
           disabled={isRefreshing}
-          className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-blue-500 text-blue-600 rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-3 py-2 bg-white border-2 border-blue-500 text-blue-600 rounded-lg font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
         >
-          <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
           Refresh
         </button>
       </div>
 
       {/* Subtitle */}
-      <p className="text-gray-600 mb-8 text-center">
+      <p className="text-gray-600 mb-4 text-center text-sm">
         Top innovators leading the way in patent filings
       </p>
 
@@ -287,22 +287,24 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
           <p className="text-gray-400 text-sm mt-2">Be the first to file a patent!</p>
         </div>
       ) : (
-        <div className="space-y-6">
-          {/* Top 3 Winners - Podium/Ladder Display */}
-          <div className="flex items-end justify-center gap-4 mb-8 max-w-4xl mx-auto">
+        <div className="space-y-4 w-full">
+          {/* Top 3 Winners - Podium/Ladder Display - Full Width */}
+          <div className="flex items-end justify-center gap-3 mb-6 w-full">
             {/* 2nd Place - Left Side */}
             {leaderboardData[1] && (
-              <div className="relative flex-1 max-w-xs">
-                <div className={`relative border-3 rounded-2xl p-6 transition-all hover:scale-105 ${getTopThreeStyle(2)}`}>
+              <div className="relative flex-1">
+                <div className={`relative border-2 rounded-lg p-3 transition-all hover:scale-105 ${getTopThreeStyle(2)}`}>
                   {/* Medal Icon at Top */}
-                  <div className="flex justify-center mb-4">
-                    {getMedalIcon(2)}
+                  <div className="flex justify-center mb-2">
+                    <div className="relative">
+                      <Medal className="relative text-gray-400 w-8 h-8" />
+                    </div>
                   </div>
 
                   {/* User Info */}
                   <div className="text-center">
                     {/* User Avatar/Initial/Photo */}
-                    <div className="w-16 h-16 mx-auto mb-3 rounded-full flex items-center justify-center text-xl font-bold bg-gradient-to-br from-gray-400 to-gray-600 text-white shadow-lg overflow-hidden">
+                    <div className="w-12 h-12 mx-auto mb-2 rounded-full flex items-center justify-center text-base font-bold bg-gradient-to-br from-gray-400 to-gray-600 text-white shadow-md overflow-hidden">
                       {leaderboardData[1].userPhoto ? (
                         <img src={leaderboardData[1].userPhoto} alt={leaderboardData[1].userName} className="w-full h-full object-cover" />
                       ) : leaderboardData[1].userName ? (
@@ -311,25 +313,25 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
                     </div>
 
                     {/* User Name */}
-                    <h3 className="text-lg font-bold text-gray-800 mb-2 truncate">
+                    <h3 className="text-sm font-bold text-gray-800 mb-1 truncate">
                       {leaderboardData[1].userName || 'Unknown User'}
                     </h3>
 
                     {/* Patent Count */}
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                      <TrendingUp className="w-4 h-4 text-gray-600" />
-                      <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    <div className="flex items-center justify-center gap-1 mb-1">
+                      <TrendingUp className="w-3 h-3 text-gray-600" />
+                      <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                         {leaderboardData[1].patentCount}
                       </span>
                     </div>
                     <p className="text-xs text-gray-600 font-medium">
-                      Patent{leaderboardData[1].patentCount !== 1 ? 's' : ''} Filed
+                      Patent{leaderboardData[1].patentCount !== 1 ? 's' : ''}
                     </p>
                   </div>
                   
                   {/* Rank Badge Below */}
-                  <div className="mt-4 flex justify-center">
-                    <div className={`${getRankBadge(2)} px-6 py-2 rounded-full font-bold text-lg shadow-lg`}>
+                  <div className="mt-2 flex justify-center">
+                    <div className={`${getRankBadge(2)} px-3 py-1 rounded-full font-bold text-sm shadow-md`}>
                       #2
                     </div>
                   </div>
@@ -339,20 +341,22 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
 
             {/* 1st Place - Center (Tallest) */}
             {leaderboardData[0] && (
-              <div className="relative flex-1 max-w-xs">
+              <div className="relative flex-1">
                 <div 
-                  className={`relative border-3 rounded-2xl p-6 transition-all hover:scale-105 ${getTopThreeStyle(1)} cursor-pointer`}
+                  className={`relative border-2 rounded-lg p-4 transition-all hover:scale-105 ${getTopThreeStyle(1)} cursor-pointer`}
                   onMouseEnter={handleRank1Hover}
                 >
                   {/* Medal Icon at Top */}
-                  <div className="flex justify-center mb-4">
-                    {getMedalIcon(1)}
+                  <div className="flex justify-center mb-2">
+                    <div className="relative">
+                      <Trophy className="relative text-yellow-500 w-10 h-10" />
+                    </div>
                   </div>
 
                   {/* User Info */}
                   <div className="text-center">
                     {/* User Avatar/Initial/Photo */}
-                    <div className="w-24 h-24 mx-auto mb-4 rounded-full flex items-center justify-center text-3xl font-bold bg-gradient-to-br from-yellow-400 to-yellow-600 text-white shadow-2xl overflow-hidden">
+                    <div className="w-16 h-16 mx-auto mb-2 rounded-full flex items-center justify-center text-xl font-bold bg-gradient-to-br from-yellow-400 to-yellow-600 text-white shadow-lg overflow-hidden">
                       {leaderboardData[0].userPhoto ? (
                         <img src={leaderboardData[0].userPhoto} alt={leaderboardData[0].userName} className="w-full h-full object-cover" />
                       ) : leaderboardData[0].userName ? (
@@ -361,30 +365,30 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
                     </div>
 
                     {/* User Name */}
-                    <h3 className="text-xl font-bold text-gray-800 mb-3 truncate">
+                    <h3 className="text-base font-bold text-gray-800 mb-2 truncate">
                       {leaderboardData[0].userName || 'Unknown User'}
                     </h3>
 
                     {/* Patent Count */}
-                    <div className="flex items-center justify-center gap-2 mb-3">
-                      <TrendingUp className="w-5 h-5 text-yellow-600" />
-                      <span className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    <div className="flex items-center justify-center gap-1 mb-2">
+                      <TrendingUp className="w-4 h-4 text-yellow-600" />
+                      <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                         {leaderboardData[0].patentCount}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-600 font-medium">
-                      Patent{leaderboardData[0].patentCount !== 1 ? 's' : ''} Filed
+                    <p className="text-xs text-gray-600 font-medium">
+                      Patent{leaderboardData[0].patentCount !== 1 ? 's' : ''}
                     </p>
                   </div>
 
                   {/* Sparkle Effect */}
-                  <div className="absolute top-2 right-2">
-                    <Sparkles className="text-yellow-500 w-6 h-6 animate-pulse" />
+                  <div className="absolute top-1 right-1">
+                    <Sparkles className="text-yellow-500 w-4 h-4 animate-pulse" />
                   </div>
                   
                   {/* Rank Badge Below */}
-                  <div className="mt-4 flex justify-center">
-                    <div className={`${getRankBadge(1)} px-8 py-2 rounded-full font-bold text-xl shadow-lg`}>
+                  <div className="mt-2 flex justify-center">
+                    <div className={`${getRankBadge(1)} px-4 py-1 rounded-full font-bold text-base shadow-md`}>
                       #1
                     </div>
                   </div>
@@ -394,17 +398,19 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
 
             {/* 3rd Place - Right Side */}
             {leaderboardData[2] && (
-              <div className="relative flex-1 max-w-xs">
-                <div className={`relative border-3 rounded-2xl p-6 transition-all hover:scale-105 ${getTopThreeStyle(3)}`}>
+              <div className="relative flex-1">
+                <div className={`relative border-2 rounded-lg p-3 transition-all hover:scale-105 ${getTopThreeStyle(3)}`}>
                   {/* Medal Icon at Top */}
-                  <div className="flex justify-center mb-4">
-                    {getMedalIcon(3)}
+                  <div className="flex justify-center mb-2">
+                    <div className="relative">
+                      <Award className="relative text-orange-600 w-8 h-8" />
+                    </div>
                   </div>
 
                   {/* User Info */}
                   <div className="text-center">
                     {/* User Avatar/Initial/Photo */}
-                    <div className="w-16 h-16 mx-auto mb-3 rounded-full flex items-center justify-center text-xl font-bold bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-lg overflow-hidden">
+                    <div className="w-12 h-12 mx-auto mb-2 rounded-full flex items-center justify-center text-base font-bold bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-md overflow-hidden">
                       {leaderboardData[2].userPhoto ? (
                         <img src={leaderboardData[2].userPhoto} alt={leaderboardData[2].userName} className="w-full h-full object-cover" />
                       ) : leaderboardData[2].userName ? (
@@ -413,25 +419,25 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
                     </div>
 
                     {/* User Name */}
-                    <h3 className="text-lg font-bold text-gray-800 mb-2 truncate">
+                    <h3 className="text-sm font-bold text-gray-800 mb-1 truncate">
                       {leaderboardData[2].userName || 'Unknown User'}
                     </h3>
 
                     {/* Patent Count */}
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                      <TrendingUp className="w-4 h-4 text-orange-600" />
-                      <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    <div className="flex items-center justify-center gap-1 mb-1">
+                      <TrendingUp className="w-3 h-3 text-orange-600" />
+                      <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                         {leaderboardData[2].patentCount}
                       </span>
                     </div>
                     <p className="text-xs text-gray-600 font-medium">
-                      Patent{leaderboardData[2].patentCount !== 1 ? 's' : ''} Filed
+                      Patent{leaderboardData[2].patentCount !== 1 ? 's' : ''}
                     </p>
                   </div>
                   
                   {/* Rank Badge Below */}
-                  <div className="mt-4 flex justify-center">
-                    <div className={`${getRankBadge(3)} px-6 py-2 rounded-full font-bold text-lg shadow-lg`}>
+                  <div className="mt-2 flex justify-center">
+                    <div className={`${getRankBadge(3)} px-3 py-1 rounded-full font-bold text-sm shadow-md`}>
                       #3
                     </div>
                   </div>
@@ -441,12 +447,12 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
           </div>
 
           {/* Time Filter with Conditional Stats - Below Top 3 */}
-          <div className="mb-8">
+          <div className="mb-4 w-full">
             {/* Filter Buttons Row */}
-            <div className="flex justify-center gap-2 mb-4">
+            <div className="flex justify-center gap-2 mb-3">
               <button
                 onClick={() => setTimeFilter('all')}
-                className={`px-4 py-2 rounded-lg font-semibold transition ${
+                className={`px-3 py-1.5 rounded-lg font-semibold transition text-sm ${
                   timeFilter === 'all'
                     ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md'
                     : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-300'
@@ -456,7 +462,7 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
               </button>
               <button
                 onClick={() => setTimeFilter('monthly')}
-                className={`px-4 py-2 rounded-lg font-semibold transition ${
+                className={`px-3 py-1.5 rounded-lg font-semibold transition text-sm ${
                   timeFilter === 'monthly'
                     ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md'
                     : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-300'
@@ -466,7 +472,7 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
               </button>
               <button
                 onClick={() => setTimeFilter('weekly')}
-                className={`px-4 py-2 rounded-lg font-semibold transition ${
+                className={`px-3 py-1.5 rounded-lg font-semibold transition text-sm ${
                   timeFilter === 'weekly'
                     ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md'
                     : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-300'
@@ -479,14 +485,14 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
             {/* Conditional Statistics Cards - Same Row as Filter */}
             {timeFilter === 'monthly' && (
               <div className="flex justify-center">
-                <div className="bg-white rounded-xl shadow-lg p-4 border-2 border-purple-200 max-w-md w-full">
+                <div className="bg-white rounded-lg shadow-md p-3 border-2 border-purple-200 max-w-md w-full">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <h3 className="text-sm font-semibold text-gray-700 mb-1">
+                      <h3 className="text-xs font-semibold text-gray-700 mb-1">
                         Patents Filed This Month
                       </h3>
                       <div className="flex items-center gap-2">
-                        <div className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                        <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                           {monthlyPatents}
                         </div>
                         <div className="text-gray-600">
@@ -494,7 +500,7 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
                         </div>
                       </div>
                     </div>
-                    <div className="text-4xl opacity-20">
+                    <div className="text-2xl opacity-20">
                       📊
                     </div>
                   </div>
@@ -504,14 +510,14 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
 
             {timeFilter === 'weekly' && (
               <div className="flex justify-center">
-                <div className="bg-white rounded-xl shadow-lg p-4 border-2 border-indigo-200 max-w-md w-full">
+                <div className="bg-white rounded-lg shadow-md p-3 border-2 border-indigo-200 max-w-md w-full">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <h3 className="text-sm font-semibold text-gray-700 mb-1">
+                      <h3 className="text-xs font-semibold text-gray-700 mb-1">
                         Patents Filed This Week
                       </h3>
                       <div className="flex items-center gap-2">
-                        <div className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
+                        <div className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
                           {weeklyPatents}
                         </div>
                         <div className="text-gray-600">
@@ -519,7 +525,7 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
                         </div>
                       </div>
                     </div>
-                    <div className="text-4xl opacity-20">
+                    <div className="text-2xl opacity-20">
                       📈
                     </div>
                   </div>
@@ -529,24 +535,24 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
           </div>
 
           {/* Chart Visualization */}
-          <div className="bg-white rounded-xl shadow-lg p-6 mb-8 border-2 border-indigo-200">
-            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+          <div className="bg-white rounded-lg shadow-md p-4 mb-4 border-2 border-indigo-200 w-full">
+            <h3 className="text-base font-bold text-gray-800 mb-3 flex items-center gap-2">
               <TrendingUp className="text-indigo-600" />
               Patent Filing Distribution
             </h3>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {leaderboardData.slice(0, 10).map((user, index) => {
                 const maxCount = leaderboardData[0]?.patentCount || 1;
                 const percentage = (user.patentCount / maxCount) * 100;
                 return (
-                  <div key={user.userId} className="flex items-center gap-3">
-                    <div className="w-8 text-sm font-semibold text-gray-600">#{index + 1}</div>
+                  <div key={user.userId} className="flex items-center gap-2">
+                    <div className="w-8 text-xs font-semibold text-gray-600">#{index + 1}</div>
                     <div className="flex-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium text-gray-700 truncate">{user.userName || 'Unknown'}</span>
-                        <span className="text-sm font-bold text-indigo-600">{user.patentCount}</span>
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="text-xs font-medium text-gray-700 truncate">{user.userName || 'Unknown'}</span>
+                        <span className="text-xs font-bold text-indigo-600">{user.patentCount}</span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                         <div 
                           className="h-full rounded-full transition-all duration-500 ease-out"
                           style={{
@@ -566,28 +572,28 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
 
           {/* Rest of Top 10 - List Format */}
           {leaderboardData.length > 3 && (
-            <div className="mt-8">
-              <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <div className="mt-4 w-full">
+              <h3 className="text-base font-bold text-gray-800 mb-3 flex items-center gap-2">
                 <Award className="text-blue-500" />
                 Top 10 Innovators
               </h3>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {leaderboardData.slice(3, 10).map((user, index) => {
                   const rank = index + 4;
                   return (
                     <div
                       key={user.userId}
-                      className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200 hover:shadow-md transition-all hover:scale-102"
+                      className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200 hover:shadow-md transition-all hover:scale-102"
                     >
                       {/* Left Side - Rank and User Info */}
-                      <div className="flex items-center gap-4 flex-1">
+                      <div className="flex items-center gap-3 flex-1">
                         {/* Rank */}
-                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-md">
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-full flex items-center justify-center font-bold text-sm shadow-md">
                           #{rank}
                         </div>
 
                         {/* User Avatar */}
-                        <div className="w-12 h-12 bg-gradient-to-br from-gray-300 to-gray-500 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-md overflow-hidden">
+                        <div className="w-10 h-10 bg-gradient-to-br from-gray-300 to-gray-500 text-white rounded-full flex items-center justify-center font-bold text-sm shadow-md overflow-hidden">
                           {user.userPhoto ? (
                             <img src={user.userPhoto} alt={user.userName} className="w-full h-full object-cover" />
                           ) : user.userName ? (
@@ -597,19 +603,19 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
 
                         {/* User Name */}
                         <div className="flex-1">
-                          <h4 className="font-bold text-gray-800 text-lg">
+                          <h4 className="font-bold text-gray-800 text-sm">
                             {user.userName || 'Unknown User'}
                           </h4>
-                          <p className="text-sm text-gray-600">
-                            {user.patentCount} patent{user.patentCount !== 1 ? 's' : ''} filed
+                          <p className="text-xs text-gray-600">
+                            {user.patentCount} patent{user.patentCount !== 1 ? 's' : ''}
                           </p>
                         </div>
                       </div>
 
                       {/* Right Side - Patent Count Badge */}
-                      <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow-sm">
-                        <TrendingUp className="text-blue-600 w-5 h-5" />
-                        <span className="text-2xl font-bold text-blue-600">
+                      <div className="flex items-center gap-1 bg-white px-3 py-1.5 rounded-lg shadow-sm">
+                        <TrendingUp className="text-blue-600 w-4 h-4" />
+                        <span className="text-lg font-bold text-blue-600">
                           {user.patentCount}
                         </span>
                       </div>
@@ -621,26 +627,26 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
           )}
 
           {/* Motivational Section */}
-          <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-xl p-4 mt-8 text-white text-center shadow-xl">
+          <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-lg p-3 mt-4 text-white text-center shadow-lg w-full">
             <div className="flex items-center justify-center gap-2 mb-2">
-              <Sparkles className="w-6 h-6 animate-bounce" />
-              <h3 className="text-xl font-bold">Ready to Make Your Mark?</h3>
-              <Sparkles className="w-6 h-6 animate-bounce" />
+              <Sparkles className="w-4 h-4 animate-bounce" />
+              <h3 className="text-base font-bold">Ready to Make Your Mark?</h3>
+              <Sparkles className="w-4 h-4 animate-bounce" />
             </div>
-            <p className="text-sm mb-3 text-white/90">
+            <p className="text-xs mb-2 text-white/90">
               Join these innovative leaders and protect your groundbreaking ideas today!
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-              <div className="bg-white/20 rounded-lg p-3 backdrop-blur-sm">
-                <div className="text-2xl mb-1">💡</div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-2">
+              <div className="bg-white/20 rounded-lg p-2 backdrop-blur-sm">
+                <div className="text-lg mb-0.5">💡</div>
                 <p className="text-xs font-semibold">Protect Your Innovation</p>
               </div>
-              <div className="bg-white/20 rounded-lg p-3 backdrop-blur-sm">
-                <div className="text-2xl mb-1">🏆</div>
+              <div className="bg-white/20 rounded-lg p-2 backdrop-blur-sm">
+                <div className="text-lg mb-0.5">🏆</div>
                 <p className="text-xs font-semibold">Build Your Legacy</p>
               </div>
-              <div className="bg-white/20 rounded-lg p-3 backdrop-blur-sm">
-                <div className="text-2xl mb-1">⚡</div>
+              <div className="bg-white/20 rounded-lg p-2 backdrop-blur-sm">
+                <div className="text-lg mb-0.5">⚡</div>
                 <p className="text-xs font-semibold">Stay Ahead of Competition</p>
               </div>
             </div>
@@ -650,7 +656,7 @@ const Leaderboard = ({ onBack, userProfile, onNavigateToPatentFiling }) => {
                   onNavigateToPatentFiling();
                 }
               }}
-              className="bg-white text-purple-600 px-6 py-2 rounded-lg font-bold hover:bg-gray-100 transition-all hover:scale-105 shadow-lg text-sm"
+              className="bg-white text-purple-600 px-4 py-1.5 rounded-lg font-bold hover:bg-gray-100 transition-all hover:scale-105 shadow-md text-xs"
             >
               Start Your Patent Journey →
             </button>

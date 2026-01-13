@@ -8,6 +8,10 @@ public class AdminResponse {
     private String adminName;
     private String email;
     private LocalDateTime createdAt;
+    private Integer patentsGranted;
+    private Integer patentsRejected;
+    private Integer patentsActivated;
+    private Integer patentsDeactivated;
 
     // Constructors
     public AdminResponse() {
@@ -18,6 +22,19 @@ public class AdminResponse {
         this.adminName = adminName;
         this.email = email;
         this.createdAt = createdAt;
+    }
+
+    public AdminResponse(Long adminId, String adminName, String email, LocalDateTime createdAt,
+                        Integer patentsGranted, Integer patentsRejected, 
+                        Integer patentsActivated, Integer patentsDeactivated) {
+        this.adminId = adminId;
+        this.adminName = adminName;
+        this.email = email;
+        this.createdAt = createdAt;
+        this.patentsGranted = patentsGranted;
+        this.patentsRejected = patentsRejected;
+        this.patentsActivated = patentsActivated;
+        this.patentsDeactivated = patentsDeactivated;
     }
 
     // Getters and Setters
@@ -51,5 +68,37 @@ public class AdminResponse {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Integer getPatentsGranted() {
+        return patentsGranted;
+    }
+
+    public void setPatentsGranted(Integer patentsGranted) {
+        this.patentsGranted = patentsGranted;
+    }
+
+    public Integer getPatentsRejected() {
+        return patentsRejected;
+    }
+
+    public void setPatentsRejected(Integer patentsRejected) {
+        this.patentsRejected = patentsRejected;
+    }
+
+    public Integer getPatentsActivated() {
+        return patentsActivated;
+    }
+
+    public void setPatentsActivated(Integer patentsActivated) {
+        this.patentsActivated = patentsActivated;
+    }
+
+    public Integer getPatentsDeactivated() {
+        return patentsDeactivated;
+    }
+
+    public void setPatentsDeactivated(Integer patentsDeactivated) {
+        this.patentsDeactivated = patentsDeactivated;
     }
 }
