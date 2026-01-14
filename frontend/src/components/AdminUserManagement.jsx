@@ -159,6 +159,12 @@ const AdminUserManagement = ({ onBack }) => {
         case 'unban':
           await handleUnbanUser(selectedUser);
           break;
+        case 'suspend':
+          await handleSuspendUser(selectedUser);
+          break;
+        case 'unsuspend':
+          await handleUnsuspendUser(selectedUser);
+          break;
         case 'cancelSubscription':
           await handleCancelSubscription(selectedUser);
           break;
@@ -276,6 +282,42 @@ const AdminUserManagement = ({ onBack }) => {
     }
   };
 
+  // Suspend User
+  const handleSuspendUser = async (user) => {
+    try {
+      const userRef = doc(db, 'users', user.id);
+      await updateDoc(userRef, {
+        accountStatus: 'suspended',
+        suspendedAt: Timestamp.now(),
+        suspendReason: 'Suspended by admin'
+      });
+      
+      showToast(`User ${user.name} has been suspended`, 'warning');
+      fetchUsers();
+    } catch (error) {
+      console.error('Error suspending user:', error);
+      showToast('Failed to suspend user: ' + error.message, 'error');
+    }
+  };
+
+  // Unsuspend User
+  const handleUnsuspendUser = async (user) => {
+    try {
+      const userRef = doc(db, 'users', user.id);
+      await updateDoc(userRef, {
+        accountStatus: 'active',
+        suspendedAt: null,
+        suspendReason: null
+      });
+      
+      showToast(`User ${user.name} has been unsuspended`, 'success');
+      fetchUsers();
+    } catch (error) {
+      console.error('Error unsuspending user:', error);
+      showToast('Failed to unsuspend user: ' + error.message, 'error');
+    }
+  };
+
   // Cancel Subscription
   const handleCancelSubscription = async (user) => {
     try {
@@ -332,14 +374,29 @@ const AdminUserManagement = ({ onBack }) => {
     setSelectedUser(user);
     const currentPlan = user.subscriptionType || user.subscriptionPlan || 'Basic';
     const normalizedPlan = currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1).toLowerCase();
+    
+    // Capture all user fields from Firestore
     setEditFormData({
-      name: user.name || '',
+      firstName: user.firstName || user.name || user.displayName || '',
       email: user.email || '',
+      phoneNumber: user.phoneNumber || '',
+      profilePicture: user.profilePicture || '',
+      photoURL: user.photoURL || '',
       subscriptionPlan: normalizedPlan,
       subscriptionType: currentPlan.toLowerCase(),
+      subscriptionStatus: user.subscriptionStatus || '',
       localSearchCount: user.localSearchCount || 0,
       apiSearchCount: user.apiSearchCount || 0,
-      accountStatus: user.accountStatus || 'active'
+      accountStatus: user.accountStatus || 'active',
+      emailVerified: user.emailVerified || false,
+      role: user.role || 'user',
+      bio: user.bio || '',
+      organization: user.organization || '',
+      address: user.address || '',
+      city: user.city || '',
+      state: user.state || '',
+      country: user.country || '',
+      zipCode: user.zipCode || ''
     });
     setShowEditModal(true);
   };
@@ -378,7 +435,8 @@ const AdminUserManagement = ({ onBack }) => {
     const statusConfig = {
       active: { color: 'bg-green-100 text-green-800 border-green-300', icon: CheckCircle },
       deactivated: { color: 'bg-gray-100 text-gray-800 border-gray-300', icon: UserX },
-      banned: { color: 'bg-red-100 text-red-800 border-red-300', icon: Ban }
+      banned: { color: 'bg-red-100 text-red-800 border-red-300', icon: Ban },
+      suspended: { color: 'bg-yellow-100 text-yellow-800 border-yellow-300', icon: AlertTriangle }
     };
 
     const config = statusConfig[status] || statusConfig.active;
@@ -707,6 +765,33 @@ const AdminUserManagement = ({ onBack }) => {
                     </button>
                   )}
 
+                  {/* Suspend/Unsuspend */}
+                  {user.accountStatus === 'suspended' ? (
+                    <button
+                      onClick={() => confirmActionDialog({ type: 'unsuspend', title: 'Unsuspend User', message: `Unsuspend ${user.name || 'this user'}?` }, user)}
+                      className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold w-full"
+                      title="Remove suspension"
+                    >
+                      <UserCheck className="w-4 h-4" />
+                      Unsuspend
+                      <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
+                        ✅ Remove suspension and restore access
+                      </span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => confirmActionDialog({ type: 'suspend', title: 'Suspend User', message: `Suspend ${user.name || 'this user'}? User will be temporarily restricted.` }, user)}
+                      className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg hover:from-yellow-600 hover:to-yellow-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold w-full"
+                      title="Suspend user temporarily"
+                    >
+                      <AlertTriangle className="w-4 h-4" />
+                      Suspend
+                      <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
+                        ⚠️ Temporarily suspend user access
+                      </span>
+                    </button>
+                  )}
+
                   {/* Ban/Unban */}
                   {user.accountStatus === 'banned' ? (
                     <button
@@ -875,8 +960,8 @@ const AdminUserManagement = ({ onBack }) => {
       {/* Edit User Modal */}
       {showEditModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-2xl w-full border border-gray-200">
-            <div className="flex items-center justify-between mb-6">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-gray-200">
+            <div className="flex items-center justify-between mb-6 sticky top-0 bg-white pb-4 border-b border-gray-200">
               <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
                 <Edit className="w-6 h-6 text-indigo-600" />
                 Edit User Details
@@ -889,85 +974,288 @@ const AdminUserManagement = ({ onBack }) => {
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-6">
+              {/* Basic Information */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Name</label>
-                <input
-                  type="text"
-                  value={editFormData.name}
-                  onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                />
-              </div>
+                <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <Users className="w-5 h-5 text-indigo-600" />
+                  Basic Information
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">User ID</label>
+                    <input
+                      type="text"
+                      value={selectedUser?.id || ''}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl bg-gray-50 text-gray-600"
+                      disabled
+                    />
+                  </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
-                <input
-                  type="email"
-                  value={editFormData.email}
-                  onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  disabled
-                />
-              </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">First Name</label>
+                    <input
+                      type="text"
+                      value={editFormData.firstName}
+                      onChange={(e) => setEditFormData({ ...editFormData, firstName: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      placeholder="Enter user first name"
+                    />
+                  </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Subscription Plan</label>
-                <select
-                  value={editFormData.subscriptionPlan}
-                  onChange={(e) => {
-                    const plan = e.target.value;
-                    setEditFormData({ 
-                      ...editFormData, 
-                      subscriptionPlan: plan,
-                      subscriptionType: plan.toLowerCase()
-                    });
-                  }}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                >
-                  <option value="Basic">Basic</option>
-                  <option value="Pro">Pro</option>
-                  <option value="Enterprise">Enterprise</option>
-                </select>
-              </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                      <Lock className="w-4 h-4" />
+                      Email (Locked)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="email"
+                        value={editFormData.email}
+                        className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-xl bg-gray-100 text-gray-600 cursor-not-allowed"
+                        disabled
+                      />
+                      <Lock className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    </div>
+                  </div>
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Account Status</label>
-                <select
-                  value={editFormData.accountStatus}
-                  onChange={(e) => setEditFormData({ ...editFormData, accountStatus: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                >
-                  <option value="active">Active</option>
-                  <option value="deactivated">Deactivated</option>
-                  <option value="banned">Banned</option>
-                </select>
-              </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Phone Number</label>
+                    <input
+                      type="tel"
+                      value={editFormData.phoneNumber}
+                      onChange={(e) => setEditFormData({ ...editFormData, phoneNumber: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      placeholder="Enter phone number"
+                    />
+                  </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Local Search Count</label>
-                  <input
-                    type="number"
-                    value={editFormData.localSearchCount}
-                    onChange={(e) => setEditFormData({ ...editFormData, localSearchCount: parseInt(e.target.value) || 0 })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  />
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Account Created</label>
+                    <input
+                      type="text"
+                      value={formatDate(selectedUser?.createdAt)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl bg-gray-50 text-gray-600"
+                      disabled
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Profile Picture URL</label>
+                    <input
+                      type="url"
+                      value={editFormData.profilePicture}
+                      onChange={(e) => setEditFormData({ ...editFormData, profilePicture: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      placeholder="https://example.com/profile.jpg"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Photo URL (Alternative)</label>
+                    <input
+                      type="url"
+                      value={editFormData.photoURL}
+                      onChange={(e) => setEditFormData({ ...editFormData, photoURL: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      placeholder="https://example.com/photo.jpg"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Bio</label>
+                    <textarea
+                      value={editFormData.bio}
+                      onChange={(e) => setEditFormData({ ...editFormData, bio: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      rows="3"
+                      placeholder="User biography..."
+                    />
+                  </div>
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">API Search Count</label>
-                  <input
-                    type="number"
-                    value={editFormData.apiSearchCount}
-                    onChange={(e) => setEditFormData({ ...editFormData, apiSearchCount: parseInt(e.target.value) || 0 })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  />
+              {/* Account & Subscription */}
+              <div>
+                <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-indigo-600" />
+                  Account & Subscription
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Subscription Plan</label>
+                    <select
+                      value={editFormData.subscriptionPlan}
+                      onChange={(e) => {
+                        const plan = e.target.value;
+                        setEditFormData({ 
+                          ...editFormData, 
+                          subscriptionPlan: plan,
+                          subscriptionType: plan.toLowerCase()
+                        });
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    >
+                      <option value="Basic">Basic</option>
+                      <option value="Pro">Pro</option>
+                      <option value="Enterprise">Enterprise</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Subscription Status</label>
+                    <input
+                      type="text"
+                      value={editFormData.subscriptionStatus}
+                      onChange={(e) => setEditFormData({ ...editFormData, subscriptionStatus: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      placeholder="active, cancelled, etc."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Account Status</label>
+                    <select
+                      value={editFormData.accountStatus}
+                      onChange={(e) => setEditFormData({ ...editFormData, accountStatus: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    >
+                      <option value="active">Active</option>
+                      <option value="deactivated">Deactivated</option>
+                      <option value="suspended">Suspended</option>
+                      <option value="banned">Banned</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Role</label>
+                    <select
+                      value={editFormData.role}
+                      onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    >
+                      <option value="user">User</option>
+                      <option value="admin">Admin</option>
+                      <option value="moderator">Moderator</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                      Email Verified
+                      <input
+                        type="checkbox"
+                        checked={editFormData.emailVerified}
+                        onChange={(e) => setEditFormData({ ...editFormData, emailVerified: e.target.checked })}
+                        className="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                      />
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Search Limits */}
+              <div>
+                <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-indigo-600" />
+                  Search Limits & Usage
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Local Search Count</label>
+                    <input
+                      type="number"
+                      value={editFormData.localSearchCount}
+                      onChange={(e) => setEditFormData({ ...editFormData, localSearchCount: parseInt(e.target.value) || 0 })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">API Search Count</label>
+                    <input
+                      type="number"
+                      value={editFormData.apiSearchCount}
+                      onChange={(e) => setEditFormData({ ...editFormData, apiSearchCount: parseInt(e.target.value) || 0 })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Organization & Location */}
+              <div>
+                <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <Users className="w-5 h-5 text-indigo-600" />
+                  Organization & Location
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Organization</label>
+                    <input
+                      type="text"
+                      value={editFormData.organization}
+                      onChange={(e) => setEditFormData({ ...editFormData, organization: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      placeholder="Company/Organization name"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Address</label>
+                    <input
+                      type="text"
+                      value={editFormData.address}
+                      onChange={(e) => setEditFormData({ ...editFormData, address: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      placeholder="Street address"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">City</label>
+                    <input
+                      type="text"
+                      value={editFormData.city}
+                      onChange={(e) => setEditFormData({ ...editFormData, city: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">State/Province</label>
+                    <input
+                      type="text"
+                      value={editFormData.state}
+                      onChange={(e) => setEditFormData({ ...editFormData, state: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Country</label>
+                    <input
+                      type="text"
+                      value={editFormData.country}
+                      onChange={(e) => setEditFormData({ ...editFormData, country: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">ZIP/Postal Code</label>
+                    <input
+                      type="text"
+                      value={editFormData.zipCode}
+                      onChange={(e) => setEditFormData({ ...editFormData, zipCode: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex gap-3 mt-6">
+            <div className="flex gap-3 mt-6 pt-6 border-t border-gray-200 sticky bottom-0 bg-white">
               <button
                 onClick={() => setShowEditModal(false)}
                 className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 transition-all font-semibold"
