@@ -58,10 +58,13 @@ const AdminUserManagement = ({ onBack }) => {
       console.log('📊 Fetched users:', usersList);
       console.log('📊 First user data:', usersList[0]);
       if (usersList[0]) {
+        console.log('🔍 All fields for first user:', Object.keys(usersList[0]));
         console.log('🔍 Search counters check:', {
           localSearchCount: usersList[0].localSearchCount,
           apiSearchCount: usersList[0].apiSearchCount,
-          searchCounters: usersList[0].searchCounters
+          searchCounters: usersList[0].searchCounters,
+          subscriptionType: usersList[0].subscriptionType,
+          subscriptionPlan: usersList[0].subscriptionPlan
         });
       }
       showToast('Users loaded successfully', 'success');
@@ -139,6 +142,9 @@ const AdminUserManagement = ({ onBack }) => {
           break;
         case 'deleteUser':
           await handleDeleteUser(selectedUser);
+          break;
+        case 'verifyEmail':
+          await handleVerifyEmail(selectedUser);
           break;
         default:
           break;
@@ -263,6 +269,7 @@ const AdminUserManagement = ({ onBack }) => {
     try {
       const userRef = doc(db, 'users', user.id);
       await updateDoc(userRef, {
+        subscriptionType: 'basic',
         subscriptionPlan: 'Basic',
         subscriptionStatus: 'cancelled',
         subscriptionEndDate: Timestamp.now(),
@@ -292,13 +299,32 @@ const AdminUserManagement = ({ onBack }) => {
     }
   };
 
+  // Verify Email
+  const handleVerifyEmail = async (user) => {
+    try {
+      const userRef = doc(db, 'users', user.id);
+      await updateDoc(userRef, {
+        emailVerified: true
+      });
+      
+      showToast(`Email verified for ${user.name || user.email}`, 'success');
+      fetchUsers();
+    } catch (error) {
+      console.error('Error verifying email:', error);
+      showToast('Failed to verify email: ' + error.message, 'error');
+    }
+  };
+
   // Edit User
   const openEditModal = (user) => {
     setSelectedUser(user);
+    const currentPlan = user.subscriptionType || user.subscriptionPlan || 'Basic';
+    const normalizedPlan = currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1).toLowerCase();
     setEditFormData({
       name: user.name || '',
       email: user.email || '',
-      subscriptionPlan: user.subscriptionPlan || 'Basic',
+      subscriptionPlan: normalizedPlan,
+      subscriptionType: currentPlan.toLowerCase(),
       localSearchCount: user.localSearchCount || 0,
       apiSearchCount: user.apiSearchCount || 0,
       accountStatus: user.accountStatus || 'active'
@@ -357,6 +383,9 @@ const AdminUserManagement = ({ onBack }) => {
 
   // Get plan badge
   const getPlanBadge = (plan) => {
+    // Normalize plan name (handle both 'pro' and 'Pro', 'basic' and 'Basic')
+    const normalizedPlan = plan ? plan.charAt(0).toUpperCase() + plan.slice(1).toLowerCase() : 'Basic';
+    
     const planConfig = {
       Basic: 'bg-gray-100 text-gray-800 border-gray-300',
       Pro: 'bg-blue-100 text-blue-800 border-blue-300',
@@ -364,9 +393,9 @@ const AdminUserManagement = ({ onBack }) => {
     };
 
     return (
-      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold border ${planConfig[plan] || planConfig.Basic}`}>
+      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold border ${planConfig[normalizedPlan] || planConfig.Basic}`}>
         <CreditCard className="w-3 h-3" />
-        {plan || 'Basic'}
+        {normalizedPlan}
       </span>
     );
   };
@@ -388,7 +417,7 @@ const AdminUserManagement = ({ onBack }) => {
             </div>
             <button
               onClick={onBack}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-600 hover:to-red-700 transition-all shadow-lg hover:shadow-xl font-semibold"
+              className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-red-500 via-red-600 to-red-700 text-white rounded-2xl hover:from-red-600 hover:via-red-700 hover:to-red-800 transition-all shadow-2xl hover:shadow-red-500/50 hover:scale-105 font-bold text-base border-2 border-red-400"
             >
               <X className="w-5 h-5" />
               Close User Management
@@ -468,7 +497,7 @@ const AdminUserManagement = ({ onBack }) => {
                           {user.name || user.displayName || user.email?.split('@')[0] || 'Unnamed User'}
                         </h3>
                         {getStatusBadge(user.accountStatus || 'active')}
-                        {getPlanBadge(user.subscriptionPlan)}
+                        {getPlanBadge(user.subscriptionType || user.subscriptionPlan)}
                       </div>
                       <div className="space-y-1 text-sm text-gray-600">
                         <p className="flex items-center gap-2">
@@ -482,11 +511,11 @@ const AdminUserManagement = ({ onBack }) => {
                         <div className="flex items-center gap-4 mt-2">
                           <span className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-semibold">
                             <Activity className="w-3 h-3" />
-                            Local: {user.localSearchCount ?? user.searchCounters?.localSearchCount ?? 0}
+                            Local: {user.localSearchCount || 0}
                           </span>
                           <span className="flex items-center gap-1 px-2 py-1 bg-purple-50 text-purple-700 rounded-lg text-xs font-semibold">
                             <Activity className="w-3 h-3" />
-                            API: {user.apiSearchCount ?? user.searchCounters?.apiSearchCount ?? 0}
+                            API: {user.apiSearchCount || 0}
                           </span>
                         </div>
                       </div>
@@ -495,11 +524,11 @@ const AdminUserManagement = ({ onBack }) => {
                 </div>
 
                 {/* Action Buttons with Tooltips */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 pt-4 border-t border-gray-200">
+                <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
                   {/* Reset Password */}
                   <button
                     onClick={() => confirmActionDialog({ type: 'resetPassword', title: 'Send Password Reset Email', message: `Send password reset email to ${user.email}?` }, user)}
-                    className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold w-full"
+                    className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold flex-shrink-0"
                     title="Send password reset email"
                   >
                     <Mail className="w-4 h-4" />
@@ -509,11 +538,26 @@ const AdminUserManagement = ({ onBack }) => {
                     </span>
                   </button>
 
+                  {/* Verify Email - Only show if not verified */}
+                  {!user.emailVerified && (
+                    <button
+                      onClick={() => confirmActionDialog({ type: 'verifyEmail', title: 'Verify Email', message: `Mark email as verified for ${user.email}?` }, user)}
+                      className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg hover:from-emerald-600 hover:to-emerald-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold flex-shrink-0"
+                      title="Verify user email"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      Verify Email
+                      <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
+                        ✅ Mark email as verified
+                      </span>
+                    </button>
+                  )}
+
                   {/* Deactivate/Activate */}
                   {user.accountStatus === 'deactivated' ? (
                     <button
-                      onClick={() => confirmActionDialog({ type: 'activate', title: 'Activate User', message: `Activate ${user.name}'s account?` }, user)}
-                      className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold w-full"
+                      onClick={() => confirmActionDialog({ type: 'activate', title: 'Activate User', message: `Activate ${user.name || 'this user'}'s account?` }, user)}
+                      className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold flex-shrink-0"
                       title="Activate user account"
                     >
                       <UserCheck className="w-4 h-4" />
@@ -524,8 +568,8 @@ const AdminUserManagement = ({ onBack }) => {
                     </button>
                   ) : (
                     <button
-                      onClick={() => confirmActionDialog({ type: 'deactivate', title: 'Deactivate User', message: `Deactivate ${user.name}'s account? Account will be scheduled for deletion in 30 days.` }, user)}
-                      className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-lg hover:from-gray-600 hover:to-gray-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold w-full"
+                      onClick={() => confirmActionDialog({ type: 'deactivate', title: 'Deactivate User', message: `Deactivate ${user.name || 'this user'}'s account? Account will be scheduled for deletion in 30 days.` }, user)}
+                      className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-lg hover:from-gray-600 hover:to-gray-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold flex-shrink-0"
                       title="Deactivate user account"
                     >
                       <UserX className="w-4 h-4" />
@@ -539,8 +583,8 @@ const AdminUserManagement = ({ onBack }) => {
                   {/* Suspend */}
                   {user.accountStatus !== 'suspended' && (
                     <button
-                      onClick={() => confirmActionDialog({ type: 'suspend', title: 'Suspend User', message: `Suspend ${user.name}'s account? User will not be able to login.` }, user)}
-                      className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg hover:from-yellow-600 hover:to-yellow-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold w-full"
+                      onClick={() => confirmActionDialog({ type: 'suspend', title: 'Suspend User', message: `Suspend ${user.name || 'this user'}'s account? User will not be able to login.` }, user)}
+                      className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg hover:from-yellow-600 hover:to-yellow-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold flex-shrink-0"
                       title="Suspend user login"
                     >
                       <AlertTriangle className="w-4 h-4" />
@@ -554,8 +598,8 @@ const AdminUserManagement = ({ onBack }) => {
                   {/* Ban/Unban */}
                   {user.accountStatus === 'banned' ? (
                     <button
-                      onClick={() => confirmActionDialog({ type: 'unban', title: 'Unban User', message: `Unban ${user.name}?` }, user)}
-                      className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold w-full"
+                      onClick={() => confirmActionDialog({ type: 'unban', title: 'Unban User', message: `Unban ${user.name || 'this user'}?` }, user)}
+                      className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold flex-shrink-0"
                       title="Remove ban"
                     >
                       <UserCheck className="w-4 h-4" />
@@ -566,8 +610,8 @@ const AdminUserManagement = ({ onBack }) => {
                     </button>
                   ) : (
                     <button
-                      onClick={() => confirmActionDialog({ type: 'ban', title: 'Ban User', message: `Ban ${user.name}? This is a permanent action until unbanned.` }, user)}
-                      className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold w-full"
+                      onClick={() => confirmActionDialog({ type: 'ban', title: 'Ban User', message: `Ban ${user.name || 'this user'}? This is a permanent action until unbanned.` }, user)}
+                      className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold flex-shrink-0"
                       title="Ban user permanently"
                     >
                       <Ban className="w-4 h-4" />
@@ -581,7 +625,7 @@ const AdminUserManagement = ({ onBack }) => {
                   {/* Edit */}
                   <button
                     onClick={() => openEditModal(user)}
-                    className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-lg hover:from-indigo-600 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold w-full"
+                    className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-lg hover:from-indigo-600 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold flex-shrink-0"
                     title="Edit user details"
                   >
                     <Edit className="w-4 h-4" />
@@ -592,10 +636,10 @@ const AdminUserManagement = ({ onBack }) => {
                   </button>
 
                   {/* Cancel Subscription */}
-                  {(user.subscriptionPlan && user.subscriptionPlan !== 'Basic') && (
+                  {((user.subscriptionType && user.subscriptionType.toLowerCase() !== 'basic') || (user.subscriptionPlan && user.subscriptionPlan !== 'Basic')) && (
                     <button
-                      onClick={() => confirmActionDialog({ type: 'cancelSubscription', title: 'Cancel Subscription', message: `Cancel ${user.name || 'this user'}'s ${user.subscriptionPlan} subscription? User will be downgraded to Basic plan.` }, user)}
-                      className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold w-full"
+                      onClick={() => confirmActionDialog({ type: 'cancelSubscription', title: 'Cancel Subscription', message: `Cancel ${user.name || 'this user'}'s ${user.subscriptionType || user.subscriptionPlan} subscription? User will be downgraded to Basic plan.` }, user)}
+                      className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold flex-shrink-0"
                       title="Cancel subscription"
                     >
                       <CreditCard className="w-4 h-4" />
@@ -609,7 +653,7 @@ const AdminUserManagement = ({ onBack }) => {
                   {/* Delete */}
                   <button
                     onClick={() => confirmActionDialog({ type: 'deleteUser', title: 'Delete User', message: `Permanently delete ${user.name || 'this user'}? This action cannot be undone!` }, user)}
-                    className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 transition-all shadow-md hover:shadow-lg text-sm font-semibold w-full"
+                    className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 transition-all shadow-md hover:shadow-lg text-sm font-semibold flex-shrink-0"
                     title="Delete user permanently"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -706,7 +750,14 @@ const AdminUserManagement = ({ onBack }) => {
                 <label className="block text-sm font-semibold text-gray-700 mb-2">Subscription Plan</label>
                 <select
                   value={editFormData.subscriptionPlan}
-                  onChange={(e) => setEditFormData({ ...editFormData, subscriptionPlan: e.target.value })}
+                  onChange={(e) => {
+                    const plan = e.target.value;
+                    setEditFormData({ 
+                      ...editFormData, 
+                      subscriptionPlan: plan,
+                      subscriptionType: plan.toLowerCase()
+                    });
+                  }}
                   className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 >
                   <option value="Basic">Basic</option>
