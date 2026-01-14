@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CheckCircle, Circle, Mail, RefreshCw, AlertCircle, LogIn, LogOut, User, Shield, Eye, EyeOff, X, ArrowLeft, Lightbulb, FileCheck, Upload, CreditCard, MessageCircle, Send, Bell, Clock, List, Filter, BarChart3, Users, Activity, Search, Database, Globe, Trophy, Award, Medal, Sparkles, UserCheck, UserX } from 'lucide-react';
 import { addUserNotification } from '../utils/notifications';
 import { db } from '../firebase';
+import AdminUserManagement from './AdminUserManagement';
 import { doc, getDoc, collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
 import { 
   BarChart,
@@ -41,6 +42,7 @@ const AdminPatentManager = ({ onBack }) => {
   const [showAdminTable, setShowAdminTable] = useState(false);
   const [allAdmins, setAllAdmins] = useState([]);
   const [showPassword, setShowPassword] = useState(false);
+  const [showUserManagement, setShowUserManagement] = useState(false);
   
   // Patent details fields for each patent
   const [patentDetails, setPatentDetails] = useState({});
@@ -1483,6 +1485,9 @@ const AdminPatentManager = ({ onBack }) => {
             </div>
           </div>
         </div>
+      ) : showUserManagement ? (
+        // User Management View
+        <AdminUserManagement onBack={() => setShowUserManagement(false)} />
       ) : (
         // Admin Panel Content (after login)
         <div className="max-w-7xl mx-auto">
@@ -1499,6 +1504,13 @@ const AdminPatentManager = ({ onBack }) => {
                 )}
               </div>
               <div className="flex gap-3">
+                <button
+                  onClick={() => setShowUserManagement(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg hover:from-indigo-600 hover:to-purple-700 shadow-lg"
+                >
+                  <Users className="w-4 h-4" />
+                  Manage Users
+                </button>
                 <button
                   onClick={() => {
                     if (!showAdminTable) {
@@ -1623,37 +1635,119 @@ const AdminPatentManager = ({ onBack }) => {
 
           {/* Admin Users Table */}
           {showAdminTable && (
-            <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold text-gray-800">Admin Users</h2>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-gray-100">
-                      <th className="px-4 py-3 text-left text-gray-700 font-semibold">Admin ID</th>
-                      <th className="px-4 py-3 text-left text-gray-700 font-semibold">Admin Name</th>
-                      <th className="px-4 py-3 text-left text-gray-700 font-semibold">Email</th>
-                      <th className="px-4 py-3 text-left text-gray-700 font-semibold">Created At</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {allAdmins.map((admin) => (
-                      <tr key={admin.adminId} className="border-b hover:bg-gray-50">
-                        <td className="px-4 py-3 font-mono">#{admin.adminId}</td>
-                        <td className="px-4 py-3 font-semibold">{admin.adminName}</td>
-                        <td className="px-4 py-3 text-blue-600">{admin.email}</td>
-                        <td className="px-4 py-3 text-gray-600">
-                          {admin.createdAt ? new Date(admin.createdAt).toLocaleDateString() : 'N/A'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {allAdmins.length === 0 && (
-                  <div className="text-center py-8 text-gray-600">
-                    No admin users found in the database.
+            <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl shadow-2xl p-8 mb-6 border-2 border-purple-200">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-4">
+                  <div className="bg-gradient-to-r from-purple-500 to-indigo-600 p-3 rounded-xl shadow-lg">
+                    <Shield className="w-8 h-8 text-white" />
                   </div>
+                  <div>
+                    <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                      Admin Users
+                    </h2>
+                    <p className="text-sm text-gray-600 mt-1">Total Admins: {allAdmins.length}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowAdminTable(false)}
+                  className="p-2 rounded-xl bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 transition-all shadow-lg"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              {/* Admin Cards Grid */}
+              <div className="space-y-4">
+                {allAdmins.length === 0 ? (
+                  <div className="text-center py-12 bg-white rounded-xl shadow-lg border border-gray-200">
+                    <Shield className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <p className="text-xl font-semibold text-gray-700">No admin users found</p>
+                    <p className="text-gray-500 mt-2">Admin users will appear here once registered</p>
+                  </div>
+                ) : (
+                  allAdmins.map((admin) => (
+                    <div
+                      key={admin.adminId}
+                      className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all p-6 border-l-4 border-purple-500"
+                    >
+                      <div className="flex items-center justify-between">
+                        {/* Admin Info */}
+                        <div className="flex items-center gap-4 flex-1">
+                          {/* Avatar */}
+                          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg ring-4 ring-purple-100">
+                            {admin.adminName?.charAt(0)?.toUpperCase() || 'A'}
+                          </div>
+
+                          {/* Details */}
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="text-xl font-bold text-gray-800">{admin.adminName}</h3>
+                              <span className="px-3 py-1 bg-gradient-to-r from-purple-100 to-indigo-100 text-purple-700 rounded-full text-xs font-bold border border-purple-300">
+                                Admin #{admin.adminId}
+                              </span>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                              <div className="flex items-center gap-2 text-gray-600">
+                                <Mail className="w-4 h-4 text-purple-500" />
+                                <span className="font-medium">{admin.email}</span>
+                              </div>
+                              
+                              <div className="flex items-center gap-2 text-gray-600">
+                                <Clock className="w-4 h-4 text-indigo-500" />
+                                <span>Joined: {admin.createdAt ? new Date(admin.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}</span>
+                              </div>
+
+                              <div className="flex items-center gap-2 text-gray-600">
+                                <Activity className="w-4 h-4 text-green-500" />
+                                <span>Status: <span className="text-green-600 font-semibold">Active</span></span>
+                              </div>
+                            </div>
+
+                            {/* Admin Stats */}
+                            {(admin.patentsGranted || admin.patentsRejected || admin.patentsActivated || admin.patentsDeactivated) && (
+                              <div className="flex gap-3 mt-3">
+                                {admin.patentsGranted > 0 && (
+                                  <span className="flex items-center gap-1 px-3 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-semibold border border-green-200">
+                                    <CheckCircle className="w-3 h-3" />
+                                    Granted: {admin.patentsGranted}
+                                  </span>
+                                )}
+                                {admin.patentsRejected > 0 && (
+                                  <span className="flex items-center gap-1 px-3 py-1 bg-red-50 text-red-700 rounded-lg text-xs font-semibold border border-red-200">
+                                    <X className="w-3 h-3" />
+                                    Rejected: {admin.patentsRejected}
+                                  </span>
+                                )}
+                                {admin.patentsActivated > 0 && (
+                                  <span className="flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-semibold border border-blue-200">
+                                    <UserCheck className="w-3 h-3" />
+                                    Activated: {admin.patentsActivated}
+                                  </span>
+                                )}
+                                {admin.patentsDeactivated > 0 && (
+                                  <span className="flex items-center gap-1 px-3 py-1 bg-gray-50 text-gray-700 rounded-lg text-xs font-semibold border border-gray-200">
+                                    <UserX className="w-3 h-3" />
+                                    Deactivated: {admin.patentsDeactivated}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex gap-2">
+                          <button
+                            className="p-2 rounded-lg bg-purple-100 text-purple-600 hover:bg-purple-200 transition-all"
+                            title="View Details"
+                          >
+                            <Eye className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
                 )}
               </div>
             </div>
