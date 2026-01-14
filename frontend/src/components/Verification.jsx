@@ -359,14 +359,14 @@ function Verification() {
                             fontWeight: 'bold',
                             marginBottom: '10px',
                             textShadow: '2px 2px 4px rgba(0,0,0,0.2)'
-                          }}>Account Suspended</h2>
+                          }}>Account Banned</h2>
                           <p style={{
                             color: 'rgba(255, 255, 255, 0.95)',
                             fontSize: '16px',
                             lineHeight: '1.5',
                             marginBottom: '16px'
                           }}>
-                            Your account has been suspended by the administrator.
+                            Your account has been Banned by the administrator.
                           </p>
                           {userData?.banReason && (
                             <div style={{
