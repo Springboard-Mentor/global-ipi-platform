@@ -74,13 +74,15 @@ public class FirebaseUserManagementService {
             result.put("userId", userId);
             
         } catch (FirebaseAuthException e) {
-            logger.error("❌ Firebase Auth error deactivating user {}: {}", userId, e.getMessage());
+            String errorMessage = e.getMessage() != null ? e.getMessage() : "Unknown error";
+            logger.error("❌ Firebase Auth error deactivating user {}: {}", userId, errorMessage);
             result.put("success", false);
-            result.put("message", "Failed to deactivate user in Firebase Auth: " + e.getMessage());
+            result.put("message", "Failed to deactivate user in Firebase Auth: " + errorMessage);
         } catch (InterruptedException | ExecutionException e) {
-            logger.error("❌ Firestore error deactivating user {}: {}", userId, e.getMessage());
+            String errorMessage = e.getMessage() != null ? e.getMessage() : "Unknown error";
+            logger.error("❌ Firestore error deactivating user {}: {}", userId, errorMessage);
             result.put("success", false);
-            result.put("message", "Failed to update user status in Firestore: " + e.getMessage());
+            result.put("message", "Failed to update user status in Firestore: " + errorMessage);
         }
         
         return result;
@@ -127,13 +129,15 @@ public class FirebaseUserManagementService {
             result.put("userId", userId);
             
         } catch (FirebaseAuthException e) {
-            logger.error("❌ Firebase Auth error activating user {}: {}", userId, e.getMessage());
+            String errorMessage = e.getMessage() != null ? e.getMessage() : "Unknown error";
+            logger.error("❌ Firebase Auth error activating user {}: {}", userId, errorMessage);
             result.put("success", false);
-            result.put("message", "Failed to activate user in Firebase Auth: " + e.getMessage());
+            result.put("message", "Failed to activate user in Firebase Auth: " + errorMessage);
         } catch (InterruptedException | ExecutionException e) {
-            logger.error("❌ Firestore error activating user {}: {}", userId, e.getMessage());
+            String errorMessage = e.getMessage() != null ? e.getMessage() : "Unknown error";
+            logger.error("❌ Firestore error activating user {}: {}", userId, errorMessage);
             result.put("success", false);
-            result.put("message", "Failed to update user status in Firestore: " + e.getMessage());
+            result.put("message", "Failed to update user status in Firestore: " + errorMessage);
         }
         
         return result;
@@ -188,13 +192,15 @@ public class FirebaseUserManagementService {
             result.put("userId", userId);
             
         } catch (FirebaseAuthException e) {
-            logger.error("❌ Firebase Auth error banning user {}: {}", userId, e.getMessage());
+            String errorMessage = e.getMessage() != null ? e.getMessage() : "Unknown error";
+            logger.error("❌ Firebase Auth error banning user {}: {}", userId, errorMessage);
             result.put("success", false);
-            result.put("message", "Failed to ban user in Firebase Auth: " + e.getMessage());
+            result.put("message", "Failed to ban user in Firebase Auth: " + errorMessage);
         } catch (InterruptedException | ExecutionException e) {
-            logger.error("❌ Firestore error banning user {}: {}", userId, e.getMessage());
+            String errorMessage = e.getMessage() != null ? e.getMessage() : "Unknown error";
+            logger.error("❌ Firestore error banning user {}: {}", userId, errorMessage);
             result.put("success", false);
-            result.put("message", "Failed to update user status in Firestore: " + e.getMessage());
+            result.put("message", "Failed to update user status in Firestore: " + errorMessage);
         }
         
         if (!isFirebaseInitialized()) {
@@ -248,13 +254,15 @@ public class FirebaseUserManagementService {
             result.put("userId", userId);
             
         } catch (FirebaseAuthException e) {
-            logger.error("❌ Firebase Auth error unbanning user {}: {}", userId, e.getMessage());
+            String errorMessage = e.getMessage() != null ? e.getMessage() : "Unknown error";
+            logger.error("❌ Firebase Auth error unbanning user {}: {}", userId, errorMessage);
             result.put("success", false);
-            result.put("message", "Failed to unban user in Firebase Auth: " + e.getMessage());
+            result.put("message", "Failed to unban user in Firebase Auth: " + errorMessage);
         } catch (InterruptedException | ExecutionException e) {
-            logger.error("❌ Firestore error unbanning user {}: {}", userId, e.getMessage());
+            String errorMessage = e.getMessage() != null ? e.getMessage() : "Unknown error";
+            logger.error("❌ Firestore error unbanning user {}: {}", userId, errorMessage);
             result.put("success", false);
-            result.put("message", "Failed to update user status in Firestore: " + e.getMessage());
+            result.put("message", "Failed to update user status in Firestore: " + errorMessage);
         }
         if (!isFirebaseInitialized()) {
             result.put("success", false);
@@ -289,13 +297,15 @@ public class FirebaseUserManagementService {
             result.put("userId", userId);
             
         } catch (FirebaseAuthException e) {
-            logger.error("❌ Firebase Auth error deleting user {}: {}", userId, e.getMessage());
+            String errorMessage = e.getMessage() != null ? e.getMessage() : "Unknown error";
+            logger.error("❌ Firebase Auth error deleting user {}: {}", userId, errorMessage);
             result.put("success", false);
-            result.put("message", "Failed to delete user from Firebase Auth: " + e.getMessage());
+            result.put("message", "Failed to delete user from Firebase Auth: " + errorMessage);
         } catch (InterruptedException | ExecutionException e) {
-            logger.error("❌ Firestore error deleting user {}: {}", userId, e.getMessage());
+            String errorMessage = e.getMessage() != null ? e.getMessage() : "Unknown error";
+            logger.error("❌ Firestore error deleting user {}: {}", userId, errorMessage);
             result.put("success", false);
-            result.put("message", "Failed to delete user from Firestore: " + e.getMessage());
+            result.put("message", "Failed to delete user from Firestore: " + errorMessage);
         }
         
         return result;
