@@ -28,6 +28,11 @@ const AdminUserManagement = ({ onBack }) => {
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [dateFilter, setDateFilter] = useState('all'); // 'all', 'week', 'month', 'custom'
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
   const [toasts, setToasts] = useState([]);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
@@ -55,18 +60,6 @@ const AdminUserManagement = ({ onBack }) => {
       
       setUsers(usersList);
       setFilteredUsers(usersList);
-      console.log('📊 Fetched users:', usersList);
-      console.log('📊 First user data:', usersList[0]);
-      if (usersList[0]) {
-        console.log('🔍 All fields for first user:', Object.keys(usersList[0]));
-        console.log('🔍 Search counters check:', {
-          localSearchCount: usersList[0].localSearchCount,
-          apiSearchCount: usersList[0].apiSearchCount,
-          searchCounters: usersList[0].searchCounters,
-          subscriptionType: usersList[0].subscriptionType,
-          subscriptionPlan: usersList[0].subscriptionPlan
-        });
-      }
       showToast('Users loaded successfully', 'success');
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -84,7 +77,7 @@ const AdminUserManagement = ({ onBack }) => {
   useEffect(() => {
     let filtered = [...users];
 
-    // Apply search filter only
+    // Apply search filter
     if (searchQuery) {
       filtered = filtered.filter(user => 
         user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -93,8 +86,40 @@ const AdminUserManagement = ({ onBack }) => {
       );
     }
 
+    // Apply date filter
+    if (dateFilter !== 'all') {
+      const now = new Date();
+      let filterStartDate = new Date();
+      let filterEndDate = new Date();
+      
+      if (dateFilter === 'week') {
+        filterStartDate.setDate(now.getDate() - 7);
+      } else if (dateFilter === 'month') {
+        filterStartDate.setMonth(now.getMonth() - 1);
+      } else if (dateFilter === 'custom' && customStartDate && customEndDate) {
+        filterStartDate = new Date(customStartDate);
+        filterStartDate.setHours(0, 0, 0, 0);
+        filterEndDate = new Date(customEndDate);
+        filterEndDate.setHours(23, 59, 59, 999);
+      } else if (dateFilter === 'custom') {
+        // If custom is selected but dates not set, don't filter
+        setFilteredUsers(filtered);
+        setCurrentPage(1);
+        return;
+      }
+      
+      filtered = filtered.filter(user => {
+        const userDate = user.createdAt?.toDate ? user.createdAt.toDate() : new Date(user.createdAt);
+        if (dateFilter === 'custom') {
+          return userDate >= filterStartDate && userDate <= filterEndDate;
+        }
+        return userDate >= filterStartDate;
+      });
+    }
+
     setFilteredUsers(filtered);
-  }, [searchQuery, users]);
+    setCurrentPage(1); // Reset to first page when filters change
+  }, [searchQuery, dateFilter, customStartDate, customEndDate, users]);
 
   // Toast notification
   const showToast = (message, type = 'info') => {
@@ -435,6 +460,93 @@ const AdminUserManagement = ({ onBack }) => {
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-lg"
             />
           </div>
+
+          {/* Date Filters */}
+          <div className="flex items-center gap-3 mt-4">
+            <span className="text-sm font-semibold text-gray-700">Filter by join date:</span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setDateFilter('all')}
+                className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+                  dateFilter === 'all'
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                All Time
+              </button>
+              <button
+                onClick={() => setDateFilter('week')}
+                className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+                  dateFilter === 'week'
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Last 7 Days
+              </button>
+              <button
+                onClick={() => setDateFilter('month')}
+                className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+                  dateFilter === 'month'
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Last 30 Days
+              </button>
+              <button
+                onClick={() => setDateFilter('custom')}
+                className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+                  dateFilter === 'custom'
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Custom Range
+              </button>
+            </div>
+          </div>
+
+          {/* Custom Date Range Picker */}
+          {dateFilter === 'custom' && (
+            <div className="flex items-center gap-4 mt-4 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border-2 border-indigo-200">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-indigo-600" />
+                <label className="text-sm font-semibold text-gray-700">Start Date:</label>
+                <input
+                  type="date"
+                  value={customStartDate}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  max={customEndDate || new Date().toISOString().split('T')[0]}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm font-medium"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-indigo-600" />
+                <label className="text-sm font-semibold text-gray-700">End Date:</label>
+                <input
+                  type="date"
+                  value={customEndDate}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  min={customStartDate}
+                  max={new Date().toISOString().split('T')[0]}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm font-medium"
+                />
+              </div>
+              {customStartDate && customEndDate && (
+                <button
+                  onClick={() => {
+                    setCustomStartDate('');
+                    setCustomEndDate('');
+                  }}
+                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all text-sm font-semibold"
+                >
+                  Clear Dates
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -451,7 +563,22 @@ const AdminUserManagement = ({ onBack }) => {
             <p className="text-gray-500">Try adjusting your filters or search query</p>
           </div>
         ) : (
-          filteredUsers.map((user) => (
+          <>
+            {/* Results Summary */}
+            <div className="bg-white rounded-xl shadow-md p-4 border border-gray-200">
+              <p className="text-sm text-gray-600">
+                Showing <span className="font-bold text-indigo-600">{((currentPage - 1) * itemsPerPage) + 1}</span> to{' '}
+                <span className="font-bold text-indigo-600">
+                  {Math.min(currentPage * itemsPerPage, filteredUsers.length)}
+                </span>{' '}
+                of <span className="font-bold text-indigo-600">{filteredUsers.length}</span> users
+              </p>
+            </div>
+
+            {/* User Cards for Current Page */}
+            {filteredUsers
+              .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+              .map((user) => (
             <div
               key={user.id}
               className="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all border border-gray-200 overflow-hidden"
@@ -508,27 +635,17 @@ const AdminUserManagement = ({ onBack }) => {
                           <Calendar className="w-4 h-4" />
                           Joined: {formatDate(user.createdAt)}
                         </p>
-                        <div className="flex items-center gap-4 mt-2">
-                          <span className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-semibold">
-                            <Activity className="w-3 h-3" />
-                            Local: {user.localSearchCount || 0}
-                          </span>
-                          <span className="flex items-center gap-1 px-2 py-1 bg-purple-50 text-purple-700 rounded-lg text-xs font-semibold">
-                            <Activity className="w-3 h-3" />
-                            API: {user.apiSearchCount || 0}
-                          </span>
-                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Action Buttons with Tooltips */}
-                <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 pt-4 border-t border-gray-200">
                   {/* Reset Password */}
                   <button
                     onClick={() => confirmActionDialog({ type: 'resetPassword', title: 'Send Password Reset Email', message: `Send password reset email to ${user.email}?` }, user)}
-                    className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold flex-shrink-0"
+                    className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold w-full"
                     title="Send password reset email"
                   >
                     <Mail className="w-4 h-4" />
@@ -542,7 +659,7 @@ const AdminUserManagement = ({ onBack }) => {
                   {!user.emailVerified && (
                     <button
                       onClick={() => confirmActionDialog({ type: 'verifyEmail', title: 'Verify Email', message: `Mark email as verified for ${user.email}?` }, user)}
-                      className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg hover:from-emerald-600 hover:to-emerald-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold flex-shrink-0"
+                      className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg hover:from-emerald-600 hover:to-emerald-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold w-full"
                       title="Verify user email"
                     >
                       <CheckCircle className="w-4 h-4" />
@@ -557,7 +674,7 @@ const AdminUserManagement = ({ onBack }) => {
                   {user.accountStatus === 'deactivated' ? (
                     <button
                       onClick={() => confirmActionDialog({ type: 'activate', title: 'Activate User', message: `Activate ${user.name || 'this user'}'s account?` }, user)}
-                      className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold flex-shrink-0"
+                      className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold w-full"
                       title="Activate user account"
                     >
                       <UserCheck className="w-4 h-4" />
@@ -569,7 +686,7 @@ const AdminUserManagement = ({ onBack }) => {
                   ) : (
                     <button
                       onClick={() => confirmActionDialog({ type: 'deactivate', title: 'Deactivate User', message: `Deactivate ${user.name || 'this user'}'s account? Account will be scheduled for deletion in 30 days.` }, user)}
-                      className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-lg hover:from-gray-600 hover:to-gray-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold flex-shrink-0"
+                      className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-lg hover:from-gray-600 hover:to-gray-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold w-full"
                       title="Deactivate user account"
                     >
                       <UserX className="w-4 h-4" />
@@ -584,7 +701,7 @@ const AdminUserManagement = ({ onBack }) => {
                   {user.accountStatus !== 'suspended' && (
                     <button
                       onClick={() => confirmActionDialog({ type: 'suspend', title: 'Suspend User', message: `Suspend ${user.name || 'this user'}'s account? User will not be able to login.` }, user)}
-                      className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg hover:from-yellow-600 hover:to-yellow-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold flex-shrink-0"
+                      className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg hover:from-yellow-600 hover:to-yellow-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold w-full"
                       title="Suspend user login"
                     >
                       <AlertTriangle className="w-4 h-4" />
@@ -599,7 +716,7 @@ const AdminUserManagement = ({ onBack }) => {
                   {user.accountStatus === 'banned' ? (
                     <button
                       onClick={() => confirmActionDialog({ type: 'unban', title: 'Unban User', message: `Unban ${user.name || 'this user'}?` }, user)}
-                      className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold flex-shrink-0"
+                      className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg hover:from-green-600 hover:to-green-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold w-full"
                       title="Remove ban"
                     >
                       <UserCheck className="w-4 h-4" />
@@ -611,7 +728,7 @@ const AdminUserManagement = ({ onBack }) => {
                   ) : (
                     <button
                       onClick={() => confirmActionDialog({ type: 'ban', title: 'Ban User', message: `Ban ${user.name || 'this user'}? This is a permanent action until unbanned.` }, user)}
-                      className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold flex-shrink-0"
+                      className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold w-full"
                       title="Ban user permanently"
                     >
                       <Ban className="w-4 h-4" />
@@ -625,7 +742,7 @@ const AdminUserManagement = ({ onBack }) => {
                   {/* Edit */}
                   <button
                     onClick={() => openEditModal(user)}
-                    className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-lg hover:from-indigo-600 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold flex-shrink-0"
+                    className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-lg hover:from-indigo-600 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold w-full"
                     title="Edit user details"
                   >
                     <Edit className="w-4 h-4" />
@@ -639,7 +756,7 @@ const AdminUserManagement = ({ onBack }) => {
                   {((user.subscriptionType && user.subscriptionType.toLowerCase() !== 'basic') || (user.subscriptionPlan && user.subscriptionPlan !== 'Basic')) && (
                     <button
                       onClick={() => confirmActionDialog({ type: 'cancelSubscription', title: 'Cancel Subscription', message: `Cancel ${user.name || 'this user'}'s ${user.subscriptionType || user.subscriptionPlan} subscription? User will be downgraded to Basic plan.` }, user)}
-                      className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold flex-shrink-0"
+                      className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold w-full"
                       title="Cancel subscription"
                     >
                       <CreditCard className="w-4 h-4" />
@@ -653,7 +770,7 @@ const AdminUserManagement = ({ onBack }) => {
                   {/* Delete */}
                   <button
                     onClick={() => confirmActionDialog({ type: 'deleteUser', title: 'Delete User', message: `Permanently delete ${user.name || 'this user'}? This action cannot be undone!` }, user)}
-                    className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 transition-all shadow-md hover:shadow-lg text-sm font-semibold flex-shrink-0"
+                    className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 transition-all shadow-md hover:shadow-lg text-sm font-semibold w-full"
                     title="Delete user permanently"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -665,7 +782,60 @@ const AdminUserManagement = ({ onBack }) => {
                 </div>
               </div>
             </div>
-          ))
+          ))}
+
+          {/* Pagination Controls */}
+          {filteredUsers.length > itemsPerPage && (
+            <div className="bg-white rounded-xl shadow-md p-4 border border-gray-200">
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+                    currentPage === 1
+                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md'
+                  }`}
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Previous
+                </button>
+
+                <div className="flex items-center gap-2">
+                  {Array.from(
+                    { length: Math.ceil(filteredUsers.length / itemsPerPage) },
+                    (_, i) => i + 1
+                  ).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-10 h-10 rounded-lg font-semibold text-sm transition-all ${
+                        currentPage === page
+                          ? 'bg-indigo-600 text-white shadow-md'
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredUsers.length / itemsPerPage)))}
+                  disabled={currentPage === Math.ceil(filteredUsers.length / itemsPerPage)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+                    currentPage === Math.ceil(filteredUsers.length / itemsPerPage)
+                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md'
+                  }`}
+                >
+                  Next
+                  <ArrowLeft className="w-4 h-4 rotate-180" />
+                </button>
+              </div>
+            </div>
+          )}
+          </>
         )}
       </div>
 
