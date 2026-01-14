@@ -1513,15 +1513,13 @@ const AdminPatentManager = ({ onBack }) => {
                 </button>
                 <button
                   onClick={() => {
-                    if (!showAdminTable) {
-                      fetchAllAdmins();
-                    }
-                    setShowAdminTable(!showAdminTable);
+                    fetchAllAdmins();
+                    setShowAdminTable(true);
                   }}
                   className="flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600"
                 >
-                  {showAdminTable ? <EyeOff className="w-4 h-4" /> : <User className="w-4 h-4" />}
-                  {showAdminTable ? 'Hide Admin List' : 'View Admin Users'}
+                  <User className="w-4 h-4" />
+                  View Admin Users
                 </button>
                 <button
                   onClick={fetchAllPatents}
@@ -1634,38 +1632,43 @@ const AdminPatentManager = ({ onBack }) => {
           </div>
 
           {/* Admin Users Table */}
+          {/* Admin Users Modal */}
           {showAdminTable && (
-            <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl shadow-2xl p-8 mb-6 border-2 border-purple-200">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-4">
-                  <div className="bg-gradient-to-r from-purple-500 to-indigo-600 p-3 rounded-xl shadow-lg">
-                    <Shield className="w-8 h-8 text-white" />
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden border-2 border-purple-200">
+                {/* Modal Header */}
+                <div className="bg-gradient-to-r from-purple-500 to-indigo-600 p-6 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-white/20 p-3 rounded-xl shadow-lg backdrop-blur-sm">
+                      <Shield className="w-8 h-8 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-3xl font-bold text-white">
+                        Admin Users
+                      </h2>
+                      <p className="text-purple-100 mt-1">Total Admins: {allAdmins.length}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                      Admin Users
-                    </h2>
-                    <p className="text-sm text-gray-600 mt-1">Total Admins: {allAdmins.length}</p>
-                  </div>
+                  <button
+                    onClick={() => setShowAdminTable(false)}
+                    className="p-3 rounded-xl bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-all shadow-lg hover:scale-110"
+                    title="Close"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => setShowAdminTable(false)}
-                  className="p-2 rounded-xl bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 transition-all shadow-lg"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              
-              {/* Admin Cards Grid */}
-              <div className="space-y-4">
-                {allAdmins.length === 0 ? (
-                  <div className="text-center py-12 bg-white rounded-xl shadow-lg border border-gray-200">
-                    <Shield className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                    <p className="text-xl font-semibold text-gray-700">No admin users found</p>
-                    <p className="text-gray-500 mt-2">Admin users will appear here once registered</p>
-                  </div>
-                ) : (
-                  allAdmins.map((admin) => (
+                
+                {/* Modal Content with Scroll */}
+                <div className="p-8 overflow-y-auto max-h-[calc(90vh-100px)]">
+                  <div className="space-y-4">
+                    {allAdmins.length === 0 ? (
+                      <div className="text-center py-12 bg-white rounded-xl shadow-lg border border-gray-200">
+                        <Shield className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                        <p className="text-xl font-semibold text-gray-700">No admin users found</p>
+                        <p className="text-gray-500 mt-2">Admin users will appear here once registered</p>
+                      </div>
+                    ) : (
+                      allAdmins.map((admin) => (
                     <div
                       key={admin.adminId}
                       className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all p-6 border-l-4 border-purple-500"
@@ -1749,6 +1752,8 @@ const AdminPatentManager = ({ onBack }) => {
                     </div>
                   ))
                 )}
+                  </div>
+                </div>
               </div>
             </div>
           )}
