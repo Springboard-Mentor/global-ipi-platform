@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CheckCircle, Circle, Mail, RefreshCw, AlertCircle, LogIn, LogOut, User, Shield, Eye, EyeOff, X, ArrowLeft, Lightbulb, FileCheck, Upload, CreditCard, MessageCircle, Send, Bell, Clock, List, Filter, BarChart3, Users, Activity, Search, Database, Globe, Trophy, Award, Medal, Sparkles, UserCheck, UserX } from 'lucide-react';
 import { addUserNotification } from '../utils/notifications';
 import { db } from '../firebase';
+import AdminUserManagement from './AdminUserManagement';
 import { doc, getDoc, collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
 import { 
   BarChart,
@@ -41,6 +42,7 @@ const AdminPatentManager = ({ onBack }) => {
   const [showAdminTable, setShowAdminTable] = useState(false);
   const [allAdmins, setAllAdmins] = useState([]);
   const [showPassword, setShowPassword] = useState(false);
+  const [showUserManagement, setShowUserManagement] = useState(false);
   
   // Patent details fields for each patent
   const [patentDetails, setPatentDetails] = useState({});
@@ -1122,28 +1124,13 @@ const AdminPatentManager = ({ onBack }) => {
     }
   };
 
-  // Fetch patent filing revenue from backend
-  const fetchPatentFilingRevenue = async (filter) => {
-    try {
-      const response = await fetch(`http://localhost:8080/api/patents/revenue?filter=${filter}`);
-      
-      if (response.ok) {
-        const data = await response.json();
-        setPatentFilingRevenue(data);
-      } else {
-        setPatentFilingRevenue({ total: 0, count: 0 });
-      }
-    } catch (error) {
-      console.error('Error fetching patent filing revenue:', error);
-      setPatentFilingRevenue({ total: 0, count: 0 });
-    }
-  };
-
-  // Fetch all revenue data
-  const fetchRevenueData = async (filter) => {
-    setLoadingRevenue(true);
-    await fetchPatentFilingRevenue(filter);
-    setLoadingRevenue(false);
+  // Calculate patent filing revenue from patents array
+  const calculatePatentFilingRevenue = () => {
+    const patentFilingPrice = 500; // ₹500 per patent filing
+    const count = patents.length;
+    const total = count * patentFilingPrice;
+    
+    setPatentFilingRevenue({ total, count });
   };
 
   // Effect to fetch online users and search stats when authenticated
@@ -1186,12 +1173,12 @@ const AdminPatentManager = ({ onBack }) => {
     }
   }, [selectedState]);
   
-  // Effect to fetch revenue data when filter changes or authenticated
+  // Effect to calculate patent filing revenue when patents change
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchRevenueData(revenueFilter);
+    if (isAuthenticated && patents.length > 0) {
+      calculatePatentFilingRevenue();
     }
-  }, [revenueFilter, isAuthenticated]);
+  }, [patents.length, isAuthenticated]);
 
   // Activate patent (make it visible to users)
   const activatePatent = async (patentId) => {
@@ -1483,6 +1470,9 @@ const AdminPatentManager = ({ onBack }) => {
             </div>
           </div>
         </div>
+      ) : showUserManagement ? (
+        // User Management View
+        <AdminUserManagement onBack={() => setShowUserManagement(false)} />
       ) : (
         // Admin Panel Content (after login)
         <div className="max-w-7xl mx-auto">
@@ -1500,16 +1490,21 @@ const AdminPatentManager = ({ onBack }) => {
               </div>
               <div className="flex gap-3">
                 <button
+                  onClick={() => setShowUserManagement(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg hover:from-indigo-600 hover:to-purple-700 shadow-lg"
+                >
+                  <Users className="w-4 h-4" />
+                  Manage Users
+                </button>
+                <button
                   onClick={() => {
-                    if (!showAdminTable) {
-                      fetchAllAdmins();
-                    }
-                    setShowAdminTable(!showAdminTable);
+                    fetchAllAdmins();
+                    setShowAdminTable(true);
                   }}
                   className="flex items-center gap-2 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600"
                 >
-                  {showAdminTable ? <EyeOff className="w-4 h-4" /> : <User className="w-4 h-4" />}
-                  {showAdminTable ? 'Hide Admin List' : 'View Admin Users'}
+                  <User className="w-4 h-4" />
+                  View Admin Users
                 </button>
                 <button
                   onClick={fetchAllPatents}
@@ -1622,39 +1617,118 @@ const AdminPatentManager = ({ onBack }) => {
           </div>
 
           {/* Admin Users Table */}
+          {/* Admin Users Modal */}
           {showAdminTable && (
-            <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold text-gray-800">Admin Users</h2>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-gray-100">
-                      <th className="px-4 py-3 text-left text-gray-700 font-semibold">Admin ID</th>
-                      <th className="px-4 py-3 text-left text-gray-700 font-semibold">Admin Name</th>
-                      <th className="px-4 py-3 text-left text-gray-700 font-semibold">Email</th>
-                      <th className="px-4 py-3 text-left text-gray-700 font-semibold">Created At</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {allAdmins.map((admin) => (
-                      <tr key={admin.adminId} className="border-b hover:bg-gray-50">
-                        <td className="px-4 py-3 font-mono">#{admin.adminId}</td>
-                        <td className="px-4 py-3 font-semibold">{admin.adminName}</td>
-                        <td className="px-4 py-3 text-blue-600">{admin.email}</td>
-                        <td className="px-4 py-3 text-gray-600">
-                          {admin.createdAt ? new Date(admin.createdAt).toLocaleDateString() : 'N/A'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {allAdmins.length === 0 && (
-                  <div className="text-center py-8 text-gray-600">
-                    No admin users found in the database.
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden border-2 border-purple-200">
+                {/* Modal Header */}
+                <div className="bg-gradient-to-r from-purple-500 to-indigo-600 p-6 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-white/20 p-3 rounded-xl shadow-lg backdrop-blur-sm">
+                      <Shield className="w-8 h-8 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-3xl font-bold text-white">
+                        Admin Users
+                      </h2>
+                      <p className="text-purple-100 mt-1">Total Admins: {allAdmins.length}</p>
+                    </div>
                   </div>
+                  <button
+                    onClick={() => setShowAdminTable(false)}
+                    className="p-3 rounded-xl bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-all shadow-lg hover:scale-110"
+                    title="Close"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+                
+                {/* Modal Content with Scroll */}
+                <div className="p-8 overflow-y-auto max-h-[calc(90vh-100px)]">
+                  <div className="space-y-4">
+                    {allAdmins.length === 0 ? (
+                      <div className="text-center py-12 bg-white rounded-xl shadow-lg border border-gray-200">
+                        <Shield className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                        <p className="text-xl font-semibold text-gray-700">No admin users found</p>
+                        <p className="text-gray-500 mt-2">Admin users will appear here once registered</p>
+                      </div>
+                    ) : (
+                      allAdmins.map((admin) => (
+                    <div
+                      key={admin.adminId}
+                      className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all p-6 border-l-4 border-purple-500"
+                    >
+                      <div className="flex items-center justify-between">
+                        {/* Admin Info */}
+                        <div className="flex items-center gap-4 flex-1">
+                          {/* Avatar */}
+                          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg ring-4 ring-purple-100">
+                            {admin.adminName?.charAt(0)?.toUpperCase() || 'A'}
+                          </div>
+
+                          {/* Details */}
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="text-xl font-bold text-gray-800">{admin.adminName}</h3>
+                              <span className="px-3 py-1 bg-gradient-to-r from-purple-100 to-indigo-100 text-purple-700 rounded-full text-xs font-bold border border-purple-300">
+                                Admin #{admin.adminId}
+                              </span>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                              <div className="flex items-center gap-2 text-gray-600">
+                                <Mail className="w-4 h-4 text-purple-500" />
+                                <span className="font-medium">{admin.email}</span>
+                              </div>
+                              
+                              <div className="flex items-center gap-2 text-gray-600">
+                                <Clock className="w-4 h-4 text-indigo-500" />
+                                <span>Joined: {admin.createdAt ? new Date(admin.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}</span>
+                              </div>
+
+                              <div className="flex items-center gap-2 text-gray-600">
+                                <Activity className="w-4 h-4 text-green-500" />
+                                <span>Status: <span className="text-green-600 font-semibold">Active</span></span>
+                              </div>
+                            </div>
+
+                            {/* Admin Stats */}
+                            {(admin.patentsGranted || admin.patentsRejected || admin.patentsActivated || admin.patentsDeactivated) && (
+                              <div className="flex gap-3 mt-3">
+                                {admin.patentsGranted > 0 && (
+                                  <span className="flex items-center gap-1 px-3 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-semibold border border-green-200">
+                                    <CheckCircle className="w-3 h-3" />
+                                    Granted: {admin.patentsGranted}
+                                  </span>
+                                )}
+                                {admin.patentsRejected > 0 && (
+                                  <span className="flex items-center gap-1 px-3 py-1 bg-red-50 text-red-700 rounded-lg text-xs font-semibold border border-red-200">
+                                    <X className="w-3 h-3" />
+                                    Rejected: {admin.patentsRejected}
+                                  </span>
+                                )}
+                                {admin.patentsActivated > 0 && (
+                                  <span className="flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-semibold border border-blue-200">
+                                    <UserCheck className="w-3 h-3" />
+                                    Activated: {admin.patentsActivated}
+                                  </span>
+                                )}
+                                {admin.patentsDeactivated > 0 && (
+                                  <span className="flex items-center gap-1 px-3 py-1 bg-gray-50 text-gray-700 rounded-lg text-xs font-semibold border border-gray-200">
+                                    <UserX className="w-3 h-3" />
+                                    Deactivated: {admin.patentsDeactivated}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
                 )}
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -2207,35 +2281,11 @@ const AdminPatentManager = ({ onBack }) => {
 
           {/* Revenue Analytics Section */}
           <div className="mb-6">
-            {/* Filter Bar */}
+            {/* Header */}
             <div className="bg-white rounded-2xl shadow-lg p-4 mb-6 border-2 border-indigo-200">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <CreditCard className="w-6 h-6 text-indigo-600" />
-                  <h2 className="text-xl font-bold text-gray-800">Revenue Analytics</h2>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setRevenueFilter('weekly')}
-                    className={`px-6 py-2 rounded-lg font-semibold transition-all ${
-                      revenueFilter === 'weekly'
-                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    Weekly
-                  </button>
-                  <button
-                    onClick={() => setRevenueFilter('monthly')}
-                    className={`px-6 py-2 rounded-lg font-semibold transition-all ${
-                      revenueFilter === 'monthly'
-                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    Monthly
-                  </button>
-                </div>
+              <div className="flex items-center gap-3">
+                <CreditCard className="w-6 h-6 text-indigo-600" />
+                <h2 className="text-xl font-bold text-gray-800">Revenue Analytics</h2>
               </div>
             </div>
 
@@ -2250,7 +2300,6 @@ const AdminPatentManager = ({ onBack }) => {
                     </div>
                     <div>
                       <h3 className="text-lg font-bold text-indigo-700">Subscription Revenue</h3>
-                      <p className="text-xs text-gray-600">Total from all subscriptions</p>
                     </div>
                   </div>
                   <div className="text-right">
@@ -2332,7 +2381,6 @@ const AdminPatentManager = ({ onBack }) => {
                     </div>
                     <div>
                       <h3 className="text-lg font-bold text-green-700">Patent Filing Revenue</h3>
-                      <p className="text-xs text-gray-600">{revenueFilter === 'weekly' ? 'Last 7 days' : 'Last 30 days'}</p>
                     </div>
                   </div>
                   <div className="text-right">
@@ -2387,43 +2435,42 @@ const AdminPatentManager = ({ onBack }) => {
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4" onClick={() => setShowPatentsList(false)}>
               <div className="bg-white rounded-3xl shadow-2xl w-full max-w-[98vw] h-[95vh] flex flex-col border-4 border-indigo-300" onClick={(e) => e.stopPropagation()}>
                 {/* Modal Header */}
-                <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-8 py-6 rounded-t-3xl flex items-center justify-between flex-shrink-0 border-b-4 border-indigo-400">
-                  <div className="flex items-center gap-4">
-                    <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
-                      <List className="w-8 h-8 text-white" />
+                <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-8 py-6 rounded-t-3xl flex-shrink-0 border-b-4 border-indigo-400">
+                  {/* Header Top Row */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-4">
+                      <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+                        <List className="w-8 h-8 text-white" />
+                      </div>
+                      <div>
+                        <h2 className="text-3xl font-bold text-white">Patent Management Dashboard</h2>
+                        <p className="text-indigo-100 font-medium mt-1">Manage and review all patent applications</p>
+                      </div>
                     </div>
-                    <div>
-                      <h2 className="text-3xl font-bold text-white">Patent Management Dashboard</h2>
-                      <p className="text-indigo-100 font-medium mt-1">Manage and review all patent applications</p>
-                    </div>
+                    <button
+                      onClick={() => setShowPatentsList(false)}
+                      className="group bg-white/10 hover:bg-red-500 p-3 rounded-xl transition-all duration-300 backdrop-blur-sm border-2 border-white/20 hover:border-red-400 hover:scale-110"
+                    >
+                      <X className="w-8 h-8 text-white group-hover:rotate-90 transition-transform duration-300" />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => setShowPatentsList(false)}
-                    className="group bg-white/10 hover:bg-red-500 p-3 rounded-xl transition-all duration-300 backdrop-blur-sm border-2 border-white/20 hover:border-red-400 hover:scale-110"
-                  >
-                    <X className="w-8 h-8 text-white group-hover:rotate-90 transition-transform duration-300" />
-                  </button>
-                </div>
-                
-                {/* Quick Filters Bar */}
-                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 px-8 py-5 border-b-2 border-indigo-200 flex-shrink-0">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-gray-700 bg-white px-4 py-2 rounded-lg shadow-md border-2 border-indigo-200">Quick Filter:</span>
-                    </div>
-                    <div className="flex flex-wrap gap-3">
+
+                  {/* Quick Filters in Header - Compact */}
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-bold text-white bg-white/20 px-3 py-1.5 rounded-lg backdrop-blur-sm">Filter:</span>
                       <button
                         onClick={() => setQuickFilter('all')}
-                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 transform ${
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs transition-all duration-300 ${
                           quickFilter === 'all'
-                            ? 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-xl scale-105 ring-4 ring-indigo-300'
-                            : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-indigo-500 hover:text-indigo-600 hover:scale-105 hover:shadow-lg'
+                            ? 'bg-white text-indigo-700 shadow-lg'
+                            : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm'
                         }`}
                       >
-                        <FileCheck className="w-4 h-4" />
+                        <FileCheck className="w-3.5 h-3.5" />
                         All
-                        <span className={`ml-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                          quickFilter === 'all' ? 'bg-white/25' : 'bg-indigo-100 text-indigo-700'
+                        <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
+                          quickFilter === 'all' ? 'bg-indigo-100 text-indigo-700' : 'bg-white/20 text-white'
                         }`}>
                           {patents.length}
                         </span>
@@ -2431,16 +2478,16 @@ const AdminPatentManager = ({ onBack }) => {
                       
                       <button
                         onClick={() => setQuickFilter('granted')}
-                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 transform ${
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs transition-all duration-300 ${
                           quickFilter === 'granted'
-                            ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-xl scale-105 ring-4 ring-green-300'
-                            : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-green-500 hover:text-green-600 hover:scale-105 hover:shadow-lg'
+                            ? 'bg-green-500 text-white shadow-lg'
+                            : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm'
                         }`}
                       >
-                        <CheckCircle className="w-4 h-4" />
+                        <CheckCircle className="w-3.5 h-3.5" />
                         Granted
-                        <span className={`ml-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                          quickFilter === 'granted' ? 'bg-white/25' : 'bg-green-100 text-green-700'
+                        <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
+                          quickFilter === 'granted' ? 'bg-white/30' : 'bg-white/20'
                         }`}>
                           {patents.filter(p => p.stage5Granted === true && p.status !== 'Patent is Rejected').length}
                         </span>
@@ -2448,16 +2495,16 @@ const AdminPatentManager = ({ onBack }) => {
                       
                       <button
                         onClick={() => setQuickFilter('rejected')}
-                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 transform ${
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs transition-all duration-300 ${
                           quickFilter === 'rejected'
-                            ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-xl scale-105 ring-4 ring-red-300'
-                            : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-red-500 hover:text-red-600 hover:scale-105 hover:shadow-lg'
+                            ? 'bg-red-500 text-white shadow-lg'
+                            : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm'
                         }`}
                       >
-                        <X className="w-4 h-4" />
+                        <X className="w-3.5 h-3.5" />
                         Rejected
-                        <span className={`ml-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                          quickFilter === 'rejected' ? 'bg-white/25' : 'bg-red-100 text-red-700'
+                        <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
+                          quickFilter === 'rejected' ? 'bg-white/30' : 'bg-white/20'
                         }`}>
                           {patents.filter(p => p.status === 'Patent is Rejected').length}
                         </span>
@@ -2465,16 +2512,16 @@ const AdminPatentManager = ({ onBack }) => {
                       
                       <button
                         onClick={() => setQuickFilter('application')}
-                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 transform ${
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs transition-all duration-300 ${
                           quickFilter === 'application'
-                            ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-xl scale-105 ring-4 ring-orange-300'
-                            : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-orange-500 hover:text-orange-600 hover:scale-105 hover:shadow-lg'
+                            ? 'bg-orange-500 text-white shadow-lg'
+                            : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm'
                         }`}
                       >
-                        <Clock className="w-4 h-4" />
+                        <Clock className="w-3.5 h-3.5" />
                         Application
-                        <span className={`ml-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                          quickFilter === 'application' ? 'bg-white/25' : 'bg-orange-100 text-orange-700'
+                        <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
+                          quickFilter === 'application' ? 'bg-white/30' : 'bg-white/20'
                         }`}>
                           {patents.filter(p => p.stage5Granted !== true && p.status !== 'Patent is Rejected').length}
                         </span>
@@ -2482,42 +2529,37 @@ const AdminPatentManager = ({ onBack }) => {
                       
                       <button
                         onClick={() => setQuickFilter('deactivated')}
-                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-300 transform ${
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs transition-all duration-300 ${
                           quickFilter === 'deactivated'
-                            ? 'bg-gradient-to-r from-gray-600 to-slate-700 text-white shadow-xl scale-105 ring-4 ring-gray-400'
-                            : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-gray-500 hover:text-gray-600 hover:scale-105 hover:shadow-lg'
+                            ? 'bg-gray-600 text-white shadow-lg'
+                            : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm'
                         }`}
                       >
-                        <AlertCircle className="w-4 h-4" />
+                        <AlertCircle className="w-3.5 h-3.5" />
                         Deactivated
-                        <span className={`ml-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                          quickFilter === 'deactivated' ? 'bg-white/25' : 'bg-gray-200 text-gray-700'
+                        <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
+                          quickFilter === 'deactivated' ? 'bg-white/30' : 'bg-white/20'
                         }`}>
                           {patents.filter(p => p.isActive === false).length}
                         </span>
                       </button>
                     </div>
-                  </div>
-                  
-                  {/* Status Info */}
-                  <div className="mt-4 flex items-center gap-3 bg-white px-5 py-3 rounded-xl inline-flex shadow-md border-2 border-indigo-200">
-                    <div className="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-pulse"></div>
-                    <span className="text-base font-bold text-gray-700">
-                      Showing <span className="text-indigo-600 text-lg">{filteredPatents.length}</span> of <span className="text-gray-900 text-lg">{patents.length}</span> patents
-                    </span>
-                    {quickFilter !== 'all' && (
-                      <span className={`px-3 py-1 rounded-full font-bold text-sm ${
-                        quickFilter === 'granted' ? 'bg-green-100 text-green-700' :
-                        quickFilter === 'rejected' ? 'bg-red-100 text-red-700' :
-                        quickFilter === 'application' ? 'bg-orange-100 text-orange-700' :
-                        'bg-gray-100 text-gray-700'
-                      }`}>
-                        {quickFilter === 'granted' && 'Granted'}
-                        {quickFilter === 'rejected' && 'Rejected'}
-                        {quickFilter === 'application' && 'In Application'}
-                        {quickFilter === 'deactivated' && 'Deactivated'}
+
+                    {/* Status Info - Compact */}
+                    <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-1.5 rounded-lg">
+                      <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                      <span className="text-sm font-semibold text-white">
+                        <span className="text-white">{filteredPatents.length}</span> / <span className="text-indigo-100">{patents.length}</span> patents
                       </span>
-                    )}
+                      {quickFilter !== 'all' && (
+                        <span className="px-2 py-0.5 rounded-full font-bold text-xs bg-white/30 text-white">
+                          {quickFilter === 'granted' && 'Granted'}
+                          {quickFilter === 'rejected' && 'Rejected'}
+                          {quickFilter === 'application' && 'Application'}
+                          {quickFilter === 'deactivated' && 'Deactivated'}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 
@@ -2936,7 +2978,7 @@ const AdminPatentManager = ({ onBack }) => {
       
       {/* Patent Details Modal */}
       {viewingPatentDetails && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setViewingPatentDetails(null)}>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4" onClick={() => setViewingPatentDetails(null)}>
           <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
             {/* Modal Header - Fixed */}
             <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-5 rounded-t-2xl flex items-center justify-between flex-shrink-0 z-10">
