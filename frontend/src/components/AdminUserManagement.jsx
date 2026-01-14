@@ -6,6 +6,7 @@ import {
   Activity, DollarSign, Clock, ArrowLeft
 } from 'lucide-react';
 import { db, auth } from '../firebase';
+import { addUserNotification } from '../utils/notifications';
 import { 
   collection, 
   getDocs, 
@@ -152,9 +153,6 @@ const AdminUserManagement = ({ onBack }) => {
         case 'activate':
           await handleActivateUser(selectedUser);
           break;
-        case 'suspend':
-          await handleSuspendUser(selectedUser);
-          break;
         case 'ban':
           await handleBanUser(selectedUser);
           break;
@@ -203,10 +201,18 @@ const AdminUserManagement = ({ onBack }) => {
       await updateDoc(userRef, {
         accountStatus: 'deactivated',
         deactivatedAt: Timestamp.now(),
-        scheduledDeletionDate: Timestamp.fromDate(scheduledDeletion)
+        scheduledDeletionDate: Timestamp.fromDate(scheduledDeletion),
+        forceLogout: true // Flag to force logout the user
       });
       
-      showToast(`User ${user.name} has been deactivated. Account will be deleted in 30 days.`, 'success');
+      // Send notification to user about deactivation
+      await addUserNotification(user.id, {
+        title: '🚫 Account Deactivated',
+        message: 'Your account has been deactivated by the admin. You have been logged out. If you do not login within 30 days, your account will be permanently deleted. Please contact support if you believe this is an error.',
+        details: null
+      });
+      
+      showToast(`User ${user.name} has been deactivated and logged out. Account will be deleted in 30 days if not reactivated.`, 'success');
       fetchUsers();
     } catch (error) {
       console.error('Error deactivating user:', error);
@@ -222,8 +228,8 @@ const AdminUserManagement = ({ onBack }) => {
         accountStatus: 'active',
         deactivatedAt: null,
         scheduledDeletionDate: null,
-        suspendedAt: null,
-        bannedAt: null
+        bannedAt: null,
+        forceLogout: false
       });
       
       showToast(`User ${user.name} has been activated`, 'success');
@@ -231,24 +237,6 @@ const AdminUserManagement = ({ onBack }) => {
     } catch (error) {
       console.error('Error activating user:', error);
       showToast('Failed to activate user: ' + error.message, 'error');
-    }
-  };
-
-  // Suspend User
-  const handleSuspendUser = async (user) => {
-    try {
-      const userRef = doc(db, 'users', user.id);
-      await updateDoc(userRef, {
-        accountStatus: 'suspended',
-        suspendedAt: Timestamp.now(),
-        suspensionReason: 'Suspended by admin'
-      });
-      
-      showToast(`User ${user.name} has been suspended`, 'warning');
-      fetchUsers();
-    } catch (error) {
-      console.error('Error suspending user:', error);
-      showToast('Failed to suspend user: ' + error.message, 'error');
     }
   };
 
@@ -390,7 +378,6 @@ const AdminUserManagement = ({ onBack }) => {
     const statusConfig = {
       active: { color: 'bg-green-100 text-green-800 border-green-300', icon: CheckCircle },
       deactivated: { color: 'bg-gray-100 text-gray-800 border-gray-300', icon: UserX },
-      suspended: { color: 'bg-yellow-100 text-yellow-800 border-yellow-300', icon: AlertTriangle },
       banned: { color: 'bg-red-100 text-red-800 border-red-300', icon: Ban }
     };
 
@@ -589,9 +576,19 @@ const AdminUserManagement = ({ onBack }) => {
                 <button
                   className="absolute top-4 right-4 p-2 rounded-lg bg-orange-100 text-orange-600 hover:bg-orange-200 transition-all shadow-md hover:shadow-lg z-10"
                   title="Send Warning"
-                  onClick={() => {
-                    // Warning functionality here
-                    showToast(`Warning notification sent to ${user.name || user.email}`, 'warning');
+                  onClick={async () => {
+                    try {
+                      // Send warning notification to the user
+                      await addUserNotification(user.id, {
+                        title: '⚠️ Account Warning',
+                        message: 'Your account is in danger. Strict action may be taken by the admin in future. Please review your activity and ensure compliance with our terms of service.',
+                        details: null
+                      });
+                      showToast(`Warning notification sent to ${user.name || user.email}`, 'warning');
+                    } catch (error) {
+                      console.error('Error sending warning:', error);
+                      showToast('Failed to send warning notification', 'error');
+                    }
                   }}
                 >
                   <AlertTriangle className="w-5 h-5" />
@@ -706,21 +703,6 @@ const AdminUserManagement = ({ onBack }) => {
                       Deactivate
                       <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
                         ⏳ Schedule account for deletion in 30 days
-                      </span>
-                    </button>
-                  )}
-
-                  {/* Suspend */}
-                  {user.accountStatus !== 'suspended' && (
-                    <button
-                      onClick={() => confirmActionDialog({ type: 'suspend', title: 'Suspend User', message: `Suspend ${user.name || 'this user'}'s account? User will not be able to login.` }, user)}
-                      className="group relative flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg hover:from-yellow-600 hover:to-yellow-700 transition-all shadow-md hover:shadow-lg text-sm font-semibold w-full"
-                      title="Suspend user login"
-                    >
-                      <AlertTriangle className="w-4 h-4" />
-                      Suspend
-                      <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
-                        ⚠️ Temporarily block user login access
                       </span>
                     </button>
                   )}
@@ -958,7 +940,6 @@ const AdminUserManagement = ({ onBack }) => {
                 >
                   <option value="active">Active</option>
                   <option value="deactivated">Deactivated</option>
-                  <option value="suspended">Suspended</option>
                   <option value="banned">Banned</option>
                 </select>
               </div>
