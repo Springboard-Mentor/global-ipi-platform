@@ -32,6 +32,7 @@ const AdminUserManagement = ({ onBack }) => {
   const [dateFilter, setDateFilter] = useState('all'); // 'all', 'week', 'month', 'custom'
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'verified', 'unverified', 'active', 'deactivated', 'suspended', 'banned'
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [toasts, setToasts] = useState([]);
@@ -117,9 +118,31 @@ const AdminUserManagement = ({ onBack }) => {
       });
     }
 
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(user => {
+        switch (statusFilter) {
+          case 'verified':
+            return user.emailVerified === true;
+          case 'unverified':
+            return !user.emailVerified;
+          case 'active':
+            return user.accountStatus === 'active' || !user.accountStatus;
+          case 'deactivated':
+            return user.accountStatus === 'deactivated';
+          case 'suspended':
+            return user.accountStatus === 'suspended';
+          case 'banned':
+            return user.accountStatus === 'banned';
+          default:
+            return true;
+        }
+      });
+    }
+
     setFilteredUsers(filtered);
     setCurrentPage(1); // Reset to first page when filters change
-  }, [searchQuery, dateFilter, customStartDate, customEndDate, users]);
+  }, [searchQuery, dateFilter, customStartDate, customEndDate, statusFilter, users]);
 
   // Toast notification
   const showToast = (message, type = 'info') => {
@@ -593,6 +616,83 @@ const AdminUserManagement = ({ onBack }) => {
               )}
             </div>
           )}
+
+          {/* Status Filters */}
+          <div className="flex items-center gap-3 mt-4">
+            <span className="text-sm font-semibold text-gray-700">Filter by status:</span>
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={() => setStatusFilter('all')}
+                className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+                  statusFilter === 'all'
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setStatusFilter('verified')}
+                className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+                  statusFilter === 'verified'
+                    ? 'bg-green-600 text-white shadow-md'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Email Verified
+              </button>
+              <button
+                onClick={() => setStatusFilter('unverified')}
+                className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+                  statusFilter === 'unverified'
+                    ? 'bg-yellow-600 text-white shadow-md'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Email Unverified
+              </button>
+              <button
+                onClick={() => setStatusFilter('active')}
+                className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+                  statusFilter === 'active'
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Active
+              </button>
+              <button
+                onClick={() => setStatusFilter('deactivated')}
+                className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+                  statusFilter === 'deactivated'
+                    ? 'bg-gray-600 text-white shadow-md'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Deactivated
+              </button>
+              <button
+                onClick={() => setStatusFilter('suspended')}
+                className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+                  statusFilter === 'suspended'
+                    ? 'bg-orange-600 text-white shadow-md'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Suspended
+              </button>
+              <button
+                onClick={() => setStatusFilter('banned')}
+                className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${
+                  statusFilter === 'banned'
+                    ? 'bg-red-600 text-white shadow-md'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Banned
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -854,7 +954,7 @@ const AdminUserManagement = ({ onBack }) => {
                     title="Delete user permanently"
                   >
                     <Trash2 className="w-4 h-4" />
-                    Delete User
+                    Delete Users Data
                     <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-50">
                       🗑️ Permanently delete user data (irreversible)
                     </span>
