@@ -101,6 +101,29 @@ public class EmailService {
         log.info("Feedback notification email sent to admin");
     }
     
+    /**
+     * Send user report notification to admin (without storing in database)
+     */
+    public void sendUserReportToAdmin(String reporterName, String reporterEmail, 
+                                     String reportedUserName, String reportedUserEmail, 
+                                     String subject, String reason) throws MessagingException {
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+        
+        helper.setFrom(fromEmail);
+        helper.setTo(adminEmail);
+        helper.setSubject("🚨 USER REPORT - " + subject);
+        
+        String htmlContent = buildUserReportEmail(reporterName, reporterEmail, 
+                                                 reportedUserName, reportedUserEmail, 
+                                                 subject, reason);
+        helper.setText(htmlContent, true);
+        
+        mailSender.send(message);
+        log.info("User report email sent to admin - Reporter: {}, Reported User: {}", 
+                reporterEmail, reportedUserEmail);
+    }
+    
     private String buildContactConfirmationEmail(Contact contact) {
         return """
             <!DOCTYPE html>
@@ -704,4 +727,182 @@ public class EmailService {
                          rejectedPersonName != null ? rejectedPersonName : "N/A",
                          location != null ? location : "N/A");
     }
+    
+    private String buildUserReportEmail(String reporterName, String reporterEmail, 
+                                       String reportedUserName, String reportedUserEmail, 
+                                       String subject, String reason) {
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy, hh:mm a");
+        String formattedDate = now.format(formatter);
+        
+        return """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                    .container { max-width: 700px; margin: 0 auto; padding: 20px; background: #f9f9f9; }
+                    .header { 
+                        background: linear-gradient(135deg, #dc3545 0%%, #c82333 100%%); 
+                        color: white; 
+                        padding: 30px; 
+                        text-align: center; 
+                        border-radius: 10px 10px 0 0; 
+                    }
+                    .content { background: white; padding: 30px; border-radius: 0 0 10px 10px; }
+                    .alert-badge { 
+                        background: #fff3cd; 
+                        border-left: 4px solid #ffc107; 
+                        padding: 15px; 
+                        margin: 20px 0; 
+                        border-radius: 5px; 
+                    }
+                    .section { margin: 25px 0; }
+                    .section-title { 
+                        font-size: 18px; 
+                        font-weight: bold; 
+                        color: #495057; 
+                        margin-bottom: 15px; 
+                        border-bottom: 2px solid #e9ecef; 
+                        padding-bottom: 8px; 
+                    }
+                    .info-grid { 
+                        display: grid; 
+                        grid-template-columns: 150px 1fr; 
+                        gap: 12px; 
+                        margin: 10px 0; 
+                    }
+                    .info-label { 
+                        font-weight: 600; 
+                        color: #6c757d; 
+                    }
+                    .info-value { 
+                        color: #212529; 
+                    }
+                    .reported-user { 
+                        background: #f8d7da; 
+                        border: 1px solid #f5c6cb; 
+                        border-radius: 8px; 
+                        padding: 20px; 
+                        margin: 15px 0; 
+                    }
+                    .reporter-user { 
+                        background: #d1ecf1; 
+                        border: 1px solid #bee5eb; 
+                        border-radius: 8px; 
+                        padding: 20px; 
+                        margin: 15px 0; 
+                    }
+                    .reason-box { 
+                        background: #f8f9fa; 
+                        border: 1px solid #dee2e6; 
+                        border-radius: 8px; 
+                        padding: 20px; 
+                        margin: 15px 0; 
+                        white-space: pre-wrap; 
+                        word-wrap: break-word; 
+                    }
+                    .footer { 
+                        text-align: center; 
+                        margin-top: 30px; 
+                        padding-top: 20px; 
+                        border-top: 1px solid #dee2e6; 
+                        color: #6c757d; 
+                        font-size: 13px; 
+                    }
+                    .priority-high { 
+                        background: #dc3545; 
+                        color: white; 
+                        padding: 5px 15px; 
+                        border-radius: 20px; 
+                        display: inline-block; 
+                        font-size: 12px; 
+                        font-weight: bold; 
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>🚨 USER REPORT NOTIFICATION</h1>
+                        <div class="priority-high">HIGH PRIORITY - REQUIRES IMMEDIATE ATTENTION</div>
+                    </div>
+                    <div class="content">
+                        <div class="alert-badge">
+                            <strong>⚠️ Action Required:</strong> A user has submitted a report about another user. 
+                            Please review this matter promptly and take appropriate action.
+                        </div>
+                        
+                        <div class="section">
+                            <div class="section-title">📋 Report Details</div>
+                            <div class="info-grid">
+                                <div class="info-label">Report Subject:</div>
+                                <div class="info-value"><strong>%s</strong></div>
+                                <div class="info-label">Submitted On:</div>
+                                <div class="info-value">%s</div>
+                            </div>
+                        </div>
+                        
+                        <div class="section">
+                            <div class="section-title">👤 Reporter Information</div>
+                            <div class="reporter-user">
+                                <div class="info-grid">
+                                    <div class="info-label">Name:</div>
+                                    <div class="info-value">%s</div>
+                                    <div class="info-label">Email:</div>
+                                    <div class="info-value"><a href="mailto:%s">%s</a></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="section">
+                            <div class="section-title">🎯 Reported User Information</div>
+                            <div class="reported-user">
+                                <div class="info-grid">
+                                    <div class="info-label">Name:</div>
+                                    <div class="info-value"><strong>%s</strong></div>
+                                    <div class="info-label">Email:</div>
+                                    <div class="info-value"><strong><a href="mailto:%s">%s</a></strong></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="section">
+                            <div class="section-title">📝 Reason for Reporting</div>
+                            <div class="reason-box">%s</div>
+                        </div>
+                        
+                        <div class="alert-badge">
+                            <strong>💡 Next Steps:</strong>
+                            <ul style="margin: 10px 0 0 20px;">
+                                <li>Review the reported user's account activity</li>
+                                <li>Investigate the claims made in this report</li>
+                                <li>Contact both parties if necessary</li>
+                                <li>Take appropriate action based on platform policies</li>
+                                <li>Document the resolution</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="footer">
+                            <p><strong>This is an automated system notification.</strong></p>
+                            <p>Global IPI Platform - User Report System</p>
+                            <p>© 2025 Global Intellectual Property Platform. All rights reserved.</p>
+                        </div>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """.formatted(
+                subject,
+                formattedDate,
+                reporterName,
+                reporterEmail,
+                reporterEmail,
+                reportedUserName,
+                reportedUserEmail,
+                reportedUserEmail,
+                reason
+            );
+    }
 }
+

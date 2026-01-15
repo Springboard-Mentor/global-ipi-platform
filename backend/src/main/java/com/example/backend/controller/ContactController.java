@@ -126,4 +126,64 @@ public class ContactController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
+    
+    /**
+     * Report user endpoint - sends email directly without storing in database
+     */
+    @PostMapping("/report-user")
+    public ResponseEntity<Map<String, Object>> reportUser(@RequestBody Map<String, String> reportData) {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            // Validate required fields
+            String reporterName = reportData.get("reporterName");
+            String reporterEmail = reportData.get("reporterEmail");
+            String reportedUserName = reportData.get("reportedUserName");
+            String reportedUserEmail = reportData.get("reportedUserEmail");
+            String subject = reportData.get("subject");
+            String reason = reportData.get("reason");
+            
+            if (reporterName == null || reporterEmail == null || 
+                reportedUserName == null || reportedUserEmail == null || 
+                subject == null || reason == null) {
+                response.put("success", false);
+                response.put("message", "All fields are required");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+            }
+            
+            log.info("User report received from: {} about: {}", reporterEmail, reportedUserEmail);
+            
+            // Send email notification to admin (only if enabled)
+            if (emailEnabled) {
+                try {
+                    emailService.sendUserReportToAdmin(
+                        reporterName, reporterEmail, 
+                        reportedUserName, reportedUserEmail, 
+                        subject, reason
+                    );
+                    
+                    log.info("User report email sent successfully");
+                    response.put("success", true);
+                    response.put("message", "Thank you for your report. We will investigate this matter promptly. An email notification has been sent to our team.");
+                } catch (Exception e) {
+                    log.error("Failed to send user report email", e);
+                    response.put("success", false);
+                    response.put("message", "Failed to submit report. Email service error: " + e.getMessage());
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+                }
+            } else {
+                log.warn("Email service is disabled - user report received but no email sent");
+                response.put("success", true);
+                response.put("message", "Thank you for your report. We will investigate this matter promptly. (Note: Email notifications are currently disabled)");
+            }
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            log.error("Error processing user report", e);
+            response.put("success", false);
+            response.put("message", "Failed to submit report. Please try again.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
 }
