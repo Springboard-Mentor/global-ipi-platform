@@ -1597,118 +1597,108 @@ const AdminPatentManager = ({ onBack }) => {
           {/* System Health Status Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             {/* Card 1: Backend / API Health */}
-            <div className="bg-white rounded-xl p-5 shadow-lg border border-gray-100 relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+            {/* Card 1: Backend / API Health */}
+            <div className="bg-gradient-to-br from-teal-50 to-cyan-100 rounded-xl shadow-lg p-6 border-2 border-teal-300">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 text-teal-700 mb-2">
+                    <Server className="w-5 h-5" />
+                    <p className="text-sm font-semibold uppercase tracking-wide">Backend / API Health</p>
+                  </div>
 
-              <div className="relative z-10">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
-                      <Server size={22} />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-gray-800 text-lg">Backend / API Health</h3>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className="relative flex h-2.5 w-2.5">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
-                        </span>
-                        <span className="text-xs font-semibold text-green-600">Healthy</span>
-                      </div>
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-4xl font-bold text-teal-800">45ms</p>
+                    <span className="text-sm font-medium text-teal-600">Avg Response</span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 mt-2 mb-3">
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-teal-600"></span>
+                    </span>
+                    <span className="text-xs font-bold text-teal-700">Healthy</span>
+                    <span className="text-teal-400 mx-1">•</span>
+                    <span className="text-xs text-teal-700 font-medium">Uptime: 99.9%</span>
+                  </div>
+
+                  <div className="flex items-center gap-3 text-xs text-teal-600 pt-2 border-t border-teal-200">
+                    <span className="flex items-center gap-1" title="Max Response Time">
+                      <Activity className="w-3 h-3" /> Max: 120ms
+                    </span>
+                    <span className="flex items-center gap-1">
+                      v2.4.0
+                    </span>
+                    <div className="ml-auto flex items-center gap-1 opacity-80">
+                      Last checked: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 mb-4">
-                  <div className="bg-gray-50 rounded-lg p-2 text-center">
-                    <div className="text-xs text-gray-500 mb-1">Avg Response</div>
-                    <div className="font-bold text-gray-800">45ms</div>
-                  </div>
-                  <div className="bg-gray-50 rounded-lg p-2 text-center">
-                    <div className="text-xs text-gray-500 mb-1">Max Response</div>
-                    <div className="font-bold text-gray-800">120ms</div>
-                  </div>
-                  <div className="bg-gray-50 rounded-lg p-2 text-center">
-                    <div className="text-xs text-gray-500 mb-1">Uptime (24h)</div>
-                    <div className="font-bold text-green-600">99.9%</div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                  <div className="text-xs text-gray-500 flex items-center gap-1">
-                    <Activity size={12} />
-                    <span>Last checked: {new Date().toLocaleTimeString()}</span>
-                  </div>
-                  <div className="text-xs px-2 py-1 bg-green-50 text-green-700 rounded border border-green-100 font-medium">
-                    v2.4.0
+                <div className="self-start ml-4">
+                  <div className="bg-teal-200 p-4 rounded-xl shadow-inner">
+                    <Server className="w-10 h-10 text-teal-700" />
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Card 2: Database Health */}
-            <div className="bg-white rounded-xl p-5 shadow-lg border border-gray-100 relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-24 h-24 bg-purple-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+            <div className="bg-gradient-to-br from-teal-50 to-cyan-100 rounded-xl shadow-lg p-6 border-2 border-teal-300">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 text-teal-700 mb-2">
+                    <Database className="w-5 h-5" />
+                    <p className="text-sm font-semibold uppercase tracking-wide">Database Health</p>
+                  </div>
 
-              <div className="relative z-10">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-purple-100 rounded-lg text-purple-600">
-                      <Database size={22} />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-gray-800 text-lg">Database Health</h3>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        {backendStatus === 'connected' ? (
-                          <>
-                            <span className="relative flex h-2.5 w-2.5">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
-                            </span>
-                            <span className="text-xs font-semibold text-green-600">Connected</span>
-                          </>
-                        ) : backendStatus === 'checking' ? (
-                          <>
-                            <span className="relative flex h-2.5 w-2.5">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
-                              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-yellow-500"></span>
-                            </span>
-                            <span className="text-xs font-semibold text-yellow-600">Checking...</span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="relative flex h-2.5 w-2.5">
-                              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-                            </span>
-                            <span className="text-xs font-semibold text-red-600">Disconnected</span>
-                          </>
-                        )}
-                      </div>
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-4xl font-bold text-teal-800">85</p>
+                    <span className="text-sm font-medium text-teal-600">Active Conn.</span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 mt-2 mb-3">
+                    {backendStatus === 'connected' ? (
+                      <>
+                        <span className="relative flex h-2.5 w-2.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-600"></span>
+                        </span>
+                        <span className="text-xs font-bold text-green-700">Connected</span>
+                      </>
+                    ) : backendStatus === 'checking' ? (
+                      <>
+                        <span className="relative flex h-2.5 w-2.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-yellow-500"></span>
+                        </span>
+                        <span className="text-xs font-bold text-yellow-700">Checking...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="relative flex h-2.5 w-2.5">
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span>
+                        </span>
+                        <span className="text-xs font-bold text-red-700">Disconnected</span>
+                      </>
+                    )}
+                    <span className="text-teal-400 mx-1">•</span>
+                    <span className="text-xs text-teal-700 font-medium">Latency: 12ms</span>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-teal-600 pt-2 border-t border-teal-200">
+                    <span className="font-semibold bg-white/40 px-1.5 py-0.5 rounded">PostgreSQL</span>
+                    <span className="flex items-center gap-1">
+                      Perf: <span className="font-bold text-green-700">Normal</span>
+                    </span>
+                    <div className="ml-auto opacity-75 bg-teal-200/50 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-teal-800">
+                      Production
                     </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 mb-4">
-                  <div className="bg-gray-50 rounded-lg p-2 text-center">
-                    <div className="text-xs text-gray-500 mb-1">Latency</div>
-                    <div className="font-bold text-gray-800">12ms</div>
-                  </div>
-                  <div className="bg-gray-50 rounded-lg p-2 text-center">
-                    <div className="text-xs text-gray-500 mb-1">Active Conn.</div>
-                    <div className="font-bold text-gray-800">85</div>
-                  </div>
-                  <div className="bg-gray-50 rounded-lg p-2 text-center">
-                    <div className="text-xs text-gray-500 mb-1">Performance</div>
-                    <div className="font-bold text-green-600">Normal</div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                  <div className="text-xs text-gray-500">
-                    Type: <span className="font-semibold text-gray-700">PostgreSQL</span>
-                  </div>
-                  <div className="text-xs px-2 py-1 bg-purple-50 text-purple-700 rounded border border-purple-100 font-medium">
-                    Production
+                <div className="self-start ml-4">
+                  <div className="bg-teal-200 p-4 rounded-xl shadow-inner">
+                    <Database className="w-10 h-10 text-teal-700" />
                   </div>
                 </div>
               </div>
