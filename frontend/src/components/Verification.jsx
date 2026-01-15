@@ -219,7 +219,8 @@ function Verification() {
               {/* Right Side - Security Checkpoint, Actions & Footer */}
               <div className="verification-right-section" style={{
                 flex: (userData?.accountStatus === 'banned' || userData?.accountStatus === 'suspended') ? '1' : undefined,
-                width: (userData?.accountStatus === 'banned' || userData?.accountStatus === 'suspended') ? '100%' : undefined
+                width: (userData?.accountStatus === 'banned' || userData?.accountStatus === 'suspended') ? '100%' : undefined,
+                gridColumn: (userData?.accountStatus === 'banned' || userData?.accountStatus === 'suspended') ? '1 / -1' : undefined
               }}>
                 {/* Get account status */}
                 {(() => {
