@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, Circle, Mail, RefreshCw, AlertCircle, LogIn, LogOut, User, Shield, Eye, EyeOff, X, ArrowLeft, Lightbulb, FileCheck, Upload, CreditCard, MessageCircle, Send, Bell, Clock, List, Filter, BarChart3, Users, Activity, Search, Database, Globe, Trophy, Award, Medal, Sparkles, UserCheck, UserX } from 'lucide-react';
+import { CheckCircle, Circle, Mail, RefreshCw, AlertCircle, LogIn, LogOut, User, Shield, Eye, EyeOff, X, ArrowLeft, Lightbulb, FileCheck, Upload, CreditCard, MessageCircle, Send, Bell, Clock, List, Filter, BarChart3, Users, Activity, Search, Database, Globe, Trophy, Award, Medal, Sparkles, UserCheck, UserX, Info } from 'lucide-react';
 import { addUserNotification } from '../utils/notifications';
 import { db } from '../firebase';
 import AdminUserManagement from './AdminUserManagement';
@@ -104,6 +104,11 @@ const AdminPatentManager = ({ onBack }) => {
     count: 0
   });
   const [loadingRevenue, setLoadingRevenue] = useState(false);
+  
+  // Feedback states
+  const [feedbackStats, setFeedbackStats] = useState(null);
+  const [feedbackStatus, setFeedbackStatus] = useState('loading');
+  const [allFeedbacks, setAllFeedbacks] = useState([]);
   
   // Toast notification helper
   const showToast = (message, type = 'success') => {
@@ -1179,6 +1184,54 @@ const AdminPatentManager = ({ onBack }) => {
       calculatePatentFilingRevenue();
     }
   }, [patents.length, isAuthenticated]);
+
+  // Effect to fetch feedback analytics
+  useEffect(() => {
+    if (isAuthenticated) {
+      const fetchFeedbackAnalytics = async () => {
+        setFeedbackStatus('loading');
+        try {
+          console.log('🔄 Admin Panel: Fetching feedback analytics from backend...');
+          
+          // Fetch stats
+          const statsResponse = await fetch('http://localhost:8080/api/feedback/stats');
+          console.log('📊 Stats Response Status:', statsResponse.status);
+          
+          if (statsResponse.ok) {
+            const stats = await statsResponse.json();
+            console.log('✅ Feedback stats received:', stats);
+            setFeedbackStats(stats);
+          } else {
+            console.error('❌ Failed to fetch feedback stats:', statsResponse.statusText);
+          }
+          
+          // Fetch all feedbacks
+          const allResponse = await fetch('http://localhost:8080/api/feedback/all');
+          console.log('📝 All Feedbacks Response Status:', allResponse.status);
+          
+          if (allResponse.ok) {
+            const feedbacks = await allResponse.json();
+            console.log('✅ All feedbacks received. Count:', feedbacks.length);
+            setAllFeedbacks(feedbacks);
+          } else {
+            console.error('❌ Failed to fetch all feedbacks:', allResponse.statusText);
+          }
+          
+          setFeedbackStatus('success');
+          console.log('✨ Feedback analytics loaded successfully!');
+        } catch (error) {
+          console.error('💥 Error fetching feedback analytics:', error);
+          setFeedbackStatus('error');
+        }
+      };
+      
+      fetchFeedbackAnalytics();
+      
+      // Refresh every 60 seconds
+      const interval = setInterval(fetchFeedbackAnalytics, 60000);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated]);
 
   // Activate patent (make it visible to users)
   const activatePatent = async (patentId) => {
@@ -2428,6 +2481,240 @@ const AdminPatentManager = ({ onBack }) => {
                 )}
               </div>
             </div>
+          </div>
+
+          {/* User Feedback & Quality Metrics Section */}
+          <div className="mb-6">
+            {/* Header */}
+            <div className="bg-white rounded-2xl shadow-lg p-4 mb-6 border-2 border-pink-200">
+              <div className="flex items-center gap-3">
+                <Info className="w-6 h-6 text-pink-600" />
+                <h2 className="text-xl font-bold text-gray-800">User Feedback Analytics</h2>
+              </div>
+            </div>
+
+            {/* FEEDBACK ANALYTICS SECTION */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Average Ratings by Category - Left Side (2/3 width) */}
+              <div className="lg:col-span-2 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-5 shadow-lg border border-blue-100">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-bold text-lg text-blue-900">User Feedback Ratings</h3>
+                  {feedbackStatus === 'loading' && (
+                    <div className="text-xs text-blue-600 animate-pulse">Loading...</div>
+                  )}
+                  {feedbackStatus === 'success' && (
+                    <div className="text-xs text-blue-700 font-medium">● Live Data</div>
+                  )}
+                </div>
+                <div className="mb-3 pb-3 border-b border-blue-200">
+                  <p className="text-sm text-blue-700 font-medium">Quality metrics across key platform dimensions</p>
+                  <p className="text-xs text-blue-600 mt-1">Aggregate user ratings help us continuously improve your experience on a 5-point scale</p>
+                </div>
+                <div className="h-[320px] px-4">
+                  {feedbackStatus === 'loading' ? (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-blue-600">Loading feedback data...</div>
+                    </div>
+                  ) : !feedbackStats || feedbackStats.totalFeedbacks === 0 ? (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-blue-600">No feedback data available</div>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={[
+                        { category: 'UI', rating: feedbackStats.averageUIRating || 0, fullName: 'User Interface' },
+                        { category: 'Performance', rating: feedbackStats.averagePerformanceRating || 0, fullName: 'Performance' },
+                        { category: 'Features', rating: feedbackStats.averageFeaturesRating || 0, fullName: 'Features' },
+                        { category: 'Support', rating: feedbackStats.averageSupportRating || 0, fullName: 'Support' },
+                        { category: 'Overall', rating: feedbackStats.averageOverallRating || 0, fullName: 'Overall Experience' }
+                      ]} layout="vertical">
+                        <defs>
+                          <linearGradient id="ratingGradient" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.9} />
+                            <stop offset="100%" stopColor="#06b6d4" stopOpacity={0.8} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#dbeafe" />
+                        <XAxis 
+                          type="number" 
+                          domain={[0, 5]}
+                          stroke="#1e40af"
+                          style={{ fontSize: '13px', fontWeight: '700' }}
+                          tick={{ fill: '#1e3a8a' }}
+                          tickCount={6}
+                        />
+                        <YAxis 
+                          type="category"
+                          dataKey="category" 
+                          stroke="#1e40af"
+                          width={110}
+                          style={{ fontSize: '14px', fontWeight: '700' }}
+                          tick={{ fill: '#1e3a8a' }}
+                          orientation="left"
+                        />
+                        <Tooltip 
+                          contentStyle={{
+                            backgroundColor: '#eff6ff',
+                            border: '2px solid #3b82f6',
+                            borderRadius: '8px',
+                            fontWeight: '600',
+                            padding: '12px'
+                          }}
+                          labelStyle={{ color: '#1e40af', fontWeight: 'bold' }}
+                          formatter={(value, name, props) => {
+                            return [
+                              <div key="tooltip-rating" className="space-y-1">
+                                <div className="text-blue-900 font-bold">{props.payload.fullName}</div>
+                                <div className="text-lg text-blue-700">{value.toFixed(2)} / 5.00</div>
+                                <div className="text-sm text-blue-600">
+                                  {value >= 4.5 ? '⭐ Excellent' : value >= 4 ? '✨ Very Good' : value >= 3 ? '👍 Good' : value >= 2 ? '😐 Fair' : '⚠️ Needs Improvement'}
+                                </div>
+                              </div>
+                            ];
+                          }}
+                        />
+                        <Bar 
+                          dataKey="rating" 
+                          fill="url(#ratingGradient)"
+                          radius={[0, 8, 8, 0]}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </div>
+
+              {/* Feedback Overview - Right Side (1/3 width) */}
+              {feedbackStatus === 'success' && feedbackStats && (
+                <div className="lg:col-span-1 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-5 shadow-lg border border-purple-100">
+                  <h3 className="font-bold text-lg text-purple-900 mb-4">Feedback Overview</h3>
+                  <div className="space-y-4">
+                    {/* Total Feedbacks */}
+                    <div className="bg-white/60 rounded-lg p-4 border border-purple-200">
+                      <div className="text-sm text-purple-600 font-medium mb-1">Total Feedbacks</div>
+                      <div className="text-3xl font-bold text-purple-900">{feedbackStats.totalFeedbacks || 0}</div>
+                    </div>
+
+                    {/* Overall Average Rating */}
+                    <div className="bg-white/60 rounded-lg p-4 border border-purple-200">
+                      <div className="text-sm text-purple-600 font-medium mb-1">Overall Average</div>
+                      <div className="flex items-baseline gap-2">
+                        <div className="text-3xl font-bold text-purple-900">
+                          {feedbackStats.overallAverageRating ? feedbackStats.overallAverageRating.toFixed(2) : '0.00'}
+                        </div>
+                        <div className="text-lg text-purple-600">/ 5.00</div>
+                      </div>
+                      <div className="mt-2">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <span 
+                            key={star} 
+                            className={`text-2xl ${
+                              star <= Math.round(feedbackStats.overallAverageRating || 0) 
+                                ? 'text-yellow-500' 
+                                : 'text-gray-300'
+                            }`}
+                          >
+                            ★
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Sentiment Indicator */}
+                    <div className="bg-white/60 rounded-lg p-4 border border-purple-200">
+                      <div className="text-sm text-purple-600 font-medium mb-2">User Sentiment</div>
+                      <div className="text-center">
+                        {feedbackStats.overallAverageRating >= 4.5 && (
+                          <div className="text-4xl mb-1">😊</div>
+                        )}
+                        {feedbackStats.overallAverageRating >= 4 && feedbackStats.overallAverageRating < 4.5 && (
+                          <div className="text-4xl mb-1">🙂</div>
+                        )}
+                        {feedbackStats.overallAverageRating >= 3 && feedbackStats.overallAverageRating < 4 && (
+                          <div className="text-4xl mb-1">😐</div>
+                        )}
+                        {feedbackStats.overallAverageRating < 3 && feedbackStats.overallAverageRating > 0 && (
+                          <div className="text-4xl mb-1">😟</div>
+                        )}
+                        {feedbackStats.overallAverageRating === 0 && (
+                          <div className="text-4xl mb-1">📊</div>
+                        )}
+                        <div className="text-xs text-purple-700 font-medium">
+                          {feedbackStats.overallAverageRating >= 4.5 ? 'Excellent' : 
+                           feedbackStats.overallAverageRating >= 4 ? 'Very Good' :
+                           feedbackStats.overallAverageRating >= 3 ? 'Good' :
+                           feedbackStats.overallAverageRating > 0 ? 'Needs Improvement' : 'No Ratings Yet'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Recent User Feedback - Last 5 Feedbacks */}
+            {feedbackStatus === 'success' && feedbackStats && allFeedbacks.length > 0 && (
+              <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-5 shadow-lg border border-amber-100 mt-6">
+                <h3 className="font-bold text-lg text-amber-900 mb-2">Last 5 User Feedbacks</h3>
+                <p className="text-sm text-amber-700 mb-4 italic">
+                  "Recent testimonials from IP professionals using our services."
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                  {allFeedbacks.slice(-5).reverse().map((feedback) => (
+                    <div key={feedback.id} className="bg-white/70 rounded-lg p-4 border border-amber-200 shadow-sm hover:shadow-md transition-shadow">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="text-sm font-semibold text-amber-900 truncate">
+                          {feedback.userName || 'Anonymous User'}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="text-yellow-500 text-lg">★</span>
+                          <span className="text-sm font-bold text-amber-700">
+                            {feedback.averageRating?.toFixed(1) || '0.0'}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {feedback.feedbackMessage && (
+                        <p className="text-sm text-gray-700 mb-3 line-clamp-3 italic">
+                          "{feedback.feedbackMessage}"
+                        </p>
+                      )}
+                      
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">UI:</span>
+                          <span className="font-semibold text-blue-700">{feedback.userInterfaceRating || 0}/5</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Perf:</span>
+                          <span className="font-semibold text-green-700">{feedback.performanceRating || 0}/5</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Features:</span>
+                          <span className="font-semibold text-purple-700">{feedback.featuresRating || 0}/5</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Support:</span>
+                          <span className="font-semibold text-pink-700">{feedback.supportRating || 0}/5</span>
+                        </div>
+                      </div>
+                      
+                      <div className="mt-2 pt-2 border-t border-amber-200">
+                        <div className="text-xs text-gray-500">
+                          {new Date(feedback.createdAt).toLocaleDateString('en-US', { 
+                            month: 'short', 
+                            day: 'numeric', 
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Patents Modal */}
