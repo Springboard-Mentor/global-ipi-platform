@@ -32,60 +32,60 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
   const [dbPatentCount, setDbPatentCount] = React.useState(0);
   const [dbConnectionStatus, setDbConnectionStatus] = React.useState('checking'); // 'checking', 'connected', 'error'
   const [dbError, setDbError] = React.useState('');
-  
+
   // Typewriter effect state
   const [typewriterText, setTypewriterText] = React.useState('');
   const fullText = 'Empowering Innovation Through Data-Driven IP Analytics';
-  
+
   // Scroll animation states
   const [visibleSections, setVisibleSections] = React.useState({});
   const sectionRefs = React.useRef({});
-  
+
   // State for map location selection
   const [selectedMapState, setSelectedMapState] = React.useState(null);
-  
+
   // State for total registered users
   const [totalUsers, setTotalUsers] = React.useState(0);
   const [usersStatus, setUsersStatus] = React.useState('checking'); // 'checking', 'connected', 'error'
   const [usersError, setUsersError] = React.useState('');
-  
+
   // State for total patent filings
   const [totalPatentFilings, setTotalPatentFilings] = React.useState(0);
   const [filingsStatus, setFilingsStatus] = React.useState('checking');
   const [filingsError, setFilingsError] = React.useState('');
-  
+
   // State for yearly patent data
   const [yearlyPatentData, setYearlyPatentData] = React.useState([]);
   const [yearlyDataStatus, setYearlyDataStatus] = React.useState('loading');
-  
+
   // State for subscription revenue data
   const [revenueData, setRevenueData] = React.useState([]);
   const [revenueStatus, setRevenueStatus] = React.useState('loading');
-  
+
   // State for feedback analytics
   const [feedbackStats, setFeedbackStats] = React.useState(null);
   const [feedbackStatus, setFeedbackStatus] = React.useState('loading');
   const [allFeedbacks, setAllFeedbacks] = React.useState([]);
-  
+
   // State for online users
   const [onlineUsers, setOnlineUsers] = React.useState(0);
-  
+
   // Local state for user profile to ensure emailVerified is loaded immediately
   const [localUserProfile, setLocalUserProfile] = React.useState(userProfile);
-  
+
   // Update local profile whenever userProfile prop changes
   React.useEffect(() => {
     if (userProfile) {
       setLocalUserProfile(userProfile);
     }
   }, [userProfile]);
-  
+
   // Typewriter effect with continuous loop
   React.useEffect(() => {
     let index = 0;
     let isDeleting = false;
     let timer;
-    
+
     const typeWriter = () => {
       if (!isDeleting && index < fullText.length) {
         // Typing forward
@@ -111,18 +111,18 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
         }, 500);
       }
     };
-    
+
     typeWriter();
     return () => clearTimeout(timer);
   }, []);
-  
+
   // Scroll animation observer - repeats every time
   React.useEffect(() => {
     const observerOptions = {
       threshold: 0.1,
       rootMargin: '0px 0px -100px 0px'
     };
-    
+
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -140,38 +140,38 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
         }
       });
     }, observerOptions);
-    
+
     Object.values(sectionRefs.current).forEach(ref => {
       if (ref) observer.observe(ref);
     });
-    
+
     return () => observer.disconnect();
   }, []);
-  
+
   // Fetch emailVerified status immediately on mount
   React.useEffect(() => {
     const fetchEmailVerifiedStatus = async () => {
       const currentUser = auth.currentUser;
       if (currentUser) {
         console.log('🔍 Fetching emailVerified status for user:', currentUser.uid);
-        
+
         // Force reload user to get latest emailVerified status
         await currentUser.reload();
         const emailVerified = currentUser.emailVerified;
-        
+
         console.log('✅ EmailVerified status from Firebase Auth:', emailVerified);
-        
+
         // Also check Firestore for emailVerified
         try {
           const userDocRef = doc(db, 'users', currentUser.uid);
           const userDocSnap = await getDoc(userDocRef);
-          
+
           if (userDocSnap.exists()) {
             const firestoreData = userDocSnap.data();
             const firestoreEmailVerified = firestoreData.emailVerified ?? emailVerified;
-            
+
             console.log('✅ EmailVerified status from Firestore:', firestoreEmailVerified);
-            
+
             // Update local user profile with emailVerified status
             setLocalUserProfile(prev => ({
               ...prev,
@@ -200,7 +200,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
         }
       }
     };
-    
+
     fetchEmailVerifiedStatus();
   }, []);
 
@@ -233,12 +233,12 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
       }
     };
     fetchPatentCount();
-    
+
     // Refresh count every 30 seconds
     const interval = setInterval(fetchPatentCount, 30000);
     return () => clearInterval(interval);
   }, []);
-  
+
   // Fetch total users count and subscription revenue from Firestore
   React.useEffect(() => {
     const fetchUsersCount = async () => {
@@ -254,16 +254,16 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
         setUsersStatus('connected');
         setUsersError('');
         console.log('✓ Firestore connected. Users found:', count);
-        
+
         // Calculate subscription revenue by date (daily)
         const dailyRevenue = {};
         const PRO_PRICE = 49;
         const ENTERPRISE_PRICE = 199;
-        
+
         usersSnapshot.forEach((doc) => {
           const userData = doc.data();
           const subscription = userData.subscriptionType?.toLowerCase();
-          
+
           // Get subscription date (use createdAt or subscriptionStartDate)
           let subDate = null;
           if (userData.subscriptionStartDate) {
@@ -271,27 +271,27 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
           } else if (userData.createdAt) {
             subDate = userData.createdAt.toDate ? userData.createdAt.toDate() : new Date(userData.createdAt);
           }
-          
+
           if (subDate && (subscription === 'pro' || subscription === 'enterprise')) {
             // Format date as YYYY-MM-DD for grouping
             const dateKey = subDate.toISOString().split('T')[0];
             const displayDate = subDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            
+
             if (!dailyRevenue[dateKey]) {
-              dailyRevenue[dateKey] = { 
-                date: displayDate, 
-                value: 0, 
+              dailyRevenue[dateKey] = {
+                date: displayDate,
+                value: 0,
                 fullDate: subDate,
                 proUsers: 0,
                 enterpriseUsers: 0,
                 totalUsers: 0
               };
             }
-            
+
             const amount = subscription === 'pro' ? PRO_PRICE : ENTERPRISE_PRICE;
             dailyRevenue[dateKey].value += amount;
             dailyRevenue[dateKey].totalUsers += 1;
-            
+
             if (subscription === 'pro') {
               dailyRevenue[dateKey].proUsers += 1;
             } else if (subscription === 'enterprise') {
@@ -299,19 +299,19 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
             }
           }
         });
-        
+
         // Convert to array and sort by date
         const revenueArray = Object.values(dailyRevenue)
           .sort((a, b) => a.fullDate - b.fullDate)
           .slice(-30) // Get last 30 days
-          .map(item => ({ 
-            date: item.date, 
+          .map(item => ({
+            date: item.date,
             value: item.value,
             proUsers: item.proUsers,
             enterpriseUsers: item.enterpriseUsers,
             totalUsers: item.totalUsers
           }));
-        
+
         // If no revenue data, create empty structure for last 30 days
         if (revenueArray.length === 0) {
           const now = new Date();
@@ -320,8 +320,8 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
             const date = new Date(now);
             date.setDate(date.getDate() - i);
             const displayDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            emptyData.push({ 
-              date: displayDate, 
+            emptyData.push({
+              date: displayDate,
               value: 0,
               proUsers: 0,
               enterpriseUsers: 0,
@@ -332,7 +332,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
         } else {
           setRevenueData(revenueArray);
         }
-        
+
         setRevenueStatus('success');
         console.log('✓ Revenue data calculated:', revenueArray);
       } catch (error) {
@@ -343,12 +343,12 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
       }
     };
     fetchUsersCount();
-    
+
     // Refresh count every 30 seconds
     const interval = setInterval(fetchUsersCount, 30000);
     return () => clearInterval(interval);
   }, []);
-  
+
   // Fetch patent filings count from PostgreSQL
   React.useEffect(() => {
     const fetchPatentFilingsCount = async () => {
@@ -377,27 +377,27 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
       }
     };
     fetchPatentFilingsCount();
-    
+
     // Refresh count every 30 seconds
     const interval = setInterval(fetchPatentFilingsCount, 30000);
     return () => clearInterval(interval);
   }, []);
-  
+
   // Real-time listener for online users
   React.useEffect(() => {
     console.log('Setting up real-time listener for online users...');
-    
+
     const usersCollection = collection(db, 'users');
     const unsubscribe = onSnapshot(usersCollection, (snapshot) => {
       let onlineCount = 0;
-      
+
       snapshot.forEach((doc) => {
         const userData = doc.data();
-        
+
         // Primary check: isOnline flag (set on login, cleared on logout)
         // Fallback: if isOnline is undefined/null, check lastLogin within 5 minutes (for backward compatibility)
         let isCurrentlyLoggedIn = false;
-        
+
         if (userData.isOnline !== undefined && userData.isOnline !== null) {
           // Use explicit isOnline flag if available
           isCurrentlyLoggedIn = userData.isOnline === true;
@@ -406,12 +406,12 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
           const lastLogin = userData.lastLogin?.toDate?.() || (userData.lastLogin ? new Date(userData.lastLogin) : null);
           isCurrentlyLoggedIn = lastLogin && (new Date() - lastLogin) < 5 * 60 * 1000;
         }
-        
+
         if (isCurrentlyLoggedIn) {
           onlineCount++;
         }
       });
-      
+
       console.log('Real-time online users update:', onlineCount);
       setOnlineUsers(onlineCount);
     }, (error) => {
@@ -423,14 +423,14 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
       unsubscribe();
     };
   }, []);
-  
+
   // Fetch feedback analytics
   React.useEffect(() => {
     const fetchFeedbackAnalytics = async () => {
       setFeedbackStatus('loading');
       try {
         console.log('Fetching feedback analytics from backend...');
-        
+
         // Fetch stats
         const statsResponse = await fetch('http://localhost:8080/api/feedback/stats');
         if (statsResponse.ok) {
@@ -438,7 +438,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
           console.log('Feedback stats received:', stats);
           setFeedbackStats(stats);
         }
-        
+
         // Fetch all feedbacks
         const allResponse = await fetch('http://localhost:8080/api/feedback/all');
         if (allResponse.ok) {
@@ -446,21 +446,21 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
           console.log('All feedbacks received:', feedbacks.length);
           setAllFeedbacks(feedbacks);
         }
-        
+
         setFeedbackStatus('success');
       } catch (error) {
         console.error('Error fetching feedback analytics:', error);
         setFeedbackStatus('error');
       }
     };
-    
+
     fetchFeedbackAnalytics();
-    
+
     // Refresh every 60 seconds
     const interval = setInterval(fetchFeedbackAnalytics, 60000);
     return () => clearInterval(interval);
   }, []);
-  
+
   // Fetch yearly patent counts for chart
   React.useEffect(() => {
     const fetchYearlyPatentData = async () => {
@@ -471,16 +471,16 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
         if (response.ok) {
           const data = await response.json();
           console.log('Yearly patent data received:', data);
-          
+
           // Get current year
           const currentYear = new Date().getFullYear();
-          
+
           // Create a map from the backend data
           const dataMap = {};
           data.forEach(item => {
             dataMap[item.year] = item.count;
           });
-          
+
           // Generate data for last 7 years (current year + previous 6 years)
           const yearlyData = [];
           for (let i = 6; i >= 0; i--) {
@@ -490,7 +490,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
               patents: dataMap[year] || 0
             });
           }
-          
+
           console.log('Processed yearly data:', yearlyData);
           setYearlyPatentData(yearlyData);
           setYearlyDataStatus('success');
@@ -503,14 +503,14 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
         setYearlyDataStatus('error');
       }
     };
-    
+
     fetchYearlyPatentData();
-    
+
     // Refresh every 60 seconds
     const interval = setInterval(fetchYearlyPatentData, 60000);
     return () => clearInterval(interval);
   }, []);
-  
+
   const [dashboardData, setDashboardData] = useState({
     portfolioValue: "$0",
     portfolioGrowth: "0%",
@@ -579,7 +579,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
 
   const calculateDaysRemaining = (endDate) => {
     if (!endDate) return null;
-    
+
     try {
       let end;
       if (endDate instanceof Date) {
@@ -591,11 +591,11 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
       } else {
         return null;
       }
-      
+
       const now = new Date();
       const diffTime = end - now;
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      
+
       return diffDays > 0 ? diffDays : 0;
     } catch (error) {
       console.error('Error calculating days remaining:', error);
@@ -621,11 +621,11 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
   return (
     <div className="w-full min-h-screen space-y-1.5 p-1.5">
       {/* QUICK SEARCH KEYWORDS - Top of page */}
-      <QuickSearchKeywords 
+      <QuickSearchKeywords
         onSearch={handleSearch}
         setSearchMode={setSearchMode}
       />
-      
+
       {/* COMBINED HEADER - Welcome + Platform Info */}
       <div className="w-full">
         <div className="bg-gradient-to-br from-white via-blue-50/30 to-purple-50/30 rounded-2xl p-6 shadow-xl border border-gray-100">
@@ -650,7 +650,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
                     </span>
                   </div>
                 )}
-                
+
                 {/* Online Users Count */}
                 <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200 shadow-sm">
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
@@ -671,11 +671,10 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setSearchMode('api')}
-                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-all text-sm font-medium ${
-                      searchMode === 'api'
-                        ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg'
-                        : 'bg-white text-gray-700 hover:bg-cyan-50 border border-cyan-200 shadow-sm'
-                    }`}
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-all text-sm font-medium ${searchMode === 'api'
+                      ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-lg'
+                      : 'bg-white text-gray-700 hover:bg-cyan-50 border border-cyan-200 shadow-sm'
+                      }`}
                     title="Search from external patent database API"
                   >
                     <Globe size={18} />
@@ -683,12 +682,11 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
                   </button>
                   <button
                     onClick={() => setSearchMode('local')}
-                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-all text-sm font-medium ${
-                      searchMode === 'local'
-                        ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg'
-                        : 'bg-white text-gray-700 hover:bg-teal-50 border border-teal-200 shadow-sm'
-                    }`}
-                    title={searchMode === 'local' && dbConnectionStatus === 'connected' 
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-all text-sm font-medium ${searchMode === 'local'
+                      ? 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-lg'
+                      : 'bg-white text-gray-700 hover:bg-teal-50 border border-teal-200 shadow-sm'
+                      }`}
+                    title={searchMode === 'local' && dbConnectionStatus === 'connected'
                       ? `Searching from local database (${dbPatentCount} patents stored)`
                       : 'Search from local database'}
                   >
@@ -715,12 +713,12 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
                 <span className="inline-block w-0.5 h-5 bg-gray-700 ml-1 animate-pulse"></span>
               </p>
               <p className="text-sm text-gray-600 leading-relaxed max-w-4xl mx-auto">
-                Join thousands of innovators, patent attorneys, and R&D teams leveraging our comprehensive platform 
-                to track, analyze, and protect intellectual property worldwide. Stay competitive with real-time insights, 
+                Join thousands of innovators, patent attorneys, and R&D teams leveraging our comprehensive platform
+                to track, analyze, and protect intellectual property worldwide. Stay competitive with real-time insights,
                 advanced analytics, and powerful search capabilities across global patent databases.
               </p>
             </div>
-            
+
             {/* Key Features Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
@@ -730,7 +728,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
                 </div>
                 <p className="text-xs text-gray-700">Access millions of patent records with powerful search and filtering</p>
               </div>
-              
+
               <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200">
                 <div className="flex items-center gap-2 mb-2">
                   <TrendingUp className="text-purple-600" size={20} />
@@ -738,7 +736,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
                 </div>
                 <p className="text-xs text-gray-700">Track trends, monitor competitors, and identify innovation opportunities</p>
               </div>
-              
+
               <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg p-4 border border-indigo-200">
                 <div className="flex items-center gap-2 mb-2">
                   <Globe className="text-indigo-600" size={20} />
@@ -753,15 +751,18 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
 
 
 
+
+
+
+
       {/* Growth Metrics Section */}
-      <div 
+      <div
         className="w-full mt-12 mb-6"
         ref={el => sectionRefs.current['growth'] = el}
         data-section="growth"
       >
-        <div className={`bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 rounded-2xl p-6 border-l-4 border-blue-500 shadow-sm transition-all duration-1000 ${
-          visibleSections['growth'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-        }`}>
+        <div className={`bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-purple-500/10 rounded-2xl p-6 border-l-4 border-blue-500 shadow-sm transition-all duration-1000 ${visibleSections['growth'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+          }`}>
           <div className="flex items-start gap-3">
             <div className="p-2 bg-blue-500 rounded-lg shadow-lg">
               <TrendingUp className="text-white" size={28} />
@@ -771,8 +772,8 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
                 Platform Growth Metrics
               </h3>
               <p className="text-base text-gray-800 leading-relaxed font-medium">
-                Track the expansion of our platform ecosystem in real-time. Monitor active users, patent database growth, 
-                and filing submissions to understand platform adoption and usage patterns. These metrics reflect the collective 
+                Track the expansion of our platform ecosystem in real-time. Monitor active users, patent database growth,
+                and filing submissions to understand platform adoption and usage patterns. These metrics reflect the collective
                 innovation activity across our global user community.
               </p>
             </div>
@@ -793,14 +794,13 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
       </div>
 
       {/* Patent Status Analysis Section */}
-      <div 
+      <div
         className="w-full mt-12 mb-6"
         ref={el => sectionRefs.current['patent'] = el}
         data-section="patent"
       >
-        <div className={`bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-green-500/10 rounded-2xl p-6 border-l-4 border-emerald-500 shadow-sm transition-all duration-1000 ${
-          visibleSections['patent'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-        }`}>
+        <div className={`bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-green-500/10 rounded-2xl p-6 border-l-4 border-emerald-500 shadow-sm transition-all duration-1000 ${visibleSections['patent'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+          }`}>
           <div className="flex items-start gap-3">
             <div className="p-2 bg-emerald-500 rounded-lg shadow-lg">
               <CheckCircle className="text-white" size={28} />
@@ -810,8 +810,8 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
                 Patent Lifecycle Distribution
               </h3>
               <p className="text-base text-gray-800 leading-relaxed font-medium">
-                Visualize the status distribution of patents across different stages of the intellectual property lifecycle. 
-                From pending applications to granted patents and expired rights, this analysis provides insights into the 
+                Visualize the status distribution of patents across different stages of the intellectual property lifecycle.
+                From pending applications to granted patents and expired rights, this analysis provides insights into the
                 maturity and health of patent portfolios within our database.
               </p>
             </div>
@@ -825,14 +825,13 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
       </div>
 
       {/* Subscription & Trends Analysis Section */}
-      <div 
+      <div
         className="w-full mt-12 mb-6"
         ref={el => sectionRefs.current['revenue'] = el}
         data-section="revenue"
       >
-        <div className={`bg-gradient-to-r from-violet-500/10 via-purple-500/10 to-fuchsia-500/10 rounded-2xl p-6 border-l-4 border-violet-500 shadow-sm transition-all duration-1000 ${
-          visibleSections['revenue'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-        }`}>
+        <div className={`bg-gradient-to-r from-violet-500/10 via-purple-500/10 to-fuchsia-500/10 rounded-2xl p-6 border-l-4 border-violet-500 shadow-sm transition-all duration-1000 ${visibleSections['revenue'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+          }`}>
           <div className="flex items-start gap-3">
             <div className="p-2 bg-violet-500 rounded-lg shadow-lg">
               <Zap className="text-white" size={28} />
@@ -842,14 +841,15 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
                 Revenue & Innovation Trends
               </h3>
               <p className="text-base text-gray-800 leading-relaxed font-medium">
-                Analyze premium subscription adoption and historical patent filing trends. The subscription chart tracks daily 
-                upgrades to Pro and Enterprise plans, while yearly trends reveal long-term patterns in global patent activity. 
+                Analyze premium subscription adoption and historical patent filing trends. The subscription chart tracks daily
+                upgrades to Pro and Enterprise plans, while yearly trends reveal long-term patterns in global patent activity.
                 These insights help identify emerging technology sectors and innovation hotspots.
               </p>
             </div>
           </div>
         </div>
       </div>
+
 
       {/* FULL WIDTH CHARTS SECTION */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-1.5">
@@ -886,17 +886,17 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e0e7ff" />
-                  <XAxis 
-                    dataKey="date" 
+                  <XAxis
+                    dataKey="date"
                     stroke="#4f46e5"
                     style={{ fontSize: '12px', fontWeight: '600' }}
                   />
-                  <YAxis 
+                  <YAxis
                     stroke="#4f46e5"
                     style={{ fontSize: '12px', fontWeight: '600' }}
                     allowDecimals={false}
                   />
-                  <Tooltip 
+                  <Tooltip
                     contentStyle={{
                       backgroundColor: '#eef2ff',
                       border: '2px solid #6366f1',
@@ -929,10 +929,10 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
                       ];
                     }}
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey="totalUsers" 
-                    stroke="url(#revenueGradient)" 
+                  <Line
+                    type="monotone"
+                    dataKey="totalUsers"
+                    stroke="url(#revenueGradient)"
                     strokeWidth={3}
                     dot={{ fill: '#6366f1', r: 5 }}
                     activeDot={{ r: 7, stroke: '#6366f1', strokeWidth: 2 }}
@@ -976,16 +976,16 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#d1fae5" />
-                  <XAxis 
-                    dataKey="year" 
+                  <XAxis
+                    dataKey="year"
                     stroke="#047857"
                     style={{ fontSize: '12px', fontWeight: '600' }}
                   />
-                  <YAxis 
+                  <YAxis
                     stroke="#047857"
                     style={{ fontSize: '12px', fontWeight: '600' }}
                   />
-                  <Tooltip 
+                  <Tooltip
                     contentStyle={{
                       backgroundColor: '#ecfdf5',
                       border: '2px solid #10b981',
@@ -994,8 +994,8 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
                     }}
                     labelStyle={{ color: '#047857' }}
                   />
-                  <Bar 
-                    dataKey="patents" 
+                  <Bar
+                    dataKey="patents"
                     fill="url(#patentGradient)"
                     radius={[8, 8, 0, 0]}
                     name="Patents"
@@ -1007,15 +1007,16 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
         </div>
       </div>
 
+
       {/* Geographic Distribution Section */}
-      <div 
+      {/* Geographic Distribution Section */}
+      <div
         className="w-full mt-12 mb-6"
         ref={el => sectionRefs.current['geographic'] = el}
         data-section="geographic"
       >
-        <div className={`bg-gradient-to-r from-cyan-500/10 via-blue-500/10 to-sky-500/10 rounded-2xl p-6 border-l-4 border-cyan-500 shadow-sm transition-all duration-1000 ${
-          visibleSections['geographic'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-        }`}>
+        <div className={`bg-gradient-to-r from-cyan-500/10 via-blue-500/10 to-sky-500/10 rounded-2xl p-6 border-l-4 border-cyan-500 shadow-sm transition-all duration-1000 ${visibleSections['geographic'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+          }`}>
           <div className="flex items-start gap-3">
             <div className="p-2 bg-cyan-500 rounded-lg shadow-lg">
               <Globe className="text-white" size={28} />
@@ -1025,8 +1026,8 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
                 Geographic Innovation Landscape
               </h3>
               <p className="text-base text-gray-800 leading-relaxed font-medium">
-                Explore the geographical distribution of patent activities across India. Interactive state-wise analytics and 
-                visual mapping provide comprehensive insights into regional innovation strengths. Identify innovation clusters, 
+                Explore the geographical distribution of patent activities across India. Interactive state-wise analytics and
+                visual mapping provide comprehensive insights into regional innovation strengths. Identify innovation clusters,
                 track state-level IP development, and discover emerging technology hubs across the country.
               </p>
             </div>
@@ -1035,31 +1036,32 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
       </div>
 
       {/* Map and State Patent Count in Single Row */}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mt-2">
         {/* State-wise Patent Count */}
         <div className="flex">
-          <StatePatentCount 
+          <StatePatentCount
             onStateChange={handleStateChange}
           />
         </div>
-        
+
         {/* India Patent Map */}
         <div className="flex">
-          <IndiaPatentPanel 
+          <IndiaPatentPanel
             selectedState={selectedMapState}
           />
         </div>
       </div>
 
       {/* User Feedback & Quality Metrics Section */}
-      <div 
+
+      <div
         className="w-full mt-12 mb-6"
         ref={el => sectionRefs.current['feedback'] = el}
         data-section="feedback"
       >
-        <div className={`bg-gradient-to-r from-pink-500/10 via-rose-500/10 to-red-500/10 rounded-2xl p-6 border-l-4 border-pink-500 shadow-sm transition-all duration-1000 ${
-          visibleSections['feedback'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-        }`}>
+        <div className={`bg-gradient-to-r from-pink-500/10 via-rose-500/10 to-red-500/10 rounded-2xl p-6 border-l-4 border-pink-500 shadow-sm transition-all duration-1000 ${visibleSections['feedback'] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+          }`}>
           <div className="flex items-start gap-3">
             <div className="p-2 bg-pink-500 rounded-lg shadow-lg">
               <Info className="text-white" size={28} />
@@ -1069,8 +1071,8 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
                 User Experience & Platform Quality
               </h3>
               <p className="text-base text-gray-800 leading-relaxed font-medium">
-                Our commitment to excellence is reflected in user feedback and satisfaction metrics. Monitor real-time ratings 
-                across User Interface, Performance, Features, and Support to ensure we're delivering world-class IP intelligence 
+                Our commitment to excellence is reflected in user feedback and satisfaction metrics. Monitor real-time ratings
+                across User Interface, Performance, Features, and Support to ensure we're delivering world-class IP intelligence
                 tools. Your feedback drives continuous improvement and helps us build the best platform for IP professionals.
               </p>
             </div>
@@ -1079,6 +1081,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
       </div>
 
       {/* FEEDBACK ANALYTICS SECTION - Moved to bottom */}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-1.5 mt-1.5">
         {/* Average Ratings by Category - Left Side (2/3 width) */}
         <div className="lg:col-span-2 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-5 shadow-lg border border-blue-100">
@@ -1120,24 +1123,24 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#dbeafe" />
-                  <XAxis 
-                    type="number" 
+                  <XAxis
+                    type="number"
                     domain={[0, 5]}
                     stroke="#1e40af"
                     style={{ fontSize: '13px', fontWeight: '700' }}
                     tick={{ fill: '#1e3a8a' }}
                     tickCount={6}
                   />
-                  <YAxis 
+                  <YAxis
                     type="category"
-                    dataKey="category" 
+                    dataKey="category"
                     stroke="#1e40af"
                     width={110}
                     style={{ fontSize: '14px', fontWeight: '700' }}
                     tick={{ fill: '#1e3a8a' }}
                     orientation="left"
                   />
-                  <Tooltip 
+                  <Tooltip
                     contentStyle={{
                       backgroundColor: '#eff6ff',
                       border: '2px solid #3b82f6',
@@ -1158,8 +1161,8 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
                       ];
                     }}
                   />
-                  <Bar 
-                    dataKey="rating" 
+                  <Bar
+                    dataKey="rating"
                     fill="url(#ratingGradient)"
                     radius={[0, 8, 8, 0]}
                   />
@@ -1167,147 +1170,150 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
               </ResponsiveContainer>
             )}
           </div>
-        </div>
+        </div >
 
         {/* Feedback Overview - Right Side (1/3 width) */}
-        {feedbackStatus === 'success' && feedbackStats && (
-          <div className="lg:col-span-1 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-5 shadow-lg border border-purple-100">
-            <h3 className="font-bold text-lg text-purple-900 mb-4">Feedback Overview</h3>
-            <div className="space-y-4">
-              {/* Total Feedbacks */}
-              <div className="bg-white/60 rounded-lg p-4 border border-purple-200">
-                <div className="text-sm text-purple-600 font-medium mb-1">Total Feedbacks</div>
-                <div className="text-3xl font-bold text-purple-900">{feedbackStats.totalFeedbacks || 0}</div>
-              </div>
+        {
+          feedbackStatus === 'success' && feedbackStats && (
+            <div className="lg:col-span-1 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-5 shadow-lg border border-purple-100">
+              <h3 className="font-bold text-lg text-purple-900 mb-4">Feedback Overview</h3>
+              <div className="space-y-4">
+                {/* Total Feedbacks */}
+                <div className="bg-white/60 rounded-lg p-4 border border-purple-200">
+                  <div className="text-sm text-purple-600 font-medium mb-1">Total Feedbacks</div>
+                  <div className="text-3xl font-bold text-purple-900">{feedbackStats.totalFeedbacks || 0}</div>
+                </div>
 
-              {/* Overall Average Rating */}
-              <div className="bg-white/60 rounded-lg p-4 border border-purple-200">
-                <div className="text-sm text-purple-600 font-medium mb-1">Overall Average</div>
-                <div className="flex items-baseline gap-2">
-                  <div className="text-3xl font-bold text-purple-900">
-                    {feedbackStats.overallAverageRating ? feedbackStats.overallAverageRating.toFixed(2) : '0.00'}
+                {/* Overall Average Rating */}
+                <div className="bg-white/60 rounded-lg p-4 border border-purple-200">
+                  <div className="text-sm text-purple-600 font-medium mb-1">Overall Average</div>
+                  <div className="flex items-baseline gap-2">
+                    <div className="text-3xl font-bold text-purple-900">
+                      {feedbackStats.overallAverageRating ? feedbackStats.overallAverageRating.toFixed(2) : '0.00'}
+                    </div>
+                    <div className="text-lg text-purple-600">/ 5.00</div>
                   </div>
-                  <div className="text-lg text-purple-600">/ 5.00</div>
-                </div>
-                <div className="mt-2">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <span 
-                      key={star} 
-                      className={`text-2xl ${
-                        star <= Math.round(feedbackStats.overallAverageRating || 0) 
-                          ? 'text-yellow-500' 
+                  <div className="mt-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <span
+                        key={star}
+                        className={`text-2xl ${star <= Math.round(feedbackStats.overallAverageRating || 0)
+                          ? 'text-yellow-500'
                           : 'text-gray-300'
-                      }`}
-                    >
-                      ★
-                    </span>
-                  ))}
+                          }`}
+                      >
+                        ★
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              {/* Sentiment Indicator */}
-              <div className="bg-white/60 rounded-lg p-4 border border-purple-200">
-                <div className="text-sm text-purple-600 font-medium mb-2">User Sentiment</div>
-                <div className="text-center">
-                  {feedbackStats.overallAverageRating >= 4.5 && (
-                    <div className="text-4xl mb-1">😊</div>
-                  )}
-                  {feedbackStats.overallAverageRating >= 4 && feedbackStats.overallAverageRating < 4.5 && (
-                    <div className="text-4xl mb-1">🙂</div>
-                  )}
-                  {feedbackStats.overallAverageRating >= 3 && feedbackStats.overallAverageRating < 4 && (
-                    <div className="text-4xl mb-1">😐</div>
-                  )}
-                  {feedbackStats.overallAverageRating < 3 && feedbackStats.overallAverageRating > 0 && (
-                    <div className="text-4xl mb-1">😟</div>
-                  )}
-                  {feedbackStats.overallAverageRating === 0 && (
-                    <div className="text-4xl mb-1">📊</div>
-                  )}
-                  <div className="text-xs text-purple-700 font-medium">
-                    {feedbackStats.overallAverageRating >= 4.5 ? 'Excellent' : 
-                     feedbackStats.overallAverageRating >= 4 ? 'Very Good' :
-                     feedbackStats.overallAverageRating >= 3 ? 'Good' :
-                     feedbackStats.overallAverageRating > 0 ? 'Needs Improvement' : 'No Ratings Yet'}
+                {/* Sentiment Indicator */}
+                <div className="bg-white/60 rounded-lg p-4 border border-purple-200">
+                  <div className="text-sm text-purple-600 font-medium mb-2">User Sentiment</div>
+                  <div className="text-center">
+                    {feedbackStats.overallAverageRating >= 4.5 && (
+                      <div className="text-4xl mb-1">😊</div>
+                    )}
+                    {feedbackStats.overallAverageRating >= 4 && feedbackStats.overallAverageRating < 4.5 && (
+                      <div className="text-4xl mb-1">🙂</div>
+                    )}
+                    {feedbackStats.overallAverageRating >= 3 && feedbackStats.overallAverageRating < 4 && (
+                      <div className="text-4xl mb-1">😐</div>
+                    )}
+                    {feedbackStats.overallAverageRating < 3 && feedbackStats.overallAverageRating > 0 && (
+                      <div className="text-4xl mb-1">😟</div>
+                    )}
+                    {feedbackStats.overallAverageRating === 0 && (
+                      <div className="text-4xl mb-1">📊</div>
+                    )}
+                    <div className="text-xs text-purple-700 font-medium">
+                      {feedbackStats.overallAverageRating >= 4.5 ? 'Excellent' :
+                        feedbackStats.overallAverageRating >= 4 ? 'Very Good' :
+                          feedbackStats.overallAverageRating >= 3 ? 'Good' :
+                            feedbackStats.overallAverageRating > 0 ? 'Needs Improvement' : 'No Ratings Yet'}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
+          )
+        }
+      </div >
 
       {/* Feedback Overview - Moved to bottom above recent feedback */}
-      {feedbackStatus === 'success' && feedbackStats && (
-        <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-5 shadow-lg border border-amber-100 mt-1.5">
-          <h3 className="font-bold text-lg text-amber-900 mb-2">Recent User Feedback</h3>
-          <p className="text-sm text-amber-700 mb-4 italic">
-            "Your voice shapes our platform. Recent testimonials from IP professionals using our services."
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {allFeedbacks.slice(-3).reverse().map((feedback) => (
-              <div key={feedback.id} className="bg-white/70 rounded-lg p-4 border border-amber-200 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex justify-between items-start mb-2">
-                  <div className="text-sm font-semibold text-amber-900">
-                    {feedback.userName || 'Anonymous User'}
+      {
+        feedbackStatus === 'success' && feedbackStats && (
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-5 shadow-lg border border-amber-100 mt-1.5">
+            <h3 className="font-bold text-lg text-amber-900 mb-2">Recent User Feedback</h3>
+            <p className="text-sm text-amber-700 mb-4 italic">
+              "Your voice shapes our platform. Recent testimonials from IP professionals using our services."
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {allFeedbacks.slice(-3).reverse().map((feedback) => (
+                <div key={feedback.id} className="bg-white/70 rounded-lg p-4 border border-amber-200 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="text-sm font-semibold text-amber-900">
+                      {feedback.userName || 'Anonymous User'}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-yellow-500 text-lg">★</span>
+                      <span className="text-sm font-bold text-amber-700">
+                        {feedback.averageRating?.toFixed(1) || '0.0'}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <span className="text-yellow-500 text-lg">★</span>
-                    <span className="text-sm font-bold text-amber-700">
-                      {feedback.averageRating?.toFixed(1) || '0.0'}
-                    </span>
+
+                  {feedback.feedbackMessage && (
+                    <p className="text-sm text-gray-700 mb-3 line-clamp-3 italic">
+                      "{feedback.feedbackMessage}"
+                    </p>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">UI:</span>
+                      <span className="font-semibold text-blue-700">{feedback.userInterfaceRating || 0}/5</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Perf:</span>
+                      <span className="font-semibold text-green-700">{feedback.performanceRating || 0}/5</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Features:</span>
+                      <span className="font-semibold text-purple-700">{feedback.featuresRating || 0}/5</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Support:</span>
+                      <span className="font-semibold text-pink-700">{feedback.supportRating || 0}/5</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-2 pt-2 border-t border-amber-200">
+                    <div className="text-xs text-gray-500">
+                      {new Date(feedback.createdAt).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </div>
                   </div>
                 </div>
-                
-                {feedback.feedbackMessage && (
-                  <p className="text-sm text-gray-700 mb-3 line-clamp-3 italic">
-                    "{feedback.feedbackMessage}"
-                  </p>
-                )}
-                
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">UI:</span>
-                    <span className="font-semibold text-blue-700">{feedback.userInterfaceRating || 0}/5</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Perf:</span>
-                    <span className="font-semibold text-green-700">{feedback.performanceRating || 0}/5</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Features:</span>
-                    <span className="font-semibold text-purple-700">{feedback.featuresRating || 0}/5</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Support:</span>
-                    <span className="font-semibold text-pink-700">{feedback.supportRating || 0}/5</span>
-                  </div>
-                </div>
-                
-                <div className="mt-2 pt-2 border-t border-amber-200">
-                  <div className="text-xs text-gray-500">
-                    {new Date(feedback.createdAt).toLocaleDateString('en-US', { 
-                      month: 'short', 
-                      day: 'numeric', 
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </div>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      )}
-      
+        )
+      }
+
       {/* Platform Insights & Education Section */}
       <div className="w-full bg-gradient-to-br from-slate-50 to-gray-50 rounded-2xl p-8 shadow-lg border border-slate-200 mt-6">
         <div className="max-w-6xl mx-auto">
           <h3 className="text-3xl font-bold text-center bg-gradient-to-r from-slate-700 to-gray-700 bg-clip-text text-transparent mb-6">
             Understanding Intellectual Property Analytics
           </h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {/* IP Asset Types */}
             <div className="bg-white rounded-xl p-5 shadow-md border border-slate-200 hover:shadow-lg transition-shadow">
@@ -1317,7 +1323,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
               <h4 className="font-bold text-gray-900 mb-2">Patents</h4>
               <p className="text-sm text-gray-600">Exclusive rights granted for inventions, protecting technical innovations for up to 20 years.</p>
             </div>
-            
+
             <div className="bg-white rounded-xl p-5 shadow-md border border-slate-200 hover:shadow-lg transition-shadow">
               <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-3">
                 <span className="text-2xl">™️</span>
@@ -1325,7 +1331,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
               <h4 className="font-bold text-gray-900 mb-2">Trademarks</h4>
               <p className="text-sm text-gray-600">Brand identifiers including logos, names, and symbols that distinguish products and services.</p>
             </div>
-            
+
             <div className="bg-white rounded-xl p-5 shadow-md border border-slate-200 hover:shadow-lg transition-shadow">
               <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center mb-3">
                 <span className="text-2xl">©️</span>
@@ -1333,7 +1339,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
               <h4 className="font-bold text-gray-900 mb-2">Copyrights</h4>
               <p className="text-sm text-gray-600">Protection for original creative works including software, literature, music, and artistic creations.</p>
             </div>
-            
+
             <div className="bg-white rounded-xl p-5 shadow-md border border-slate-200 hover:shadow-lg transition-shadow">
               <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mb-3">
                 <span className="text-2xl">🔒</span>
@@ -1342,7 +1348,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
               <p className="text-sm text-gray-600">Confidential business information providing competitive advantage through proprietary processes.</p>
             </div>
           </div>
-          
+
           {/* Platform Benefits */}
           <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-200">
             <h4 className="text-xl font-bold text-gray-900 mb-4 text-center">Why Choose Our Platform?</h4>
@@ -1354,7 +1360,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
                   <p className="text-gray-600">Access to millions of patent records from global databases with advanced filtering</p>
                 </div>
               </div>
-              
+
               <div className="flex items-start gap-3">
                 <CheckCircle className="text-green-600 flex-shrink-0 mt-0.5" size={20} />
                 <div>
@@ -1362,7 +1368,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
                   <p className="text-gray-600">Stay informed with instant notifications on filing activities and status changes</p>
                 </div>
               </div>
-              
+
               <div className="flex items-start gap-3">
                 <CheckCircle className="text-green-600 flex-shrink-0 mt-0.5" size={20} />
                 <div>
@@ -1374,7 +1380,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
           </div>
         </div>
       </div>
-      
+
       {/* Platform Statistics Footer */}
       <div className="w-full bg-gradient-to-r from-gray-800 via-slate-800 to-gray-800 rounded-2xl p-8 shadow-2xl border border-gray-700 mt-6 mb-4">
         <div className="max-w-6xl mx-auto">
@@ -1382,7 +1388,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
             <h4 className="text-2xl font-bold text-white mb-2">Platform at a Glance</h4>
             <p className="text-gray-300">Real-time statistics showcasing our growing IP intelligence ecosystem</p>
           </div>
-          
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             <div className="text-center">
               <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 shadow-lg">
@@ -1393,7 +1399,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
                 <div className="text-xs text-blue-200 mt-1">Growing Daily</div>
               </div>
             </div>
-            
+
             <div className="text-center">
               <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 shadow-lg">
                 <div className="text-4xl font-extrabold text-white mb-1">
@@ -1403,7 +1409,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
                 <div className="text-xs text-green-200 mt-1">Local Database</div>
               </div>
             </div>
-            
+
             <div className="text-center">
               <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 shadow-lg">
                 <div className="text-4xl font-extrabold text-white mb-1">
@@ -1413,7 +1419,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
                 <div className="text-xs text-purple-200 mt-1">User Submissions</div>
               </div>
             </div>
-            
+
             <div className="text-center">
               <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-6 shadow-lg">
                 <div className="text-4xl font-extrabold text-white mb-1">
@@ -1427,7 +1433,7 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
               </div>
             </div>
           </div>
-          
+
           <div className="mt-6 text-center">
             <p className="text-gray-400 text-sm">
               © 2026 Global IP Intelligence Platform • Empowering Innovation Worldwide
@@ -1435,10 +1441,10 @@ const Dashboard = ({ userProfile, searchMode, setSearchMode, onSearch, setCurren
           </div>
         </div>
       </div>
-      
+
       {/* Chatbot Component */}
       <Chatbot userId={userProfile?.uid} userProfile={userProfile} />
-    </div>
+    </div >
   );
 };
 
