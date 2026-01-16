@@ -139,6 +139,22 @@ public class IPSearchService {
                                 assetDto.getPublicationDate() != null
                                         ? assetDto.getPublicationDate().toString()
                                         : null);
+                        dto.setPriorityDate(
+                                assetDto.getPriorityDate() != null
+                                        ? assetDto.getPriorityDate().toString()
+                                        : null);
+                        dto.setGrantDate(
+                                assetDto.getGrantDate() != null
+                                        ? assetDto.getGrantDate().toString()
+                                        : null);
+                        dto.setUpdatedOn(
+                                assetDto.getUpdatedOn() != null
+                                        ? assetDto.getUpdatedOn().toString()
+                                        : null);
+                        dto.setAbstractText(assetDto.getAbstractText());
+                        dto.setPatentLink(assetDto.getPatentLink());
+                        dto.setPdfLink(assetDto.getPdfLink());
+                        dto.setThumbnail(assetDto.getThumbnail());
                         return dto;
                     })
                     .toList();
@@ -190,7 +206,14 @@ public class IPSearchService {
                         dto.setInventorName(asset.getInventorName());
                         dto.setFilingDate(asset.getFilingDate() != null ? asset.getFilingDate().toString() : null);
                         dto.setPublicationDate(asset.getPublicationDate() != null ? asset.getPublicationDate().toString() : null);
+                        dto.setPriorityDate(asset.getPriorityDate() != null ? asset.getPriorityDate().toString() : null);
+                        dto.setGrantDate(asset.getGrantDate() != null ? asset.getGrantDate().toString() : null);
+                        dto.setUpdatedOn(asset.getUpdatedOn() != null ? asset.getUpdatedOn().toString() : null);
                         dto.setAbstractText(asset.getAbstractText());
+                        dto.setReferenceSource(asset.getReferenceSource());
+                        dto.setPatentLink(asset.getPatentLink());
+                        dto.setPdfLink(asset.getPdfLink());
+                        dto.setThumbnail(asset.getThumbnail());
                         return dto;
                     })
                     .toList();
@@ -269,7 +292,52 @@ public class IPSearchService {
                 .toList();
 
         if (!assets.isEmpty()) {
-            repository.saveAll(assets);
+            List<IPAsset> savedAssets = repository.saveAll(assets);
+            
+            // Map saved assets back to DTOs to ensure IDs and all fields are included
+            // Match by application number since that's unique
+            for (IPSearchResultDTO dto : results) {
+                savedAssets.stream()
+                    .filter(saved -> saved.getApplicationNumber() != null && 
+                           saved.getApplicationNumber().equals(dto.getApplicationNumber()))
+                    .findFirst()
+                    .ifPresent(saved -> {
+                        // Update DTO with ID and ensure all fields are populated from saved entity
+                        dto.setId(saved.getId());
+                        // Ensure dates are properly formatted
+                        if (saved.getFilingDate() != null) {
+                            dto.setFilingDate(saved.getFilingDate().toString());
+                        }
+                        if (saved.getPublicationDate() != null) {
+                            dto.setPublicationDate(saved.getPublicationDate().toString());
+                        }
+                        if (saved.getPriorityDate() != null) {
+                            dto.setPriorityDate(saved.getPriorityDate().toString());
+                        }
+                        if (saved.getGrantDate() != null) {
+                            dto.setGrantDate(saved.getGrantDate().toString());
+                        }
+                        if (saved.getUpdatedOn() != null) {
+                            dto.setUpdatedOn(saved.getUpdatedOn().toString());
+                        }
+                        // Ensure other fields are populated
+                        if (saved.getAbstractText() != null) {
+                            dto.setAbstractText(saved.getAbstractText());
+                        }
+                        if (saved.getLegalStatus() != null) {
+                            dto.setLegalStatus(saved.getLegalStatus());
+                        }
+                        if (saved.getPatentLink() != null) {
+                            dto.setPatentLink(saved.getPatentLink());
+                        }
+                        if (saved.getPdfLink() != null) {
+                            dto.setPdfLink(saved.getPdfLink());
+                        }
+                        if (saved.getThumbnail() != null) {
+                            dto.setThumbnail(saved.getThumbnail());
+                        }
+                    });
+            }
         }
 
         // =====================================================

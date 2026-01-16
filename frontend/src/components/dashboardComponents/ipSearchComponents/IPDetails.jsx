@@ -7,15 +7,33 @@ const IPDetails = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [ip, setIp] = useState(location.state?.ip);
-  const [loading, setLoading] = useState(!location.state?.ip);
+  // Initialize state with location state data if available
+  const initialState = location.state?.ip ? {
+    ...location.state.ip,
+    // Ensure all fields are mapped correctly from location state
+    assignee: location.state.ip.ownerName || location.state.ip.assignee,
+    number: location.state.ip.applicationNumber || location.state.ip.number,
+    inventor: location.state.ip.inventorName || location.state.ip.inventor,
+    abstract: location.state.ip.abstractText || location.state.ip.abstract,
+    jurisdiction: location.state.ip.country || location.state.ip.jurisdiction,
+    status: location.state.ip.legalStatus || location.state.ip.status,
+  } : null;
+  
+  const [ip, setIp] = useState(initialState);
+  const [loading, setLoading] = useState(!initialState);
   const [error, setError] = useState(null);
 
   // Helper function to format dates
   const formatDate = (dateString) => {
-    if (!dateString || dateString === "—") return "—";
+    if (!dateString || dateString === "—" || dateString === "null" || dateString === "undefined") return "—";
     try {
-      return new Date(dateString).toLocaleDateString('en-US', {
+      // Handle both ISO date strings (YYYY-MM-DD) and other date formats
+      const date = new Date(dateString);
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return dateString; // Return original if invalid
+      }
+      return date.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
@@ -88,12 +106,24 @@ Generated from IP Portal
         try {
           setLoading(true);
           const data = await getIPDetails(id);
+          console.log("Fetched IP Details:", data);
+          // Map all fields including priorityDate, grantDate, and updatedOn
           setIp({
             ...data,
-            assignee: data.ownerName,
-            number: data.applicationNumber,
-            inventor: data.inventorName,
-            abstract: data.abstractText,
+            assignee: data.ownerName || data.assignee,
+            number: data.applicationNumber || data.number,
+            inventor: data.inventorName || data.inventor,
+            abstract: data.abstractText || data.abstract,
+            // Map jurisdiction/country
+            jurisdiction: data.country || data.jurisdiction,
+            // Ensure date fields are preserved
+            filingDate: data.filingDate,
+            publicationDate: data.publicationDate,
+            priorityDate: data.priorityDate,
+            grantDate: data.grantDate,
+            updatedOn: data.updatedOn,
+            // Ensure status is mapped
+            status: data.legalStatus || data.status,
           });
         } catch (err) {
           setError("Failed to load IP details");
@@ -104,7 +134,7 @@ Generated from IP Portal
       }
     };
     fetchIPDetails();
-  }, [id]);
+  }, [id, ip]);
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center">
@@ -433,7 +463,7 @@ Generated from IP Portal
         <div className="flex flex-col gap-6">
           <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 flex flex-col items-center justify-center min-h-[260px]">
             <p className="text-gray-300 text-sm mb-3">
-              Document preview unavailable
+              Document preview available
             </p>
 
             {/* PDF Button */}

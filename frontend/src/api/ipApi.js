@@ -77,7 +77,8 @@ export async function getIPDetails(id) {
   const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
   try {
-    const response = await fetch(`${API_BASE}/${id}`, {
+    // Use /api/ip/{id} endpoint which returns IPSearchResultDTO with all fields including priorityDate, grantDate, updatedOn
+    const response = await fetch(`${BASE_URL}/api/ip/${id}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
