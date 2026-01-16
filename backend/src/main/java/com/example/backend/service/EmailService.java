@@ -1,5 +1,4 @@
 package com.example.backend.service;
-
 import com.example.backend.model.Contact;
 import com.example.backend.model.Feedback;
 import jakarta.mail.MessagingException;
