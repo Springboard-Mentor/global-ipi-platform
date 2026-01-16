@@ -3,7 +3,6 @@ package com.example.backend.controller;
 import com.example.backend.model.Feedback;
 import com.example.backend.repository.FeedbackRepository;
 import com.example.backend.service.EmailService;
-import jakarta.mail.MessagingException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +27,7 @@ public class FeedbackController {
     
     @Value("${app.email.enabled:true}")
     private boolean emailEnabled;
-    
+
     /**
      * Submit feedback form
      */
@@ -37,29 +36,20 @@ public class FeedbackController {
         Map<String, Object> response = new HashMap<>();
         
         try {
-            // Save to database
             Feedback savedFeedback = feedbackRepository.save(feedback);
             log.info("Feedback saved to database with ID: {}", savedFeedback.getId());
             
-            // Send emails (only if enabled)
             if (emailEnabled) {
                 try {
-                    // Send confirmation email to user (if email provided)
                     if (savedFeedback.getUserEmail() != null && !savedFeedback.getUserEmail().isEmpty()) {
                         emailService.sendFeedbackConfirmation(savedFeedback);
                     }
-                    
-                    // Send notification to admin
                     emailService.sendFeedbackNotificationToAdmin(savedFeedback);
-                    
-                    // Update email sent status
                     savedFeedback.setEmailSent(true);
                     feedbackRepository.save(savedFeedback);
-                    
                     log.info("Emails sent successfully for feedback ID: {}", savedFeedback.getId());
                 } catch (Exception e) {
                     log.error("Failed to send emails for feedback ID: {}", savedFeedback.getId(), e);
-                    // Continue even if email fails - data is already saved
                     response.put("emailWarning", "Feedback saved but email notification failed");
                 }
             } else {
@@ -82,17 +72,20 @@ public class FeedbackController {
     }
     
     /**
-     * Get all feedbacks (Admin endpoint)
+     * Get all feedbacks (Admin endpoint) with optional minRating filter
      */
     @GetMapping("/all")
-    public ResponseEntity<List<Feedback>> getAllFeedbacks() {
-        try {
-            List<Feedback> feedbacks = feedbackRepository.findAll();
-            return ResponseEntity.ok(feedbacks);
-        } catch (Exception e) {
-            log.error("Error fetching feedbacks", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+    public ResponseEntity<List<Feedback>> getAllFeedbacks(
+            @RequestParam(required = false) Integer minRating) {
+        List<Feedback> feedbacks = feedbackRepository.findAll();
+        
+        if (minRating != null) {
+            feedbacks = feedbacks.stream()
+                    .filter(f -> f.getOverallRating() != null && f.getOverallRating() >= minRating)
+                    .toList();
         }
+        
+        return ResponseEntity.ok(feedbacks);
     }
     
     /**

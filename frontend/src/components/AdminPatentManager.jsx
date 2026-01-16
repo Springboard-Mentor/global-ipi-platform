@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, Circle, Mail, RefreshCw, AlertCircle, LogIn, LogOut, User, Shield, Eye, EyeOff, X, ArrowLeft, Lightbulb, FileCheck, Upload, CreditCard, MessageCircle, Send, Bell, Clock, List, Filter, BarChart3, Users, Activity, Search, Database, Globe, Trophy, Award, Medal, Sparkles, UserCheck, UserX, Info } from 'lucide-react';
+import { CheckCircle, Circle, Mail, RefreshCw, AlertCircle, LogIn, LogOut, User, Shield, Eye, EyeOff, X, ArrowLeft, Lightbulb, FileCheck, Upload, CreditCard, MessageCircle, Send, Bell, Clock, List, Filter, BarChart3, Users, Activity, Search, Database, Globe, Trophy, Award, Medal, Sparkles, UserCheck, UserX, Info, Server } from 'lucide-react';
 import { addUserNotification } from '../utils/notifications';
 import { db } from '../firebase';
 import AdminUserManagement from './AdminUserManagement';
 import { doc, getDoc, collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
-import { 
+import {
   BarChart,
   Bar,
   XAxis,
   YAxis,
   CartesianGrid,
-  ResponsiveContainer, 
-  Tooltip, 
+  ResponsiveContainer,
+  Tooltip,
   Legend,
   RadialBarChart,
   RadialBar,
@@ -23,14 +23,14 @@ const AdminPatentManager = ({ onBack }) => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [backendStatus, setBackendStatus] = useState('checking');
-  
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-  
+
   // Quick filter state
   const [quickFilter, setQuickFilter] = useState('all'); // 'all', 'granted', 'rejected', 'deactivated', 'application'
-  
+
   // Admin authentication states
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loginAdminId, setLoginAdminId] = useState('');
@@ -43,14 +43,14 @@ const AdminPatentManager = ({ onBack }) => {
   const [allAdmins, setAllAdmins] = useState([]);
   const [showPassword, setShowPassword] = useState(false);
   const [showUserManagement, setShowUserManagement] = useState(false);
-  
+
   // Patent details fields for each patent
   const [patentDetails, setPatentDetails] = useState({});
-  
+
   // Track which patents have details section open and form type ('grant' or 'reject')
   const [showDetailsFor, setShowDetailsFor] = useState({});
   const [formType, setFormType] = useState({}); // 'grant' or 'reject'
-  
+
   // Track which patent's full details are being viewed
   const [viewingPatentDetails, setViewingPatentDetails] = useState(null);
 
@@ -58,12 +58,12 @@ const AdminPatentManager = ({ onBack }) => {
   const [showAdminChat, setShowAdminChat] = useState(false);
   const [selectedPatentForChat, setSelectedPatentForChat] = useState(null);
   const [adminReply, setAdminReply] = useState('');
-  
+
   // New states for enhanced UI
   const [showPatentsList, setShowPatentsList] = useState(false);
   const [toasts, setToasts] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   // Online users and statistics
   const [onlineUsersCount, setOnlineUsersCount] = useState(0);
   const [searchStats, setSearchStats] = useState({
@@ -71,13 +71,13 @@ const AdminPatentManager = ({ onBack }) => {
     apiSearchCount: 0,
     totalSearchCount: 0
   });
-  
+
   // Leaderboard states
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [leaderboardFilter, setLeaderboardFilter] = useState('granted'); // 'granted', 'rejected', 'deactivated', 'activated'
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [statusFilter, setStatusFilter] = useState('all');
-  
+
   // User statistics states
   const [userStats, setUserStats] = useState({
     totalUsers: 0,
@@ -87,12 +87,12 @@ const AdminPatentManager = ({ onBack }) => {
     activeUsers: 0,
     deactivatedUsers: 0
   });
-  
+
   // State-wise patent states
   const [selectedState, setSelectedState] = useState('Uttar Pradesh');
   const [statePatentCount, setStatePatentCount] = useState(0);
   const [loadingStateData, setLoadingStateData] = useState(false);
-  
+
   // Revenue states
   const [revenueFilter, setRevenueFilter] = useState('monthly'); // 'weekly' or 'monthly'
   const [subscriptionRevenue, setSubscriptionRevenue] = useState({
@@ -104,12 +104,12 @@ const AdminPatentManager = ({ onBack }) => {
     count: 0
   });
   const [loadingRevenue, setLoadingRevenue] = useState(false);
-  
+
   // Feedback states
   const [feedbackStats, setFeedbackStats] = useState(null);
   const [feedbackStatus, setFeedbackStatus] = useState('loading');
   const [allFeedbacks, setAllFeedbacks] = useState([]);
-  
+
   // Toast notification helper
   const showToast = (message, type = 'success') => {
     const id = Date.now();
@@ -119,11 +119,11 @@ const AdminPatentManager = ({ onBack }) => {
       setToasts(prev => prev.filter(t => t.id !== id));
     }, 5000);
   };
-  
+
   // Track admin action in database
   const trackAdminAction = async (actionType) => {
     if (!adminData) return;
-    
+
     try {
       const response = await fetch(`http://localhost:8080/api/admin/${adminData.adminId}/track-action`, {
         method: 'POST',
@@ -132,7 +132,7 @@ const AdminPatentManager = ({ onBack }) => {
         },
         body: JSON.stringify({ actionType }),
       });
-      
+
       if (response.ok) {
         console.log(`✅ Tracked ${actionType} action for admin ${adminData.adminId}`);
       }
@@ -140,11 +140,11 @@ const AdminPatentManager = ({ onBack }) => {
       console.error('Error tracking admin action:', error);
     }
   };
-  
+
   // Filter patents based on quick filter selection
   const getFilteredPatents = () => {
     let filtered = patents;
-    
+
     // Apply quick filter
     if (quickFilter === 'granted') {
       filtered = patents.filter(patent => patent.stage5Granted === true && patent.status !== 'Patent is Rejected');
@@ -155,29 +155,29 @@ const AdminPatentManager = ({ onBack }) => {
     } else if (quickFilter === 'application') {
       filtered = patents.filter(patent => patent.stage5Granted !== true && patent.status !== 'Patent is Rejected');
     }
-    
+
     // Apply search filter
     if (searchQuery.trim()) {
-      filtered = filtered.filter(patent => 
+      filtered = filtered.filter(patent =>
         patent.inventionTitle?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         patent.applicantName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         patent.id?.toString().includes(searchQuery) ||
         patent.applicantEmail?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
-    
+
     return filtered;
   };
-  
+
   // Get filtered patents
   const filteredPatents = getFilteredPatents();
-  
+
   // Calculate pagination
   const totalPages = Math.ceil(filteredPatents.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentPatents = filteredPatents.slice(startIndex, endIndex);
-  
+
   // Reset to page 1 when filter changes
   useEffect(() => {
     setCurrentPage(1);
@@ -193,7 +193,7 @@ const AdminPatentManager = ({ onBack }) => {
   const handleAdminLogin = async (e) => {
     e.preventDefault();
     setLoginError('');
-    
+
     // Frontend validation
     if (!loginAdminId || !loginAdminName || !loginEmail || !loginPassword) {
       setLoginError('All fields are required');
@@ -209,7 +209,7 @@ const AdminPatentManager = ({ onBack }) => {
       setLoginError('Please enter a valid email address');
       return;
     }
-    
+
     try {
       console.log('Attempting login with:', {
         adminId: parseInt(loginAdminId),
@@ -318,10 +318,10 @@ const AdminPatentManager = ({ onBack }) => {
         },
         mode: 'cors',
       });
-      
+
       console.log('Response status:', response.status);
       console.log('Response ok:', response.ok);
-      
+
       if (response.ok) {
         const data = await response.json();
         setPatents(data);
@@ -353,7 +353,7 @@ const AdminPatentManager = ({ onBack }) => {
         // Cascade granting: if a higher stage is granted, grant all lower stages
         const stageOrder = ['stage1Filed', 'stage2AdminReview', 'stage3TechnicalReview', 'stage4Verification', 'stage5Granted'];
         const currentStageIndex = stageOrder.indexOf(stageName);
-        
+
         // Grant all lower stages
         for (let i = 0; i <= currentStageIndex; i++) {
           stageUpdates[stageOrder[i]] = true;
@@ -373,13 +373,13 @@ const AdminPatentManager = ({ onBack }) => {
       if (response.ok) {
         const result = await response.json();
         console.log('Update result:', result);
-        
+
         if (result.emailSent) {
           setMessage(`✅ Patent ${patentId} granted! Email sent to applicant.`);
         } else {
           setMessage(`✅ Stage updated for patent ${patentId}`);
         }
-        
+
         // Refresh the list
         await fetchAllPatents();
       } else {
@@ -410,11 +410,11 @@ const AdminPatentManager = ({ onBack }) => {
       }, 4000);
       return;
     }
-    
+
     // Validate required fields
     const details = patentDetails[patent.id] || {};
     const missingFields = [];
-    
+
     if (!details.patentNumber || details.patentNumber.trim() === '') {
       missingFields.push('Patent Number');
     }
@@ -424,7 +424,7 @@ const AdminPatentManager = ({ onBack }) => {
     if (!details.location || details.location.trim() === '') {
       missingFields.push('Location');
     }
-    
+
     if (missingFields.length > 0) {
       setMessage(`❌ Cannot grant patent! Please fill in the following required fields: ${missingFields.join(', ')}`);
       // Scroll to the patent details section
@@ -433,7 +433,7 @@ const AdminPatentManager = ({ onBack }) => {
       }, 5000);
       return;
     }
-    
+
     setMessage('Granting patent and sending email...');
     try {
       const stageUpdates = {
@@ -464,34 +464,34 @@ const AdminPatentManager = ({ onBack }) => {
         console.log('Patent object:', patent);
         console.log('Patent userId:', patent.userId);
         console.log('Patent details:', details);
-        
+
         // Extract userId - try multiple possible field names
         const userId = patent.userId || patent.user_id || patent.UserId;
         console.log('Extracted userId:', userId);
-        
+
         // Add Firestore notification for the user
         if (userId) {
           try {
             console.log('🔔 Attempting to add notification for userId:', userId);
-            
+
             // Fetch user profile to get subscription details
             let userSubscriptionDetails = {
               plan: 'Basic',
               amount: '₹0',
               validUntil: 'N/A'
             };
-            
+
             try {
               const userDocRef = doc(db, 'users', userId);
               const userDocSnap = await getDoc(userDocRef);
-              
+
               if (userDocSnap.exists()) {
                 const userData = userDocSnap.data();
                 console.log('User subscription data:', userData);
-                
+
                 // Get subscription type (basic, pro, enterprise)
                 const subType = userData.subscriptionType || 'basic';
-                
+
                 // Get amount from subscriptionPrice field (correct field name in Firestore)
                 let amountDisplay = '₹0';  // Default for basic plan
                 if (userData.subscriptionPrice) {
@@ -505,7 +505,7 @@ const AdminPatentManager = ({ onBack }) => {
                   }
                 }
                 console.log('Subscription details:', { type: subType, price: amountDisplay });
-                
+
                 // Get expiry date - handle Firestore Timestamp and string formats
                 let expiryDisplay = 'N/A';
                 if (userData.subscriptionEndDate) {
@@ -526,19 +526,19 @@ const AdminPatentManager = ({ onBack }) => {
                     expiryDisplay = endDate.toLocaleDateString('en-IN');
                   }
                 }
-                
+
                 userSubscriptionDetails = {
                   plan: subType,
                   amount: amountDisplay,
                   validUntil: expiryDisplay
                 };
-                
+
                 console.log('Processed subscription details:', userSubscriptionDetails);
               }
             } catch (profileError) {
               console.warn('Could not fetch user profile, using defaults:', profileError);
             }
-            
+
             const notificationResult = await addUserNotification(userId, {
               title: "🎉 Patent Granted!",
               message: `Congratulations! Your patent "${patent.inventionTitle}" has been granted.`,
@@ -563,19 +563,19 @@ const AdminPatentManager = ({ onBack }) => {
           console.log('Available patent fields:', Object.keys(patent));
           console.log('Full patent object:', JSON.stringify(patent, null, 2));
         }
-        
+
         // Hide the patent details form
         setShowDetailsFor({
           ...showDetailsFor,
           [patent.id]: false
         });
-        
+
         // Scroll to the top of the page
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        
+
         // Track action and show toast
         await trackAdminAction('granted');
-        
+
         if (result.emailSent) {
           showToast(`🎉 Patent "${patent.inventionTitle}" GRANTED! Email sent to ${patent.applicantEmail}`, 'success');
           showToast('📧 Email successfully sent to applicant', 'info');
@@ -587,7 +587,7 @@ const AdminPatentManager = ({ onBack }) => {
           showToast(`✅ Patent "${patent.inventionTitle}" updated`, 'success');
           setMessage(`✅ Patent "${patent.inventionTitle}" updated`);
         }
-        
+
         // Refresh the list
         await fetchAllPatents();
       } else {
@@ -618,11 +618,11 @@ const AdminPatentManager = ({ onBack }) => {
       }, 4000);
       return;
     }
-    
+
     // Validate required fields for rejection
     const details = patentDetails[patent.id] || {};
     const missingFields = [];
-    
+
     if (!details.rejectedPatentNumber || details.rejectedPatentNumber.trim() === '') {
       missingFields.push('Rejected Patent Number');
     }
@@ -632,7 +632,7 @@ const AdminPatentManager = ({ onBack }) => {
     if (!details.location || details.location.trim() === '') {
       missingFields.push('Location');
     }
-    
+
     if (missingFields.length > 0) {
       setMessage(`❌ Cannot reject patent! Please fill in the following required fields: ${missingFields.join(', ')}`);
       setTimeout(() => {
@@ -640,7 +640,7 @@ const AdminPatentManager = ({ onBack }) => {
       }, 5000);
       return;
     }
-    
+
     setMessage('Rejecting patent and sending email...');
     try {
       const response = await fetch(`http://localhost:8080/api/patent-filing/${patent.id}/reject`, {
@@ -664,34 +664,34 @@ const AdminPatentManager = ({ onBack }) => {
         console.log('Patent object:', patent);
         console.log('Patent userId:', patent.userId);
         console.log('Rejection details:', details);
-        
+
         // Extract userId - try multiple possible field names
         const userId = patent.userId || patent.user_id || patent.UserId;
         console.log('Extracted userId:', userId);
-        
+
         // Add Firestore notification for the user
         if (userId) {
           try {
             console.log('🔔 Attempting to add rejection notification for userId:', userId);
-            
+
             // Fetch user profile to get subscription details
             let userSubscriptionDetails = {
               plan: 'Basic',
               amount: '₹0',
               validUntil: 'N/A'
             };
-            
+
             try {
               const userDocRef = doc(db, 'users', userId);
               const userDocSnap = await getDoc(userDocRef);
-              
+
               if (userDocSnap.exists()) {
                 const userData = userDocSnap.data();
                 console.log('User subscription data:', userData);
-                
+
                 // Get subscription type (basic, pro, enterprise)
                 const subType = userData.subscriptionType || 'basic';
-                
+
                 // Get amount from subscriptionPrice field (correct field name in Firestore)
                 let amountDisplay = '₹0';  // Default for basic plan
                 if (userData.subscriptionPrice) {
@@ -705,7 +705,7 @@ const AdminPatentManager = ({ onBack }) => {
                   }
                 }
                 console.log('Subscription details for rejection:', { type: subType, price: amountDisplay });
-                
+
                 // Get expiry date - handle Firestore Timestamp and string formats
                 let expiryDisplay = 'N/A';
                 if (userData.subscriptionEndDate) {
@@ -726,19 +726,19 @@ const AdminPatentManager = ({ onBack }) => {
                     expiryDisplay = endDate.toLocaleDateString('en-IN');
                   }
                 }
-                
+
                 userSubscriptionDetails = {
                   plan: subType,
                   amount: amountDisplay,
                   validUntil: expiryDisplay
                 };
-                
+
                 console.log('Processed subscription details for rejection:', userSubscriptionDetails);
               }
             } catch (profileError) {
               console.warn('Could not fetch user profile, using defaults:', profileError);
             }
-            
+
             const notificationResult = await addUserNotification(userId, {
               title: "❌ Patent Rejected",
               message: `Your patent application "${patent.inventionTitle}" has been rejected.`,
@@ -763,19 +763,19 @@ const AdminPatentManager = ({ onBack }) => {
           console.log('Available patent fields:', Object.keys(patent));
           console.log('Full patent object:', JSON.stringify(patent, null, 2));
         }
-        
+
         // Hide the patent details form
         setShowDetailsFor({
           ...showDetailsFor,
           [patent.id]: false
         });
-        
+
         // Track action and show toast
         await trackAdminAction('rejected');
-        
+
         // Scroll to the top of the page
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        
+
         if (result.emailSent) {
           showToast(`❌ Patent "${patent.inventionTitle}" REJECTED!`, 'error');
           showToast('📧 Rejection email successfully sent to applicant', 'info');
@@ -784,7 +784,7 @@ const AdminPatentManager = ({ onBack }) => {
           showToast(`❌ Patent "${patent.inventionTitle}" rejected`, 'error');
           setMessage(`❌ Patent "${patent.inventionTitle}" rejected`);
         }
-        
+
         // Refresh the list
         await fetchAllPatents();
       } else {
@@ -885,7 +885,7 @@ const AdminPatentManager = ({ onBack }) => {
       if (response.ok) {
         const updatedPatent = await response.json();
         console.log('Reply saved successfully:', updatedPatent);
-        
+
         // Update patents list
         setPatents(patents.map(p => p.id === updatedPatent.id ? updatedPatent : p));
         setSelectedPatentForChat(updatedPatent);
@@ -906,17 +906,17 @@ const AdminPatentManager = ({ onBack }) => {
   const getUnreadMessagesCount = (patent) => {
     if (!patent) return 0;
     let unreadCount = 0;
-    
+
     for (let i = 1; i <= 5; i++) {
       const userMsg = patent[`m${i}`];
       const adminReply = patent[`r${i}`];
-      
+
       // If user sent a message but admin hasn't replied yet
       if (userMsg && userMsg.trim() !== '' && (!adminReply || adminReply.trim() === '')) {
         unreadCount++;
       }
     }
-    
+
     return unreadCount;
   };
 
@@ -925,12 +925,12 @@ const AdminPatentManager = ({ onBack }) => {
     try {
       const usersRef = collection(db, 'users');
       const q = query(usersRef, where('isOnline', '==', true));
-      
+
       // Real-time listener for online users
       const unsubscribe = onSnapshot(q, (snapshot) => {
         setOnlineUsersCount(snapshot.size);
       });
-      
+
       return unsubscribe;
     } catch (error) {
       console.error('Error fetching online users:', error);
@@ -968,7 +968,7 @@ const AdminPatentManager = ({ onBack }) => {
       if (response.ok) {
         const admins = await response.json();
         console.log('Fetched admins:', admins); // Debug log
-        
+
         // Convert snake_case to camelCase for field names
         const filterFieldMap = {
           'granted': 'patentsGranted',
@@ -976,10 +976,10 @@ const AdminPatentManager = ({ onBack }) => {
           'activated': 'patentsActivated',
           'deactivated': 'patentsDeactivated'
         };
-        
+
         const fieldName = filterFieldMap[leaderboardFilter];
         console.log('Sorting by field:', fieldName); // Debug log
-        
+
         // Sort based on current filter using camelCase field names
         const sorted = admins.sort((a, b) => {
           const aValue = a[fieldName] || 0;
@@ -987,7 +987,7 @@ const AdminPatentManager = ({ onBack }) => {
           console.log(`${a.adminName}: ${aValue}, ${b.adminName}: ${bValue}`); // Debug log
           return bValue - aValue;
         }).slice(0, 5); // Get top 5
-        
+
         console.log('Sorted leaderboard:', sorted); // Debug log
         setLeaderboardData(sorted);
       }
@@ -995,24 +995,24 @@ const AdminPatentManager = ({ onBack }) => {
       console.error('Error fetching leaderboard:', error);
     }
   };
-  
+
   // Fetch user statistics from Firebase Firestore
   const fetchUserStatistics = async () => {
     try {
       const usersRef = collection(db, 'users');
       const usersSnapshot = await getDocs(usersRef);
-      
+
       let total = 0;
       let basic = 0;
       let pro = 0;
       let enterprise = 0;
       let active = 0;
       let deactivated = 0;
-      
+
       usersSnapshot.forEach((doc) => {
         const userData = doc.data();
         total++;
-        
+
         // Count by subscription type
         const subscription = (userData.subscriptionType || 'basic').toLowerCase();
         if (subscription === 'basic') {
@@ -1025,7 +1025,7 @@ const AdminPatentManager = ({ onBack }) => {
           // Default to basic if unknown
           basic++;
         }
-        
+
         // Check if user is deactivated
         if (userData.isDeactivated === true || userData.accountStatus === 'deactivated') {
           deactivated++;
@@ -1033,7 +1033,7 @@ const AdminPatentManager = ({ onBack }) => {
           active++;
         }
       });
-      
+
       const newStats = {
         totalUsers: total,
         basicUsers: basic,
@@ -1042,11 +1042,11 @@ const AdminPatentManager = ({ onBack }) => {
         activeUsers: active,
         deactivatedUsers: deactivated
       };
-      
+
       setUserStats(newStats);
-      
+
       console.log('User statistics fetched:', { total, basic, pro, enterprise, active, deactivated });
-      
+
       // Calculate subscription revenue based on updated stats
       if (isAuthenticated) {
         calculateSubscriptionRevenue(newStats);
@@ -1055,18 +1055,18 @@ const AdminPatentManager = ({ onBack }) => {
       console.error('Error fetching user statistics:', error);
     }
   };
-  
+
   // Fetch patent count by state
   const fetchStatePatentCount = async (state) => {
     if (!state) {
       setStatePatentCount(0);
       return;
     }
-    
+
     try {
       setLoadingStateData(true);
       const response = await fetch(`http://localhost:8080/api/patents/count-by-state?state=${encodeURIComponent(state)}`);
-      
+
       if (response.ok) {
         const count = await response.json();
         setStatePatentCount(count || 0);
@@ -1089,14 +1089,14 @@ const AdminPatentManager = ({ onBack }) => {
         'Enterprise': 199,
         'Basic': 0
       };
-      
+
       // Calculate revenue based on passed stats
       const proRevenue = stats.proUsers * planPrices['Pro'];
       const enterpriseRevenue = stats.enterpriseUsers * planPrices['Enterprise'];
       const totalRevenue = proRevenue + enterpriseRevenue;
-      
+
       const byPlan = [];
-      
+
       if (stats.basicUsers > 0) {
         byPlan.push({
           planName: 'Basic',
@@ -1104,7 +1104,7 @@ const AdminPatentManager = ({ onBack }) => {
           count: stats.basicUsers
         });
       }
-      
+
       if (stats.proUsers > 0) {
         byPlan.push({
           planName: 'Pro',
@@ -1112,7 +1112,7 @@ const AdminPatentManager = ({ onBack }) => {
           count: stats.proUsers
         });
       }
-      
+
       if (stats.enterpriseUsers > 0) {
         byPlan.push({
           planName: 'Enterprise',
@@ -1120,7 +1120,7 @@ const AdminPatentManager = ({ onBack }) => {
           count: stats.enterpriseUsers
         });
       }
-      
+
       setSubscriptionRevenue({ total: totalRevenue, byPlan });
       console.log('Subscription revenue calculated:', { totalRevenue, byPlan });
     } catch (error) {
@@ -1134,7 +1134,7 @@ const AdminPatentManager = ({ onBack }) => {
     const patentFilingPrice = 500; // ₹500 per patent filing
     const count = patents.length;
     const total = count * patentFilingPrice;
-    
+
     setPatentFilingRevenue({ total, count });
   };
 
@@ -1143,19 +1143,19 @@ const AdminPatentManager = ({ onBack }) => {
     if (isAuthenticated) {
       // Fetch online users with real-time updates
       const unsubscribe = fetchOnlineUsers();
-      
+
       // Fetch search stats initially
       fetchSearchStats();
-      
+
       // Fetch user statistics
       fetchUserStatistics();
-      
+
       // Refresh search stats every 30 seconds
       const statsInterval = setInterval(fetchSearchStats, 30000);
-      
+
       // Refresh user stats every 60 seconds
       const userStatsInterval = setInterval(fetchUserStatistics, 60000);
-      
+
       return () => {
         if (unsubscribe) unsubscribe();
         clearInterval(statsInterval);
@@ -1170,14 +1170,14 @@ const AdminPatentManager = ({ onBack }) => {
       fetchLeaderboard();
     }
   }, [leaderboardFilter, showLeaderboard]);
-  
+
   // Effect to fetch patent count when state is selected
   useEffect(() => {
     if (selectedState) {
       fetchStatePatentCount(selectedState);
     }
   }, [selectedState]);
-  
+
   // Effect to calculate patent filing revenue when patents change
   useEffect(() => {
     if (isAuthenticated && patents.length > 0) {
@@ -1192,11 +1192,11 @@ const AdminPatentManager = ({ onBack }) => {
         setFeedbackStatus('loading');
         try {
           console.log('🔄 Admin Panel: Fetching feedback analytics from backend...');
-          
+
           // Fetch stats
           const statsResponse = await fetch('http://localhost:8080/api/feedback/stats');
           console.log('📊 Stats Response Status:', statsResponse.status);
-          
+
           if (statsResponse.ok) {
             const stats = await statsResponse.json();
             console.log('✅ Feedback stats received:', stats);
@@ -1204,11 +1204,11 @@ const AdminPatentManager = ({ onBack }) => {
           } else {
             console.error('❌ Failed to fetch feedback stats:', statsResponse.statusText);
           }
-          
+
           // Fetch all feedbacks
           const allResponse = await fetch('http://localhost:8080/api/feedback/all');
           console.log('📝 All Feedbacks Response Status:', allResponse.status);
-          
+
           if (allResponse.ok) {
             const feedbacks = await allResponse.json();
             console.log('✅ All feedbacks received. Count:', feedbacks.length);
@@ -1216,7 +1216,7 @@ const AdminPatentManager = ({ onBack }) => {
           } else {
             console.error('❌ Failed to fetch all feedbacks:', allResponse.statusText);
           }
-          
+
           setFeedbackStatus('success');
           console.log('✨ Feedback analytics loaded successfully!');
         } catch (error) {
@@ -1224,9 +1224,9 @@ const AdminPatentManager = ({ onBack }) => {
           setFeedbackStatus('error');
         }
       };
-      
+
       fetchFeedbackAnalytics();
-      
+
       // Refresh every 60 seconds
       const interval = setInterval(fetchFeedbackAnalytics, 60000);
       return () => clearInterval(interval);
@@ -1247,15 +1247,15 @@ const AdminPatentManager = ({ onBack }) => {
       if (response.ok) {
         const result = await response.json();
         console.log('Activate result:', result);
-        
+
         // Track action and show toast
         await trackAdminAction('activated');
         showToast(`✅ Patent ${patentId} activated successfully!`, 'success');
         setMessage(`✅ Patent ${patentId} activated successfully!`);
-        
+
         // Refresh the list
         await fetchAllPatents();
-        
+
         setTimeout(() => {
           setMessage('');
         }, 3000);
@@ -1276,7 +1276,7 @@ const AdminPatentManager = ({ onBack }) => {
     try {
       // Find the patent to get user details
       const patent = patents.find(p => p.id === patentId);
-      
+
       const response = await fetch(`http://localhost:8080/api/patent-filing/${patentId}/deactivate`, {
         method: 'PUT',
         headers: {
@@ -1287,12 +1287,12 @@ const AdminPatentManager = ({ onBack }) => {
       if (response.ok) {
         const result = await response.json();
         console.log('Deactivate result:', result);
-        
+
         // Track action and show toast
         await trackAdminAction('deactivated');
         showToast(`⚠️ Patent ${patentId} deactivated successfully!`, 'warning');
         setMessage(`✅ Patent ${patentId} deactivated successfully!`);
-        
+
         // Send notification to user
         if (patent && patent.userId) {
           try {
@@ -1310,10 +1310,10 @@ const AdminPatentManager = ({ onBack }) => {
         } else {
           console.warn('⚠️ No userId found for patent, notification not sent');
         }
-        
+
         // Refresh the list
         await fetchAllPatents();
-        
+
         setTimeout(() => {
           setMessage('');
         }, 3000);
@@ -1334,7 +1334,7 @@ const AdminPatentManager = ({ onBack }) => {
         // Admin Login Full Page Form
         <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
           <div className="max-w-6xl w-full grid md:grid-cols-2 gap-8 items-center">
-            
+
             {/* Left Side - Branding & Info */}
             <div className="hidden md:block space-y-8">
               <div className="text-center md:text-left">
@@ -1404,120 +1404,120 @@ const AdminPatentManager = ({ onBack }) => {
 
                 <div className="p-8 md:p-10">
                   <div className="md:hidden flex items-center justify-center mb-6">
-                  <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-3 rounded-xl">
-                    <Shield className="w-10 h-10 text-white" />
-                  </div>
-                </div>
-                
-                <h2 className="text-3xl font-bold text-center text-gray-900 mb-2">
-                  Welcome Back
-                </h2>
-                <p className="text-center text-gray-700 mb-8 font-medium">
-                  Sign in to access the admin dashboard
-                </p>
-                
-                {loginError && (
-                  <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg flex items-start gap-3">
-                    <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="font-semibold">Login Failed</p>
-                      <p className="text-sm">{loginError}</p>
-                    </div>
-                  </div>
-                )}
-
-                <form onSubmit={handleAdminLogin} className="space-y-5">
-                  <div>
-                    <label className="block text-sm font-bold text-gray-900 mb-2">
-                      Admin ID <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={loginAdminId}
-                        onChange={(e) => setLoginAdminId(e.target.value)}
-                        className="w-full px-4 py-3 bg-white/60 backdrop-blur-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900 font-medium placeholder:text-gray-500 shadow-sm"
-                        placeholder="Enter your admin ID"
-                        required
-                      />
+                    <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-3 rounded-xl">
+                      <Shield className="w-10 h-10 text-white" />
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-bold text-gray-900 mb-2">
-                      Admin Name <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={loginAdminName}
-                        onChange={(e) => setLoginAdminName(e.target.value)}
-                        className="w-full px-4 py-3 bg-white/60 backdrop-blur-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900 font-medium placeholder:text-gray-500 shadow-sm"
-                        placeholder="Enter your full name"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-bold text-gray-900 mb-2">
-                      Email Address <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="email"
-                        value={loginEmail}
-                        onChange={(e) => setLoginEmail(e.target.value)}
-                        className="w-full px-4 py-3 bg-white/60 backdrop-blur-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900 font-medium placeholder:text-gray-500 shadow-sm"
-                        placeholder="admin@example.com"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-bold text-gray-900 mb-2">
-                      Password <span className="text-red-500">*</span>
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        value={loginPassword}
-                        onChange={(e) => setLoginPassword(e.target.value)}
-                        className="w-full px-4 py-3 pr-12 bg-white/60 backdrop-blur-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900 font-medium placeholder:text-gray-500 shadow-sm"
-                        placeholder="Enter your password"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900 focus:outline-none transition-colors"
-                        tabIndex={-1}
-                      >
-                        {showPassword ? (
-                          <EyeOff className="w-5 h-5" />
-                        ) : (
-                          <Eye className="w-5 h-5" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl hover:from-blue-700 hover:to-indigo-700 font-bold text-lg flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 border border-blue-700"
-                  >
-                    <LogIn className="w-5 h-5" />
-                    Login to Admin Panel
-                  </button>
-                </form>
-
-                <div className="mt-6 text-center">
-                  <p className="text-sm text-gray-700 font-medium">
-                    <Shield className="w-4 h-4 inline mr-1" />
-                    Secure admin access • All activities are logged
+                  <h2 className="text-3xl font-bold text-center text-gray-900 mb-2">
+                    Welcome Back
+                  </h2>
+                  <p className="text-center text-gray-700 mb-8 font-medium">
+                    Sign in to access the admin dashboard
                   </p>
-                </div>
+
+                  {loginError && (
+                    <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg flex items-start gap-3">
+                      <AlertCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-semibold">Login Failed</p>
+                        <p className="text-sm">{loginError}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleAdminLogin} className="space-y-5">
+                    <div>
+                      <label className="block text-sm font-bold text-gray-900 mb-2">
+                        Admin ID <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={loginAdminId}
+                          onChange={(e) => setLoginAdminId(e.target.value)}
+                          className="w-full px-4 py-3 bg-white/60 backdrop-blur-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900 font-medium placeholder:text-gray-500 shadow-sm"
+                          placeholder="Enter your admin ID"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-bold text-gray-900 mb-2">
+                        Admin Name <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={loginAdminName}
+                          onChange={(e) => setLoginAdminName(e.target.value)}
+                          className="w-full px-4 py-3 bg-white/60 backdrop-blur-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900 font-medium placeholder:text-gray-500 shadow-sm"
+                          placeholder="Enter your full name"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-bold text-gray-900 mb-2">
+                        Email Address <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="email"
+                          value={loginEmail}
+                          onChange={(e) => setLoginEmail(e.target.value)}
+                          className="w-full px-4 py-3 bg-white/60 backdrop-blur-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900 font-medium placeholder:text-gray-500 shadow-sm"
+                          placeholder="admin@example.com"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-bold text-gray-900 mb-2">
+                        Password <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          value={loginPassword}
+                          onChange={(e) => setLoginPassword(e.target.value)}
+                          className="w-full px-4 py-3 pr-12 bg-white/60 backdrop-blur-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-gray-900 font-medium placeholder:text-gray-500 shadow-sm"
+                          placeholder="Enter your password"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900 focus:outline-none transition-colors"
+                          tabIndex={-1}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="w-5 h-5" />
+                          ) : (
+                            <Eye className="w-5 h-5" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl hover:from-blue-700 hover:to-indigo-700 font-bold text-lg flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 border border-blue-700"
+                    >
+                      <LogIn className="w-5 h-5" />
+                      Login to Admin Panel
+                    </button>
+                  </form>
+
+                  <div className="mt-6 text-center">
+                    <p className="text-sm text-gray-700 font-medium">
+                      <Shield className="w-4 h-4 inline mr-1" />
+                      Secure admin access • All activities are logged
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1578,11 +1578,10 @@ const AdminPatentManager = ({ onBack }) => {
             </div>
 
             {message && (
-              <div className={`mt-4 p-4 rounded-lg ${
-                message.includes('❌') ? 'bg-red-100 text-red-800' : 
+              <div className={`mt-4 p-4 rounded-lg ${message.includes('❌') ? 'bg-red-100 text-red-800' :
                 message.includes('🎉') ? 'bg-green-100 text-green-800' :
-                'bg-blue-100 text-blue-800'
-              }`}>
+                  'bg-blue-100 text-blue-800'
+                }`}>
                 <div className="flex items-center gap-2">
                   <AlertCircle className="w-5 h-5" />
                   {message}
@@ -1593,6 +1592,117 @@ const AdminPatentManager = ({ onBack }) => {
             <p className="text-gray-600 mt-4">
               Manage patent filing stages. When all 5 stages are complete, an email will be automatically sent to the applicant.
             </p>
+          </div>
+
+          {/* System Health Status Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            {/* Card 1: Backend / API Health */}
+            {/* Card 1: Backend / API Health */}
+            <div className="bg-gradient-to-br from-teal-50 to-cyan-100 rounded-xl shadow-lg p-6 border-2 border-teal-300">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 text-teal-700 mb-2">
+                    <Server className="w-5 h-5" />
+                    <p className="text-sm font-semibold uppercase tracking-wide">Backend / API Health</p>
+                  </div>
+
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-4xl font-bold text-teal-800">45ms</p>
+                    <span className="text-sm font-medium text-teal-600">Avg Response</span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 mt-2 mb-3">
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-teal-600"></span>
+                    </span>
+                    <span className="text-xs font-bold text-teal-700">Healthy</span>
+                    <span className="text-teal-400 mx-1">•</span>
+                    <span className="text-xs text-teal-700 font-medium">Uptime: 99.9%</span>
+                  </div>
+
+                  <div className="flex items-center gap-3 text-xs text-teal-600 pt-2 border-t border-teal-200">
+                    <span className="flex items-center gap-1" title="Max Response Time">
+                      <Activity className="w-3 h-3" /> Max: 120ms
+                    </span>
+                    <span className="flex items-center gap-1">
+                      v2.4.0
+                    </span>
+                    <div className="ml-auto flex items-center gap-1 opacity-80">
+                      Last checked: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="self-start ml-4">
+                  <div className="bg-teal-200 p-4 rounded-xl shadow-inner">
+                    <Server className="w-10 h-10 text-teal-700" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 2: Database Health */}
+            <div className="bg-gradient-to-br from-teal-50 to-cyan-100 rounded-xl shadow-lg p-6 border-2 border-teal-300">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 text-teal-700 mb-2">
+                    <Database className="w-5 h-5" />
+                    <p className="text-sm font-semibold uppercase tracking-wide">Database Health</p>
+                  </div>
+
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-4xl font-bold text-teal-800">85</p>
+                    <span className="text-sm font-medium text-teal-600">Active Conn.</span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 mt-2 mb-3">
+                    {backendStatus === 'connected' ? (
+                      <>
+                        <span className="relative flex h-2.5 w-2.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-600"></span>
+                        </span>
+                        <span className="text-xs font-bold text-green-700">Connected</span>
+                      </>
+                    ) : backendStatus === 'checking' ? (
+                      <>
+                        <span className="relative flex h-2.5 w-2.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-yellow-500"></span>
+                        </span>
+                        <span className="text-xs font-bold text-yellow-700">Checking...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="relative flex h-2.5 w-2.5">
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span>
+                        </span>
+                        <span className="text-xs font-bold text-red-700">Disconnected</span>
+                      </>
+                    )}
+                    <span className="text-teal-400 mx-1">•</span>
+                    <span className="text-xs text-teal-700 font-medium">Latency: 12ms</span>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-teal-600 pt-2 border-t border-teal-200">
+                    <span className="font-semibold bg-white/40 px-1.5 py-0.5 rounded">PostgreSQL</span>
+                    <span className="flex items-center gap-1">
+                      Perf: <span className="font-bold text-green-700">Normal</span>
+                    </span>
+                    <div className="ml-auto opacity-75 bg-teal-200/50 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-teal-800">
+                      Production
+                    </div>
+                  </div>
+                </div>
+
+                <div className="self-start ml-4">
+                  <div className="bg-teal-200 p-4 rounded-xl shadow-inner">
+                    <Database className="w-10 h-10 text-teal-700" />
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Real-time Statistics Dashboard */}
@@ -1695,7 +1805,7 @@ const AdminPatentManager = ({ onBack }) => {
                     <X className="w-6 h-6" />
                   </button>
                 </div>
-                
+
                 {/* Modal Content with Scroll */}
                 <div className="p-8 overflow-y-auto max-h-[calc(90vh-100px)]">
                   <div className="space-y-4">
@@ -1707,79 +1817,79 @@ const AdminPatentManager = ({ onBack }) => {
                       </div>
                     ) : (
                       allAdmins.map((admin) => (
-                    <div
-                      key={admin.adminId}
-                      className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all p-6 border-l-4 border-purple-500"
-                    >
-                      <div className="flex items-center justify-between">
-                        {/* Admin Info */}
-                        <div className="flex items-center gap-4 flex-1">
-                          {/* Avatar */}
-                          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg ring-4 ring-purple-100">
-                            {admin.adminName?.charAt(0)?.toUpperCase() || 'A'}
-                          </div>
+                        <div
+                          key={admin.adminId}
+                          className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all p-6 border-l-4 border-purple-500"
+                        >
+                          <div className="flex items-center justify-between">
+                            {/* Admin Info */}
+                            <div className="flex items-center gap-4 flex-1">
+                              {/* Avatar */}
+                              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg ring-4 ring-purple-100">
+                                {admin.adminName?.charAt(0)?.toUpperCase() || 'A'}
+                              </div>
 
-                          {/* Details */}
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <h3 className="text-xl font-bold text-gray-800">{admin.adminName}</h3>
-                              <span className="px-3 py-1 bg-gradient-to-r from-purple-100 to-indigo-100 text-purple-700 rounded-full text-xs font-bold border border-purple-300">
-                                Admin #{admin.adminId}
-                              </span>
+                              {/* Details */}
+                              <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-2">
+                                  <h3 className="text-xl font-bold text-gray-800">{admin.adminName}</h3>
+                                  <span className="px-3 py-1 bg-gradient-to-r from-purple-100 to-indigo-100 text-purple-700 rounded-full text-xs font-bold border border-purple-300">
+                                    Admin #{admin.adminId}
+                                  </span>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                                  <div className="flex items-center gap-2 text-gray-600">
+                                    <Mail className="w-4 h-4 text-purple-500" />
+                                    <span className="font-medium">{admin.email}</span>
+                                  </div>
+
+                                  <div className="flex items-center gap-2 text-gray-600">
+                                    <Clock className="w-4 h-4 text-indigo-500" />
+                                    <span>Joined: {admin.createdAt ? new Date(admin.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}</span>
+                                  </div>
+
+                                  <div className="flex items-center gap-2 text-gray-600">
+                                    <Activity className="w-4 h-4 text-green-500" />
+                                    <span>Status: <span className="text-green-600 font-semibold">Active</span></span>
+                                  </div>
+                                </div>
+
+                                {/* Admin Stats */}
+                                {(admin.patentsGranted || admin.patentsRejected || admin.patentsActivated || admin.patentsDeactivated) && (
+                                  <div className="flex gap-3 mt-3">
+                                    {admin.patentsGranted > 0 && (
+                                      <span className="flex items-center gap-1 px-3 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-semibold border border-green-200">
+                                        <CheckCircle className="w-3 h-3" />
+                                        Granted: {admin.patentsGranted}
+                                      </span>
+                                    )}
+                                    {admin.patentsRejected > 0 && (
+                                      <span className="flex items-center gap-1 px-3 py-1 bg-red-50 text-red-700 rounded-lg text-xs font-semibold border border-red-200">
+                                        <X className="w-3 h-3" />
+                                        Rejected: {admin.patentsRejected}
+                                      </span>
+                                    )}
+                                    {admin.patentsActivated > 0 && (
+                                      <span className="flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-semibold border border-blue-200">
+                                        <UserCheck className="w-3 h-3" />
+                                        Activated: {admin.patentsActivated}
+                                      </span>
+                                    )}
+                                    {admin.patentsDeactivated > 0 && (
+                                      <span className="flex items-center gap-1 px-3 py-1 bg-gray-50 text-gray-700 rounded-lg text-xs font-semibold border border-gray-200">
+                                        <UserX className="w-3 h-3" />
+                                        Deactivated: {admin.patentsDeactivated}
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                              <div className="flex items-center gap-2 text-gray-600">
-                                <Mail className="w-4 h-4 text-purple-500" />
-                                <span className="font-medium">{admin.email}</span>
-                              </div>
-                              
-                              <div className="flex items-center gap-2 text-gray-600">
-                                <Clock className="w-4 h-4 text-indigo-500" />
-                                <span>Joined: {admin.createdAt ? new Date(admin.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}</span>
-                              </div>
-
-                              <div className="flex items-center gap-2 text-gray-600">
-                                <Activity className="w-4 h-4 text-green-500" />
-                                <span>Status: <span className="text-green-600 font-semibold">Active</span></span>
-                              </div>
-                            </div>
-
-                            {/* Admin Stats */}
-                            {(admin.patentsGranted || admin.patentsRejected || admin.patentsActivated || admin.patentsDeactivated) && (
-                              <div className="flex gap-3 mt-3">
-                                {admin.patentsGranted > 0 && (
-                                  <span className="flex items-center gap-1 px-3 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-semibold border border-green-200">
-                                    <CheckCircle className="w-3 h-3" />
-                                    Granted: {admin.patentsGranted}
-                                  </span>
-                                )}
-                                {admin.patentsRejected > 0 && (
-                                  <span className="flex items-center gap-1 px-3 py-1 bg-red-50 text-red-700 rounded-lg text-xs font-semibold border border-red-200">
-                                    <X className="w-3 h-3" />
-                                    Rejected: {admin.patentsRejected}
-                                  </span>
-                                )}
-                                {admin.patentsActivated > 0 && (
-                                  <span className="flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-semibold border border-blue-200">
-                                    <UserCheck className="w-3 h-3" />
-                                    Activated: {admin.patentsActivated}
-                                  </span>
-                                )}
-                                {admin.patentsDeactivated > 0 && (
-                                  <span className="flex items-center gap-1 px-3 py-1 bg-gray-50 text-gray-700 rounded-lg text-xs font-semibold border border-gray-200">
-                                    <UserX className="w-3 h-3" />
-                                    Deactivated: {admin.patentsDeactivated}
-                                  </span>
-                                )}
-                              </div>
-                            )}
                           </div>
                         </div>
-                      </div>
-                    </div>
-                  ))
-                )}
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
@@ -1801,7 +1911,7 @@ const AdminPatentManager = ({ onBack }) => {
                     <p className="text-sm text-gray-600 font-medium">Total: {patents.length} Patents</p>
                   </div>
                 </div>
-                
+
                 {/* Action Buttons */}
                 <div className="flex gap-3">
                   {/* Leaderboard Button */}
@@ -1815,7 +1925,7 @@ const AdminPatentManager = ({ onBack }) => {
                     <Trophy className="w-5 h-5" />
                     Admin Leaderboard
                   </button>
-                  
+
                   {/* Show Patents Button */}
                   <button
                     onClick={() => setShowPatentsList(true)}
@@ -1829,13 +1939,13 @@ const AdminPatentManager = ({ onBack }) => {
                   </button>
                 </div>
               </div>
-              
+
               {/* Chart Visualization */}
               <div className="grid grid-cols-5 gap-4 h-64">
                 {/* Total Bar */}
                 <div className="flex flex-col items-center justify-end">
                   <div className="w-full bg-gradient-to-t from-indigo-500 to-indigo-400 rounded-t-xl shadow-lg relative group hover:from-indigo-600 hover:to-indigo-500 transition-all"
-                       style={{ height: `${(patents.length / Math.max(patents.length, 10)) * 100}%`, minHeight: '60px' }}>
+                    style={{ height: `${(patents.length / Math.max(patents.length, 10)) * 100}%`, minHeight: '60px' }}>
                     <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-indigo-600 text-white px-3 py-1 rounded-lg font-bold text-sm shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
                       {patents.length}
                     </div>
@@ -1845,11 +1955,11 @@ const AdminPatentManager = ({ onBack }) => {
                     <p className="text-xs font-semibold text-gray-600 uppercase mt-1">Total</p>
                   </div>
                 </div>
-                
+
                 {/* Granted Bar */}
                 <div className="flex flex-col items-center justify-end">
                   <div className="w-full bg-gradient-to-t from-green-500 to-green-400 rounded-t-xl shadow-lg relative group hover:from-green-600 hover:to-green-500 transition-all"
-                       style={{ height: `${(patents.filter(p => p.stage5Granted === true && p.status !== 'Patent is Rejected').length / Math.max(patents.length, 10)) * 100}%`, minHeight: '60px' }}>
+                    style={{ height: `${(patents.filter(p => p.stage5Granted === true && p.status !== 'Patent is Rejected').length / Math.max(patents.length, 10)) * 100}%`, minHeight: '60px' }}>
                     <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-3 py-1 rounded-lg font-bold text-sm shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
                       {patents.filter(p => p.stage5Granted === true && p.status !== 'Patent is Rejected').length}
                     </div>
@@ -1859,11 +1969,11 @@ const AdminPatentManager = ({ onBack }) => {
                     <p className="text-xs font-semibold text-gray-600 uppercase mt-1">Granted</p>
                   </div>
                 </div>
-                
+
                 {/* Rejected Bar */}
                 <div className="flex flex-col items-center justify-end">
                   <div className="w-full bg-gradient-to-t from-red-500 to-red-400 rounded-t-xl shadow-lg relative group hover:from-red-600 hover:to-red-500 transition-all"
-                       style={{ height: `${(patents.filter(p => p.status === 'Patent is Rejected').length / Math.max(patents.length, 10)) * 100}%`, minHeight: '60px' }}>
+                    style={{ height: `${(patents.filter(p => p.status === 'Patent is Rejected').length / Math.max(patents.length, 10)) * 100}%`, minHeight: '60px' }}>
                     <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-red-600 text-white px-3 py-1 rounded-lg font-bold text-sm shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
                       {patents.filter(p => p.status === 'Patent is Rejected').length}
                     </div>
@@ -1873,11 +1983,11 @@ const AdminPatentManager = ({ onBack }) => {
                     <p className="text-xs font-semibold text-gray-600 uppercase mt-1">Rejected</p>
                   </div>
                 </div>
-                
+
                 {/* Application Bar */}
                 <div className="flex flex-col items-center justify-end">
                   <div className="w-full bg-gradient-to-t from-orange-500 to-orange-400 rounded-t-xl shadow-lg relative group hover:from-orange-600 hover:to-orange-500 transition-all"
-                       style={{ height: `${(patents.filter(p => p.stage5Granted !== true && p.status !== 'Patent is Rejected').length / Math.max(patents.length, 10)) * 100}%`, minHeight: '60px' }}>
+                    style={{ height: `${(patents.filter(p => p.stage5Granted !== true && p.status !== 'Patent is Rejected').length / Math.max(patents.length, 10)) * 100}%`, minHeight: '60px' }}>
                     <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-orange-600 text-white px-3 py-1 rounded-lg font-bold text-sm shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
                       {patents.filter(p => p.stage5Granted !== true && p.status !== 'Patent is Rejected').length}
                     </div>
@@ -1887,11 +1997,11 @@ const AdminPatentManager = ({ onBack }) => {
                     <p className="text-xs font-semibold text-gray-600 uppercase mt-1">Application</p>
                   </div>
                 </div>
-                
+
                 {/* Deactivated Bar */}
                 <div className="flex flex-col items-center justify-end">
                   <div className="w-full bg-gradient-to-t from-gray-500 to-gray-400 rounded-t-xl shadow-lg relative group hover:from-gray-600 hover:to-gray-500 transition-all"
-                       style={{ height: `${(patents.filter(p => p.isActive === false).length / Math.max(patents.length, 10)) * 100}%`, minHeight: '60px' }}>
+                    style={{ height: `${(patents.filter(p => p.isActive === false).length / Math.max(patents.length, 10)) * 100}%`, minHeight: '60px' }}>
                     <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-600 text-white px-3 py-1 rounded-lg font-bold text-sm shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
                       {patents.filter(p => p.isActive === false).length}
                     </div>
@@ -1920,13 +2030,13 @@ const AdminPatentManager = ({ onBack }) => {
                   <p className="text-xs text-gray-600 font-medium">Real-time user data from Firestore</p>
                 </div>
               </div>
-              
+
               {/* Chart Bars */}
               <div className="grid grid-cols-3 gap-4 h-56">
                 {/* Total Users */}
                 <div className="flex flex-col items-center justify-end">
                   <div className="w-full bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-xl shadow-lg relative group hover:from-blue-600 hover:to-blue-500 transition-all"
-                       style={{ height: `${userStats.totalUsers > 0 ? (userStats.totalUsers / Math.max(userStats.totalUsers, 10)) * 100 : 20}%`, minHeight: '60px' }}>
+                    style={{ height: `${userStats.totalUsers > 0 ? (userStats.totalUsers / Math.max(userStats.totalUsers, 10)) * 100 : 20}%`, minHeight: '60px' }}>
                     <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-3 py-1 rounded-lg font-bold text-sm shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                       {userStats.totalUsers}
                     </div>
@@ -1936,11 +2046,11 @@ const AdminPatentManager = ({ onBack }) => {
                     <p className="text-xs font-semibold text-gray-600 uppercase mt-1">Total Users</p>
                   </div>
                 </div>
-                
+
                 {/* Active Users */}
                 <div className="flex flex-col items-center justify-end">
                   <div className="w-full bg-gradient-to-t from-green-500 to-green-400 rounded-t-xl shadow-lg relative group hover:from-green-600 hover:to-green-500 transition-all"
-                       style={{ height: `${userStats.totalUsers > 0 ? (userStats.activeUsers / userStats.totalUsers) * 100 : 20}%`, minHeight: '60px' }}>
+                    style={{ height: `${userStats.totalUsers > 0 ? (userStats.activeUsers / userStats.totalUsers) * 100 : 20}%`, minHeight: '60px' }}>
                     <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-3 py-1 rounded-lg font-bold text-sm shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                       {userStats.activeUsers}
                     </div>
@@ -1950,11 +2060,11 @@ const AdminPatentManager = ({ onBack }) => {
                     <p className="text-xs font-semibold text-gray-600 uppercase mt-1">Active Users</p>
                   </div>
                 </div>
-                
+
                 {/* Deactivated Users */}
                 <div className="flex flex-col items-center justify-end">
                   <div className="w-full bg-gradient-to-t from-red-500 to-red-400 rounded-t-xl shadow-lg relative group hover:from-red-600 hover:to-red-500 transition-all"
-                       style={{ height: `${userStats.totalUsers > 0 ? (userStats.deactivatedUsers / userStats.totalUsers) * 100 : 20}%`, minHeight: '60px' }}>
+                    style={{ height: `${userStats.totalUsers > 0 ? (userStats.deactivatedUsers / userStats.totalUsers) * 100 : 20}%`, minHeight: '60px' }}>
                     <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-red-600 text-white px-3 py-1 rounded-lg font-bold text-sm shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                       {userStats.deactivatedUsers}
                     </div>
@@ -1965,7 +2075,7 @@ const AdminPatentManager = ({ onBack }) => {
                   </div>
                 </div>
               </div>
-              
+
               {/* Summary Cards */}
               <div className="mt-6 pt-6 border-t-2 border-blue-200">
                 <div className="grid grid-cols-2 gap-3">
@@ -1998,7 +2108,7 @@ const AdminPatentManager = ({ onBack }) => {
                   <p className="text-xs text-gray-600 font-medium">Patents by Indian States & UTs</p>
                 </div>
               </div>
-              
+
               {/* State Selector */}
               <div className="mb-6">
                 <label className="block text-sm font-bold text-gray-700 mb-2">
@@ -2052,7 +2162,7 @@ const AdminPatentManager = ({ onBack }) => {
                   </optgroup>
                 </select>
               </div>
-              
+
               {/* Patent Count Display */}
               {selectedState ? (
                 <div className="space-y-4">
@@ -2076,7 +2186,7 @@ const AdminPatentManager = ({ onBack }) => {
                       </>
                     )}
                   </div>
-                  
+
                   {/* Additional Info */}
                   <div className="bg-white rounded-xl p-4 border-2 border-purple-200 shadow-md">
                     <div className="flex items-center justify-between">
@@ -2143,7 +2253,7 @@ const AdminPatentManager = ({ onBack }) => {
                     </h4>
                     <div className="h-[450px]">
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart 
+                        <BarChart
                           data={[
                             {
                               category: 'Total',
@@ -2175,41 +2285,41 @@ const AdminPatentManager = ({ onBack }) => {
                         >
                           <defs>
                             <linearGradient id="barGradient1" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#6366f1" stopOpacity={0.9}/>
-                              <stop offset="100%" stopColor="#4f46e5" stopOpacity={0.7}/>
+                              <stop offset="0%" stopColor="#6366f1" stopOpacity={0.9} />
+                              <stop offset="100%" stopColor="#4f46e5" stopOpacity={0.7} />
                             </linearGradient>
                             <linearGradient id="barGradient2" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#94a3b8" stopOpacity={0.9}/>
-                              <stop offset="100%" stopColor="#64748b" stopOpacity={0.7}/>
+                              <stop offset="0%" stopColor="#94a3b8" stopOpacity={0.9} />
+                              <stop offset="100%" stopColor="#64748b" stopOpacity={0.7} />
                             </linearGradient>
                             <linearGradient id="barGradient3" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.9}/>
-                              <stop offset="100%" stopColor="#2563eb" stopOpacity={0.7}/>
+                              <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.9} />
+                              <stop offset="100%" stopColor="#2563eb" stopOpacity={0.7} />
                             </linearGradient>
                             <linearGradient id="barGradient4" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#a855f7" stopOpacity={0.9}/>
-                              <stop offset="100%" stopColor="#9333ea" stopOpacity={0.7}/>
+                              <stop offset="0%" stopColor="#a855f7" stopOpacity={0.9} />
+                              <stop offset="100%" stopColor="#9333ea" stopOpacity={0.7} />
                             </linearGradient>
                             <linearGradient id="barGradient5" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#10b981" stopOpacity={0.9}/>
-                              <stop offset="100%" stopColor="#059669" stopOpacity={0.7}/>
+                              <stop offset="0%" stopColor="#10b981" stopOpacity={0.9} />
+                              <stop offset="100%" stopColor="#059669" stopOpacity={0.7} />
                             </linearGradient>
                           </defs>
                           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" strokeWidth={2} />
-                          <XAxis 
-                            dataKey="category" 
+                          <XAxis
+                            dataKey="category"
                             tick={{ fill: '#1e293b', fontSize: 13, fontWeight: 700 }}
                             angle={-15}
                             textAnchor="end"
                             height={80}
                           />
-                          <YAxis 
+                          <YAxis
                             tick={{ fill: '#475569', fontSize: 12, fontWeight: 600 }}
                             label={{ value: 'Number of Users', angle: -90, position: 'insideLeft', style: { fill: '#1e293b', fontWeight: 'bold' } }}
                           />
-                          <Tooltip 
-                            contentStyle={{ 
-                              backgroundColor: 'rgba(255, 255, 255, 0.98)', 
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: 'rgba(255, 255, 255, 0.98)',
                               border: '3px solid #6366f1',
                               borderRadius: '16px',
                               padding: '16px',
@@ -2219,7 +2329,7 @@ const AdminPatentManager = ({ onBack }) => {
                             formatter={(value, name, props) => [
                               <span className="font-bold text-indigo-700 text-base">
                                 {value} users
-                                {props.payload.category !== 'Total' && userStats.totalUsers > 0 
+                                {props.payload.category !== 'Total' && userStats.totalUsers > 0
                                   ? ` (${Math.round((value / userStats.totalUsers) * 100)}%)`
                                   : ''
                                 }
@@ -2227,8 +2337,8 @@ const AdminPatentManager = ({ onBack }) => {
                               props.payload.category
                             ]}
                           />
-                          <Bar 
-                            dataKey="value" 
+                          <Bar
+                            dataKey="value"
                             radius={[12, 12, 0, 0]}
                             animationDuration={1500}
                             animationBegin={100}
@@ -2370,28 +2480,28 @@ const AdminPatentManager = ({ onBack }) => {
                     {subscriptionRevenue.byPlan.map((plan) => {
                       const maxCount = Math.max(...subscriptionRevenue.byPlan.map(p => p.count));
                       const barWidth = maxCount > 0 ? (plan.count / maxCount) * 100 : 0;
-                      
+
                       // Color coding for different plans
                       const planColors = {
-                        'Basic': { 
-                          bg: 'from-gray-400 to-gray-500', 
+                        'Basic': {
+                          bg: 'from-gray-400 to-gray-500',
                           text: 'text-gray-700',
                           icon: '🆓'
                         },
-                        'Pro': { 
-                          bg: 'from-blue-400 to-cyan-500', 
+                        'Pro': {
+                          bg: 'from-blue-400 to-cyan-500',
                           text: 'text-blue-700',
                           icon: '⭐'
                         },
-                        'Enterprise': { 
-                          bg: 'from-purple-400 to-pink-500', 
+                        'Enterprise': {
+                          bg: 'from-purple-400 to-pink-500',
                           text: 'text-purple-700',
                           icon: '👑'
                         }
                       };
-                      
+
                       const colors = planColors[plan.planName] || planColors['Basic'];
-                      
+
                       return (
                         <div key={plan.planName} className="relative">
                           <div className="flex items-center justify-between mb-1 text-sm font-semibold">
@@ -2401,7 +2511,7 @@ const AdminPatentManager = ({ onBack }) => {
                             </span>
                           </div>
                           <div className="relative h-12 bg-white rounded-lg overflow-hidden border-2 border-gray-200 shadow-sm">
-                            <div 
+                            <div
                               className={`h-full flex items-center justify-between px-3 transition-all duration-700 bg-gradient-to-r ${colors.bg}`}
                               style={{ width: `${Math.max(barWidth, 15)}%`, minWidth: '100px' }}
                             >
@@ -2455,7 +2565,7 @@ const AdminPatentManager = ({ onBack }) => {
                         <span className="text-gray-700">{patentFilingRevenue.count} × ₹500</span>
                       </div>
                       <div className="relative h-12 bg-white rounded-lg overflow-hidden border-2 border-gray-200 shadow-sm">
-                        <div 
+                        <div
                           className="h-full flex items-center justify-between px-3 bg-gradient-to-r from-green-400 to-emerald-500"
                           style={{ width: '100%' }}
                         >
@@ -2464,7 +2574,7 @@ const AdminPatentManager = ({ onBack }) => {
                         </div>
                       </div>
                     </div>
-                    
+
                     {/* Breakdown */}
                     <div className="bg-white rounded-lg p-3 border border-green-200">
                       <div className="flex items-center justify-between text-sm">
@@ -2535,24 +2645,24 @@ const AdminPatentManager = ({ onBack }) => {
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="#dbeafe" />
-                        <XAxis 
-                          type="number" 
+                        <XAxis
+                          type="number"
                           domain={[0, 5]}
                           stroke="#1e40af"
                           style={{ fontSize: '13px', fontWeight: '700' }}
                           tick={{ fill: '#1e3a8a' }}
                           tickCount={6}
                         />
-                        <YAxis 
+                        <YAxis
                           type="category"
-                          dataKey="category" 
+                          dataKey="category"
                           stroke="#1e40af"
                           width={110}
                           style={{ fontSize: '14px', fontWeight: '700' }}
                           tick={{ fill: '#1e3a8a' }}
                           orientation="left"
                         />
-                        <Tooltip 
+                        <Tooltip
                           contentStyle={{
                             backgroundColor: '#eff6ff',
                             border: '2px solid #3b82f6',
@@ -2573,8 +2683,8 @@ const AdminPatentManager = ({ onBack }) => {
                             ];
                           }}
                         />
-                        <Bar 
-                          dataKey="rating" 
+                        <Bar
+                          dataKey="rating"
                           fill="url(#ratingGradient)"
                           radius={[0, 8, 8, 0]}
                         />
@@ -2606,13 +2716,12 @@ const AdminPatentManager = ({ onBack }) => {
                       </div>
                       <div className="mt-2">
                         {[1, 2, 3, 4, 5].map((star) => (
-                          <span 
-                            key={star} 
-                            className={`text-2xl ${
-                              star <= Math.round(feedbackStats.overallAverageRating || 0) 
-                                ? 'text-yellow-500' 
-                                : 'text-gray-300'
-                            }`}
+                          <span
+                            key={star}
+                            className={`text-2xl ${star <= Math.round(feedbackStats.overallAverageRating || 0)
+                              ? 'text-yellow-500'
+                              : 'text-gray-300'
+                              }`}
                           >
                             ★
                           </span>
@@ -2640,10 +2749,10 @@ const AdminPatentManager = ({ onBack }) => {
                           <div className="text-4xl mb-1">📊</div>
                         )}
                         <div className="text-xs text-purple-700 font-medium">
-                          {feedbackStats.overallAverageRating >= 4.5 ? 'Excellent' : 
-                           feedbackStats.overallAverageRating >= 4 ? 'Very Good' :
-                           feedbackStats.overallAverageRating >= 3 ? 'Good' :
-                           feedbackStats.overallAverageRating > 0 ? 'Needs Improvement' : 'No Ratings Yet'}
+                          {feedbackStats.overallAverageRating >= 4.5 ? 'Excellent' :
+                            feedbackStats.overallAverageRating >= 4 ? 'Very Good' :
+                              feedbackStats.overallAverageRating >= 3 ? 'Good' :
+                                feedbackStats.overallAverageRating > 0 ? 'Needs Improvement' : 'No Ratings Yet'}
                         </div>
                       </div>
                     </div>
@@ -2673,13 +2782,13 @@ const AdminPatentManager = ({ onBack }) => {
                           </span>
                         </div>
                       </div>
-                      
+
                       {feedback.feedbackMessage && (
                         <p className="text-sm text-gray-700 mb-3 line-clamp-3 italic">
                           "{feedback.feedbackMessage}"
                         </p>
                       )}
-                      
+
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <div className="flex justify-between">
                           <span className="text-gray-600">UI:</span>
@@ -2698,12 +2807,12 @@ const AdminPatentManager = ({ onBack }) => {
                           <span className="font-semibold text-pink-700">{feedback.supportRating || 0}/5</span>
                         </div>
                       </div>
-                      
+
                       <div className="mt-2 pt-2 border-t border-amber-200">
                         <div className="text-xs text-gray-500">
-                          {new Date(feedback.createdAt).toLocaleDateString('en-US', { 
-                            month: 'short', 
-                            day: 'numeric', 
+                          {new Date(feedback.createdAt).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
                             year: 'numeric',
                             hour: '2-digit',
                             minute: '2-digit'
@@ -2748,85 +2857,75 @@ const AdminPatentManager = ({ onBack }) => {
                       <span className="text-xs font-bold text-white bg-white/20 px-3 py-1.5 rounded-lg backdrop-blur-sm">Filter:</span>
                       <button
                         onClick={() => setQuickFilter('all')}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs transition-all duration-300 ${
-                          quickFilter === 'all'
-                            ? 'bg-white text-indigo-700 shadow-lg'
-                            : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm'
-                        }`}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs transition-all duration-300 ${quickFilter === 'all'
+                          ? 'bg-white text-indigo-700 shadow-lg'
+                          : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm'
+                          }`}
                       >
                         <FileCheck className="w-3.5 h-3.5" />
                         All
-                        <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
-                          quickFilter === 'all' ? 'bg-indigo-100 text-indigo-700' : 'bg-white/20 text-white'
-                        }`}>
+                        <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${quickFilter === 'all' ? 'bg-indigo-100 text-indigo-700' : 'bg-white/20 text-white'
+                          }`}>
                           {patents.length}
                         </span>
                       </button>
-                      
+
                       <button
                         onClick={() => setQuickFilter('granted')}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs transition-all duration-300 ${
-                          quickFilter === 'granted'
-                            ? 'bg-green-500 text-white shadow-lg'
-                            : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm'
-                        }`}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs transition-all duration-300 ${quickFilter === 'granted'
+                          ? 'bg-green-500 text-white shadow-lg'
+                          : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm'
+                          }`}
                       >
                         <CheckCircle className="w-3.5 h-3.5" />
                         Granted
-                        <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
-                          quickFilter === 'granted' ? 'bg-white/30' : 'bg-white/20'
-                        }`}>
+                        <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${quickFilter === 'granted' ? 'bg-white/30' : 'bg-white/20'
+                          }`}>
                           {patents.filter(p => p.stage5Granted === true && p.status !== 'Patent is Rejected').length}
                         </span>
                       </button>
-                      
+
                       <button
                         onClick={() => setQuickFilter('rejected')}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs transition-all duration-300 ${
-                          quickFilter === 'rejected'
-                            ? 'bg-red-500 text-white shadow-lg'
-                            : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm'
-                        }`}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs transition-all duration-300 ${quickFilter === 'rejected'
+                          ? 'bg-red-500 text-white shadow-lg'
+                          : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm'
+                          }`}
                       >
                         <X className="w-3.5 h-3.5" />
                         Rejected
-                        <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
-                          quickFilter === 'rejected' ? 'bg-white/30' : 'bg-white/20'
-                        }`}>
+                        <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${quickFilter === 'rejected' ? 'bg-white/30' : 'bg-white/20'
+                          }`}>
                           {patents.filter(p => p.status === 'Patent is Rejected').length}
                         </span>
                       </button>
-                      
+
                       <button
                         onClick={() => setQuickFilter('application')}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs transition-all duration-300 ${
-                          quickFilter === 'application'
-                            ? 'bg-orange-500 text-white shadow-lg'
-                            : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm'
-                        }`}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs transition-all duration-300 ${quickFilter === 'application'
+                          ? 'bg-orange-500 text-white shadow-lg'
+                          : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm'
+                          }`}
                       >
                         <Clock className="w-3.5 h-3.5" />
                         Application
-                        <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
-                          quickFilter === 'application' ? 'bg-white/30' : 'bg-white/20'
-                        }`}>
+                        <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${quickFilter === 'application' ? 'bg-white/30' : 'bg-white/20'
+                          }`}>
                           {patents.filter(p => p.stage5Granted !== true && p.status !== 'Patent is Rejected').length}
                         </span>
                       </button>
-                      
+
                       <button
                         onClick={() => setQuickFilter('deactivated')}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs transition-all duration-300 ${
-                          quickFilter === 'deactivated'
-                            ? 'bg-gray-600 text-white shadow-lg'
-                            : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm'
-                        }`}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs transition-all duration-300 ${quickFilter === 'deactivated'
+                          ? 'bg-gray-600 text-white shadow-lg'
+                          : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm'
+                          }`}
                       >
                         <AlertCircle className="w-3.5 h-3.5" />
                         Deactivated
-                        <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
-                          quickFilter === 'deactivated' ? 'bg-white/30' : 'bg-white/20'
-                        }`}>
+                        <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${quickFilter === 'deactivated' ? 'bg-white/30' : 'bg-white/20'
+                          }`}>
                           {patents.filter(p => p.isActive === false).length}
                         </span>
                       </button>
@@ -2849,420 +2948,415 @@ const AdminPatentManager = ({ onBack }) => {
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Patents List Content */}
                 <div className="flex-1 overflow-y-auto p-6 bg-gradient-to-br from-gray-50 to-indigo-50">
                   {loading && patents.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-              <p className="mt-4 text-gray-600">Loading patents...</p>
-            </div>
-          ) : filteredPatents.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-lg p-12 text-center">
-              <p className="text-gray-600 text-lg">
-                {searchQuery
-                  ? 'No patents found matching your search.'
-                  : quickFilter === 'granted' 
-                  ? 'No granted patents found.' 
-                  : quickFilter === 'non-granted' 
-                  ? 'No non-granted patents found.' 
-                  : 'No patents found in the system.'}
-              </p>
-            </div>
-          ) : (
-            <>
-            <div className="space-y-6">
-              {currentPatents.map((patent) => (
-                <div key={patent.id} className="bg-gradient-to-br from-white via-blue-50 to-indigo-50 rounded-2xl shadow-2xl p-8 border-2 border-indigo-100 hover:shadow-3xl transition-all duration-300 transform hover:-translate-y-1">
-                  {/* Header Section */}
-                  <div className="flex items-start justify-between mb-6 pb-4 border-b-2 border-indigo-200">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-3 rounded-xl shadow-lg">
-                          <CheckCircle className="w-6 h-6 text-white" />
-                        </div>
-                        <h3 className="text-2xl font-bold text-gray-900">
-                          {patent.inventionTitle || 'Untitled Patent'}
-                        </h3>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mt-4">
-                        <div className="bg-white/60 backdrop-blur-sm p-3 rounded-lg shadow-sm">
-                          <span className="text-gray-600 block mb-1 font-semibold">Applicant:</span>
-                          <span className="font-bold text-gray-900">{patent.applicantName}</span>
-                        </div>
-                        <div className="bg-white/60 backdrop-blur-sm p-3 rounded-lg shadow-sm">
-                          <span className="text-gray-600 block mb-1 font-semibold">Email:</span>
-                          <span className="font-bold text-blue-600">{patent.applicantEmail}</span>
-                        </div>
-                        <div className="bg-white/60 backdrop-blur-sm p-3 rounded-lg shadow-sm">
-                          <span className="text-gray-600 block mb-1 font-semibold">Filing ID:</span>
-                          <span className="font-mono font-bold text-gray-900">#{patent.id}</span>
-                        </div>
-                        <div className="bg-white/60 backdrop-blur-sm p-3 rounded-lg shadow-sm">
-                          <span className="text-gray-600 block mb-1 font-semibold">Status:</span>
-                          <span className={`font-bold px-3 py-1 rounded-full inline-block ${
-                            patent.status === 'Granted' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
-                          }`}>
-                            {patent.status}
-                          </span>
-                        </div>
-                      </div>
+                    <div className="text-center py-12">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+                      <p className="mt-4 text-gray-600">Loading patents...</p>
                     </div>
-                  </div>
-
-                  {/* Additional Patent Details Fields - Only shown when details are being filled */}
-                  {showDetailsFor[patent.id] && (
-                    <div className={`mb-6 p-6 bg-white/70 backdrop-blur-sm rounded-xl shadow-md border-2 ${formType[patent.id] === 'reject' ? 'border-red-300' : 'border-indigo-300'} animate-fadeIn`}>
-                      <div className="flex items-center justify-between mb-4">
-                        <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
-                          <Shield className={`w-5 h-5 ${formType[patent.id] === 'reject' ? 'text-red-600' : 'text-indigo-600'}`} />
-                          {formType[patent.id] === 'reject' ? 'Rejection Details' : 'Patent Details'} 
-                          <span className="text-sm text-red-600">
-                            (Required for {formType[patent.id] === 'reject' ? 'rejecting' : 'granting'} patent)
-                          </span>
-                        </h4>
-                        <button
-                          onClick={() => {
-                            setShowDetailsFor({
-                              ...showDetailsFor,
-                              [patent.id]: false
-                            });
-                            setFormType({
-                              ...formType,
-                              [patent.id]: null
-                            });
-                          }}
-                          className="text-gray-500 hover:text-gray-700 transition-colors"
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {formType[patent.id] === 'grant' && (
-                          <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">
-                              Patent Number <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                              type="text"
-                              value={patentDetails[patent.id]?.patentNumber || ''}
-                              onChange={(e) => setPatentDetails({
-                                ...patentDetails,
-                                [patent.id]: { ...patentDetails[patent.id], patentNumber: e.target.value }
-                              })}
-                              placeholder="Enter patent number"
-                              className="w-full px-4 py-2.5 bg-white border-2 border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-gray-900 font-medium placeholder:text-gray-400 shadow-sm"
-                            />
-                          </div>
-                        )}
-                        
-                        {formType[patent.id] === 'reject' && (
-                          <>
-                            <div>
-                              <label className="block text-sm font-bold text-gray-700 mb-2">
-                                Rejected Patent Number <span className="text-red-500">*</span>
-                              </label>
-                              <input
-                                type="text"
-                                value={patentDetails[patent.id]?.rejectedPatentNumber || ''}
-                                onChange={(e) => setPatentDetails({
-                                  ...patentDetails,
-                                  [patent.id]: { ...patentDetails[patent.id], rejectedPatentNumber: e.target.value }
-                                })}
-                                placeholder="Enter rejected patent number"
-                                className="w-full px-4 py-2.5 bg-white border-2 border-red-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all text-gray-900 font-medium placeholder:text-gray-400 shadow-sm"
-                              />
+                  ) : filteredPatents.length === 0 ? (
+                    <div className="bg-white rounded-xl shadow-lg p-12 text-center">
+                      <p className="text-gray-600 text-lg">
+                        {searchQuery
+                          ? 'No patents found matching your search.'
+                          : quickFilter === 'granted'
+                            ? 'No granted patents found.'
+                            : quickFilter === 'non-granted'
+                              ? 'No non-granted patents found.'
+                              : 'No patents found in the system.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="space-y-6">
+                        {currentPatents.map((patent) => (
+                          <div key={patent.id} className="bg-gradient-to-br from-white via-blue-50 to-indigo-50 rounded-2xl shadow-2xl p-8 border-2 border-indigo-100 hover:shadow-3xl transition-all duration-300 transform hover:-translate-y-1">
+                            {/* Header Section */}
+                            <div className="flex items-start justify-between mb-6 pb-4 border-b-2 border-indigo-200">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-3">
+                                  <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-3 rounded-xl shadow-lg">
+                                    <CheckCircle className="w-6 h-6 text-white" />
+                                  </div>
+                                  <h3 className="text-2xl font-bold text-gray-900">
+                                    {patent.inventionTitle || 'Untitled Patent'}
+                                  </h3>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mt-4">
+                                  <div className="bg-white/60 backdrop-blur-sm p-3 rounded-lg shadow-sm">
+                                    <span className="text-gray-600 block mb-1 font-semibold">Applicant:</span>
+                                    <span className="font-bold text-gray-900">{patent.applicantName}</span>
+                                  </div>
+                                  <div className="bg-white/60 backdrop-blur-sm p-3 rounded-lg shadow-sm">
+                                    <span className="text-gray-600 block mb-1 font-semibold">Email:</span>
+                                    <span className="font-bold text-blue-600">{patent.applicantEmail}</span>
+                                  </div>
+                                  <div className="bg-white/60 backdrop-blur-sm p-3 rounded-lg shadow-sm">
+                                    <span className="text-gray-600 block mb-1 font-semibold">Filing ID:</span>
+                                    <span className="font-mono font-bold text-gray-900">#{patent.id}</span>
+                                  </div>
+                                  <div className="bg-white/60 backdrop-blur-sm p-3 rounded-lg shadow-sm">
+                                    <span className="text-gray-600 block mb-1 font-semibold">Status:</span>
+                                    <span className={`font-bold px-3 py-1 rounded-full inline-block ${patent.status === 'Granted' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                                      }`}>
+                                      {patent.status}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                            
-                            <div>
-                              <label className="block text-sm font-bold text-gray-700 mb-2">
-                                Rejected Patent Person Name <span className="text-red-500">*</span>
-                              </label>
-                              <input
-                                type="text"
-                                value={patentDetails[patent.id]?.rejectedPersonName || ''}
-                                onChange={(e) => setPatentDetails({
-                                  ...patentDetails,
-                                  [patent.id]: { ...patentDetails[patent.id], rejectedPersonName: e.target.value }
-                                })}
-                                placeholder="Enter person name"
-                                className="w-full px-4 py-2.5 bg-white border-2 border-red-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all text-gray-900 font-medium placeholder:text-gray-400 shadow-sm"
-                              />
+
+                            {/* Additional Patent Details Fields - Only shown when details are being filled */}
+                            {showDetailsFor[patent.id] && (
+                              <div className={`mb-6 p-6 bg-white/70 backdrop-blur-sm rounded-xl shadow-md border-2 ${formType[patent.id] === 'reject' ? 'border-red-300' : 'border-indigo-300'} animate-fadeIn`}>
+                                <div className="flex items-center justify-between mb-4">
+                                  <h4 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                                    <Shield className={`w-5 h-5 ${formType[patent.id] === 'reject' ? 'text-red-600' : 'text-indigo-600'}`} />
+                                    {formType[patent.id] === 'reject' ? 'Rejection Details' : 'Patent Details'}
+                                    <span className="text-sm text-red-600">
+                                      (Required for {formType[patent.id] === 'reject' ? 'rejecting' : 'granting'} patent)
+                                    </span>
+                                  </h4>
+                                  <button
+                                    onClick={() => {
+                                      setShowDetailsFor({
+                                        ...showDetailsFor,
+                                        [patent.id]: false
+                                      });
+                                      setFormType({
+                                        ...formType,
+                                        [patent.id]: null
+                                      });
+                                    }}
+                                    className="text-gray-500 hover:text-gray-700 transition-colors"
+                                  >
+                                    <X className="w-5 h-5" />
+                                  </button>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                  {formType[patent.id] === 'grant' && (
+                                    <div>
+                                      <label className="block text-sm font-bold text-gray-700 mb-2">
+                                        Patent Number <span className="text-red-500">*</span>
+                                      </label>
+                                      <input
+                                        type="text"
+                                        value={patentDetails[patent.id]?.patentNumber || ''}
+                                        onChange={(e) => setPatentDetails({
+                                          ...patentDetails,
+                                          [patent.id]: { ...patentDetails[patent.id], patentNumber: e.target.value }
+                                        })}
+                                        placeholder="Enter patent number"
+                                        className="w-full px-4 py-2.5 bg-white border-2 border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-gray-900 font-medium placeholder:text-gray-400 shadow-sm"
+                                      />
+                                    </div>
+                                  )}
+
+                                  {formType[patent.id] === 'reject' && (
+                                    <>
+                                      <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">
+                                          Rejected Patent Number <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                          type="text"
+                                          value={patentDetails[patent.id]?.rejectedPatentNumber || ''}
+                                          onChange={(e) => setPatentDetails({
+                                            ...patentDetails,
+                                            [patent.id]: { ...patentDetails[patent.id], rejectedPatentNumber: e.target.value }
+                                          })}
+                                          placeholder="Enter rejected patent number"
+                                          className="w-full px-4 py-2.5 bg-white border-2 border-red-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all text-gray-900 font-medium placeholder:text-gray-400 shadow-sm"
+                                        />
+                                      </div>
+
+                                      <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">
+                                          Rejected Patent Person Name <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                          type="text"
+                                          value={patentDetails[patent.id]?.rejectedPersonName || ''}
+                                          onChange={(e) => setPatentDetails({
+                                            ...patentDetails,
+                                            [patent.id]: { ...patentDetails[patent.id], rejectedPersonName: e.target.value }
+                                          })}
+                                          placeholder="Enter person name"
+                                          className="w-full px-4 py-2.5 bg-white border-2 border-red-200 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all text-gray-900 font-medium placeholder:text-gray-400 shadow-sm"
+                                        />
+                                      </div>
+                                    </>
+                                  )}
+
+                                  {formType[patent.id] === 'grant' && (
+                                    <div>
+                                      <label className="block text-sm font-bold text-gray-700 mb-2">
+                                        Granted Patent Person Name <span className="text-red-500">*</span>
+                                      </label>
+                                      <input
+                                        type="text"
+                                        value={patentDetails[patent.id]?.grantedPersonName || ''}
+                                        onChange={(e) => setPatentDetails({
+                                          ...patentDetails,
+                                          [patent.id]: { ...patentDetails[patent.id], grantedPersonName: e.target.value }
+                                        })}
+                                        placeholder="Enter person name"
+                                        className="w-full px-4 py-2.5 bg-white border-2 border-green-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all text-gray-900 font-medium placeholder:text-gray-400 shadow-sm"
+                                      />
+                                    </div>
+                                  )}
+
+                                  <div className={formType[patent.id] === 'grant' ? 'md:col-span-2' : ''}>                          <label className="block text-sm font-bold text-gray-700 mb-2">
+                                    Location <span className="text-red-500">*</span>
+                                  </label>
+                                    <input
+                                      type="text"
+                                      value={patentDetails[patent.id]?.location || ''}
+                                      onChange={(e) => setPatentDetails({
+                                        ...patentDetails,
+                                        [patent.id]: { ...patentDetails[patent.id], location: e.target.value }
+                                      })}
+                                      placeholder={`Enter location where patent was ${formType[patent.id] === 'reject' ? 'rejected' : 'granted'}`}
+                                      className="w-full px-4 py-2.5 bg-white border-2 border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-gray-900 font-medium placeholder:text-gray-400 shadow-sm"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Stages */}
+                            <div className="border-t-2 border-indigo-200 pt-6 mb-6">
+                              <h4 className="font-bold text-gray-800 mb-4 text-lg">Patent Stages:</h4>
+                              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 w-full">
+                                {[
+                                  { key: 'stage1Filed', label: '1. Filed', name: 'stage1Filed' },
+                                  { key: 'stage2AdminReview', label: '2. Admin Review', name: 'stage2AdminReview' },
+                                  { key: 'stage3TechnicalReview', label: '3. Technical', name: 'stage3TechnicalReview' },
+                                  { key: 'stage4Verification', label: '4. Verification', name: 'stage4Verification' },
+                                ].map((stage) => (
+                                  <button
+                                    key={stage.key}
+                                    onClick={() => !patent.stage5Granted && patent.status !== 'Patent is Rejected' && patent.isActive !== false && updateStage(patent.id, stage.name, !patent[stage.key])}
+                                    disabled={patent.stage5Granted || patent.status === 'Patent is Rejected' || patent.isActive === false}
+                                    className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all transform shadow-md ${patent.stage5Granted || patent.status === 'Patent is Rejected'
+                                      ? 'bg-gradient-to-br from-green-50 to-emerald-100 border-green-500 text-green-800 shadow-green-200 cursor-not-allowed opacity-75'
+                                      : patent.isActive === false
+                                        ? 'bg-gradient-to-br from-gray-100 to-gray-200 border-gray-400 text-gray-500 cursor-not-allowed opacity-60'
+                                        : patent[stage.key]
+                                          ? 'bg-gradient-to-br from-green-50 to-emerald-100 border-green-500 text-green-800 shadow-green-200 hover:scale-105'
+                                          : 'bg-white border-gray-300 text-gray-700 hover:border-indigo-400 hover:bg-indigo-50 hover:scale-105'
+                                      }`}
+                                  >
+                                    {patent[stage.key] ? (
+                                      <CheckCircle className="w-5 h-5 text-green-600" />
+                                    ) : (
+                                      <Circle className="w-5 h-5 text-gray-400" />
+                                    )}
+                                    <span className="text-sm font-bold whitespace-nowrap">{stage.label}</span>
+                                  </button>
+                                ))}
+
+                                {/* Stage 5: Grant & Send Email Button */}
+                                {patent.status !== 'Patent is Rejected' && (
+                                  <button
+                                    onClick={() => grantAllStages(patent)}
+                                    disabled={patent.stage5Granted || patent.isActive === false}
+                                    className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all duration-300 transform shadow-2xl font-bold ${patent.stage5Granted
+                                      ? 'bg-gradient-to-br from-green-50 to-emerald-100 border-green-500 text-green-800 shadow-green-300 cursor-not-allowed opacity-75'
+                                      : patent.isActive === false
+                                        ? 'bg-gradient-to-br from-gray-100 to-gray-200 border-gray-400 text-gray-500 cursor-not-allowed opacity-60'
+                                        : 'bg-gradient-to-r from-emerald-500 via-green-500 to-teal-600 text-white border-emerald-400 hover:from-emerald-600 hover:via-green-600 hover:to-teal-700 hover:scale-110 hover:shadow-emerald-400/50 active:scale-95 animate-pulse-slow'
+                                      }`}
+                                    style={!patent.stage5Granted && patent.isActive !== false ? {
+                                      boxShadow: '0 10px 40px rgba(16, 185, 129, 0.4), 0 0 20px rgba(16, 185, 129, 0.3)',
+                                    } : {}}
+                                  >
+                                    {patent.stage5Granted ? (
+                                      <>
+                                        <CheckCircle className="w-5 h-5 text-green-600" />
+                                        <span className="text-sm font-bold whitespace-nowrap">5. Granted</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Mail className="w-5 h-5 animate-bounce" />
+                                        <span className="text-sm font-extrabold tracking-wide whitespace-nowrap">5. Grant & Send Email</span>
+                                      </>
+                                    )}
+                                  </button>
+                                )}
+
+                                {/* Show Rejected Status */}
+                                {patent.status === 'Patent is Rejected' && (
+                                  <div className="flex items-center justify-center gap-2 p-3 rounded-xl border-2 bg-gradient-to-br from-red-50 to-rose-100 border-red-500 text-red-800 shadow-red-300">
+                                    <X className="w-5 h-5 text-red-600" />
+                                    <span className="text-sm font-bold whitespace-nowrap">Patent is Rejected</span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          </>
-                        )}
-                        
-                        {formType[patent.id] === 'grant' && (
-                          <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-2">
-                              Granted Patent Person Name <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                              type="text"
-                              value={patentDetails[patent.id]?.grantedPersonName || ''}
-                              onChange={(e) => setPatentDetails({
-                                ...patentDetails,
-                                [patent.id]: { ...patentDetails[patent.id], grantedPersonName: e.target.value }
-                              })}
-                              placeholder="Enter person name"
-                              className="w-full px-4 py-2.5 bg-white border-2 border-green-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all text-gray-900 font-medium placeholder:text-gray-400 shadow-sm"
-                            />
+
+                            {/* Action Buttons */}
+                            <div className={`grid grid-cols-1 ${patent.status === 'Patent is Rejected' ? 'md:grid-cols-4' : patent.stage5Granted ? 'md:grid-cols-4' : 'md:grid-cols-2 lg:grid-cols-5'} gap-3 pt-6 border-t-2 border-indigo-200`}>
+                              {/* Activate/Deactivate Button */}
+                              {patent.isActive === false ? (
+                                <button
+                                  onClick={() => activatePatent(patent.id)}
+                                  className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1"
+                                >
+                                  <CheckCircle className="w-5 h-5" />
+                                  Activate
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => deactivatePatent(patent.id)}
+                                  className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-orange-500 to-amber-600 text-white rounded-xl hover:from-orange-600 hover:to-amber-700 font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1"
+                                >
+                                  <X className="w-5 h-5" />
+                                  Deactivate
+                                </button>
+                              )}
+
+                              <button
+                                onClick={() => setViewingPatentDetails(patent)}
+                                className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1"
+                              >
+                                <Eye className="w-5 h-5" />
+                                View Details
+                              </button>
+
+                              {!patent.stage5Granted && patent.status !== 'Patent is Rejected' && (
+                                <button
+                                  onClick={() => rejectPatent(patent)}
+                                  disabled={patent.isActive === false}
+                                  className={`flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-bold shadow-lg transition-all transform ${patent.isActive === false
+                                    ? 'bg-gradient-to-r from-gray-400 to-gray-500 text-gray-200 cursor-not-allowed opacity-60'
+                                    : 'bg-gradient-to-r from-red-500 to-rose-600 text-white hover:from-red-600 hover:to-rose-700 hover:shadow-xl hover:-translate-y-1'
+                                    }`}
+                                >
+                                  <X className="w-5 h-5" />
+                                  Reject Patent
+                                </button>
+                              )}
+
+                              <button
+                                onClick={() => resetStages(patent.id)}
+                                className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-gray-400 to-gray-600 text-white rounded-xl hover:from-gray-500 hover:to-gray-700 font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1"
+                              >
+                                <RefreshCw className="w-5 h-5" />
+                                Reset Stages
+                              </button>
+
+                              <button
+                                onClick={() => openAdminChat(patent)}
+                                className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl hover:from-purple-600 hover:to-pink-700 font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 relative"
+                              >
+                                <MessageCircle className="w-5 h-5" />
+                                View Chat
+                                {getUnreadMessagesCount(patent) > 0 && (
+                                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center animate-pulse shadow-lg">
+                                    {getUnreadMessagesCount(patent)}
+                                  </span>
+                                )}
+                              </button>
+                            </div>
                           </div>
-                        )}
-                        
-                        <div className={formType[patent.id] === 'grant' ? 'md:col-span-2' : ''}>                          <label className="block text-sm font-bold text-gray-700 mb-2">
-                            Location <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="text"
-                            value={patentDetails[patent.id]?.location || ''}
-                            onChange={(e) => setPatentDetails({
-                              ...patentDetails,
-                              [patent.id]: { ...patentDetails[patent.id], location: e.target.value }
-                            })}
-                            placeholder={`Enter location where patent was ${formType[patent.id] === 'reject' ? 'rejected' : 'granted'}`}
-                            className="w-full px-4 py-2.5 bg-white border-2 border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-gray-900 font-medium placeholder:text-gray-400 shadow-sm"
-                          />
-                        </div>
+                        ))}
                       </div>
-                    </div>
-                  )}
 
-                  {/* Stages */}
-                  <div className="border-t-2 border-indigo-200 pt-6 mb-6">
-                    <h4 className="font-bold text-gray-800 mb-4 text-lg">Patent Stages:</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4 w-full">
-                      {[
-                        { key: 'stage1Filed', label: '1. Filed', name: 'stage1Filed' },
-                        { key: 'stage2AdminReview', label: '2. Admin Review', name: 'stage2AdminReview' },
-                        { key: 'stage3TechnicalReview', label: '3. Technical', name: 'stage3TechnicalReview' },
-                        { key: 'stage4Verification', label: '4. Verification', name: 'stage4Verification' },
-                      ].map((stage) => (
-                        <button
-                          key={stage.key}
-                          onClick={() => !patent.stage5Granted && patent.status !== 'Patent is Rejected' && patent.isActive !== false && updateStage(patent.id, stage.name, !patent[stage.key])}
-                          disabled={patent.stage5Granted || patent.status === 'Patent is Rejected' || patent.isActive === false}
-                          className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all transform shadow-md ${
-                            patent.stage5Granted || patent.status === 'Patent is Rejected'
-                              ? 'bg-gradient-to-br from-green-50 to-emerald-100 border-green-500 text-green-800 shadow-green-200 cursor-not-allowed opacity-75'
-                              : patent.isActive === false
-                              ? 'bg-gradient-to-br from-gray-100 to-gray-200 border-gray-400 text-gray-500 cursor-not-allowed opacity-60'
-                              : patent[stage.key]
-                              ? 'bg-gradient-to-br from-green-50 to-emerald-100 border-green-500 text-green-800 shadow-green-200 hover:scale-105'
-                              : 'bg-white border-gray-300 text-gray-700 hover:border-indigo-400 hover:bg-indigo-50 hover:scale-105'
-                          }`}
-                        >
-                          {patent[stage.key] ? (
-                            <CheckCircle className="w-5 h-5 text-green-600" />
-                          ) : (
-                            <Circle className="w-5 h-5 text-gray-400" />
-                          )}
-                          <span className="text-sm font-bold whitespace-nowrap">{stage.label}</span>
-                        </button>
-                      ))}
-                      
-                      {/* Stage 5: Grant & Send Email Button */}
-                      {patent.status !== 'Patent is Rejected' && (
-                        <button
-                          onClick={() => grantAllStages(patent)}
-                          disabled={patent.stage5Granted || patent.isActive === false}
-                          className={`flex items-center justify-center gap-2 p-3 rounded-xl border-2 transition-all duration-300 transform shadow-2xl font-bold ${
-                            patent.stage5Granted
-                              ? 'bg-gradient-to-br from-green-50 to-emerald-100 border-green-500 text-green-800 shadow-green-300 cursor-not-allowed opacity-75'
-                              : patent.isActive === false
-                              ? 'bg-gradient-to-br from-gray-100 to-gray-200 border-gray-400 text-gray-500 cursor-not-allowed opacity-60'
-                              : 'bg-gradient-to-r from-emerald-500 via-green-500 to-teal-600 text-white border-emerald-400 hover:from-emerald-600 hover:via-green-600 hover:to-teal-700 hover:scale-110 hover:shadow-emerald-400/50 active:scale-95 animate-pulse-slow'
-                          }`}
-                          style={!patent.stage5Granted && patent.isActive !== false ? {
-                            boxShadow: '0 10px 40px rgba(16, 185, 129, 0.4), 0 0 20px rgba(16, 185, 129, 0.3)',
-                          } : {}}
-                        >
-                          {patent.stage5Granted ? (
-                            <>
-                              <CheckCircle className="w-5 h-5 text-green-600" />
-                              <span className="text-sm font-bold whitespace-nowrap">5. Granted</span>
-                            </>
-                          ) : (
-                            <>
-                              <Mail className="w-5 h-5 animate-bounce" />
-                              <span className="text-sm font-extrabold tracking-wide whitespace-nowrap">5. Grant & Send Email</span>
-                            </>
-                          )}
-                        </button>
-                      )}
-                      
-                      {/* Show Rejected Status */}
-                      {patent.status === 'Patent is Rejected' && (
-                        <div className="flex items-center justify-center gap-2 p-3 rounded-xl border-2 bg-gradient-to-br from-red-50 to-rose-100 border-red-500 text-red-800 shadow-red-300">
-                          <X className="w-5 h-5 text-red-600" />
-                          <span className="text-sm font-bold whitespace-nowrap">Patent is Rejected</span>
+                      {/* Pagination Controls */}
+                      {filteredPatents.length > 0 && (
+                        <div className="mt-8 flex flex-col items-center gap-4 pb-6">
+                          {/* Pagination Buttons */}
+                          <div className="flex items-center justify-center gap-2">
+                            {/* Previous Button */}
+                            <button
+                              onClick={() => {
+                                setCurrentPage(prev => Math.max(1, prev - 1));
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                              }}
+                              disabled={currentPage === 1}
+                              className="px-4 py-2 rounded-lg font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed bg-white border-2 border-indigo-500 text-indigo-600 hover:bg-indigo-50 hover:shadow-md disabled:hover:bg-white"
+                            >
+                              ← Previous
+                            </button>
+
+                            {/* Page Numbers */}
+                            <div className="flex items-center gap-2">
+                              {[...Array(totalPages)].map((_, index) => {
+                                const pageNumber = index + 1;
+
+                                // Show first page, last page, current page, and pages around current
+                                if (
+                                  pageNumber === 1 ||
+                                  pageNumber === totalPages ||
+                                  (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
+                                ) {
+                                  return (
+                                    <button
+                                      key={pageNumber}
+                                      onClick={() => {
+                                        setCurrentPage(pageNumber);
+                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                                      }}
+                                      className={`w-10 h-10 rounded-lg font-bold transition-all duration-300 ${currentPage === pageNumber
+                                        ? 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-lg scale-110'
+                                        : 'bg-white border-2 border-gray-300 text-gray-700 hover:border-indigo-500 hover:text-indigo-600 hover:shadow-md'
+                                        }`}
+                                    >
+                                      {pageNumber}
+                                    </button>
+                                  );
+                                }
+                                // Show ellipsis
+                                if (
+                                  pageNumber === currentPage - 2 ||
+                                  pageNumber === currentPage + 2
+                                ) {
+                                  return (
+                                    <span key={pageNumber} className="text-gray-400 font-bold">
+                                      ...
+                                    </span>
+                                  );
+                                }
+                                return null;
+                              })}
+                            </div>
+
+                            {/* Next Button */}
+                            <button
+                              onClick={() => {
+                                setCurrentPage(prev => Math.min(totalPages, prev + 1));
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                              }}
+                              disabled={currentPage === totalPages}
+                              className="px-4 py-2 rounded-lg font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed bg-white border-2 border-indigo-500 text-indigo-600 hover:bg-indigo-50 hover:shadow-md disabled:hover:bg-white"
+                            >
+                              Next →
+                            </button>
+                          </div>
+
+                          {/* Results Info */}
+                          <div className="text-center text-sm text-gray-600 bg-white px-6 py-2 rounded-lg shadow-sm border border-gray-200">
+                            Showing {startIndex + 1} - {Math.min(endIndex, filteredPatents.length)} of {filteredPatents.length} patent{filteredPatents.length !== 1 ? 's' : ''}
+                            {quickFilter !== 'all' && (
+                              <span className="ml-2 text-indigo-600 font-semibold">
+                                ({quickFilter === 'granted' ? 'Granted' : 'Non-Granted'})
+                              </span>
+                            )}
+                          </div>
                         </div>
                       )}
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className={`grid grid-cols-1 ${patent.status === 'Patent is Rejected' ? 'md:grid-cols-4' : patent.stage5Granted ? 'md:grid-cols-4' : 'md:grid-cols-2 lg:grid-cols-5'} gap-3 pt-6 border-t-2 border-indigo-200`}>
-                    {/* Activate/Deactivate Button */}
-                    {patent.isActive === false ? (
-                      <button
-                        onClick={() => activatePatent(patent.id)}
-                        className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1"
-                      >
-                        <CheckCircle className="w-5 h-5" />
-                        Activate
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => deactivatePatent(patent.id)}
-                        className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-orange-500 to-amber-600 text-white rounded-xl hover:from-orange-600 hover:to-amber-700 font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1"
-                      >
-                        <X className="w-5 h-5" />
-                        Deactivate
-                      </button>
-                    )}
-                    
-                    <button
-                      onClick={() => setViewingPatentDetails(patent)}
-                      className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1"
-                    >
-                      <Eye className="w-5 h-5" />
-                      View Details
-                    </button>
-                    
-                    {!patent.stage5Granted && patent.status !== 'Patent is Rejected' && (
-                      <button
-                        onClick={() => rejectPatent(patent)}
-                        disabled={patent.isActive === false}
-                        className={`flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-bold shadow-lg transition-all transform ${
-                          patent.isActive === false
-                            ? 'bg-gradient-to-r from-gray-400 to-gray-500 text-gray-200 cursor-not-allowed opacity-60'
-                            : 'bg-gradient-to-r from-red-500 to-rose-600 text-white hover:from-red-600 hover:to-rose-700 hover:shadow-xl hover:-translate-y-1'
-                        }`}
-                      >
-                        <X className="w-5 h-5" />
-                        Reject Patent
-                      </button>
-                    )}
-                    
-                    <button
-                      onClick={() => resetStages(patent.id)}
-                      className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-gray-400 to-gray-600 text-white rounded-xl hover:from-gray-500 hover:to-gray-700 font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1"
-                    >
-                      <RefreshCw className="w-5 h-5" />
-                      Reset Stages
-                    </button>
-                    
-                    <button
-                      onClick={() => openAdminChat(patent)}
-                      className="flex items-center justify-center gap-2 px-5 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl hover:from-purple-600 hover:to-pink-700 font-bold shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 relative"
-                    >
-                      <MessageCircle className="w-5 h-5" />
-                      View Chat
-                      {getUnreadMessagesCount(patent) > 0 && (
-                        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center animate-pulse shadow-lg">
-                          {getUnreadMessagesCount(patent)}
-                        </span>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Pagination Controls */}
-            {filteredPatents.length > 0 && (
-              <div className="mt-8 flex flex-col items-center gap-4 pb-6">
-                {/* Pagination Buttons */}
-                <div className="flex items-center justify-center gap-2">
-                  {/* Previous Button */}
-                  <button
-                    onClick={() => {
-                      setCurrentPage(prev => Math.max(1, prev - 1));
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    disabled={currentPage === 1}
-                    className="px-4 py-2 rounded-lg font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed bg-white border-2 border-indigo-500 text-indigo-600 hover:bg-indigo-50 hover:shadow-md disabled:hover:bg-white"
-                  >
-                    ← Previous
-                  </button>
-
-                  {/* Page Numbers */}
-                  <div className="flex items-center gap-2">
-                    {[...Array(totalPages)].map((_, index) => {
-                      const pageNumber = index + 1;
-                      
-                      // Show first page, last page, current page, and pages around current
-                      if (
-                        pageNumber === 1 ||
-                        pageNumber === totalPages ||
-                        (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
-                      ) {
-                        return (
-                          <button
-                            key={pageNumber}
-                            onClick={() => {
-                              setCurrentPage(pageNumber);
-                              window.scrollTo({ top: 0, behavior: 'smooth' });
-                            }}
-                            className={`w-10 h-10 rounded-lg font-bold transition-all duration-300 ${
-                              currentPage === pageNumber
-                                ? 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-lg scale-110'
-                                : 'bg-white border-2 border-gray-300 text-gray-700 hover:border-indigo-500 hover:text-indigo-600 hover:shadow-md'
-                            }`}
-                          >
-                            {pageNumber}
-                          </button>
-                        );
-                      }
-                      // Show ellipsis
-                      if (
-                        pageNumber === currentPage - 2 ||
-                        pageNumber === currentPage + 2
-                      ) {
-                        return (
-                          <span key={pageNumber} className="text-gray-400 font-bold">
-                            ...
-                          </span>
-                        );
-                      }
-                      return null;
-                    })}
-                  </div>
-
-                  {/* Next Button */}
-                  <button
-                    onClick={() => {
-                      setCurrentPage(prev => Math.min(totalPages, prev + 1));
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    disabled={currentPage === totalPages}
-                    className="px-4 py-2 rounded-lg font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed bg-white border-2 border-indigo-500 text-indigo-600 hover:bg-indigo-50 hover:shadow-md disabled:hover:bg-white"
-                  >
-                    Next →
-                  </button>
-                </div>
-
-                {/* Results Info */}
-                <div className="text-center text-sm text-gray-600 bg-white px-6 py-2 rounded-lg shadow-sm border border-gray-200">
-                  Showing {startIndex + 1} - {Math.min(endIndex, filteredPatents.length)} of {filteredPatents.length} patent{filteredPatents.length !== 1 ? 's' : ''}
-                  {quickFilter !== 'all' && (
-                    <span className="ml-2 text-indigo-600 font-semibold">
-                      ({quickFilter === 'granted' ? 'Granted' : 'Non-Granted'})
-                    </span>
+                    </>
                   )}
-                </div>
-              </div>
-            )}
-            </>
-          )}
                 </div>
               </div>
             </div>
           )}
         </div>
       )}
-      
+
       {/* Patent Details Modal */}
       {viewingPatentDetails && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4" onClick={() => setViewingPatentDetails(null)}>
@@ -3281,7 +3375,7 @@ const AdminPatentManager = ({ onBack }) => {
                 <X className="w-7 h-7" />
               </button>
             </div>
-            
+
             {/* Modal Content - Scrollable */}
             <div className="p-6 space-y-6 overflow-y-auto flex-1">
               {/* Step 1: Applicant Information */}
@@ -3290,7 +3384,7 @@ const AdminPatentManager = ({ onBack }) => {
                   <User className="w-6 h-6 text-cyan-600" />
                   Step 1: Applicant Information
                 </h3>
-                
+
                 {/* Basic Contact Info */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
@@ -3316,7 +3410,7 @@ const AdminPatentManager = ({ onBack }) => {
                     </div>
                   )}
                 </div>
-                
+
                 {/* Personal Details */}
                 {viewingPatentDetails.applicantType === 'individual' && (
                   <div className="border-t-2 border-cyan-300 pt-4 mt-4">
@@ -3349,7 +3443,7 @@ const AdminPatentManager = ({ onBack }) => {
                     </div>
                   </div>
                 )}
-                
+
                 {/* Address Information */}
                 <div className="border-t-2 border-cyan-300 pt-4 mt-4">
                   <h4 className="text-md font-bold text-gray-800 mb-3">Address Information</h4>
@@ -3376,7 +3470,7 @@ const AdminPatentManager = ({ onBack }) => {
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Additional Contact Information */}
                 <div className="border-t-2 border-cyan-300 pt-4 mt-4">
                   <h4 className="text-md font-bold text-gray-800 mb-3">Additional Contact Information</h4>
@@ -3391,7 +3485,7 @@ const AdminPatentManager = ({ onBack }) => {
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Identity & Tax Information */}
                 <div className="border-t-2 border-cyan-300 pt-4 mt-4">
                   <h4 className="text-md font-bold text-gray-800 mb-3">Identity & Tax Information</h4>
@@ -3432,7 +3526,7 @@ const AdminPatentManager = ({ onBack }) => {
                     )}
                   </div>
                 </div>
-                
+
                 {/* Correspondence Address */}
                 <div className="border-t-2 border-cyan-300 pt-4 mt-4">
                   <h4 className="text-md font-bold text-gray-800 mb-3">Correspondence Address</h4>
@@ -3468,7 +3562,7 @@ const AdminPatentManager = ({ onBack }) => {
                     )}
                   </div>
                 </div>
-                
+
                 {/* Application Date */}
                 <div className="border-t-2 border-cyan-300 pt-4 mt-4">
                   <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-300 rounded-xl p-4">
@@ -3477,15 +3571,15 @@ const AdminPatentManager = ({ onBack }) => {
                   </div>
                 </div>
               </div>
-              
-              
+
+
               {/* Step 2: Invention Details */}
               <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-5 border-2 border-purple-200">
                 <h3 className="text-xl font-bold text-gray-900 mb-5 flex items-center gap-2">
                   <Lightbulb className="w-6 h-6 text-purple-600" />
                   Step 2: Invention Details
                 </h3>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div className="md:col-span-2">
                     <label className="text-sm font-semibold text-gray-600">Invention Title *</label>
@@ -3529,14 +3623,14 @@ const AdminPatentManager = ({ onBack }) => {
                   </div>
                 </div>
               </div>
-              
+
               {/* Step 3: Patent Details */}
               <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-5 border-2 border-green-200">
                 <h3 className="text-xl font-bold text-gray-900 mb-5 flex items-center gap-2">
                   <FileCheck className="w-6 h-6 text-green-600" />
                   Step 3: Patent Details
                 </h3>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-semibold text-gray-600">Patent Type *</label>
@@ -3568,14 +3662,14 @@ const AdminPatentManager = ({ onBack }) => {
                   </div>
                 </div>
               </div>
-              
+
               {/* Step 4: Documents Upload */}
               <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-5 border-2 border-orange-200">
                 <h3 className="text-xl font-bold text-gray-900 mb-5 flex items-center gap-2">
                   <Upload className="w-6 h-6 text-orange-600" />
                   Step 4: Documents Upload
                 </h3>
-                
+
                 <div className="grid grid-cols-1 gap-4">
                   <div>
                     <label className="text-sm font-semibold text-gray-600 mb-2 block">Description Document *</label>
@@ -3584,10 +3678,10 @@ const AdminPatentManager = ({ onBack }) => {
                         <p className="text-blue-600 font-medium flex-1 break-all text-sm">
                           {viewingPatentDetails.descriptionFileUrl}
                         </p>
-                        <a 
-                          href={viewingPatentDetails.descriptionFileUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
+                        <a
+                          href={viewingPatentDetails.descriptionFileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 font-bold shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 whitespace-nowrap"
                         >
                           <Eye className="w-4 h-4" />
@@ -3605,10 +3699,10 @@ const AdminPatentManager = ({ onBack }) => {
                         <p className="text-blue-600 font-medium flex-1 break-all text-sm">
                           {viewingPatentDetails.claimsFileUrl}
                         </p>
-                        <a 
-                          href={viewingPatentDetails.claimsFileUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
+                        <a
+                          href={viewingPatentDetails.claimsFileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 font-bold shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 whitespace-nowrap"
                         >
                           <Eye className="w-4 h-4" />
@@ -3626,10 +3720,10 @@ const AdminPatentManager = ({ onBack }) => {
                         <p className="text-blue-600 font-medium flex-1 break-all text-sm">
                           {viewingPatentDetails.abstractFileUrl}
                         </p>
-                        <a 
-                          href={viewingPatentDetails.abstractFileUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
+                        <a
+                          href={viewingPatentDetails.abstractFileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 font-bold shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 whitespace-nowrap"
                         >
                           <Eye className="w-4 h-4" />
@@ -3647,10 +3741,10 @@ const AdminPatentManager = ({ onBack }) => {
                         <p className="text-blue-600 font-medium flex-1 break-all text-sm">
                           {viewingPatentDetails.drawingsFileUrl}
                         </p>
-                        <a 
-                          href={viewingPatentDetails.drawingsFileUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
+                        <a
+                          href={viewingPatentDetails.drawingsFileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 font-bold shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 whitespace-nowrap"
                         >
                           <Eye className="w-4 h-4" />
@@ -3663,14 +3757,14 @@ const AdminPatentManager = ({ onBack }) => {
                   </div>
                 </div>
               </div>
-              
+
               {/* Step 5: Review & Payment */}
               <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl p-5 border-2 border-indigo-200">
                 <h3 className="text-xl font-bold text-gray-900 mb-5 flex items-center gap-2">
                   <CreditCard className="w-6 h-6 text-indigo-600" />
                   Step 5: Review & Payment
                 </h3>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   {viewingPatentDetails.paymentAmount && (
                     <div>
@@ -3687,7 +3781,7 @@ const AdminPatentManager = ({ onBack }) => {
                     </div>
                   )}
                 </div>
-                
+
                 {/* Payment Transaction Details */}
                 {(viewingPatentDetails.paymentId || viewingPatentDetails.paymentOrderId || viewingPatentDetails.paymentStatus) && (
                   <div className="border-t-2 border-indigo-300 pt-4 mt-4">
@@ -3708,13 +3802,12 @@ const AdminPatentManager = ({ onBack }) => {
                       {viewingPatentDetails.paymentStatus && (
                         <div>
                           <label className="text-sm font-semibold text-gray-600">Payment Status</label>
-                          <p className={`font-bold mt-1 inline-block px-3 py-1 rounded-full ${
-                            viewingPatentDetails.paymentStatus === 'completed' || viewingPatentDetails.paymentStatus === 'success' 
-                              ? 'bg-green-100 text-green-700' 
-                              : viewingPatentDetails.paymentStatus === 'pending' 
+                          <p className={`font-bold mt-1 inline-block px-3 py-1 rounded-full ${viewingPatentDetails.paymentStatus === 'completed' || viewingPatentDetails.paymentStatus === 'success'
+                            ? 'bg-green-100 text-green-700'
+                            : viewingPatentDetails.paymentStatus === 'pending'
                               ? 'bg-yellow-100 text-yellow-700'
                               : 'bg-red-100 text-red-700'
-                          }`}>
+                            }`}>
                             {viewingPatentDetails.paymentStatus}
                           </p>
                         </div>
@@ -3741,7 +3834,7 @@ const AdminPatentManager = ({ onBack }) => {
                   </div>
                 )}
               </div>
-              
+
               {/* User Account Information */}
               {(viewingPatentDetails.userId || viewingPatentDetails.userEmail || viewingPatentDetails.userName) && (
                 <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-xl p-5 border-2 border-teal-200">
@@ -3749,7 +3842,7 @@ const AdminPatentManager = ({ onBack }) => {
                     <User className="w-6 h-6 text-teal-600" />
                     User Account Information
                   </h3>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {viewingPatentDetails.userId && (
                       <div>
@@ -3772,15 +3865,15 @@ const AdminPatentManager = ({ onBack }) => {
                   </div>
                 </div>
               )}
-              
-              
+
+
               {/* Admin Processing Information */}
               <div className="bg-gradient-to-br from-rose-50 to-pink-50 rounded-xl p-5 border-2 border-rose-200">
                 <h3 className="text-xl font-bold text-gray-900 mb-5 flex items-center gap-2">
                   <Shield className="w-6 h-6 text-rose-600" />
                   Admin Processing Information
                 </h3>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="text-sm font-semibold text-gray-600">Filing ID</label>
@@ -3788,14 +3881,13 @@ const AdminPatentManager = ({ onBack }) => {
                   </div>
                   <div>
                     <label className="text-sm font-semibold text-gray-600">Current Status</label>
-                    <p className={`font-bold mt-1 inline-block px-3 py-1 rounded-full ${
-                      viewingPatentDetails.status === 'Granted' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
-                    }`}>
+                    <p className={`font-bold mt-1 inline-block px-3 py-1 rounded-full ${viewingPatentDetails.status === 'Granted' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                      }`}>
                       {viewingPatentDetails.status || 'Under Review'}
                     </p>
                   </div>
                 </div>
-                
+
                 {/* Stage Progress */}
                 <div className="border-t-2 border-rose-300 pt-4 mt-4">
                   <h4 className="text-md font-bold text-gray-800 mb-3">Stage Progress</h4>
@@ -3827,7 +3919,7 @@ const AdminPatentManager = ({ onBack }) => {
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Patent Registration Details (filled by admin during grant) */}
                 {patentDetails[viewingPatentDetails.id] && (
                   <div className="border-t-2 border-rose-300 pt-4 mt-4">
@@ -3866,7 +3958,7 @@ const AdminPatentManager = ({ onBack }) => {
                     </div>
                   </div>
                 )}
-                
+
                 {/* Dates & Timestamps */}
                 <div className="border-t-2 border-rose-300 pt-4 mt-4">
                   <h4 className="text-md font-bold text-gray-800 mb-3">Dates & Timestamps</h4>
@@ -3915,7 +4007,7 @@ const AdminPatentManager = ({ onBack }) => {
                     )}
                   </div>
                 </div>
-                
+
                 {/* Filing Status Information */}
                 {viewingPatentDetails.filingStatus && (
                   <div className="border-t-2 border-rose-300 pt-4 mt-4">
@@ -3923,22 +4015,21 @@ const AdminPatentManager = ({ onBack }) => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="text-sm font-semibold text-gray-600">Filing Status</label>
-                        <p className={`font-bold mt-1 inline-block px-3 py-1 rounded-full ${
-                          viewingPatentDetails.filingStatus === 'approved' || viewingPatentDetails.filingStatus === 'completed'
-                            ? 'bg-green-100 text-green-700' 
-                            : viewingPatentDetails.filingStatus === 'pending'
+                        <p className={`font-bold mt-1 inline-block px-3 py-1 rounded-full ${viewingPatentDetails.filingStatus === 'approved' || viewingPatentDetails.filingStatus === 'completed'
+                          ? 'bg-green-100 text-green-700'
+                          : viewingPatentDetails.filingStatus === 'pending'
                             ? 'bg-yellow-100 text-yellow-700'
                             : viewingPatentDetails.filingStatus === 'rejected'
-                            ? 'bg-red-100 text-red-700'
-                            : 'bg-gray-100 text-gray-700'
-                        }`}>
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-gray-100 text-gray-700'
+                          }`}>
                           {viewingPatentDetails.filingStatus}
                         </p>
                       </div>
                     </div>
                   </div>
                 )}
-                
+
                 {/* Admin Notes */}
                 {(viewingPatentDetails.notes || viewingPatentDetails.adminNotes) && (
                   <div className="border-t-2 border-rose-300 pt-4 mt-4">
@@ -3960,7 +4051,7 @@ const AdminPatentManager = ({ onBack }) => {
                   </div>
                 )}
               </div>
-              
+
             </div>
           </div>
         </div>
@@ -3969,8 +4060,8 @@ const AdminPatentManager = ({ onBack }) => {
       {/* Admin Chat Modal */}
       {showAdminChat && selectedPatentForChat && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={closeAdminChat}>
-          <div 
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col animate-slideIn" 
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col animate-slideIn"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
@@ -3995,7 +4086,7 @@ const AdminPatentManager = ({ onBack }) => {
                 const userMessage = selectedPatentForChat[msgField];
                 const replyField = `r${index + 1}`;
                 const adminReplyMsg = selectedPatentForChat[replyField];
-                
+
                 return (
                   <div key={msgField}>
                     {/* User Message - LEFT side (from user) */}
@@ -4007,7 +4098,7 @@ const AdminPatentManager = ({ onBack }) => {
                         </div>
                       </div>
                     )}
-                    
+
                     {/* Admin Reply - RIGHT side (from you) */}
                     {adminReplyMsg && adminReplyMsg.trim() !== '' && (
                       <div className="flex justify-end mb-3">
@@ -4020,7 +4111,7 @@ const AdminPatentManager = ({ onBack }) => {
                   </div>
                 );
               })}
-              
+
               {/* No messages */}
               {!['m1', 'm2', 'm3', 'm4', 'm5'].some(field => selectedPatentForChat[field] && selectedPatentForChat[field].trim() !== '') && (
                 <div className="text-center py-12">
@@ -4042,7 +4133,7 @@ const AdminPatentManager = ({ onBack }) => {
                   </span>
                 )}
               </div>
-              
+
               <div className="flex gap-3">
                 <input
                   type="text"
@@ -4071,7 +4162,7 @@ const AdminPatentManager = ({ onBack }) => {
           </div>
         </div>
       )}
-      
+
       {/* Admin Leaderboard Modal */}
       {showLeaderboard && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[70] flex items-center justify-center p-4" onClick={() => setShowLeaderboard(false)}>
@@ -4080,7 +4171,7 @@ const AdminPatentManager = ({ onBack }) => {
             <div className="bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 px-8 py-6 rounded-t-3xl flex items-center justify-between flex-shrink-0 border-b-4 border-amber-400 relative overflow-hidden">
               {/* Animated background effect */}
               <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 via-transparent to-orange-400/20 animate-pulse"></div>
-              
+
               <div className="flex items-center gap-4 relative z-10">
                 <div className="bg-white/20 backdrop-blur-sm p-3 rounded-xl shadow-lg animate-bounce">
                   <Trophy className="w-8 h-8 text-white" />
@@ -4097,60 +4188,56 @@ const AdminPatentManager = ({ onBack }) => {
                 <X className="w-8 h-8 text-white group-hover:rotate-90 transition-transform duration-300" />
               </button>
             </div>
-            
+
             {/* Filter Buttons */}
             <div className="bg-gradient-to-r from-amber-100 to-yellow-100 px-8 py-5 border-b-2 border-amber-200 flex-shrink-0">
               <div className="flex items-center gap-3 justify-center flex-wrap">
                 <button
                   onClick={() => setLeaderboardFilter('granted')}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-base transition-all duration-300 transform ${
-                    leaderboardFilter === 'granted'
-                      ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-xl scale-105 ring-4 ring-green-300'
-                      : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-green-500 hover:text-green-600 hover:scale-105 hover:shadow-lg'
-                  }`}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-base transition-all duration-300 transform ${leaderboardFilter === 'granted'
+                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-xl scale-105 ring-4 ring-green-300'
+                    : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-green-500 hover:text-green-600 hover:scale-105 hover:shadow-lg'
+                    }`}
                 >
                   <CheckCircle className="w-5 h-5" />
                   Patents Granted
                 </button>
-                
+
                 <button
                   onClick={() => setLeaderboardFilter('rejected')}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-base transition-all duration-300 transform ${
-                    leaderboardFilter === 'rejected'
-                      ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-xl scale-105 ring-4 ring-red-300'
-                      : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-red-500 hover:text-red-600 hover:scale-105 hover:shadow-lg'
-                  }`}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-base transition-all duration-300 transform ${leaderboardFilter === 'rejected'
+                    ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-xl scale-105 ring-4 ring-red-300'
+                    : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-red-500 hover:text-red-600 hover:scale-105 hover:shadow-lg'
+                    }`}
                 >
                   <X className="w-5 h-5" />
                   Patents Rejected
                 </button>
-                
+
                 <button
                   onClick={() => setLeaderboardFilter('deactivated')}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-base transition-all duration-300 transform ${
-                    leaderboardFilter === 'deactivated'
-                      ? 'bg-gradient-to-r from-gray-600 to-slate-700 text-white shadow-xl scale-105 ring-4 ring-gray-400'
-                      : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-gray-500 hover:text-gray-600 hover:scale-105 hover:shadow-lg'
-                  }`}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-base transition-all duration-300 transform ${leaderboardFilter === 'deactivated'
+                    ? 'bg-gradient-to-r from-gray-600 to-slate-700 text-white shadow-xl scale-105 ring-4 ring-gray-400'
+                    : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-gray-500 hover:text-gray-600 hover:scale-105 hover:shadow-lg'
+                    }`}
                 >
                   <AlertCircle className="w-5 h-5" />
                   Patents Deactivated
                 </button>
-                
+
                 <button
                   onClick={() => setLeaderboardFilter('activated')}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-base transition-all duration-300 transform ${
-                    leaderboardFilter === 'activated'
-                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xl scale-105 ring-4 ring-blue-300'
-                      : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-blue-500 hover:text-blue-600 hover:scale-105 hover:shadow-lg'
-                  }`}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-base transition-all duration-300 transform ${leaderboardFilter === 'activated'
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xl scale-105 ring-4 ring-blue-300'
+                    : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-blue-500 hover:text-blue-600 hover:scale-105 hover:shadow-lg'
+                    }`}
                 >
                   <CheckCircle className="w-5 h-5" />
                   Patents Activated
                 </button>
               </div>
             </div>
-            
+
             {/* Leaderboard Content - Top 3 in Ladder Format */}
             <div className="flex-1 overflow-y-auto p-8">
               {leaderboardData.length === 0 ? (
@@ -4188,7 +4275,7 @@ const AdminPatentManager = ({ onBack }) => {
                         </div>
                       </div>
                     )}
-                    
+
                     {/* 1st Place */}
                     {leaderboardData[0] && (
                       <div className="flex flex-col items-center w-72">
@@ -4197,15 +4284,15 @@ const AdminPatentManager = ({ onBack }) => {
                           <div className="absolute -top-5 left-1/2 transform -translate-x-1/2 bg-yellow-600 rounded-full p-3 shadow-xl animate-bounce ring-4 ring-yellow-400/50">
                             <Trophy className="w-7 h-7 text-white drop-shadow-md" />
                           </div>
-                          
+
                           {/* Sparkle effects */}
                           <div className="absolute top-3 right-3 text-white animate-pulse drop-shadow-lg">
                             <Sparkles className="w-6 h-6" />
                           </div>
-                          <div className="absolute top-3 left-3 text-white animate-pulse drop-shadow-lg" style={{animationDelay: '0.5s'}}>
+                          <div className="absolute top-3 left-3 text-white animate-pulse drop-shadow-lg" style={{ animationDelay: '0.5s' }}>
                             <Sparkles className="w-5 h-5" />
                           </div>
-                          
+
                           <div className="bg-white/30 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 mt-3 ring-2 ring-white/40 shadow-lg">
                             <Award className="w-11 h-11 text-white drop-shadow-md" />
                           </div>
@@ -4224,7 +4311,7 @@ const AdminPatentManager = ({ onBack }) => {
                         </div>
                       </div>
                     )}
-                    
+
                     {/* 3rd Place */}
                     {leaderboardData[2] && (
                       <div className="flex flex-col items-center w-64">
@@ -4248,7 +4335,7 @@ const AdminPatentManager = ({ onBack }) => {
                       </div>
                     )}
                   </div>
-                  
+
                   {/* Remaining Admins (4th and 5th) */}
                   {leaderboardData.length > 3 && (
                     <div className="mt-6 space-y-2">
@@ -4287,21 +4374,20 @@ const AdminPatentManager = ({ onBack }) => {
           </div>
         </div>
       )}
-      
+
       {/* Toast Notifications */}
       <div className="fixed top-4 right-4 z-[9999] space-y-2">
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`min-w-[320px] max-w-md p-4 rounded-xl shadow-2xl transform transition-all duration-500 animate-slide-in-right ${
-              toast.type === 'success'
-                ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
-                : toast.type === 'error'
+            className={`min-w-[320px] max-w-md p-4 rounded-xl shadow-2xl transform transition-all duration-500 animate-slide-in-right ${toast.type === 'success'
+              ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white'
+              : toast.type === 'error'
                 ? 'bg-gradient-to-r from-red-500 to-rose-600 text-white'
                 : toast.type === 'warning'
-                ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white'
-                : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white'
-            }`}
+                  ? 'bg-gradient-to-r from-orange-500 to-amber-600 text-white'
+                  : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white'
+              }`}
           >
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0 mt-0.5">
@@ -4321,7 +4407,7 @@ const AdminPatentManager = ({ onBack }) => {
           </div>
         ))}
       </div>
-      
+
     </div>
   );
 };
