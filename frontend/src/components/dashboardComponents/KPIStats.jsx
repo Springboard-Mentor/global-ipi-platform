@@ -1,16 +1,34 @@
 import React from "react";
+import { IP_STATUSES } from "../../constants/ipStatuses";
 
-const KPIStats = ({ data }) => {
-  const total = data.length;
-  const pending = data.filter((d) => d.status === "Pending").length;
-  const review = data.filter((d) => d.status === "Pending Review").length;
-  const completed = data.filter((d) => d.status === "Completed").length;
+const KPIStats = ({ data = [] }) => {
+  const getCount = (status) =>
+    data.find((s) => s.status === status)?.count || 0;
+
+  const total = data.reduce((acc, s) => acc + s.count, 0);
 
   const stats = [
-    { label: "Total Filings", value: total, color: "text-purple-300" },
-    { label: "Pending", value: pending, color: "text-yellow-300" },
-    { label: "Pending Review", value: review, color: "text-blue-300" },
-    { label: "Completed", value: completed, color: "text-green-300" },
+    {
+      label: "Total Filings",
+      value: total,
+      color: "text-purple-300",
+    },
+    {
+      label: "Filed",
+      value: getCount(IP_STATUSES.FILED),
+      color: "text-blue-300",
+    },
+
+    {
+      label: "Published",
+      value: getCount(IP_STATUSES.PUBLISHED),
+      color: "text-yellow-300",
+    },
+    {
+      label: "Granted",
+      value: getCount(IP_STATUSES.GRANTED),
+      color: "text-green-300",
+    },
   ];
 
   return (

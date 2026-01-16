@@ -2,25 +2,28 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { IP_STATUSES, STATUS_COLORS } from "../../constants/ipStatuses";
 import { CHART_TOOLTIP_STYLE } from "../../constants/tooltipStyles";
 
-const StatusChart = ({ data }) => {
-  // Build status counts dynamically
- const STATUS_ORDER = [
-  IP_STATUSES.FILED,
-  IP_STATUSES.UNDER_EXAMINATION,
-  IP_STATUSES.PENDING_REVIEW,
-  IP_STATUSES.GRANTED,
-  IP_STATUSES.REJECTED,
-  IP_STATUSES.ABANDONED,
-];
+const StatusChart = ({ data = {} }) => {
+  // Order of statuses in chart
+  const STATUS_ORDER = [
+    IP_STATUSES.FILED,
+    // IP_STATUSES.UNDER_EXAMINATION,
+    // IP_STATUSES.PENDING_REVIEW,
+    IP_STATUSES.GRANTED,
+    IP_STATUSES.PUBLISHED,
+    // IP_STATUSES.REJECTED,
+    // IP_STATUSES.ABANDONED,
+  ];
 
-const statusData = STATUS_ORDER
-  .filter(status => data.some(item => item.status === status))
-  .map(status => ({
-    name: status,
-    value: data.filter(item => item.status === status).length,
-  }));
+  // convert array of assets into status counts
+  // data = [{ legalStatus: "Filed" }, { legalStatus: "Granted" }, ...]
 
+  // Build status counts dynamically from backend data
+  const statusData = STATUS_ORDER.map((status) => {
+    const found = data.find((d) => d.status === status);
+    return found ? { name: status, value: found.count } : null;
+  }).filter(Boolean);
 
+  
   return (
     <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl shadow-lg shadow-black/30 p-6 w-full animate-fadeIn">
       {/* Header */}
@@ -50,8 +53,7 @@ const statusData = STATUS_ORDER
               ))}
             </Pie>
 
-            <Tooltip {...CHART_TOOLTIP_STYLE}
-            />
+            <Tooltip {...CHART_TOOLTIP_STYLE} />
           </PieChart>
         </ResponsiveContainer>
       </div>

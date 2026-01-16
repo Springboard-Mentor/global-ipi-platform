@@ -21,10 +21,9 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
 } from "recharts";
-import { IP_STATUSES } from "../../constants/ipStatuses";
 import { CHART_TOOLTIP_STYLE } from "../../constants/tooltipStyles";
 
-const LandscapeVisualization = ({ data }) => {
+const LandscapeVisualization = ({ data = [] }) => {
   const [activeChart, setActiveChart] = useState("trend");
   const [timePeriod, setTimePeriod] = useState("yearly");
   const [patentField, setPatentField] = useState("all");
@@ -65,176 +64,194 @@ const LandscapeVisualization = ({ data }) => {
     IN: "India (IN)",
   };
 
-  // Enhanced data processing with patent-specific analysis
-  const processedData = useMemo(() => {
-    const getTimeKey = (date, period) => {
-      const d = new Date(date);
-      switch (period) {
-        case "weekly":
-          const week = Math.ceil(d.getDate() / 7);
-          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
-            2,
-            "0"
-          )}-W${week}`;
-        case "monthly":
-          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
-            2,
-            "0"
-          )}`;
-        case "quarterly":
-          const quarter = Math.ceil((d.getMonth() + 1) / 3);
-          return `${d.getFullYear()}-Q${quarter}`;
-        case "half-yearly":
-          const half = d.getMonth() < 6 ? "H1" : "H2";
-          return `${d.getFullYear()}-${half}`;
-        default:
-          return d.getFullYear().toString();
-      }
-    };
-
-    // NOTE: Patent field, priority, and region data are simulated
-    // for visualization and demonstration purposes
-
-    // Assign patent fields to data (simulation for demo)
-    const enhancedData = data.map((item) => ({
+  //      DATA NORMALIZATION (FRONTEND)
+    const normalizedData = useMemo(() => {
+    return data.map((item) => ({
       ...item,
-      patentField:
-        PATENT_FIELDS[Math.floor(Math.random() * PATENT_FIELDS.length)],
-      priority:
-        Math.random() > 0.7 ? "High" : Math.random() > 0.4 ? "Medium" : "Low",
-      region: ["US", "EU", "JP", "CN", "IN"][Math.floor(Math.random() * 5)],
+      filingDate: item.filingDate ? new Date(item.filingDate) : null,
+      assetType: item.assetType,
+      legalStatus: item.legalStatus,
+      patentField: item.patentField || "Unknown"
     }));
+  }, [data]);
 
-    // Filter by patent field for time-based charts only
-    const filteredData =
+  // Enhanced data processing with patent-specific analysis
+   const processedData = useMemo(() => {
+    /* ---- TIME KEY ---- */
+    const getYear = (date) =>
+      date ? date.getFullYear().toString() : "Unknown";
+
+    const filtered =
       patentField === "all"
-        ? enhancedData
-        : enhancedData.filter((item) => item.patentField === patentField);
+        ? normalizedData
+        : normalizedData.filter((i) => i.patentField === patentField);
 
-    return {
-      filingTrend: Object.values(
-        filteredData.reduce((acc, item) => {
-          const timeKey = getTimeKey(item.filedOn, timePeriod);
-          acc[timeKey] = acc[timeKey] || {
-            period: timeKey,
-            filings: 0,
-            patents: 0,
-            trademarks: 0,
-          };
-          acc[timeKey].filings++;
-          acc[timeKey][item.type.toLowerCase() + "s"]++;
-          return acc;
-        }, {})
-      ).sort((a, b) => a.period.localeCompare(b.period)),
+    /* ---- Filing Trend ---- */
+    const filingTrend = Object.values(
+      filtered.reduce((acc, item) => {
+        if (!item.filingDate) return acc;
 
-      typeDistribution: Object.values(
-        filteredData.reduce((acc, item) => {
-          acc[item.type] = acc[item.type] || { type: item.type, count: 0 };
-          acc[item.type].count++;
-          return acc;
-        }, {})
-      ),
+        const period = getYear(item.filingDate);
+        acc[period] = acc[period] || {
+          period,
+          filings: 0,
+          patents: 0,
+          trademarks: 0,
+        };
 
-      // Field distribution shows ALL fields regardless of time period
-      fieldDistribution: Object.values(
-        enhancedData.reduce((acc, item) => {
-          acc[item.patentField] = acc[item.patentField] || {
-            field: item.patentField,
-            count: 0,
-          };
-          acc[item.patentField].count++;
-          return acc;
-        }, {})
-      ),
+        acc[period].filings++;
+        if (item.assetType === "PATENT") acc[period].patents++;
+        if (item.assetType === "TRADEMARK") acc[period].trademarks++;
 
-      // Priority and regional also show all data
-      priorityAnalysis: Object.values(
-        enhancedData.reduce((acc, item) => {
-          acc[item.priority] = acc[item.priority] || {
-            priority: item.priority,
-            count: 0,
-          };
-          acc[item.priority].count++;
-          return acc;
-        }, {})
-      ),
+        return acc;
+      }, {})
+    );
 
-      regionalDistribution: Object.values(
-        enhancedData.reduce((acc, item) => {
-          acc[item.region] = acc[item.region] || {
-            region: item.region,
-            count: 0,
-          };
-          acc[item.region].count++;
-          return acc;
-        }, {})
-      ),
+  /* ===============================
+     TYPE DISTRIBUTION
+  =============================== */
+  const typeDistribution = Object.values(
+    normalizedData.reduce((acc, item) => {
+      const type = item.assetType || "Unknown";
+      acc[type] = acc[type] || { type, count: 0 };
+      acc[type].count++;
+      return acc;
+    }, {})
+  );
 
-      monthlyActivity: Object.values(
-        filteredData.reduce((acc, item) => {
-          const date = new Date(item.filedOn);
-          const month = date.toLocaleString("default", {
-            month: "short",
-            year: "numeric",
-          });
-          acc[month] = acc[month] || { month, count: 0 };
-          acc[month].count++;
-          return acc;
-        }, {})
-      ),
+  /* ===============================
+     FIELD DISTRIBUTION (ALL DATA)
+  =============================== */
+  const fieldDistribution = Object.values(
+    normalizedData.reduce((acc, item) => {
+      const field = item.patentField || "Unknown";
+      acc[field] = acc[field] || { field, count: 0 };
+      acc[field].count++;
+      return acc;
+    }, {})
+  );
 
-      // Radar chart for patent performance metrics
-      radarData: [
-        {
-          metric: "Filing Volume",
-          value: Math.min(
-            100,
-            (filteredData.length / enhancedData.length) * 100
-          ),
-        },
-        {
-          metric: "Success Rate",
-          value: Math.min(
-            100,
-            (filteredData.filter((item) => item.status === "Granted").length /
-              filteredData.length) *
+  /* ===============================
+     PRIORITY ANALYSIS (ALL DATA)
+  =============================== */
+  const priorityAnalysis = Object.values(
+    normalizedData.reduce((acc, item) => {
+      const priority = item.priority || "Unknown";
+      acc[priority] = acc[priority] || {
+        priority,
+        count: 0,
+      };
+      acc[priority].count++;
+      return acc;
+    }, {})
+  );
+
+  /* ===============================
+     REGIONAL DISTRIBUTION (ALL DATA)
+  =============================== */
+  const regionalDistribution = Object.values(
+    normalizedData.reduce((acc, item) => {
+      const region = item.region || "Unknown";
+      acc[region] = acc[region] || { region, count: 0 };
+      acc[region].count++;
+      return acc;
+    }, {})
+  );
+
+  /* ===============================
+     MONTHLY ACTIVITY (SAFE)
+  =============================== */
+  const monthlyActivity = Object.values(
+    normalizedData.reduce((acc, item) => {
+      if (!item.filingDate) return acc;
+
+      const d = new Date(item.filingDate);
+      if (isNaN(d)) return acc;
+
+      const month = d.toLocaleString("default", {
+        month: "short",
+        year: "numeric",
+      });
+
+      acc[month] = acc[month] || { month, count: 0 };
+      acc[month].count++;
+      return acc;
+    }, {})
+  );
+
+  /* ===============================
+     RADAR DATA (SAFE + CLEAN)
+  =============================== */
+  const total = filtered.length;
+
+  const radarData = [
+    {
+      metric: "Filing Volume",
+      value: total ? 100 : 0,
+    },
+    {
+      metric: "Granted Rate",
+      value: total
+        ? Math.round(
+            (filtered.filter(
+              (i) => i.legalStatus === "GRANTED"
+            ).length /
+              total) *
               100
-          ),
-        },
-        {
-          metric: "Patent Ratio",
-          value: Math.min(
-            100,
-            (filteredData.filter((item) => item.type === "Patent").length /
-              filteredData.length) *
+          )
+        : 0,
+    },
+    {
+      metric: "Patent Ratio",
+      value: total
+        ? Math.round(
+            (filtered.filter(
+              (i) => i.assetType  === "PATENT"
+            ).length /
+              total) *
               100
-          ),
-        },
-        {
-          metric: "High Priority",
-          value: Math.min(
-            100,
-            (enhancedData.filter((item) => item.priority === "High").length /
-              enhancedData.length) *
+          )
+        : 0,
+    },
+    {
+      metric: "High Priority",
+      value: normalizedData.length
+        ? Math.round(
+            (normalizedData.filter(
+              (i) => i.priority === "High"
+            ).length /
+              normalizedData.length) *
               100
-          ),
-        },
-        {
-          metric: "Recent Activity",
-          value: Math.min(
-            100,
-            (filteredData.filter(
-              (item) =>
-                new Date(item.filedOn).getFullYear() ===
+          )
+        : 0,
+    },
+    {
+      metric: "Recent Activity",
+      value: total
+        ? Math.round(
+            (filtered.filter(
+              (i) =>
+                new Date(i.filingDate).getFullYear() ===
                 new Date().getFullYear()
             ).length /
-              filteredData.length) *
+              total) *
               100
-          ),
-        },
-      ],
-    };
-  }, [data, timePeriod, patentField]);
+          )
+        : 0,
+    },
+  ];
+
+  return {
+    filingTrend,
+    typeDistribution,
+    fieldDistribution,
+    priorityAnalysis,
+    regionalDistribution,
+    monthlyActivity,
+    radarData,
+  };
+}, [normalizedData, timePeriod, patentField]);
+
 
   return (
     <div className="bg-white/15 backdrop-blur-xl border border-white/30 rounded-2xl p-8 shadow-xl shadow-black/40 space-y-8 transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/30">
@@ -328,7 +345,7 @@ const LandscapeVisualization = ({ data }) => {
                 : "bg-white/15 text-white hover:bg-white/25 hover:scale-102 border border-white/30"
             }`}
           >
-            {chart.charAt(0).toUpperCase() + chart.slice(1)}
+          {chart.charAt(0).toUpperCase() + chart.slice(1)}
           </button>
         ))}
       </div>
@@ -450,8 +467,9 @@ const LandscapeVisualization = ({ data }) => {
                       outerRadius={120}
                       paddingAngle={5}
                       dataKey="count"
+                      nameKey="type"
                     >
-                      {processedData.typeDistribution.map((entry, index) => (
+                      {processedData.typeDistribution.map((_, index) => (
                         <Cell
                           key={`cell-${index}`}
                           fill={COLORS[index % COLORS.length]}
@@ -677,9 +695,8 @@ const LandscapeVisualization = ({ data }) => {
             {
               data.filter(
                 (item) =>
-                  item.type === "Patent" &&
-                  (item.status === "Filed" ||
-                    item.status === "Under Examination")
+                  item.assetType  === "PATENT" &&
+                  (item.legalStatus === "FILED")
               ).length
             }
           </div>
@@ -689,7 +706,7 @@ const LandscapeVisualization = ({ data }) => {
         </div>
         <div className="bg-gradient-to-br from-blue-500/30 to-cyan-600/30 p-6 rounded-2xl border border-blue-400/40 shadow-lg">
           <div className="text-3xl font-bold text-white mb-2">
-            {data.filter((item) => item.status === "Granted").length}
+            {data.filter((item) => item.legalStatus === "GRANTED").length}
           </div>
           <div className="text-sm text-blue-100 font-medium">
             Granted Patents
@@ -697,7 +714,7 @@ const LandscapeVisualization = ({ data }) => {
         </div>
         <div className="bg-gradient-to-br from-yellow-500/30 to-orange-600/30 p-6 rounded-2xl border border-yellow-400/40 shadow-lg">
           <div className="text-3xl font-bold text-white mb-2">
-            {data.filter((item) => item.type === "Trademark").length}
+            {data.filter((item) => item.assetType === "Trademark").length}
           </div>
           <div className="text-sm text-yellow-100 font-medium">Trademarks</div>
         </div>

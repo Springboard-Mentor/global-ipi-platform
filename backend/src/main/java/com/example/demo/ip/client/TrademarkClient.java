@@ -54,7 +54,7 @@ public class TrademarkClient {
         dto.setTitle(tm.getMarkIdentification());
         dto.setApplicationNumber(tm.getApplicationNumber());
         dto.setFilingDate(tm.getFilingDate());
-        dto.setStatus(tm.getStatus());
+        dto.setLegalStatus(tm.getLegalStatus());
         dto.setOwnerName(tm.getApplicantName());
         dto.setAssetType("TRADEMARK");
         return dto;
@@ -72,7 +72,7 @@ public class TrademarkClient {
             private String markIdentification;
             private String applicationNumber;
             private String filingDate;
-            private String status;
+            private String LegalStatus;
             private String applicantName;
         }
     }

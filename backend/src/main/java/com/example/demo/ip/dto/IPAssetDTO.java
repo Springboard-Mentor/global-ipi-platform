@@ -10,10 +10,11 @@ public class IPAssetDTO {
     private String title;
     private String assetType;
     private String applicationNumber;
-    private String status;
+    private String legalStatus;
     private String country;
     private LocalDate filingDate;
     private LocalDate publicationDate;
+    private LocalDate updatedOn;
     private String abstractText;
     private String ownerName;
     private String inventorName;
@@ -50,14 +51,6 @@ public class IPAssetDTO {
 
     public void setCountry(String country) {
         this.country = country;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
     }
 
     public String getAssetType() {

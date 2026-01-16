@@ -10,19 +10,23 @@ const TableRow = ({ item, children }) => {
       className="cursor-pointer hover:bg-white/5"
       onClick={() => setOpen(!open)}
     >
-      <td className="py-3">{item.name}</td>
-      <td>{item.id}</td>
+      <td className="py-3">{item.title || "—"}</td>
+      <td>{item.applicationNumber || "—" }</td>
       <td>{children}</td>
-      <td>{item.filedOn}</td>
-      <td>{item.updatedOn}</td>
+      <td>{item.filingDate
+          ? new Date(item.filingDate).toLocaleDateString()
+          : "—"}</td>
+      <td>{item.updatedOn
+          ? new Date(item.updatedOn).toLocaleDateString()
+          : "—"}</td>
     </tr>,
 
     open && (
       <tr key="timeline-row">
         <td colSpan="5">
           <StatusTimeline
-            status={item.status}
-            filedOn={item.filedOn}
+            status={item.legalStatus || "—"}
+            filedOn={item.filingDate}
             updatedOn={item.updatedOn}
           />
         </td>

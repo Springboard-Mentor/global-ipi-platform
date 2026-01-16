@@ -39,23 +39,33 @@ public class IPSearchService {
         dto.setTitle(asset.getTitle());
         dto.setApplicationNumber(asset.getApplicationNumber());
         dto.setCountry(asset.getCountry());
-        dto.setStatus(asset.getStatus());
+        dto.setLegalStatus(asset.getLegalStatus());
         dto.setAssetType(asset.getAssetType());
         dto.setOwnerName(asset.getOwnerName());
         dto.setInventorName(asset.getInventorName());
         dto.setFilingDate(asset.getFilingDate() != null ? asset.getFilingDate().toString() : null);
-        dto.setReferenceSource(dto.getReferenceSource());
-        if (dto.getPriorityDate() != null) {
-            asset.setPriorityDate(LocalDate.parse(dto.getPriorityDate()));
-        }
+        dto.setPublicationDate(
+                asset.getPublicationDate() != null
+                        ? asset.getPublicationDate().toString()
+                        : null);
 
-        if (dto.getGrantDate() != null) {
-            asset.setGrantDate(LocalDate.parse(dto.getGrantDate()));
-        }
+        dto.setAbstractText(asset.getAbstractText());
 
-        asset.setPatentLink(dto.getPatentLink());
-        asset.setPdfLink(dto.getPdfLink());
-        asset.setThumbnail(dto.getThumbnail());
+        dto.setReferenceSource(asset.getReferenceSource());
+
+        dto.setPriorityDate(
+                asset.getPriorityDate() != null
+                        ? asset.getPriorityDate().toString()
+                        : null);
+
+        dto.setGrantDate(
+                asset.getGrantDate() != null
+                        ? asset.getGrantDate().toString()
+                        : null);
+
+        dto.setPatentLink(asset.getPatentLink());
+        dto.setPdfLink(asset.getPdfLink());
+        dto.setThumbnail(asset.getThumbnail());
 
         return dto;
     }
@@ -100,7 +110,7 @@ public class IPSearchService {
                         dto.setTitle(assetDto.getTitle());
                         dto.setApplicationNumber(assetDto.getApplicationNumber());
                         dto.setCountry(assetDto.getCountry());
-                        dto.setStatus(assetDto.getStatus());
+                        dto.setLegalStatus(assetDto.getLegalStatus());
                         dto.setAssetType(assetDto.getAssetType());
                         dto.setOwnerName(assetDto.getOwnerName());
                         dto.setInventorName(assetDto.getInventorName());
@@ -136,7 +146,7 @@ public class IPSearchService {
         // }
 
         for (int page = 0; page < 3; page++) { // 3 pages = max 60 results
-            List<IPSearchResultDTO> pageResults = externalPatentClient.searchPatents(query, PAGE_SIZE, page);
+            List<IPSearchResultDTO> pageResults = externalPatentClient.searchPatents(query, PAGE_SIZE);
 
             if (pageResults == null || pageResults.isEmpty()) {
                 break;
@@ -158,14 +168,14 @@ public class IPSearchService {
                         dto.setTitle(asset.getTitle());
                         dto.setApplicationNumber(asset.getApplicationNumber());
                         dto.setCountry(asset.getCountry());
-                        dto.setStatus(asset.getStatus());
+                        dto.setLegalStatus(asset.getLegalStatus());
                         dto.setAssetType(asset.getAssetType());
                         dto.setOwnerName(asset.getOwnerName());
                         dto.setInventorName(asset.getInventorName());
                         dto.setFilingDate(asset.getFilingDate() != null ? asset.getFilingDate().toString() : null);
                         dto.setPublicationDate(
                                 asset.getPublicationDate() != null ? asset.getPublicationDate().toString() : null);
-                        // dto.setAbstractText(asset.getAbstractText());
+                        dto.setAbstractText(asset.getAbstractText());
                         return dto;
                     })
                     .toList();
@@ -180,11 +190,12 @@ public class IPSearchService {
                     asset.setTitle(dto.getTitle());
                     asset.setAssetType(dto.getAssetType());
                     asset.setApplicationNumber(dto.getApplicationNumber());
-                    asset.setStatus(dto.getStatus());
+                    asset.setLegalStatus(dto.getLegalStatus());
                     asset.setCountry(dto.getCountry());
                     asset.setOwnerName(dto.getOwnerName());
                     asset.setInventorName(dto.getInventorName());
                     asset.setReferenceSource(dto.getReferenceSource());
+                    asset.setAbstractText(dto.getAbstractText());
 
                     // ✅ DATES
                     if (dto.getFilingDate() != null) {

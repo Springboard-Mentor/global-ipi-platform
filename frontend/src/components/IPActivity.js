@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import StatusChart from "./dashboardComponents/StatusChart";
 import Pagination from "./dashboardComponents/Pagination";
@@ -8,24 +8,40 @@ import TableRow from "./dashboardComponents/TableRow";
 import KPIStats from "./dashboardComponents/KPIStats";
 import { logout } from "../utils/logout";
 import LandscapeVisualization from "./dashboardComponents/LandscapeVisualization";
-import sampleIPData from "./sampleIPData";
-
+import { fetchAllIPAssets, fetchStatusSummary } from "../api/ipApi";
 const IPActivity = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const [page, setPage] = useState(1);
+  const [statusSummary, setStatusSummary] = useState([]);
+  useEffect(() => {
+    fetchStatusSummary().then((summary) => {
+      const formatted = Object.entries(summary).map(([status, count]) => ({
+        status,
+        count,
+      }));
+      setStatusSummary(formatted);
+    });
+  }, []);
 
   const itemsPerPage = 5;
 
+  // legalstatus
+  const [assets, setAssets] = useState([]);
+
+  useEffect(() => {
+    fetchAllIPAssets().then(setAssets);
+  }, []);
+
   // Filter Logic
-  const filtered = sampleIPData.filter((entry) => {
+  const filtered = assets.filter((entry) => {
     const matchText =
-      entry.name.toLowerCase().includes(search.toLowerCase()) ||
-      entry.id.toLowerCase().includes(search.toLowerCase());
+      entry.title?.toLowerCase().includes(search.toLowerCase()) ||
+      entry.applicationNumber?.toLowerCase().includes(search.toLowerCase());
 
     const matchStatus =
-      filterStatus === "All" ? true : entry.status === filterStatus;
+      filterStatus === "All" ? true : entry.legalStatus === filterStatus;
 
     return matchText && matchStatus;
   });
@@ -105,20 +121,20 @@ const IPActivity = () => {
       <h2 className="text-3xl font-bold mb-6">IP Activity</h2>
 
       {/* KPI CARDS */}
-      <KPIStats data={sampleIPData} />
+      <KPIStats data={statusSummary} />
 
       {/* STATUS + LANDSCAPE SECTION */}
       <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-8 mt-8 items-start">
         {/* LEFT: IP Status Overview CHART */}
         <div className="lg:sticky lg:top-24">
           <div className="animate-fadeIn">
-            <StatusChart data={sampleIPData} />
+            <StatusChart data={statusSummary} />
           </div>
         </div>
 
         {/* IP Landscape Visualization */}
         <div className="animate-slideUp 💡">
-          <LandscapeVisualization data={sampleIPData} />
+          <LandscapeVisualization data={assets} />
         </div>
       </div>
       {/* SECTION DIVIDER */}
@@ -148,7 +164,7 @@ const IPActivity = () => {
           <tbody>
             {paginatedData.map((item, i) => (
               <TableRow key={i} item={item}>
-                <StatusBadge status={item.status} />
+                <StatusBadge status={item.legalStatus} />
               </TableRow>
             ))}
           </tbody>

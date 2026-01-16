@@ -8,6 +8,10 @@ import com.example.demo.ip.repository.IPAssetRepository;
 
 import lombok.RequiredArgsConstructor;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -20,6 +24,16 @@ public class IPAssetService {
 
     private final IPAssetRepository repository;
     private final IPAssetMapper mapper;
+
+    /**
+     * Get all IP assets (DTO-safe)
+     */
+    public List<IPAssetDTO> getAllAssets() {
+        return repository.findAll()
+                .stream()
+                .map(mapper::toDto)
+                .toList();
+    }
 
     /**
      * Search IP assets by title (paginated)
@@ -36,9 +50,7 @@ public class IPAssetService {
     public IPAssetDTO getById(Long id) {
         return repository.findById(id)
                 .map(mapper::toDto)
-                .orElseThrow(() ->
-                        new IPAssetNotFoundException("IP Asset not found with id: " + id)
-                );
+                .orElseThrow(() -> new IPAssetNotFoundException("IP Asset not found with id: " + id));
     }
 
     /**
@@ -57,13 +69,10 @@ public class IPAssetService {
     @Transactional
     public IPAssetDTO update(Long id, IPAssetDTO dto) {
         IPAsset existing = repository.findById(id)
-                .orElseThrow(() ->
-                        new IPAssetNotFoundException("IP Asset not found with id: " + id)
-                );
+                .orElseThrow(() -> new IPAssetNotFoundException("IP Asset not found with id: " + id));
 
         mapper.updateFromDto(dto, existing);
-        IPAsset updated = repository.save(existing);
-        return mapper.toDto(updated);
+        return mapper.toDto(repository.save(existing));
     }
 
     /**
@@ -76,4 +85,16 @@ public class IPAssetService {
         }
         repository.deleteById(id);
     }
+
+    /**
+     * Legal Status Summary (Dashboard – OPTIMIZED)
+     */
+    public Map<String, Long> getStatusSummary() {
+    return repository.countByLegalStatus()
+            .stream()
+            .collect(Collectors.toMap(
+                row -> (String) row[0],
+                row -> (Long) row[1]
+            ));
+}
 }

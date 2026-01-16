@@ -11,7 +11,11 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.springframework.cache.annotation.Cacheable;
+
 import com.fasterxml.jackson.core.type.TypeReference;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -21,180 +25,178 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class ExternalPatentClient {
 
-        private final RestTemplate restTemplate;
+    private final RestTemplate restTemplate;
 
-        @Value("${serpapi.key}")
-        private String apiKey;
+    @Value("${serpapi.key}")
+    private String apiKey;
 
-        private String normalizeDate(Object value) {
-                if (value == null)
-                        return null;
+    /* =======================
+       DATE NORMALIZATION
+       ======================= */
+    private String normalizeDate(Object value) {
+        if (value == null) return null;
 
-                String date = value.toString();
-                return date.length() == 10 ? date : null;
+        String date = value.toString().trim();
+
+        if (date.matches("\\d{4}-\\d{2}-\\d{2}")) return date;
+        if (date.matches("\\d{4}-\\d{2}")) return date + "-01";
+        if (date.matches("\\d{4}")) return date + "-01-01";
+
+        return null;
+    }
+
+    /* =======================
+       COUNTRY EXTRACTION
+       ======================= */
+    private String extractCountryFromPublication(String publicationNumber) {
+        if (publicationNumber == null || publicationNumber.length() < 2) {
+            return "UNKNOWN";
         }
 
-        public List<IPSearchResultDTO> searchPatents(String query, int limit) {
+        String country = publicationNumber.substring(0, 2).toUpperCase();
 
-                if (apiKey == null || apiKey.isBlank()) {
-                        log.error("SerpAPI key not configured properly. Please set a valid API key in application.properties");
-                        return Collections.emptyList();
-                }
+        return country.matches("[A-Z]{2}") ? country : "UNKNOWN";
+    }
 
-                try {
-                        String url = UriComponentsBuilder.fromHttpUrl("https://serpapi.com/search.json")
-                                        .queryParam("engine", "google_patents")
-                                        .queryParam("q", query)
-                                        .queryParam("num", limit)
-                                        .queryParam("api_key", apiKey)
-                                        .toUriString();
+    /* =======================
+       LEGAL STATUS (TRANSPARENT)
+       ======================= */
+    private String deriveLegalStatus(Map<String, Object> patent) {
 
-                        log.info("Calling SerpAPI Google Patents");
-
-                        ResponseEntity<Map<String, Object>> resp = restTemplate.exchange(
-                                url,
-                                HttpMethod.GET,
-                                null,
-                                new ParameterizedTypeReference<Map<String, Object>>() {}
-                        );
-
-                        Map<String, Object> response = resp.getBody();
-                        if (response == null || !response.containsKey("organic_results")) {
-                                return Collections.emptyList();
-                        }
-
-                        Object organic = response.get("organic_results");
-                        List<Map<String, Object>> results;
-                        if (organic instanceof List) {
-                                ObjectMapper mapper = new ObjectMapper();
-                                results = ((List<?>) organic).stream()
-                                        .filter(Map.class::isInstance)
-                                        .map(o -> mapper.convertValue(o, new TypeReference<Map<String, Object>>() {}))
-                                        .toList();
-                        } else {
-                                results = Collections.emptyList();
-                        }
-
-                        return results.stream()
-                                        .map(this::mapToDto)
-                                        .toList();
-
-                } catch (Exception e) {
-                        log.error("Error calling SerpAPI", e);
-                        return Collections.emptyList();
-                }
+        if (patent.get("grant_date") != null) {
+            return "GRANTED";
         }
 
-        public List<IPSearchResultDTO> searchPatents(String query, int limit, int page) {
-
-                String url = UriComponentsBuilder.fromHttpUrl("https://serpapi.com/search.json")
-                                .queryParam("engine", "google_patents")
-                                .queryParam("q", query)
-                                .queryParam("num", limit)
-                                .queryParam("start", page * limit)
-                                .queryParam("api_key", apiKey)
-                                .toUriString();
-
-                ResponseEntity<Map<String, Object>> resp = restTemplate.exchange(
-                        url,
-                        HttpMethod.GET,
-                        null,
-                        new ParameterizedTypeReference<Map<String, Object>>() {}
-                );
-
-                Map<String, Object> response = resp.getBody();
-                if (response == null || !response.containsKey("organic_results")) {
-                        return List.of();
-                }
-
-                Object organic = response.get("organic_results");
-                List<Map<String, Object>> results;
-                if (organic instanceof List) {
-                        ObjectMapper mapper = new ObjectMapper();
-                        results = ((List<?>) organic).stream()
-                                .filter(Map.class::isInstance)
-                                .map(o -> mapper.convertValue(o, new TypeReference<Map<String, Object>>() {}))
-                                .toList();
-                } else {
-                        results = List.of();
-                }
-
-                return results.stream()
-                                .map(this::mapToDto)
-                                .toList();
+        if (patent.get("publication_date") != null) {
+            return "PUBLISHED";
         }
 
-        private IPSearchResultDTO mapToDto(Map<String, Object> patent) {
-
-                IPSearchResultDTO dto = new IPSearchResultDTO();
-
-                dto.setTitle((String) patent.getOrDefault("title", "Untitled Patent"));
-                dto.setApplicationNumber((String) patent.getOrDefault("publication_number", "N/A"));
-                dto.setAssetType("PATENT");
-
-                // Country / Jurisdiction
-                String pub = dto.getApplicationNumber();
-
-                if (pub != null && pub.startsWith("US")) {
-                        dto.setCountry("US");
-                } else if (pub != null && pub.startsWith("EP")) {
-                        dto.setCountry("EU");
-                } else {
-                        dto.setCountry("Unknown");
-                }
-
-                // Status
-                dto.setStatus(
-                                patent.get("status") != null
-                                                ? patent.get("status").toString()
-                                                : "PUBLISHED");
-
-                // Assignee (STRING, not list)
-                dto.setOwnerName(
-                                patent.get("assignee") != null
-                                                ? patent.get("assignee").toString()
-                                                : "Unknown");
-
-                // Inventor (STRING, not list)
-                dto.setInventorName(
-                                patent.get("inventor") != null
-                                                ? patent.get("inventor").toString()
-                                                : null);
-
-                // Abstract / snippet
-                dto.setAbstractText(
-                                patent.get("snippet") != null
-                                                ? patent.get("snippet").toString()
-                                                : "");
-
-                // Dates
-                dto.setFilingDate(normalizeDate(patent.get("filing_date")));
-                dto.setPublicationDate(normalizeDate(patent.get("publication_date")));
-
-                dto.setReferenceSource("GOOGLE_PATENTS");
-
-                // Dates
-                dto.setPriorityDate(normalizeDate(patent.get("priority_date")));
-                dto.setGrantDate(normalizeDate(patent.get("grant_date")));
-
-                // Links
-                dto.setPatentLink(
-                                patent.get("patent_link") != null
-                                                ? patent.get("patent_link").toString()
-                                                : null);
-
-                dto.setPdfLink(
-                                patent.get("pdf") != null
-                                                ? patent.get("pdf").toString()
-                                                : null);
-
-                // Thumbnail
-                dto.setThumbnail(
-                                patent.get("thumbnail") != null
-                                                ? patent.get("thumbnail").toString()
-                                                : null);
-
-                return dto;
+        if (patent.get("filing_date") != null) {
+            return "FILED";
         }
 
+        return "UNKNOWN";
+    }
+
+    /* =======================
+       SEARCH (NO PAGINATION)
+       ======================= */
+@Cacheable(
+    value = "patent-search",
+    key = "#query + '-' + #limit"
+)
+    public List<IPSearchResultDTO> searchPatents(String query, int limit) {
+
+        if (apiKey == null || apiKey.isBlank()) {
+            log.error("SerpAPI key not configured");
+            return Collections.emptyList();
+        }
+
+        try {
+            String url = UriComponentsBuilder.fromHttpUrl("https://serpapi.com/search.json")
+                    .queryParam("engine", "google_patents")
+                    .queryParam("q", query)
+                    .queryParam("num", limit)
+                    .queryParam("api_key", apiKey)
+                    .toUriString();
+
+            ResponseEntity<Map<String, Object>> resp = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    null,
+                    new ParameterizedTypeReference<>() {}
+            );
+
+            Map<String, Object> response = resp.getBody();
+            if (response == null || !response.containsKey("organic_results")) {
+                return Collections.emptyList();
+            }
+
+            ObjectMapper mapper = new ObjectMapper();
+
+            List<Map<String, Object>> results =
+                    ((List<?>) response.get("organic_results")).stream()
+                            .filter(Map.class::isInstance)
+                            .map(o -> mapper.convertValue(o, new TypeReference<Map<String, Object>>() {}))
+                            .toList();
+
+            return results.stream()
+                    .map(this::mapToDto)
+                    .toList();
+
+        } catch (Exception e) {
+            log.error("Error calling SerpAPI", e);
+            return Collections.emptyList();
+        }
+    }
+
+    /* =======================
+       DTO MAPPING (CORE LOGIC)
+       ======================= */
+    private IPSearchResultDTO mapToDto(Map<String, Object> patent) {
+
+        IPSearchResultDTO dto = new IPSearchResultDTO();
+
+        String publicationNumber =
+                patent.get("publication_number") != null
+                        ? patent.get("publication_number").toString()
+                        : null;
+
+        dto.setTitle((String) patent.getOrDefault("title", "Untitled Patent"));
+
+        dto.setApplicationNumber(
+                patent.get("application_number") != null
+                        ? patent.get("application_number").toString()
+                        : publicationNumber != null ? publicationNumber : "UNKNOWN"
+        );
+
+        dto.setAssetType("PATENT");
+        dto.setCountry(extractCountryFromPublication(publicationNumber));
+        dto.setLegalStatus(deriveLegalStatus(patent));
+
+        dto.setOwnerName(
+                patent.get("assignee") != null
+                        ? patent.get("assignee").toString()
+                        : "UNKNOWN"
+        );
+
+        dto.setInventorName(
+                patent.get("inventor") != null
+                        ? patent.get("inventor").toString()
+                        : "UNKNOWN"
+        );
+
+        dto.setAbstractText(
+                patent.get("snippet") != null
+                        ? patent.get("snippet").toString()
+                        : ""
+        );
+
+        dto.setFilingDate(normalizeDate(patent.get("filing_date")));
+        dto.setPublicationDate(normalizeDate(patent.get("publication_date")));
+        dto.setPriorityDate(normalizeDate(patent.get("priority_date")));
+        dto.setGrantDate(normalizeDate(patent.get("grant_date")));
+
+        dto.setPatentLink(
+                patent.get("patent_link") != null
+                        ? patent.get("patent_link").toString()
+                        : null
+        );
+
+        dto.setPdfLink(
+                patent.get("pdf") != null
+                        ? patent.get("pdf").toString()
+                        : null
+        );
+
+        dto.setThumbnail(
+                patent.get("thumbnail") != null
+                        ? patent.get("thumbnail").toString()
+                        : null
+        );
+
+        dto.setReferenceSource("GOOGLE_PATENTS");
+
+        return dto;
+    }
 }

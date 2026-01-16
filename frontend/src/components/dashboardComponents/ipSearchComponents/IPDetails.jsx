@@ -27,13 +27,14 @@ Issuing Authority: ${ip.jurisdiction || "N/A"}
 Area of Coverage: ${ip.coverage || "N/A"}
 
 Application Number: ${ip.number || "N/A"}
-Filed Date: ${ip.timeline?.filing || ip.date || "N/A"}
-Publication Date: ${ip.timeline?.publication || "N/A"}
-Grant Date: ${ip.timeline?.grant || "N/A"}
+Filed Date: ${ip.filingDate || "N/A"}
+Publication Date: ${ip.publicationDate || "N/A"}
+Grant Date: ${ip.grantDate || "N/A"}
+
 
 IP Duration: ${
-      ip.date
-        ? `20 Years (Expires in ${new Date(ip.date).getFullYear() + 20})`
+      ip.filingDate
+        ? `20 Years (Expires in ${new Date(ip.filingDate).getFullYear() + 20})`
         : "N/A"
     }
 
@@ -67,7 +68,12 @@ Generated from IP Portal
         try {
           setLoading(true);
           const data = await getIPDetails(id);
-          setIp(data);
+          setIp({
+            ...data,
+            assignee: data.ownerName,
+            number: data.applicationNumber,
+            inventor: data.inventorName,
+          });
         } catch (err) {
           setError("Failed to load IP details");
           console.error(err);
@@ -77,7 +83,7 @@ Generated from IP Portal
       }
     };
     fetchIPDetails();
-  }, [id, ip]);
+  }, [id]);
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center">
@@ -102,11 +108,9 @@ Generated from IP Portal
   }
 
   //  Derived Fields (API-Ready)
-  const filingDate = ip.timeline?.filing || ip.date || "N/A";
-
-  const publicationDate = ip.timeline?.publication || "N/A";
-
-  const grantDate = ip.timeline?.grant || null;
+  const filingDate = ip.filingDate || "N/A";
+  const publicationDate = ip.publicationDate || "N/A";
+  const grantDate = ip.grantDate || "N/A";
 
   // Patent duration (20 years standard)
   const expiryYear =
@@ -119,29 +123,32 @@ Generated from IP Portal
   const timeline = [
     {
       label: "Priority Date",
-      date: ip.timeline?.priority || "—",
+      date: ip.priorityDate || "—",
       description: "Initial priority filing",
       active: false,
     },
     {
       label: "Application Filed",
-      date: filingDate,
+      date: ip.filingDate || "—",
       description: "Patent application officially filed",
       active: false,
     },
     {
       label: "Published",
-      date: publicationDate,
+      date: ip.publicationDate || "—",
       description: "Patent published for public access",
       active: false,
     },
     {
       label: "Patent Granted",
-      date: grantDate || "—",
+      date: ip.grantDate || "—",
       description: "Patent legally granted",
-      active: Boolean(grantDate),
+      active: Boolean(ip.grantDate),
     },
   ];
+  useEffect(() => {
+    if (ip) console.log("IP DETAILS FROM API:", ip);
+  }, [ip]);
 
   //  Status Badge Styling
   const status = ip.status?.toUpperCase() || "UNKNOWN";
@@ -251,7 +258,7 @@ Generated from IP Portal
             {ip.number || "N/A"}
           </div>
           <div>
-            <span className="text-white">Filed Date:</span> {filingDate}
+            <span className="text-white">Filed Date:</span> {ip.filingDate}
           </div>
           <div>
             <span className="text-white">Publication Date:</span>{" "}
@@ -259,10 +266,11 @@ Generated from IP Portal
           </div>
 
           <div>
-            <span className="text-white">IP Duration:</span> {duration}
+            <span className="text-white">IP Duration:</span> {ip.duration}
           </div>
         </div>
 
+        
         <p className="mt-4 text-gray-400 text-sm">
           <span className="text-white">Abstract:</span> {ip.abstract || "N/A"}
         </p>

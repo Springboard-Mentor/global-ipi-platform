@@ -12,81 +12,93 @@ import org.springframework.stereotype.Component;
 public class IPAssetMapper {
 
     // =========================
-    // ENTITY → DTO (CRUD)
+    // ENTITY → DTO
     // =========================
-
     public IPAssetDTO toDto(IPAsset entity) {
-        if (entity == null)
+        if (entity == null) {
             return null;
+        }
 
         IPAssetDTO dto = new IPAssetDTO();
         dto.setId(entity.getId());
         dto.setTitle(entity.getTitle());
         dto.setApplicationNumber(entity.getApplicationNumber());
         dto.setCountry(entity.getCountry());
-        dto.setStatus(entity.getStatus());
         dto.setAssetType(entity.getAssetType());
         dto.setOwnerName(entity.getOwnerName());
         dto.setInventorName(entity.getInventorName());
         dto.setFilingDate(entity.getFilingDate());
-        dto.setPublicationDate(entity.getPublicationDate()); 
+        dto.setUpdatedOn(entity.getUpdatedOn());
+        dto.setPublicationDate(entity.getPublicationDate());
+        dto.setLegalStatus(deriveLegalStatus(entity));
         return dto;
     }
 
-    // =========================
-    // DTO → ENTITY (CRUD)
-    // =========================
+    private String deriveLegalStatus(IPAsset entity) {
 
+        // 1. Granted if grant date exists
+        if (entity.getGrantDate() != null) {
+            return "GRANTED";
+        }
+
+        // 2. Under examination if published but not granted
+        if (entity.getPublicationDate() != null) {
+            return "UNDER_EXAMINATION";
+        }
+
+        // 3. Filed if only filing date exists
+        if (entity.getFilingDate() != null) {
+            return "FILED";
+        }
+
+        // 4. Fallback
+        return "PENDING_REVIEW";
+    }
+
+    // =========================
+    // DTO → ENTITY (CREATE)
+    // =========================
     public IPAsset toEntity(IPAssetDTO dto) {
-        if (dto == null)
+        if (dto == null) {
             return null;
+        }
 
         IPAsset entity = new IPAsset();
         entity.setTitle(dto.getTitle());
         entity.setApplicationNumber(dto.getApplicationNumber());
         entity.setCountry(dto.getCountry());
-        entity.setStatus(dto.getStatus());
+        entity.setLegalStatus(dto.getLegalStatus());
         entity.setAssetType(dto.getAssetType());
         entity.setOwnerName(dto.getOwnerName());
         entity.setInventorName(dto.getInventorName());
-
-        // ✅ CORRECT PLACE: filingDate (LocalDate)
-        if (dto.getFilingDate() != null) {
-            entity.setFilingDate(dto.getFilingDate());
-        }
-
-        // ✅ CORRECT PLACE: publicationDate (LocalDate)
-        if (dto.getPublicationDate() != null) {
-            entity.setPublicationDate(dto.getPublicationDate());
-        }
+        entity.setFilingDate(dto.getFilingDate());
+        entity.setPublicationDate(dto.getPublicationDate());
 
         return entity;
     }
 
     // =========================
-    // SEARCH DTO → ENTITY
+    // SEARCH RESULT DTO → ENTITY
     // (External / Cached data)
     // =========================
-
     public IPAsset toEntity(IPSearchResultDTO dto) {
-        if (dto == null)
+        if (dto == null) {
             return null;
+        }
 
         IPAsset entity = new IPAsset();
         entity.setTitle(dto.getTitle());
         entity.setApplicationNumber(dto.getApplicationNumber());
         entity.setCountry(dto.getCountry());
-        entity.setStatus(dto.getStatus());
+        entity.setLegalStatus(dto.getLegalStatus());
         entity.setAssetType(dto.getAssetType());
         entity.setOwnerName(dto.getOwnerName());
         entity.setInventorName(dto.getInventorName());
 
-        // ✅ ADDED HERE: filingDate from String
         if (dto.getFilingDate() != null && !dto.getFilingDate().isBlank()) {
             entity.setFilingDate(LocalDate.parse(dto.getFilingDate()));
         }
 
-        // ✅ ADDED HERE: publicationDate from String
         if (dto.getPublicationDate() != null && !dto.getPublicationDate().isBlank()) {
             entity.setPublicationDate(LocalDate.parse(dto.getPublicationDate()));
         }
@@ -97,20 +109,19 @@ public class IPAssetMapper {
     // =========================
     // UPDATE EXISTING ENTITY
     // =========================
-
     public void updateFromDto(IPAssetDTO dto, IPAsset entity) {
-        if (dto == null || entity == null)
+        if (dto == null || entity == null) {
             return;
+        }
 
         entity.setTitle(dto.getTitle());
         entity.setApplicationNumber(dto.getApplicationNumber());
         entity.setCountry(dto.getCountry());
-        entity.setStatus(dto.getStatus());
+        entity.setLegalStatus(dto.getLegalStatus());
         entity.setAssetType(dto.getAssetType());
         entity.setOwnerName(dto.getOwnerName());
         entity.setInventorName(dto.getInventorName());
 
-        // ✅ SAFE UPDATE
         if (dto.getFilingDate() != null) {
             entity.setFilingDate(dto.getFilingDate());
         }

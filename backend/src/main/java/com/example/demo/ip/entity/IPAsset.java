@@ -12,9 +12,9 @@ public class IPAsset {
     private Long id;
 
     private String title;
+    @Column(unique = true)
     private String applicationNumber;
     private String country;
-    private String status;
     private String assetType;
     private String ownerName;
     private String inventorName;
@@ -23,6 +23,36 @@ public class IPAsset {
     private String referenceSource;
     private LocalDate priorityDate;
     private LocalDate grantDate;
+    @Column(name = "legal_status")
+    private String legalStatus;
+    private LocalDate updatedOn;
+    @Column(length = 4000)
+    private String abstractText;
+
+    @PrePersist
+    @PreUpdate
+    private void onUpdate() {
+        this.updatedOn = LocalDate.now();
+    }
+
+    public String getLegalStatus() {
+        return legalStatus;
+    }
+
+    public void setLegalStatus(String legalStatus) {
+        this.legalStatus = legalStatus;
+    }
+
+    public LocalDate getUpdatedOn() {
+        return updatedOn;
+    }
+
+    public void setUpdatedOn(LocalDate updatedOn) {
+        this.updatedOn = updatedOn;
+    }
+
+    @OneToMany(mappedBy = "asset", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private java.util.List<LegalStatusEvent> legalStatusEvents;
 
     @Column(length = 500)
     private String patentLink;
@@ -34,6 +64,14 @@ public class IPAsset {
     private String thumbnail;
 
     // getters & setters
+
+    public java.util.List<LegalStatusEvent> getLegalStatusEvents() {
+        return legalStatusEvents;
+    }
+
+    public void setLegalStatusEvents(java.util.List<LegalStatusEvent> legalStatusEvents) {
+        this.legalStatusEvents = legalStatusEvents;
+    }
 
     public LocalDate getPriorityDate() {
         return priorityDate;
@@ -73,6 +111,14 @@ public class IPAsset {
 
     public void setThumbnail(String thumbnail) {
         this.thumbnail = thumbnail;
+    }
+
+    public String getAbstractText() {
+        return abstractText;
+    }
+
+    public void setAbstractText(String abstractText) {
+        this.abstractText = abstractText;
     }
 
     public String getReferenceSource() {
@@ -121,14 +167,6 @@ public class IPAsset {
 
     public void setCountry(String country) {
         this.country = country;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
     }
 
     public String getAssetType() {
