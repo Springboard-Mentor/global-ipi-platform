@@ -1,43 +1,174 @@
-export const FILINGS_KEY = 'my_filings';
+const API_BASE_URL = 'http://localhost:8081/api/patent-filings';
 
-const loadRaw = () => {
+function getAuthHeaders() {
+  const token = localStorage.getItem('token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { Authorization: `Bearer ${token}` }),
+  };
+}
+
+// Backend API functions
+export async function createFiling(formData) {
   try {
-    const raw = localStorage.getItem(FILINGS_KEY);
-    if (!raw) return [];
-    return JSON.parse(raw);
-  } catch (e) {
-    console.warn('Failed to parse filings', e);
+    // Check if user is authenticated
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('You must be logged in to submit a patent filing. Please log in and try again.');
+    }
+
+    // Calculate total fee (same logic as frontend)
+    const base = 300;
+    const patentTypeMultiplier = formData.patentType === 'Design' ? 0.8 : formData.patentType === 'Provisional' ? 0.5 : 1;
+    const applicantMultiplier = formData.applicantType === 'Individual' ? 1 : formData.applicantType === 'Startup' ? 0.9 : formData.applicantType === 'Company' ? 1.2 : formData.applicantType === 'University' ? 0.8 : 1;
+    const jurisdictionMultiplier = (formData.jurisdiction || '').toLowerCase().includes('us') ? 1.5 : (formData.jurisdiction || '').toLowerCase().includes('wipo') ? 1.8 : 1;
+    const total = Math.round(base * patentTypeMultiplier * applicantMultiplier * jurisdictionMultiplier);
+
+    // Map inventors array
+    const inventors = Array.isArray(formData.inventors) 
+      ? formData.inventors.map(inv => ({ name: inv.name || inv }))
+      : formData.inventors 
+        ? [{ name: typeof formData.inventors === 'string' ? formData.inventors : formData.inventors.name || '' }]
+        : [];
+
+    const requestBody = {
+      applicantName: formData.applicantName,
+      applicantType: formData.applicantType,
+      nationality: formData.nationality,
+      addressStreet: formData.addressStreet,
+      addressCity: formData.addressCity,
+      addressState: formData.addressState,
+      addressPostalCode: formData.addressPostalCode,
+      correspondenceSame: formData.correspondenceSame,
+      correspondenceStreet: formData.correspondenceStreet,
+      correspondenceCity: formData.correspondenceCity,
+      correspondenceState: formData.correspondenceState,
+      correspondencePostalCode: formData.correspondencePostalCode,
+      email: formData.email,
+      phone: formData.phone,
+      filingRole: formData.filingRole,
+      isInventor: formData.isInventor,
+      idType: formData.idType,
+      idNumber: formData.idNumber,
+      patentType: formData.patentType,
+      jurisdiction: formData.jurisdiction,
+      technicalField: formData.technicalField,
+      title: formData.title,
+      abstractText: formData.abstract,
+      problemStatement: formData.problemStatement,
+      novelty: formData.novelty,
+      inventors: inventors,
+      priorityClaim: formData.priorityClaim,
+      priorityApplicationNumber: formData.priorityApplicationNumber,
+      priorityDate: formData.priorityDate,
+      specificationFilePath: formData.specificationFile ? formData.specificationFile.name : null,
+      claimsFilePath: formData.claimsFile ? formData.claimsFile.name : null,
+      drawingsFilePaths: formData.drawingsFiles ? formData.drawingsFiles.map(f => f.name) : [],
+      paymentMethod: formData.paymentMethod,
+      paymentStatus: formData.paymentStatus,
+      totalFee: total,
+    };
+
+    const headers = getAuthHeaders();
+    
+    // Debug: Check if token exists
+    if (!headers.Authorization) {
+      console.error('No token found in localStorage. User must be logged in.');
+      throw new Error('You must be logged in to submit a patent filing. Please log in and try again.');
+    }
+    
+    console.log('Sending request to:', API_BASE_URL);
+    console.log('Authorization header present:', !!headers.Authorization);
+
+    const response = await fetch(API_BASE_URL, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        // Token expired or invalid - clear it and ask user to login again
+        localStorage.removeItem('token');
+        throw new Error('Your session has expired. Please log in again to submit your filing.');
+      }
+      const error = await response.json().catch(() => ({ message: 'Failed to create filing' }));
+      throw new Error(error.message || 'Failed to create filing');
+    }
+
+    const filing = await response.json();
+    return mapBackendToFrontend(filing);
+  } catch (error) {
+    console.error('Error creating filing:', error);
+    throw error;
+  }
+}
+
+export async function loadFilings() {
+  try {
+    const response = await fetch(API_BASE_URL, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        // Not authenticated, return empty array
+        return [];
+      }
+      throw new Error('Failed to load filings');
+    }
+
+    const filings = await response.json();
+    return filings.map(mapBackendToFrontend);
+  } catch (error) {
+    console.error('Error loading filings:', error);
     return [];
   }
-};
-
-export function loadFilings() {
-  return loadRaw();
 }
 
-export function saveFilings(list) {
+export async function getFilingById(id) {
   try {
-    localStorage.setItem(FILINGS_KEY, JSON.stringify(list));
-  } catch (e) {
-    console.warn('Failed to save filings', e);
+    const response = await fetch(`${API_BASE_URL}/${id}`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to load filing');
+    }
+
+    const filing = await response.json();
+    return mapBackendToFrontend(filing);
+  } catch (error) {
+    console.error('Error loading filing:', error);
+    throw error;
   }
 }
 
-export function generateId() {
-  return 'FT-' + Math.random().toString(36).substring(2, 9).toUpperCase();
-}
-
-export function generateApplicationNumber() {
-  return 'APP-' + Date.now().toString().slice(-6);
-}
-
-function addYears(date, years) {
-  const d = new Date(date);
-  d.setFullYear(d.getFullYear() + years);
-  return d;
+// Map backend response to frontend format
+function mapBackendToFrontend(backendFiling) {
+  return {
+    id: backendFiling.id,
+    applicationNumber: backendFiling.applicationNumber,
+    title: backendFiling.title,
+    jurisdiction: backendFiling.jurisdiction,
+    filingDate: backendFiling.filingDate,
+    expiryDate: backendFiling.expiryDate,
+    grantDate: backendFiling.grantDate,
+    status: backendFiling.status,
+    trackedAt: backendFiling.createdAt,
+    raw: backendFiling, // Store full backend data
+  };
 }
 
 export function computeStatus(filing) {
+  // Use status from backend if available
+  if (filing.status) {
+    return filing.status;
+  }
+  
+  // Fallback computation
   try {
     if (filing.grantDate) return 'GRANTED';
     const now = new Date();
@@ -54,30 +185,22 @@ export function computeStatus(filing) {
   }
 }
 
-export function createFilingFromForm(form) {
-  const now = new Date();
-  const filingDate = now.toISOString().slice(0,10);
-  // default expiry 20 years from filing
-  const expiry = addYears(now, 20).toISOString().slice(0,10);
+// Legacy functions for backward compatibility
+export const FILINGS_KEY = 'my_filings';
 
-  const filing = {
-    id: generateId(),
-    applicationNumber: generateApplicationNumber(),
-    title: form.title || 'Untitled Invention',
-    jurisdiction: form.jurisdiction || 'IN',
-    filingDate,
-    expiryDate: expiry,
-    grantDate: form.grantDate || null,
-    trackedAt: new Date().toISOString(),
-    raw: form,
-  };
-  return filing;
+export function saveFilings(list) {
+  // No-op, using backend now
+}
+
+export function generateId() {
+  return 'FT-' + Math.random().toString(36).substring(2, 9).toUpperCase();
+}
+
+export function generateApplicationNumber() {
+  return 'APP-' + Date.now().toString().slice(-6);
 }
 
 export function addFiling(form) {
-  const list = loadRaw();
-  const filing = createFilingFromForm(form);
-  list.unshift(filing);
-  saveFilings(list);
-  return filing;
+  // This is now async, but keeping for backward compatibility
+  return createFiling(form);
 }

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { loadFilings, computeStatus } from '../utils/filings';
+import { getFilingById, computeStatus } from '../utils/filings';
 
 const steps = ['Filed', 'Under Examination', 'Granted', 'Expiry'];
 
@@ -38,12 +38,35 @@ const MyFilingDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [filing, setFiling] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const all = loadFilings();
-    const f = all.find(x => x.id === id);
-    setFiling(f || null);
+    const fetchFiling = async () => {
+      try {
+        setLoading(true);
+        const f = await getFilingById(parseInt(id));
+        setFiling(f);
+      } catch (error) {
+        console.error('Failed to load filing:', error);
+        setFiling(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (id) {
+      fetchFiling();
+    }
   }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#2A1A4A] via-[#301B55] to-[#4B1F70] text-white p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white/5 p-6 rounded-xl">Loading filing details...</div>
+        </div>
+      </div>
+    );
+  }
 
   if (!filing) {
     return (
