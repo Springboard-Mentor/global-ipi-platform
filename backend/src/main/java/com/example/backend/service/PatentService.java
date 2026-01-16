@@ -47,6 +47,12 @@ public class PatentService {
         return patents;
     }
 
+    public List<Patent> getPatentsByStatus(String status) {
+        List<Patent> patents = patentRepository.findByStatusIgnoreCase(status);
+        logger.info("Retrieved {} patents with status: {}", patents.size(), status);
+        return patents;
+    }
+
     public List<Patent> quickSearch(SearchRequest request) {
         List<Patent> results = new ArrayList<>();
         

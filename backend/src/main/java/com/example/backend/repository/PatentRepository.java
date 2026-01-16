@@ -14,6 +14,7 @@ public interface PatentRepository extends JpaRepository<Patent, Long> {
     List<Patent> findByTitleContainingIgnoreCase(String title);
     List<Patent> findByAssigneeContainingIgnoreCase(String assignee);
     List<Patent> findByInventorContainingIgnoreCase(String inventor);
+    List<Patent> findByStatusIgnoreCase(String status);
     
     @Query(value = "SELECT SUBSTRING(filing_date, 1, 4) as year, COUNT(*) as count " +
                    "FROM patents " +
