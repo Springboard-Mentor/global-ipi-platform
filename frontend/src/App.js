@@ -27,6 +27,8 @@ import IPDetails from "./components/dashboardComponents/ipSearchComponents/IPDet
 import LegalStatusDashboard from "./components/LegalStatusDashboard.jsx";
 import PatentFiling from "./components/PatentFiling";
 import PatentFilingWizard from "./components/PatentFilingWizard";
+import AdminLogin from "./admin/pages/AdminLogin";
+import AdminDashboard from "./admin/pages/AdminDashboard";
 
 function App() {
   return (
@@ -35,6 +37,8 @@ function App() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/register" element={<Register />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/profile" element={<Profile />} />
