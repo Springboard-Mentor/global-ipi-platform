@@ -77,7 +77,7 @@ public class IPSearchService {
         else
             derivedStatus = "FILED";
 
-        dto.setStatus(derivedStatus);
+        dto.setLegalStatus(derivedStatus);
 
         return dto;
     }
@@ -256,7 +256,7 @@ public class IPSearchService {
                         derivedStatus = "FILED";
                     }
 
-                    asset.setStatus(derivedStatus);
+                    asset.setLegalStatus(derivedStatus);
 
                     return asset;
                 })
@@ -293,7 +293,7 @@ public class IPSearchService {
                 derivedStatus = "FILED";
             }
 
-            dto.setStatus(derivedStatus);
+            dto.setLegalStatus(derivedStatus);
         }
 
         return results;
