@@ -10,6 +10,8 @@ import IPActivity from "./components/IPActivity.js";
 import FilingTrackerDashboard from "./components/FilingTrackerDashboard.js";
 import FilingList from "./components/FilingList.js";
 import FilingDetail from "./components/FilingDetail.js";
+import MyFilings from "./components/MyFilings";
+import MyFilingDetail from "./components/MyFilingDetail";
 import ProtectedFilingTracker from "./components/ProtectedFilingTracker.js";
 import PricingPage from "./components/PricingPage.js";
 import CheckoutPage from "./components/CheckoutPage.js";
@@ -23,6 +25,8 @@ import IPSearch from "./components/IPSearch";
 import SearchResults from "./components/dashboardComponents/ipSearchComponents/SearchResults.js";
 import IPDetails from "./components/dashboardComponents/ipSearchComponents/IPDetails.jsx";
 import LegalStatusDashboard from "./components/LegalStatusDashboard.jsx";
+import PatentFiling from "./components/PatentFiling";
+import PatentFilingWizard from "./components/PatentFilingWizard";
 
 function App() {
   return (
@@ -35,9 +39,17 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/ipActivity" element={<IPActivity />} />
+          
           <Route path="/filing-tracker-dashboard" element={<ProtectedFilingTracker><FilingTrackerDashboard /></ProtectedFilingTracker>} />
           <Route path="/filing-list" element={<ProtectedFilingTracker><FilingList /></ProtectedFilingTracker>} />
           <Route path="/filing-detail/:id" element={<ProtectedFilingTracker><FilingDetail /></ProtectedFilingTracker>} />
+          
+          {/* Patent filing routes (legacy and new wizard) */}
+          <Route path="/patent-filing" element={<PatentFiling />} />
+          <Route path="/file-patent" element={<PatentFilingWizard />} />
+          <Route path="/my-filings" element={<MyFilings />} />
+          <Route path="/my-filings/:id" element={<MyFilingDetail />} />
+
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/checkout/:planKey" element={<CheckoutPage />} />
           <Route path="/subscription-status" element={<SubscriptionStatus />} />

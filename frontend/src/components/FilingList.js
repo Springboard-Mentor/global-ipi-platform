@@ -1,29 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { mockFilings } from '../data/mockFilings';
+
+const BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8081';
 
 const FilingList = () => {
   const navigate = useNavigate();
-  const [filters, setFilters] = useState({
-    status: '',
-    type: '',
-    jurisdiction: ''
-  });
+  const [filters, setFilters] = useState({ status: '', type: '', jurisdiction: '' });
+  const [filings, setFilings] = useState([]);
 
-  const filteredFilings = mockFilings.filter(filing => {
-    return (!filters.status || filing.status === filters.status) &&
-           (!filters.type || filing.type === filters.type) &&
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        const resp = await fetch(`${BASE_URL}/api/filing-tracker/my-filings`, { credentials: 'include', headers });
+        if (resp.ok) setFilings(await resp.json());
+      } catch (e) {
+        console.error('Failed to load filings', e);
+      }
+    };
+    load();
+  }, []);
+
+  const filteredFilings = filings.filter(filing => {
+    return (!filters.status || filing.currentStatus === filters.status) &&
+           (!filters.type || filing.ipType === filters.type) &&
            (!filters.jurisdiction || filing.jurisdiction === filters.jurisdiction);
   });
 
   const getStatusColor = (status) => {
-    const colors = {
-      'Filed': 'bg-blue-500/20 text-blue-400',
-      'Under Examination': 'bg-yellow-500/20 text-yellow-400',
-      'Granted': 'bg-green-500/20 text-green-400',
-      'Expired': 'bg-red-500/20 text-red-400'
-    };
-    return colors[status] || 'bg-gray-500/20 text-gray-400';
+    const s = (status || '').toUpperCase();
+    if (s === 'FILED') return 'bg-blue-500/20 text-blue-400';
+    if (s === 'UNDER EXAMINATION' || s === 'UNDER_EXAMINATION') return 'bg-yellow-500/20 text-yellow-400';
+    if (s === 'GRANTED') return 'bg-green-500/20 text-green-400';
+    if (s === 'EXPIRED') return 'bg-red-500/20 text-red-400';
+    return 'bg-gray-500/20 text-gray-400';
   };
 
   return (
@@ -98,14 +110,14 @@ const FilingList = () => {
                   <td className="p-4 font-medium">{filing.applicationNumber}</td>
                   <td className="p-4">{filing.title}</td>
                   <td className="p-4">
-                    <span className="px-2 py-1 bg-white/10 rounded text-xs">{filing.type}</span>
+                    <span className="px-2 py-1 bg-white/10 rounded text-xs">{filing.ipType || '-'}</span>
                   </td>
                   <td className="p-4">
-                    <span className={`px-2 py-1 rounded text-xs ${getStatusColor(filing.status)}`}>
-                      {filing.status}
+                    <span className={`px-2 py-1 rounded text-xs ${getStatusColor(filing.currentStatus)}`}>
+                      {filing.currentStatus || filing.status || 'Unknown'}
                     </span>
                   </td>
-                  <td className="p-4">{filing.filingDate}</td>
+                  <td className="p-4">{filing.filingDate || '-'}</td>
                   <td className="p-4">{filing.expiryDate || '-'}</td>
                   <td className="p-4">
                     <button
