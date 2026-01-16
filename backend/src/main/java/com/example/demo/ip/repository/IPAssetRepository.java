@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface IPAssetRepository extends JpaRepository<IPAsset, Long> {
@@ -38,4 +39,6 @@ public interface IPAssetRepository extends JpaRepository<IPAsset, Long> {
         Page<IPAsset> findByCountryAndAssetType(String country, String assetType, Pageable pageable);
 
         boolean existsByApplicationNumber(String applicationNumber);
+        
+        Optional<IPAsset> findByApplicationNumber(String applicationNumber);
 }

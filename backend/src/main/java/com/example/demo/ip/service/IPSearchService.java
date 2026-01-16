@@ -237,22 +237,38 @@ public class IPSearchService {
                     // ----- Parse dates if present -----
                     LocalDate filing = null;
                     LocalDate grant = null;
-                    if (dto.getFilingDate() != null) {
-                        filing = LocalDate.parse(dto.getFilingDate());
-                        asset.setFilingDate(filing);
+                    if (dto.getFilingDate() != null && !dto.getFilingDate().trim().isEmpty()) {
+                        try {
+                            filing = LocalDate.parse(dto.getFilingDate());
+                            asset.setFilingDate(filing);
+                        } catch (Exception e) {
+                            log.warn("Failed to parse filing date: {}", dto.getFilingDate());
+                        }
                     }
 
-                    if (dto.getPublicationDate() != null) {
-                        asset.setPublicationDate(LocalDate.parse(dto.getPublicationDate()));
+                    if (dto.getPublicationDate() != null && !dto.getPublicationDate().trim().isEmpty()) {
+                        try {
+                            asset.setPublicationDate(LocalDate.parse(dto.getPublicationDate()));
+                        } catch (Exception e) {
+                            log.warn("Failed to parse publication date: {}", dto.getPublicationDate());
+                        }
                     }
 
-                    if (dto.getPriorityDate() != null) {
-                        asset.setPriorityDate(LocalDate.parse(dto.getPriorityDate()));
+                    if (dto.getPriorityDate() != null && !dto.getPriorityDate().trim().isEmpty()) {
+                        try {
+                            asset.setPriorityDate(LocalDate.parse(dto.getPriorityDate()));
+                        } catch (Exception e) {
+                            log.warn("Failed to parse priority date: {}", dto.getPriorityDate());
+                        }
                     }
 
-                    if (dto.getGrantDate() != null) {
-                        grant = LocalDate.parse(dto.getGrantDate());
-                        asset.setGrantDate(grant);
+                    if (dto.getGrantDate() != null && !dto.getGrantDate().trim().isEmpty()) {
+                        try {
+                            grant = LocalDate.parse(dto.getGrantDate());
+                            asset.setGrantDate(grant);
+                        } catch (Exception e) {
+                            log.warn("Failed to parse grant date: {}", dto.getGrantDate());
+                        }
                     }
 
                     asset.setPatentLink(dto.getPatentLink());
@@ -304,22 +320,14 @@ public class IPSearchService {
                     .ifPresent(saved -> {
                         // Update DTO with ID and ensure all fields are populated from saved entity
                         dto.setId(saved.getId());
-                        // Ensure dates are properly formatted
-                        if (saved.getFilingDate() != null) {
-                            dto.setFilingDate(saved.getFilingDate().toString());
-                        }
-                        if (saved.getPublicationDate() != null) {
-                            dto.setPublicationDate(saved.getPublicationDate().toString());
-                        }
-                        if (saved.getPriorityDate() != null) {
-                            dto.setPriorityDate(saved.getPriorityDate().toString());
-                        }
-                        if (saved.getGrantDate() != null) {
-                            dto.setGrantDate(saved.getGrantDate().toString());
-                        }
-                        if (saved.getUpdatedOn() != null) {
-                            dto.setUpdatedOn(saved.getUpdatedOn().toString());
-                        }
+                        // Ensure dates are properly formatted from saved entity
+                        // Always update from saved entity to get the most accurate data
+                        dto.setFilingDate(saved.getFilingDate() != null ? saved.getFilingDate().toString() : dto.getFilingDate());
+                        dto.setPublicationDate(saved.getPublicationDate() != null ? saved.getPublicationDate().toString() : dto.getPublicationDate());
+                        dto.setPriorityDate(saved.getPriorityDate() != null ? saved.getPriorityDate().toString() : dto.getPriorityDate());
+                        dto.setGrantDate(saved.getGrantDate() != null ? saved.getGrantDate().toString() : dto.getGrantDate());
+                        // Always set updatedOn from saved entity (should be set by @PrePersist/@PreUpdate)
+                        dto.setUpdatedOn(saved.getUpdatedOn() != null ? saved.getUpdatedOn().toString() : null);
                         // Ensure other fields are populated
                         if (saved.getAbstractText() != null) {
                             dto.setAbstractText(saved.getAbstractText());
@@ -339,6 +347,30 @@ public class IPSearchService {
                     });
             }
         }
+        
+        // For results that already existed in DB (not in savedAssets), fetch from DB to get updatedOn
+        for (IPSearchResultDTO dto : results) {
+            if (dto.getId() == null && dto.getApplicationNumber() != null) {
+                repository.findByApplicationNumber(dto.getApplicationNumber())
+                    .ifPresent(existing -> {
+                        dto.setId(existing.getId());
+                        // Update dates from existing record
+                        dto.setFilingDate(existing.getFilingDate() != null ? existing.getFilingDate().toString() : dto.getFilingDate());
+                        dto.setPublicationDate(existing.getPublicationDate() != null ? existing.getPublicationDate().toString() : dto.getPublicationDate());
+                        dto.setPriorityDate(existing.getPriorityDate() != null ? existing.getPriorityDate().toString() : dto.getPriorityDate());
+                        dto.setGrantDate(existing.getGrantDate() != null ? existing.getGrantDate().toString() : dto.getGrantDate());
+                        // Get updatedOn from existing record
+                        dto.setUpdatedOn(existing.getUpdatedOn() != null ? existing.getUpdatedOn().toString() : null);
+                        // Update other fields if missing
+                        if (existing.getAbstractText() != null) {
+                            dto.setAbstractText(existing.getAbstractText());
+                        }
+                        if (existing.getLegalStatus() != null) {
+                            dto.setLegalStatus(existing.getLegalStatus());
+                        }
+                    });
+            }
+        }
 
         // =====================================================
         // 4️⃣ RETURN RESULTS TO FRONTEND
@@ -348,8 +380,19 @@ public class IPSearchService {
         // This mirrors the rules used when caching to DB above.
         // =====================================================
         for (IPSearchResultDTO dto : results) {
-            LocalDate filing = dto.getFilingDate() != null ? LocalDate.parse(dto.getFilingDate()) : null;
-            LocalDate grant = dto.getGrantDate() != null ? LocalDate.parse(dto.getGrantDate()) : null;
+            LocalDate filing = null;
+            LocalDate grant = null;
+            try {
+                if (dto.getFilingDate() != null && !dto.getFilingDate().trim().isEmpty()) {
+                    filing = LocalDate.parse(dto.getFilingDate());
+                }
+                if (dto.getGrantDate() != null && !dto.getGrantDate().trim().isEmpty()) {
+                    grant = LocalDate.parse(dto.getGrantDate());
+                }
+            } catch (Exception e) {
+                log.warn("Failed to parse dates for status derivation: {}", e.getMessage());
+            }
+            
             LocalDate expiry = null;
             if (filing != null)
                 expiry = filing.plusYears(20);

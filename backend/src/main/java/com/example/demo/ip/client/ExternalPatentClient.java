@@ -173,7 +173,17 @@ public class ExternalPatentClient {
         );
 
         dto.setFilingDate(normalizeDate(patent.get("filing_date")));
-        dto.setPublicationDate(normalizeDate(patent.get("publication_date")));
+        // Try multiple field names for publication date (Google Patents API may use different keys)
+        Object pubDate = patent.get("publication_date") != null ? patent.get("publication_date") 
+                         : patent.get("publication_date_raw");
+        String normalizedPubDate = normalizeDate(pubDate);
+        dto.setPublicationDate(normalizedPubDate);
+        if (normalizedPubDate == null) {
+            log.debug("No publication date found for patent: {}. Available date fields: {}", 
+                     dto.getApplicationNumber(), patent.keySet().stream()
+                     .filter(k -> k.toString().toLowerCase().contains("date") || k.toString().toLowerCase().contains("publish"))
+                     .toList());
+        }
         dto.setPriorityDate(normalizeDate(patent.get("priority_date")));
         dto.setGrantDate(normalizeDate(patent.get("grant_date")));
 
