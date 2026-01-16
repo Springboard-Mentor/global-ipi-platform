@@ -1,4 +1,15 @@
 const FilterBar = ({ search, setSearch, filterStatus, setFilterStatus }) => {
+  // Status options matching backend statuses
+  const statusOptions = [
+    { value: "All", label: "All Statuses" },
+    { value: "GRANTED", label: "Granted" },
+    { value: "FILED", label: "Filed" },
+    { value: "UNDER_EXAMINATION", label: "Under Examination" },
+    { value: "PENDING_REVIEW", label: "Pending Review" },
+    { value: "EXPIRED", label: "Expired" },
+    { value: "PUBLISHED", label: "Published" }
+  ];
+
   return (
     <div className="bg-white/10 backdrop-blur-xl border border-white/20 p-4 rounded-xl mb-6 flex flex-col md:flex-row gap-4 items-center">
       <input
@@ -14,11 +25,11 @@ const FilterBar = ({ search, setSearch, filterStatus, setFilterStatus }) => {
         onChange={(e) => setFilterStatus(e.target.value)}
         className="bg-white/5 border border-white/20 px-4 py-2 rounded-lg text-sm"
       >
-        <option>All</option>
-        <option>Completed</option>
-        <option>Pending</option>
-        <option>In Review</option>
-        <option>Rejected</option>
+        {statusOptions.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
       </select>
     </div>
   );

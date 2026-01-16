@@ -1,6 +1,38 @@
 import React, { useState } from "react";
 import StatusTimeline from "./StatusTimeline";
 
+// Helper function to format dates from backend (LocalDate serialized as "YYYY-MM-DD")
+const formatDate = (dateValue) => {
+  if (!dateValue) return "—";
+  
+  try {
+    // Handle both Date objects and date strings (YYYY-MM-DD format from backend)
+    let date;
+    if (typeof dateValue === 'string') {
+      // Backend sends LocalDate as "YYYY-MM-DD" string
+      date = new Date(dateValue + 'T00:00:00'); // Add time to avoid timezone issues
+    } else if (dateValue instanceof Date) {
+      date = dateValue;
+    } else {
+      return "—";
+    }
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return "—";
+    }
+    
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  } catch (error) {
+    console.error("Error formatting date:", error, dateValue);
+    return "—";
+  }
+};
+
 const TableRow = ({ item, children, actions }) => {
   const [open, setOpen] = useState(false);
 
@@ -11,14 +43,10 @@ const TableRow = ({ item, children, actions }) => {
       onClick={() => setOpen(!open)}
     >
       <td className="py-3">{item.title || "—"}</td>
-      <td>{item.applicationNumber || "—" }</td>
+      <td>{item.applicationNumber || "—"}</td>
       <td>{children}</td>
-      <td>{item.filingDate
-          ? new Date(item.filingDate).toLocaleDateString()
-          : "—"}</td>
-      <td>{item.updatedOn
-          ? new Date(item.updatedOn).toLocaleDateString()
-          : "—"}</td>
+      <td>{formatDate(item.filingDate)}</td>
+      <td>{formatDate(item.updatedOn)}</td>
       <td>{actions}</td>
     </tr>,
 

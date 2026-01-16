@@ -39,14 +39,22 @@ const LandscapeVisualization = ({ data = [] }) => {
     "#8B5A2B",
     "#FF6B9D",
   ];
-  const PATENT_FIELDS = [
-    "AI/ML",
-    "Blockchain",
-    "Cybersecurity",
-    "IoT",
-    "Quantum Computing",
-    "Biotechnology",
-  ];
+  // Patent field keywords for intelligent categorization
+  const PATENT_FIELD_KEYWORDS = {
+    "AI/ML": ["artificial intelligence", "machine learning", "neural network", "deep learning", "ai", "ml", "algorithm", "model"],
+    "Blockchain": ["blockchain", "cryptocurrency", "distributed ledger", "smart contract", "bitcoin", "ethereum"],
+    "Cybersecurity": ["security", "cybersecurity", "encryption", "authentication", "firewall", "malware", "privacy", "secure"],
+    "IoT": ["internet of things", "iot", "sensor", "smart device", "connected device", "embedded system"],
+    "Quantum Computing": ["quantum", "qubit", "quantum computing", "quantum algorithm"],
+    "Biotechnology": ["biotech", "biotechnology", "pharmaceutical", "drug", "medical", "genetic", "dna", "protein", "biological"],
+    "Software": ["software", "application", "system", "program", "code", "framework", "api"],
+    "Hardware": ["hardware", "device", "circuit", "processor", "chip", "semiconductor"],
+    "Telecommunications": ["telecom", "communication", "network", "wireless", "5g", "lte", "mobile"],
+    "Energy": ["energy", "power", "battery", "solar", "renewable", "fuel cell"],
+    "Manufacturing": ["manufacturing", "production", "assembly", "fabrication", "industrial"],
+  };
+
+  const PATENT_FIELDS = Object.keys(PATENT_FIELD_KEYWORDS);
 
   // Priority colors for consistent semantics
   const PRIORITY_COLORS = {
@@ -55,24 +63,94 @@ const LandscapeVisualization = ({ data = [] }) => {
     Low: "#10B981", // Green
   };
 
-  // Region name mapping
-  const REGION_NAMES = {
-    US: "United States (US)",
-    EU: "Europe (EU)",
-    JP: "Japan (JP)",
-    CN: "China (CN)",
-    IN: "India (IN)",
+  // Country to region mapping
+  const COUNTRY_TO_REGION = {
+    // North America
+    "US": "North America",
+    "CA": "North America",
+    "MX": "North America",
+    // Europe
+    "GB": "Europe", "UK": "Europe", "DE": "Europe", "FR": "Europe", 
+    "IT": "Europe", "ES": "Europe", "NL": "Europe", "BE": "Europe",
+    "CH": "Europe", "AT": "Europe", "SE": "Europe", "NO": "Europe",
+    "DK": "Europe", "FI": "Europe", "PL": "Europe", "IE": "Europe",
+    "PT": "Europe", "GR": "Europe", "CZ": "Europe", "HU": "Europe",
+    // Asia Pacific
+    "CN": "Asia Pacific", "JP": "Asia Pacific", "KR": "Asia Pacific",
+    "IN": "Asia Pacific", "AU": "Asia Pacific", "NZ": "Asia Pacific",
+    "SG": "Asia Pacific", "TW": "Asia Pacific", "HK": "Asia Pacific",
+    "MY": "Asia Pacific", "TH": "Asia Pacific", "PH": "Asia Pacific",
+    "ID": "Asia Pacific", "VN": "Asia Pacific",
+    // Middle East & Africa
+    "AE": "Middle East & Africa", "SA": "Middle East & Africa",
+    "IL": "Middle East & Africa", "ZA": "Middle East & Africa",
+    "EG": "Middle East & Africa", "TR": "Middle East & Africa",
+    // Latin America
+    "BR": "Latin America", "AR": "Latin America", "CL": "Latin America",
+    "CO": "Latin America", "PE": "Latin America",
+  };
+
+  // Function to extract patent field from title/abstract
+  const extractPatentField = (title, abstract) => {
+    if (!title && !abstract) return "Other";
+    
+    const searchText = `${title || ""} ${abstract || ""}`.toLowerCase();
+    
+    // Check each field's keywords
+    for (const [field, keywords] of Object.entries(PATENT_FIELD_KEYWORDS)) {
+      if (keywords.some(keyword => searchText.includes(keyword.toLowerCase()))) {
+        return field;
+      }
+    }
+    
+    return "Other";
+  };
+
+  // Function to map country code to region
+  const getRegionFromCountry = (countryCode) => {
+    if (!countryCode) return "Unknown";
+    const upperCode = countryCode.toUpperCase().trim();
+    return COUNTRY_TO_REGION[upperCode] || "Other";
   };
 
   //      DATA NORMALIZATION (FRONTEND)
     const normalizedData = useMemo(() => {
-    return data.map((item) => ({
-      ...item,
-      filingDate: item.filingDate ? new Date(item.filingDate) : null,
-      assetType: item.assetType,
-      legalStatus: item.legalStatus,
-      patentField: item.patentField || "Unknown"
-    }));
+    return data.map((item) => {
+      // Extract patent field from title/abstract if not already present
+      const patentField = item.patentField || extractPatentField(item.title, item.abstractText);
+      
+      // Map country to region
+      const region = item.region || getRegionFromCountry(item.country);
+      
+      // Parse filing date safely
+      let filingDate = null;
+      if (item.filingDate) {
+        try {
+          // Handle both Date objects and date strings (YYYY-MM-DD format from backend)
+          if (typeof item.filingDate === 'string') {
+            filingDate = new Date(item.filingDate + 'T00:00:00');
+          } else if (item.filingDate instanceof Date) {
+            filingDate = item.filingDate;
+          }
+          // Check if date is valid
+          if (filingDate && isNaN(filingDate.getTime())) {
+            filingDate = null;
+          }
+        } catch (e) {
+          filingDate = null;
+        }
+      }
+      
+      return {
+        ...item,
+        filingDate,
+        assetType: item.assetType || "PATENT",
+        legalStatus: item.legalStatus,
+        patentField,
+        region,
+        country: item.country || "Unknown"
+      };
+    });
   }, [data]);
 
   // Enhanced data processing with patent-specific analysis
@@ -124,12 +202,12 @@ const LandscapeVisualization = ({ data = [] }) => {
   =============================== */
   const fieldDistribution = Object.values(
     normalizedData.reduce((acc, item) => {
-      const field = item.patentField || "Unknown";
+      const field = item.patentField || "Other";
       acc[field] = acc[field] || { field, count: 0 };
       acc[field].count++;
       return acc;
     }, {})
-  );
+  ).sort((a, b) => b.count - a.count); // Sort by count descending
 
   /* ===============================
      PRIORITY ANALYSIS (ALL DATA)
@@ -151,12 +229,24 @@ const LandscapeVisualization = ({ data = [] }) => {
   =============================== */
   const regionalDistribution = Object.values(
     normalizedData.reduce((acc, item) => {
-      const region = item.region || "Unknown";
+      const region = item.region || "Other";
       acc[region] = acc[region] || { region, count: 0 };
       acc[region].count++;
       return acc;
     }, {})
-  );
+  ).sort((a, b) => b.count - a.count); // Sort by count descending
+
+  /* ===============================
+     COUNTRY DISTRIBUTION (DETAILED)
+  =============================== */
+  const countryDistribution = Object.values(
+    normalizedData.reduce((acc, item) => {
+      const country = item.country || "Unknown";
+      acc[country] = acc[country] || { country, count: 0 };
+      acc[country].count++;
+      return acc;
+    }, {})
+  ).sort((a, b) => b.count - a.count).slice(0, 10); // Top 10 countries
 
   /* ===============================
      MONTHLY ACTIVITY (SAFE)
@@ -247,6 +337,7 @@ const LandscapeVisualization = ({ data = [] }) => {
     fieldDistribution,
     priorityAnalysis,
     regionalDistribution,
+    countryDistribution,
     monthlyActivity,
     radarData,
   };
@@ -352,6 +443,14 @@ const LandscapeVisualization = ({ data = [] }) => {
 
       {/* DYNAMIC CHART DISPLAY */}
       <div className="min-h-[400px] transition-all duration-500">
+        {data.length === 0 && (
+          <div className="h-96 flex items-center justify-center">
+            <div className="text-center">
+              <p className="text-white/60 mb-2 text-lg">No IP data available</p>
+              <p className="text-white/40 text-sm">Search for patents to populate the landscape visualization</p>
+            </div>
+          </div>
+        )}
         {activeChart === "trend" && (
           <div className="animate-fadeIn">
             <h4 className="text-lg text-white mb-6 flex items-center gap-2 font-semibold">
@@ -511,96 +610,237 @@ const LandscapeVisualization = ({ data = [] }) => {
           <div className="animate-fadeIn">
             <h4 className="text-lg text-white mb-6 flex items-center gap-2 font-semibold">
               Patent Field Analysis
+              <span className="text-sm text-purple-200 font-normal">
+                ({processedData.fieldDistribution.length} fields identified)
+              </span>
             </h4>
-            <div className="h-96">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={processedData.fieldDistribution}
-                  layout="horizontal"
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="rgba(255,255,255,0.2)"
-                  />
-                  <XAxis
-                    type="number"
-                    tick={{ fill: "#FFFFFF", fontSize: 12 }}
-                  />
-                  <YAxis
-                    dataKey="field"
-                    type="category"
-                    tick={{ fill: "#FFFFFF", fontSize: 11 }}
-                    width={120}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "rgba(30, 30, 30, 0.95)",
-                      border: "1px solid rgba(139, 92, 246, 0.5)",
-                      borderRadius: "12px",
-                      color: "#fff",
-                    }}
-                  />
-                  <Bar dataKey="count" fill="#10B981" radius={[0, 8, 8, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            {processedData.fieldDistribution.length === 0 ? (
+              <div className="h-96 flex items-center justify-center">
+                <div className="text-center">
+                  <p className="text-white/60 mb-2">No field data available</p>
+                  <p className="text-white/40 text-sm">Fields are extracted from patent titles and abstracts</p>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="h-96">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={processedData.fieldDistribution.slice(0, 10)}
+                      layout="horizontal"
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="rgba(255,255,255,0.2)"
+                      />
+                      <XAxis
+                        type="number"
+                        tick={{ fill: "#FFFFFF", fontSize: 12 }}
+                        label={{ value: "Number of Patents", position: "insideBottom", offset: -5, fill: "#FFFFFF" }}
+                      />
+                      <YAxis
+                        dataKey="field"
+                        type="category"
+                        tick={{ fill: "#FFFFFF", fontSize: 11 }}
+                        width={140}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "rgba(30, 30, 30, 0.95)",
+                          border: "1px solid rgba(16, 185, 129, 0.5)",
+                          borderRadius: "12px",
+                          color: "#fff",
+                        }}
+                        formatter={(value) => [`${value} patents`, "Count"]}
+                      />
+                      <Bar dataKey="count" fill="#10B981" radius={[0, 8, 8, 0]}>
+                        {processedData.fieldDistribution.slice(0, 10).map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="h-96">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={processedData.fieldDistribution.slice(0, 8)}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={120}
+                        paddingAngle={3}
+                        dataKey="count"
+                        nameKey="field"
+                        label={({ field, percent }) => `${field}: ${(percent * 100).toFixed(1)}%`}
+                        labelLine={false}
+                      >
+                        {processedData.fieldDistribution.slice(0, 8).map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "rgba(30, 30, 30, 0.95)",
+                          border: "1px solid rgba(16, 185, 129, 0.5)",
+                          borderRadius: "12px",
+                          color: "#fff",
+                        }}
+                        formatter={(value) => [`${value} patents`, "Count"]}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         {activeChart === "regional" && (
           <div className="animate-fadeIn">
             <h4 className="text-lg text-white mb-6 flex items-center gap-2 font-semibold">
-              Regional Distribution
+              Regional & Country Distribution
+              <span className="text-sm text-purple-200 font-normal">
+                ({processedData.regionalDistribution.length} regions)
+              </span>
             </h4>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={processedData.regionalDistribution}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={120}
-                      dataKey="count"
-                      label={({ region, value }) => `${region}: ${value}`}
-                    >
-                      {processedData.regionalDistribution.map(
-                        (entry, index) => (
+            {processedData.regionalDistribution.length === 0 ? (
+              <div className="h-96 flex items-center justify-center">
+                <div className="text-center">
+                  <p className="text-white/60 mb-2">No regional data available</p>
+                  <p className="text-white/40 text-sm">Country information is mapped to regions</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-8">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="h-80">
+                    <h5 className="text-white/90 mb-4 text-sm font-semibold">By Region</h5>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={processedData.regionalDistribution}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={50}
+                          outerRadius={110}
+                          paddingAngle={3}
+                          dataKey="count"
+                          nameKey="region"
+                          label={({ region, percent }) => 
+                            percent > 0.05 ? `${region}: ${(percent * 100).toFixed(1)}%` : ''
+                          }
+                          labelLine={false}
+                        >
+                          {processedData.regionalDistribution.map((entry, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={COLORS[index % COLORS.length]}
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "rgba(30, 30, 30, 0.95)",
+                            border: "1px solid rgba(139, 92, 246, 0.5)",
+                            borderRadius: "12px",
+                            color: "#fff",
+                          }}
+                          formatter={(value) => [`${value} patents`, "Count"]}
+                        />
+                        <Legend 
+                          verticalAlign="bottom" 
+                          height={36}
+                          formatter={(value) => <span style={{ color: "#FFFFFF" }}>{value}</span>}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="h-80">
+                    <h5 className="text-white/90 mb-4 text-sm font-semibold">Top Countries</h5>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart 
+                        data={processedData.countryDistribution}
+                        layout="horizontal"
+                      >
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          stroke="rgba(255,255,255,0.2)"
+                        />
+                        <XAxis
+                          type="number"
+                          tick={{ fill: "#FFFFFF", fontSize: 12 }}
+                        />
+                        <YAxis
+                          dataKey="country"
+                          type="category"
+                          tick={{ fill: "#FFFFFF", fontSize: 11 }}
+                          width={80}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: "rgba(30, 30, 30, 0.95)",
+                            border: "1px solid rgba(139, 92, 246, 0.5)",
+                            borderRadius: "12px",
+                            color: "#fff",
+                          }}
+                          formatter={(value) => [`${value} patents`, "Count"]}
+                        />
+                        <Bar dataKey="count" fill="#8B5CF6" radius={[0, 8, 8, 0]}>
+                          {processedData.countryDistribution.map((entry, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={COLORS[index % COLORS.length]}
+                            />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+                <div className="h-80">
+                  <h5 className="text-white/90 mb-4 text-sm font-semibold">Regional Breakdown</h5>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={processedData.regionalDistribution}>
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="rgba(255,255,255,0.2)"
+                      />
+                      <XAxis
+                        dataKey="region"
+                        tick={{ fill: "#FFFFFF", fontSize: 12 }}
+                        angle={-45}
+                        textAnchor="end"
+                        height={80}
+                      />
+                      <YAxis
+                        allowDecimals={false}
+                        tick={{ fill: "#FFFFFF", fontSize: 12 }}
+                        label={{ value: "Number of Patents", angle: -90, position: "insideLeft", fill: "#FFFFFF" }}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "rgba(30, 30, 30, 0.95)",
+                          border: "1px solid rgba(139, 92, 246, 0.5)",
+                          borderRadius: "12px",
+                          color: "#fff",
+                        }}
+                        formatter={(value) => [`${value} patents`, "Count"]}
+                      />
+                      <Bar dataKey="count" radius={[8, 8, 0, 0]}>
+                        {processedData.regionalDistribution.map((entry, index) => (
                           <Cell
                             key={`cell-${index}`}
                             fill={COLORS[index % COLORS.length]}
                           />
-                        )
-                      )}
-                    </Pie>
-                    <Tooltip {...CHART_TOOLTIP_STYLE} />
-                  </PieChart>
-                </ResponsiveContainer>
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={processedData.priorityAnalysis}>
-                    <XAxis
-                      dataKey="priority"
-                      tick={{ fill: "#FFFFFF", fontSize: 12 }}
-                    />
-                    <YAxis
-                      allowDecimals={false}
-                      tick={{ fill: "#FFFFFF", fontSize: 12 }}
-                    />
-                    <Tooltip {...CHART_TOOLTIP_STYLE} />
-                    <Bar dataKey="count" radius={[8, 8, 0, 0]}>
-                      {processedData.priorityAnalysis.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={PRIORITY_COLORS[entry.priority] || "#F59E0B"}
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
+            )}
           </div>
         )}
 
@@ -714,7 +954,10 @@ const LandscapeVisualization = ({ data = [] }) => {
         </div>
         <div className="bg-gradient-to-br from-yellow-500/30 to-orange-600/30 p-6 rounded-2xl border border-yellow-400/40 shadow-lg">
           <div className="text-3xl font-bold text-white mb-2">
-            {data.filter((item) => item.assetType === "Trademark").length}
+            {data.filter((item) => 
+              item.assetType?.toUpperCase() === "TRADEMARK" || 
+              item.assetType?.toUpperCase() === "TRADE MARK"
+            ).length}
           </div>
           <div className="text-sm text-yellow-100 font-medium">Trademarks</div>
         </div>

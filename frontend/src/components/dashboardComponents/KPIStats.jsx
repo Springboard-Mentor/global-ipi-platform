@@ -7,6 +7,12 @@ const KPIStats = ({ data = [] }) => {
 
   const total = data.reduce((acc, s) => acc + s.count, 0);
 
+  // Normalize status for comparison (case-insensitive)
+  const getCountNormalized = (status) => {
+    const normalizedStatus = status.toUpperCase();
+    return data.find((s) => s.status?.toUpperCase() === normalizedStatus)?.count || 0;
+  };
+
   const stats = [
     {
       label: "Total Filings",
@@ -15,18 +21,17 @@ const KPIStats = ({ data = [] }) => {
     },
     {
       label: "Filed",
-      value: getCount(IP_STATUSES.FILED),
+      value: getCountNormalized("FILED"),
       color: "text-blue-300",
     },
-
     {
-      label: "Published",
-      value: getCount(IP_STATUSES.PUBLISHED),
+      label: "Under Examination",
+      value: getCountNormalized("UNDER_EXAMINATION"),
       color: "text-yellow-300",
     },
     {
       label: "Granted",
-      value: getCount(IP_STATUSES.GRANTED),
+      value: getCountNormalized("GRANTED"),
       color: "text-green-300",
     },
   ];

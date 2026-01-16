@@ -42,7 +42,12 @@ public class IPAssetMapper {
     }
 
     private String deriveLegalStatus(IPAsset entity) {
+        // Use existing status if present and not null/empty
+        if (entity.getLegalStatus() != null && !entity.getLegalStatus().trim().isEmpty()) {
+            return entity.getLegalStatus();
+        }
 
+        // Otherwise derive from dates:
         // 1. Granted if grant date exists
         if (entity.getGrantDate() != null) {
             return "GRANTED";

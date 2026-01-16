@@ -15,23 +15,44 @@ const IPActivity = () => {
   const [filterStatus, setFilterStatus] = useState("All");
   const [page, setPage] = useState(1);
   const [statusSummary, setStatusSummary] = useState([]);
-  useEffect(() => {
-    fetchStatusSummary().then((summary) => {
-      const formatted = Object.entries(summary).map(([status, count]) => ({
-        status,
-        count,
-      }));
-      setStatusSummary(formatted);
-    });
-  }, []);
-
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const itemsPerPage = 5;
 
   // legalstatus
   const [assets, setAssets] = useState([]);
 
   useEffect(() => {
-    fetchAllIPAssets().then(setAssets);
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [summaryData, assetsData] = await Promise.all([
+          fetchStatusSummary().catch(err => {
+            console.error("Error fetching status summary:", err);
+            return {};
+          }),
+          fetchAllIPAssets().catch(err => {
+            console.error("Error fetching IP assets:", err);
+            throw err;
+          })
+        ]);
+        
+        const formatted = Object.entries(summaryData).map(([status, count]) => ({
+          status,
+          count,
+        }));
+        setStatusSummary(formatted);
+        setAssets(assetsData);
+      } catch (err) {
+        console.error("Error loading data:", err);
+        setError("Failed to load IP assets. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   // Filter Logic
@@ -40,11 +61,20 @@ const IPActivity = () => {
       entry.title?.toLowerCase().includes(search.toLowerCase()) ||
       entry.applicationNumber?.toLowerCase().includes(search.toLowerCase());
 
+    // Normalize status comparison (case-insensitive)
+    const normalizedEntryStatus = entry.legalStatus ? entry.legalStatus.toUpperCase() : "";
+    const normalizedFilterStatus = filterStatus === "All" ? "All" : filterStatus.toUpperCase();
+    
     const matchStatus =
-      filterStatus === "All" ? true : entry.legalStatus === filterStatus;
+      normalizedFilterStatus === "All" ? true : normalizedEntryStatus === normalizedFilterStatus;
 
     return matchText && matchStatus;
   });
+
+  // Reset page when search or filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [search, filterStatus]);
 
   // Pagination Logic
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
@@ -150,44 +180,78 @@ const IPActivity = () => {
 
       {/* MAIN CARD */}
       <div className="bg-white/10 backdrop-blur-xl rounded-xl border border-white/20 p-6 shadow-lg shadow-black/20">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-purple-200 border-b border-white/10">
-              <th className="text-left pb-3">Patent / IP Name</th>
-              <th className="text-left pb-3">Track ID</th>
-              <th className="text-left pb-3">Status</th>
-              <th className="text-left pb-3">Filed On</th>
-              <th className="text-left pb-3">Last Updated</th>
-              <th className="text-left pb-3">Actions</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {paginatedData.map((item, i) => (
-              <TableRow
-                key={i}
-                item={item}
-                actions={
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation(); // prevent row expand
-                      navigate(`/ip/${item.id}`);
-                    }}
-                    className="px-3 py-1 bg-blue-600/80 hover:bg-blue-700 rounded text-xs text-white transition"
-                  >
-                    View Details
-                  </button>
-                }
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
+              <p className="text-white/60">Loading IP assets...</p>
+            </div>
+          </div>
+        ) : error ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <p className="text-red-400 mb-4">{error}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm text-white transition"
               >
-                <StatusBadge status={item.legalStatus} />
-              </TableRow>
-            ))}
-          </tbody>
-        </table>
+                Retry
+              </button>
+            </div>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <p className="text-white/60 mb-2">No IP assets found</p>
+              <p className="text-white/40 text-sm">
+                {search || filterStatus !== "All"
+                  ? "Try adjusting your search or filters"
+                  : "Start by searching for patents from the IP Search page"}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-purple-200 border-b border-white/10">
+                <th className="text-left pb-3">Patent / IP Name</th>
+                <th className="text-left pb-3">Track ID</th>
+                <th className="text-left pb-3">Status</th>
+                <th className="text-left pb-3">Filed On</th>
+                <th className="text-left pb-3">Last Updated</th>
+                <th className="text-left pb-3">Actions</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {paginatedData.map((item, i) => (
+                <TableRow
+                  key={item.id || i}
+                  item={item}
+                  actions={
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation(); // prevent row expand
+                        navigate(`/ip/${item.id}`);
+                      }}
+                      className="px-3 py-1 bg-blue-600/80 hover:bg-blue-700 rounded text-xs text-white transition"
+                    >
+                      View Details
+                    </button>
+                  }
+                >
+                  <StatusBadge status={item.legalStatus} />
+                </TableRow>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       {/* PAGINATION */}
-      <Pagination page={page} totalPages={totalPages} setPage={setPage} />
+      {!loading && !error && filtered.length > 0 && (
+        <Pagination page={page} totalPages={totalPages} setPage={setPage} />
+      )}
     </div>
   );
 };
