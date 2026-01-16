@@ -158,12 +158,27 @@ const IPActivity = () => {
               <th className="text-left pb-3">Status</th>
               <th className="text-left pb-3">Filed On</th>
               <th className="text-left pb-3">Last Updated</th>
+              <th className="text-left pb-3">Actions</th>
             </tr>
           </thead>
 
           <tbody>
             {paginatedData.map((item, i) => (
-              <TableRow key={i} item={item}>
+              <TableRow
+                key={i}
+                item={item}
+                actions={
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation(); // prevent row expand
+                      navigate(`/ip/${item.id}`);
+                    }}
+                    className="px-3 py-1 bg-blue-600/80 hover:bg-blue-700 rounded text-xs text-white transition"
+                  >
+                    View Details
+                  </button>
+                }
+              >
                 <StatusBadge status={item.legalStatus} />
               </TableRow>
             ))}

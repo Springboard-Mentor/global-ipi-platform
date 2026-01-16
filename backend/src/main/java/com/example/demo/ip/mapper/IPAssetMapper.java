@@ -28,8 +28,15 @@ public class IPAssetMapper {
         dto.setOwnerName(entity.getOwnerName());
         dto.setInventorName(entity.getInventorName());
         dto.setFilingDate(entity.getFilingDate());
-        dto.setUpdatedOn(entity.getUpdatedOn());
         dto.setPublicationDate(entity.getPublicationDate());
+        dto.setPriorityDate(entity.getPriorityDate());
+        dto.setGrantDate(entity.getGrantDate());
+        dto.setUpdatedOn(entity.getUpdatedOn());
+        dto.setAbstractText(entity.getAbstractText());
+        dto.setReferenceSource(entity.getReferenceSource());
+        dto.setPatentLink(entity.getPatentLink());
+        dto.setPdfLink(entity.getPdfLink());
+        dto.setThumbnail(entity.getThumbnail());
         dto.setLegalStatus(deriveLegalStatus(entity));
         return dto;
     }
@@ -73,6 +80,13 @@ public class IPAssetMapper {
         entity.setInventorName(dto.getInventorName());
         entity.setFilingDate(dto.getFilingDate());
         entity.setPublicationDate(dto.getPublicationDate());
+        entity.setPriorityDate(dto.getPriorityDate());
+        entity.setGrantDate(dto.getGrantDate());
+        entity.setAbstractText(dto.getAbstractText());
+        entity.setReferenceSource(dto.getReferenceSource());
+        entity.setPatentLink(dto.getPatentLink());
+        entity.setPdfLink(dto.getPdfLink());
+        entity.setThumbnail(dto.getThumbnail());
 
         return entity;
     }

@@ -22,6 +22,7 @@ public class IPSearchResultDTO {
     private String publicationDate;
     private String priorityDate;
     private String grantDate;
+    private String updatedOn;
 
     private String abstractText;
     private String ownerName;

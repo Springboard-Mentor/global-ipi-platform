@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import StatusTimeline from "./StatusTimeline";
 
-const TableRow = ({ item, children }) => {
+const TableRow = ({ item, children, actions }) => {
   const [open, setOpen] = useState(false);
 
   return [
@@ -19,11 +19,12 @@ const TableRow = ({ item, children }) => {
       <td>{item.updatedOn
           ? new Date(item.updatedOn).toLocaleDateString()
           : "—"}</td>
+      <td>{actions}</td>
     </tr>,
 
     open && (
       <tr key="timeline-row">
-        <td colSpan="5">
+        <td colSpan="6">
           <StatusTimeline
             status={item.legalStatus || "—"}
             filedOn={item.filingDate}

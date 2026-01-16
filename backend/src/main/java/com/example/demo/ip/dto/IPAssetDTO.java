@@ -14,10 +14,16 @@ public class IPAssetDTO {
     private String country;
     private LocalDate filingDate;
     private LocalDate publicationDate;
+    private LocalDate priorityDate;
+    private LocalDate grantDate;
     private LocalDate updatedOn;
     private String abstractText;
     private String ownerName;
     private String inventorName;
+    private String referenceSource;
+    private String patentLink;
+    private String pdfLink;
+    private String thumbnail;
 
       // getters & setters
 

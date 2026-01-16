@@ -11,6 +11,20 @@ const IPDetails = () => {
   const [loading, setLoading] = useState(!location.state?.ip);
   const [error, setError] = useState(null);
 
+  // Helper function to format dates
+  const formatDate = (dateString) => {
+    if (!dateString || dateString === "—") return "—";
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
   // text file
   const exportAsTextFile = () => {
     if (!ip) return;
@@ -20,17 +34,19 @@ IP DETAILS
 =========================
 
 Title: ${ip.title || "N/A"}
-Status: ${ip.status || "N/A"}
+Status: ${ip.legalStatus || ip.status || "N/A"}
+Asset Type: ${ip.assetType || "N/A"}
 
-Owner: ${ip.assignee || "N/A"}
-Issuing Authority: ${ip.jurisdiction || "N/A"}
+Owner: ${ip.assignee || ip.ownerName || "N/A"}
+Issuing Authority: ${ip.jurisdiction || ip.country || "N/A"}
 Area of Coverage: ${ip.coverage || "N/A"}
 
-Application Number: ${ip.number || "N/A"}
-Filed Date: ${ip.filingDate || "N/A"}
-Publication Date: ${ip.publicationDate || "N/A"}
-Grant Date: ${ip.grantDate || "N/A"}
-
+Application Number: ${ip.number || ip.applicationNumber || "N/A"}
+Filed Date: ${formatDate(ip.filingDate)}
+Publication Date: ${formatDate(ip.publicationDate)}
+Priority Date: ${formatDate(ip.priorityDate)}
+Grant Date: ${formatDate(ip.grantDate)}
+Last Updated: ${formatDate(ip.updatedOn)}
 
 IP Duration: ${
       ip.filingDate
@@ -38,10 +54,14 @@ IP Duration: ${
         : "N/A"
     }
 
-Inventor(s): ${ip.inventor || "N/A"}
+Inventor(s): ${ip.inventor || ip.inventorName || "N/A"}
+Reference Source: ${ip.referenceSource || "N/A"}
 
 Abstract:
-${ip.abstract || "N/A"}
+${ip.abstract || ip.abstractText || "N/A"}
+
+Patent Link: ${ip.patentLink || "N/A"}
+PDF Link: ${ip.pdfLink || "N/A"}
 
 -------------------------
 Generated from IP Portal
@@ -73,6 +93,7 @@ Generated from IP Portal
             assignee: data.ownerName,
             number: data.applicationNumber,
             inventor: data.inventorName,
+            abstract: data.abstractText,
           });
         } catch (err) {
           setError("Failed to load IP details");
@@ -108,40 +129,51 @@ Generated from IP Portal
   }
 
   //  Derived Fields (API-Ready)
-  const filingDate = ip.filingDate || "N/A";
-  const publicationDate = ip.publicationDate || "N/A";
-  const grantDate = ip.grantDate || "N/A";
+  const filingDate = formatDate(ip.filingDate);
+  const publicationDate = formatDate(ip.publicationDate);
+  const grantDate = formatDate(ip.grantDate);
+  const priorityDate = formatDate(ip.priorityDate);
+  const updatedOn = formatDate(ip.updatedOn);
 
   // Patent duration (20 years standard)
   const expiryYear =
-    filingDate !== "N/A" ? new Date(filingDate).getFullYear() + 20 : "N/A";
+    ip.filingDate ? new Date(ip.filingDate).getFullYear() + 20 : null;
 
   const duration =
-    expiryYear !== "N/A" ? `20 Years (Expires in ${expiryYear})` : "N/A";
+    expiryYear ? `20 Years (Expires in ${expiryYear})` : "N/A";
+
+  console.log("IP dates:", {
+    filingDate: ip.filingDate,
+    publicationDate: ip.publicationDate,
+    grantDate: ip.grantDate,
+    formattedFiling: formatDate(ip.filingDate),
+    formattedPublication: formatDate(ip.publicationDate),
+    duration
+  });
 
   //  Legal Timeline (Event-based)
   const timeline = [
     {
       label: "Priority Date",
-      date: ip.priorityDate || "—",
+      date: formatDate(ip.priorityDate),
       description: "Initial priority filing",
       active: false,
     },
     {
       label: "Application Filed",
-      date: ip.filingDate || "—",
+      date: formatDate(ip.filingDate),
       description: "Patent application officially filed",
       active: false,
     },
     {
       label: "Published",
-      date: ip.publicationDate || "—",
+      date: formatDate(ip.publicationDate),
       description: "Patent published for public access",
       active: false,
     },
     {
       label: "Patent Granted",
-      date: ip.grantDate || "—",
+      date: formatDate(ip.grantDate),
       description: "Patent legally granted",
       active: Boolean(ip.grantDate),
     },
@@ -151,7 +183,7 @@ Generated from IP Portal
   }, [ip]);
 
   //  Status Badge Styling
-  const status = ip.status?.toUpperCase() || "UNKNOWN";
+  const status = (ip.status || ip.legalStatus)?.toUpperCase() || "UNKNOWN";
 
   const statusColor =
     status === "GRANTED"
@@ -185,7 +217,7 @@ Generated from IP Portal
           <span
             className={`px-3 py-1 text-xs rounded-full text-white ${statusColor}`}
           >
-            {ip.status}
+            {ip.status || ip.legalStatus || "UNKNOWN"}
           </span>
         </div>
 
@@ -325,21 +357,29 @@ Generated from IP Portal
             {ip.number || "N/A"}
           </div>
           <div>
-            <span className="text-white">Filed Date:</span> {ip.filingDate}
+            <span className="text-white">Filed Date:</span> {filingDate}
           </div>
           <div>
             <span className="text-white">Publication Date:</span>{" "}
             {publicationDate}
           </div>
-
           <div>
-            <span className="text-white">IP Duration:</span> {ip.duration}
+            <span className="text-white">Priority Date:</span> {priorityDate}
+          </div>
+          <div>
+            <span className="text-white">Grant Date:</span> {grantDate}
+          </div>
+          <div>
+            <span className="text-white">IP Duration:</span> {duration}
+          </div>
+          <div>
+            <span className="text-white">Last Updated:</span> {updatedOn}
           </div>
         </div>
 
         
         <p className="mt-4 text-gray-400 text-sm">
-          <span className="text-white">Abstract:</span> {ip.abstract || "N/A"}
+          <span className="text-white">Abstract:</span> {ip.abstract || ip.abstractText || "N/A"}
         </p>
 
         {ip.inventor && (

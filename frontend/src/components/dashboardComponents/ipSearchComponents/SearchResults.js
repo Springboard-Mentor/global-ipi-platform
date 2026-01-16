@@ -46,8 +46,22 @@ const SearchResults = () => {
       inventor: item.inventorName || null,
       jurisdiction: item.country || "Unknown",
       date: item.filingDate || "N/A",
-      status: item.status || "Unknown",
+      status: item.legalStatus || "Unknown", 
       abstract: item.abstractText || "",
+      // Add date fields for IPDetails
+      filingDate: item.filingDate,
+      publicationDate: item.publicationDate,
+      grantDate: item.grantDate,
+      priorityDate: item.priorityDate,
+      legalStatus: item.legalStatus,
+      assetType: item.assetType,
+      abstractText: item.abstractText,
+      ownerName: item.ownerName,
+      inventorName: item.inventorName,
+      referenceSource: item.referenceSource,
+      patentLink: item.patentLink,
+      pdfLink: item.pdfLink,
+      thumbnail: item.thumbnail,
     }))
   : [];
 

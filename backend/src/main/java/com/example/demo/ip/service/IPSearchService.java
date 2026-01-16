@@ -52,6 +52,10 @@ public class IPSearchService {
         // Ensure grantDate is populated in the DTO if present
         dto.setGrantDate(asset.getGrantDate() != null ? asset.getGrantDate().toString() : null);
 
+        // Include abstractText and updatedOn
+        dto.setAbstractText(asset.getAbstractText());
+        dto.setUpdatedOn(asset.getUpdatedOn() != null ? asset.getUpdatedOn().toString() : null);
+
         dto.setPatentLink(asset.getPatentLink());
         dto.setPdfLink(asset.getPdfLink());
         dto.setThumbnail(asset.getThumbnail());

@@ -3,7 +3,7 @@ import axios from "axios";
 const BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8081";
 
 // IP Assets API base
-const API_BASE = `${BASE_URL}/api/ip`;
+const API_BASE = `${BASE_URL}/api/ip-assets`;
 
 //  STATUS NORMALIZATION (UNIT)
 const normalizeStatus = (status) =>
