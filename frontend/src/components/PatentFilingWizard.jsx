@@ -54,6 +54,15 @@ const initialForm = {
 
 const PatentFilingWizard = () => {
   const navigate = useNavigate();
+  
+  // Check if user is logged in
+  React.useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login', { state: { message: 'Please log in to file a patent application' } });
+    }
+  }, [navigate]);
+  
   const [step, setStep] = useState(0);
   const [formData, setFormData] = useState(() => {
     try {
@@ -156,16 +165,26 @@ const PatentFilingWizard = () => {
     }
 
     setLoading(true);
-    // Create a filing and persist locally
+    // Create a filing and persist to backend
     try {
-      const filing = addFiling(formData);
+      const filing = await addFiling(formData);
       setLoading(false);
-      setPopup({ message: 'Patent application saved to My Filings', type: 'success' });
+      setPopup({ message: 'Patent application saved successfully!', type: 'success' });
       localStorage.removeItem('patentFilingDraft');
       setTimeout(() => navigate('/my-filings'), 700);
     } catch (e) {
       setLoading(false);
-      setPopup({ message: 'Failed to save filing locally', type: 'error' });
+      const errorMessage = e.message || 'Failed to save filing. Please try again.';
+      setPopup({ message: errorMessage, type: 'error' });
+      
+      // If unauthorized, suggest logging in
+      if (errorMessage.includes('session') || errorMessage.includes('log in') || errorMessage.includes('Authentication')) {
+        setTimeout(() => {
+          if (window.confirm('You need to be logged in to submit a filing. Would you like to go to the login page?')) {
+            navigate('/login');
+          }
+        }, 2000);
+      }
     }
   };
 

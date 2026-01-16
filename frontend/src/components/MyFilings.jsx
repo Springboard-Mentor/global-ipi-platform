@@ -22,10 +22,23 @@ const EmptyState = () => (
 
 const MyFilings = () => {
   const [filings, setFilings] = useState([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    setFilings(loadFilings());
+    const fetchFilings = async () => {
+      try {
+        setLoading(true);
+        const data = await loadFilings();
+        setFilings(data);
+      } catch (error) {
+        console.error('Failed to load filings:', error);
+        setFilings([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchFilings();
   }, []);
 
   return (
@@ -43,7 +56,11 @@ const MyFilings = () => {
         </div>
 
         <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-          {filings.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-20">
+              <div className="text-white/70">Loading filings...</div>
+            </div>
+          ) : filings.length === 0 ? (
             <EmptyState />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -69,7 +86,7 @@ const MyFilings = () => {
                     </div>
 
                     <div className="mt-4 flex items-center justify-between">
-                      <div className="text-sm text-white/60">Tracked: {new Date(f.trackedAt).toLocaleString()}</div>
+                      <div className="text-sm text-white/60">Tracked: {f.trackedAt ? new Date(f.trackedAt).toLocaleString() : 'N/A'}</div>
                       <div className="flex items-center gap-2">
                         <button onClick={() => navigate(`/my-filings/${f.id}`)} className="px-3 py-1 bg-white/5 rounded">View</button>
                       </div>
