@@ -22,11 +22,16 @@ public class User {
 
     @Column(nullable = false)
     private String userType;
-    
-    // The 'bio' field is intentionally NOT included here.
 
     @Column(name = "created_at")
     private LocalDateTime createdAt; 
+
+    // ✅ NEW FIELDS FOR FORGOT PASSWORD (Added by Team)
+    @Column(name = "reset_token")
+    private String resetToken;
+
+    @Column(name = "reset_token_expiry")
+    private LocalDateTime resetTokenExpiry;
 
     // Constructors
     public User() {}
@@ -38,7 +43,6 @@ public class User {
         this.userType = userType;
     }
 
-    // Automatically set createdAt before insert (Timestamp fix remains)
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
@@ -62,4 +66,11 @@ public class User {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    // ✅ New Getters/Setters for Reset Token
+    public String getResetToken() { return resetToken; }
+    public void setResetToken(String resetToken) { this.resetToken = resetToken; }
+
+    public LocalDateTime getResetTokenExpiry() { return resetTokenExpiry; }
+    public void setResetTokenExpiry(LocalDateTime resetTokenExpiry) { this.resetTokenExpiry = resetTokenExpiry; }
 }

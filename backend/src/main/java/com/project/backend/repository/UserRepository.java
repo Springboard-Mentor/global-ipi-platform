@@ -7,6 +7,11 @@ import java.util.Optional;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
+    
     Optional<User> findByEmail(String email);
+    
     boolean existsByEmail(String email);
+
+    // NEW: Find user by their reset token (Required for Password Reset flow)
+    Optional<User> findByResetToken(String resetToken);
 }

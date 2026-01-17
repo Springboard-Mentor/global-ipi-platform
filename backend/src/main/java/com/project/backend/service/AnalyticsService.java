@@ -276,7 +276,6 @@ public class AnalyticsService {
         for (IPAsset asset : assets) {
             if (asset.getAssetClass() != null && !asset.getAssetClass().isEmpty()) {
                 String[] codes = asset.getAssetClass().split(",");
-                // ✅ FIX: Use Set to ensure each category is counted only once per asset
                 Set<String> uniqueCategoriesForAsset = new HashSet<>();
                 for (String code : codes) {
                     uniqueCategoriesForAsset.add(getSmartCategoryName(code));
@@ -493,39 +492,12 @@ public class AnalyticsService {
     }
 
     public Map<String, Object> getAssetsByCategory(String category) {
-        List<IPAsset> allAssets = ipAssetRepository.findAll();
-        String search = (category != null) ? category.toLowerCase() : "";
-        
-        List<Map<String, Object>> filtered = allAssets.stream()
-            .filter(a -> search.isEmpty() || 
-                   (a.getTitle() != null && a.getTitle().toLowerCase().contains(search)) ||
-                   (a.getAssetClass() != null && (a.getAssetClass().toLowerCase().contains(search) || getSmartCategoryName(a.getAssetClass()).toLowerCase().contains(search))) ||
-                   (a.getAssignee() != null && a.getAssignee().toLowerCase().contains(search)) ||
-                   (a.getInventor() != null && a.getInventor().toLowerCase().contains(search)) ||
-                   (a.getDetails() != null && a.getDetails().toLowerCase().contains(search))) // ✅ Added search in Details/Abstract
-            .limit(100)
-            .map(a -> {
-                Map<String, Object> m = new HashMap<>();
-                m.put("id", a.getId());
-                m.put("assetNumber", a.getAssetNumber());
-                m.put("title", a.getTitle());
-                m.put("type", a.getType());
-                m.put("assignee", a.getAssignee());
-                m.put("filingDate", a.getFilingDate());
-                m.put("status", a.getStatus());
-                m.put("jurisdiction", a.getJurisdiction());
-                m.put("details", a.getDetails()); 
-                m.put("inventor", a.getInventor()); 
-                return m;
-            })
-            .collect(Collectors.toList());
-            
-        return Map.of("data", filtered, "total", filtered.size());
+        return getAssetsByCategory(category, null, null, null);
     }
 
     public Map<String, Object> getAssetsByCategory(String category, String dateRange, String type, String jurisdiction) {
         if (category != null && category.startsWith("Category:")) {
-             return getAssetsByCategory(category.replace("Category:", "").trim());
+             return getAssetsByCategory(category.replace("Category:", "").trim(), dateRange, type, jurisdiction);
         }
         
         List<IPAsset> filteredAssets = getFilteredAssets(dateRange, type, jurisdiction);
@@ -550,7 +522,7 @@ public class AnalyticsService {
                                  (a.getAssetClass() != null && (a.getAssetClass().toLowerCase().contains(searchLower) || getSmartCategoryName(a.getAssetClass()).toLowerCase().contains(searchLower))) ||
                                  (a.getAssignee() != null && a.getAssignee().toLowerCase().contains(searchLower)) ||
                                  (a.getInventor() != null && a.getInventor().toLowerCase().contains(searchLower)) ||
-                                 (a.getDetails() != null && a.getDetails().toLowerCase().contains(searchLower))) // ✅ Added here too
+                                 (a.getDetails() != null && a.getDetails().toLowerCase().contains(searchLower))) 
                     .collect(Collectors.toList());
              }
         }

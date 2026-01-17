@@ -11,7 +11,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/search")
-@CrossOrigin(origins = { "http://localhost:5173", "http://127.0.0.1:5173" })
+@CrossOrigin(origins = {
+        "http://localhost:5173",
+        "http://192.168.43.45:5173" // Matches your mobile/LAN config
+})
 @Tag(name = "Search API", description = "Search Patents & Trademarks with Analytics")
 public class SearchController {
 
@@ -22,20 +25,14 @@ public class SearchController {
     }
 
     // ===========================
-    // 🔍 MAIN SEARCH API (UPDATED FOR FILTERS)
+    // 🔍 MAIN SEARCH API
     // ===========================
     @GetMapping
-    @Operation(summary = "Unified Search with Advanced Filters")
+    @Operation(summary = "Unified Search with API + DB Persistence")
     public Page<IPAsset> search(
             @RequestParam(name = "q", required = false, defaultValue = "") String keyword,
             @RequestParam(name = "source", required = false, defaultValue = "local") String source,
             @RequestParam(name = "type", required = false, defaultValue = "ALL") String type,
-            
-            // ✅ NEW FILTERS ADDED
-            @RequestParam(required = false) String jurisdictions,
-            @RequestParam(required = false) String statuses,
-            @RequestParam(required = false) String dateFrom,
-            @RequestParam(required = false) String dateTo,
 
             // Pagination & Sorting
             @RequestParam(defaultValue = "0") int page,
@@ -44,11 +41,24 @@ public class SearchController {
             @RequestParam(defaultValue = "desc") String sortDirection
     ) {
 
-        System.out.println(">>> 🟢 SEARCH REQUEST | q=" + keyword + " | filters=" + jurisdictions + "/" + statuses);
+        System.out.println(
+                ">>> 🟢 SEARCH REQUEST | q=" + keyword +
+                " | source=" + source +
+                " | type=" + type +
+                " | page=" + page +
+                " | size=" + size
+        );
 
+        // Fetch API → Save to DB → Return paginated result
+        // This matches the IPAssetService we just saved
         return ipAssetService.search(
-                keyword, type, source, jurisdictions, statuses, dateFrom, dateTo, 
-                page, size, sortBy, sortDirection
+                keyword,
+                type,
+                source,
+                page,
+                size,
+                sortBy,
+                sortDirection
         );
     }
 
@@ -56,7 +66,9 @@ public class SearchController {
     // 📊 ANALYTICS API
     // ===========================
     @GetMapping("/analysis")
+    @Operation(summary = "Fetch all IP assets for analytics dashboards")
     public List<IPAsset> getAnalysisData() {
+        // Returns all stored IP assets for charts & analytics
         return ipAssetService.getAllAssetsForAnalysis();
     }
 }

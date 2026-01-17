@@ -4,17 +4,23 @@ import com.project.backend.service.AnalyticsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = "http://localhost:5173") 
+// ✅ Combined CORS to allow both localhost and your specific Network IP (Mobile Support)
+@CrossOrigin(origins = {"http://localhost:5173", "http://192.168.43.45:5173"}) 
 @RequiredArgsConstructor
 public class DashboardController {
 
     private final AnalyticsService analyticsService;
-    
+
+    // ===========================
+    // 🏠 DASHBOARD CORE ENDPOINTS
+    // ===========================
+
     @GetMapping("/dashboard/stats")
     public ResponseEntity<Map<String, Object>> getStats() {
         return ResponseEntity.ok(analyticsService.getDashboardStats());
@@ -34,6 +40,10 @@ public class DashboardController {
     public ResponseEntity<List<Map<String, Object>>> getUpcomingDeadlines() {
         return ResponseEntity.ok(analyticsService.getUpcomingDeadlines());
     }
+
+    // ===========================
+    // 📊 ANALYTICS & TRENDS
+    // ===========================
 
     @GetMapping("/analytics/summary")
     public ResponseEntity<Map<String, Object>> getDashboardSummary(
@@ -82,6 +92,10 @@ public class DashboardController {
             @RequestParam(required = false) String jurisdiction) {
         return ResponseEntity.ok(analyticsService.getStatusTimeline(dateRange, type, jurisdiction));
     }
+
+    // ===========================
+    // 🌐 LANDSCAPE ANALYSIS
+    // ===========================
     
     @GetMapping("/analytics/landscape/classifications")
     public ResponseEntity<Map<String, Object>> getClassificationTrends(
@@ -125,8 +139,10 @@ public class DashboardController {
         return ResponseEntity.ok(analyticsService.getLifecycleAnalysis(field, topN));
     }
 
-    // ✅ FIXED: Added filter params to Drill Down endpoint
-    @GetMapping("/analytics/assets-by-category")
+    // ===========================
+    // 🔍 DRILL DOWN (Matches Frontend API)
+    // ===========================
+    @GetMapping("/analytics/assets/category")
     public ResponseEntity<Map<String, Object>> getAssetsByCategory(
             @RequestParam String category,
             @RequestParam(required = false) String dateRange,

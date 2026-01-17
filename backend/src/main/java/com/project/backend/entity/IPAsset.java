@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "ip_assets") 
+@Table(name = "ip_assets")
 public class IPAsset {
 
     @Id
@@ -22,13 +22,13 @@ public class IPAsset {
     private String title;
 
     @Column(length = 255)
-    private String assignee; 
+    private String assignee;
 
     @Column(length = 255)
     private String inventor;
 
     @Column(length = 100)
-    private String jurisdiction; 
+    private String jurisdiction;
 
     @Column(name = "filing_date")
     private LocalDateTime filingDate;
@@ -39,6 +39,7 @@ public class IPAsset {
     @Column(length = 50)
     private String status;
 
+    // 'class' is a reserved keyword in SQL/Java, mapped to 'assetClass'
     @Column(name = "class", length = 100)
     private String assetClass;
 
@@ -57,6 +58,10 @@ public class IPAsset {
     @OneToMany(mappedBy = "ipAsset", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Filing> filings;
 
+    // ===========================
+    // 🛠️ GETTERS & SETTERS
+    // ===========================
+
     public Integer getId() { return id; }
     public void setId(Integer id) { this.id = id; }
 
@@ -72,6 +77,7 @@ public class IPAsset {
     public String getAssignee() { return assignee; }
     public void setAssignee(String assignee) { this.assignee = assignee; }
     
+    // Alias for Service compatibility
     public String getOwner() { return assignee; }
 
     public String getInventor() { return inventor; }
@@ -92,18 +98,21 @@ public class IPAsset {
     public String getAssetClass() { return assetClass; }
     public void setAssetClass(String assetClass) { this.assetClass = assetClass; }
     
+    // Alias for Service compatibility
     public String getClassification() { return assetClass; }
     public void setClassification(String classification) { this.assetClass = classification; }
-
-    public String getAbstractText() { return details; }
-    public void setAbstractText(String abstractText) { this.details = abstractText; }
 
     public String getDetails() { return details; }
     public void setDetails(String details) { this.details = details; }
 
+    // Alias for Service compatibility (AbstractText mapping)
+    public String getAbstractText() { return details; }
+    public void setAbstractText(String abstractText) { this.details = abstractText; }
+
     public String getApiSource() { return apiSource; }
     public void setApiSource(String apiSource) { this.apiSource = apiSource; }
     
+    // Alias for Service compatibility
     public String getSource() { return apiSource; }
     public void setSource(String source) { this.apiSource = source; }
 
