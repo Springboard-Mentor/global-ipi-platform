@@ -2,27 +2,43 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
     Search, Shield, FileText, Clock, AlertCircle, 
     Database, Loader2, X, Edit3, Lock, CheckCircle2, 
-    Trash2, CheckSquare, Save, BellRing, Mail, Send, Globe,
-    ChevronRight
+    Trash2, CheckSquare, BellRing, Mail, Send, Globe,
+    ChevronRight, Crown
 } from 'lucide-react';
 import axios from 'axios';
 
 // ✅ API Config
 const API_BASE = "http://192.168.43.45:5001/api";
 
-// ✅ CONSTANT: Updated Super Admin Email
+// ✅ CONSTANT: Super Admin Email
 const ADMIN_EMAIL = "bhuvananagarajan0728@gmail.com";
 
-const FilingTrackerPage = () => {
+const FilingTrackerPage = ({ user, onNavigate }) => {
     
-    // --- 1. USER CONTEXT ---
-    const [currentUser, setCurrentUser] = useState(null);
+    // --- 1. USER & PLAN CONTEXT ---
+    const [currentUser, setCurrentUser] = useState(user || null);
+    
+    useEffect(() => {
+        if (!currentUser) {
+            const storedUser = localStorage.getItem("user");
+            if (storedUser) {
+                try {
+                    setCurrentUser(JSON.parse(storedUser));
+                } catch (e) { console.error("User Parse Error", e); }
+            }
+        }
+    }, [currentUser]);
+
+    // Check Plan Access (Minimum PRO required)
+    const userPlan = currentUser?.planType || 'STARTUP';
+    const isSuperAdmin = currentUser?.email === ADMIN_EMAIL;
+    
+    // ✅ ACCESS LOGIC: Only PRO, ENTERPRISE, or ADMIN can see this page
+    const hasAccess = userPlan === 'PRO' || userPlan === 'ENTERPRISE' || isSuperAdmin;
 
     // --- 2. STATE ---
     const [filings, setFilings] = useState([]);
     const [loading, setLoading] = useState(false);
-    
-    // ✅ NEW: Action Loading State (Prevents buttons seeming "stuck" while email sends)
     const [actionLoading, setActionLoading] = useState(false);
 
     // --- 3. MODAL STATES ---
@@ -32,7 +48,7 @@ const FilingTrackerPage = () => {
     const [alertFiling, setAlertFiling] = useState(null);       
     const [remarksFiling, setRemarksFiling] = useState(null);   
 
-    // Filters & Pagination
+    // Filters
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('ALL');
     const [itemsPerPage] = useState(10);
@@ -41,25 +57,8 @@ const FilingTrackerPage = () => {
     // Stats
     const [stats, setStats] = useState({ total: 0, granted: 0, pending: 0, expired: 0 });
 
-    // --- 4. INITIALIZATION ---
-    useEffect(() => {
-        const storedUser = localStorage.getItem("user");
-        if (storedUser) {
-            try {
-                const parsedUser = JSON.parse(storedUser);
-                setCurrentUser(parsedUser);
-            } catch (error) {
-                console.error("Failed to parse user data", error);
-            }
-        }
-    }, []);
-
-    // ✅ CHECK: Is the user the designated Admin?
-    const isSuperAdmin = currentUser?.email === ADMIN_EMAIL;
-
-    // --- 5. DATA NORMALIZER ---
+    // --- 4. DATA NORMALIZER ---
     const normalizeData = (item) => {
-        // ✅ FIX: Force type to Uppercase
         const rawType = item.filingType || item.type || 'PATENT';
         const type = rawType.toUpperCase(); 
 
@@ -83,8 +82,10 @@ const FilingTrackerPage = () => {
         };
     };
 
-    // --- 6. FETCH DATA ---
+    // --- 5. FETCH DATA ---
     const fetchData = useCallback(async () => {
+        if (!hasAccess) return; // Don't fetch if locked
+
         setLoading(true);
         try {
             const dataRes = await axios.get(`${API_BASE}/tracker/all`);
@@ -106,48 +107,39 @@ const FilingTrackerPage = () => {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [hasAccess]);
 
-    useEffect(() => { fetchData(); }, [fetchData]);
+    useEffect(() => { if (hasAccess) fetchData(); }, [fetchData, hasAccess]);
 
-    // --- 7. ACTIONS ---
-    
-    // ✅ Admin: Update Status (Sends Email to User)
+    // --- 6. ACTIONS ---
     const handleStatusUpdate = async (newStatus) => {
-        if(!statusFiling || actionLoading) return; // Prevent double click
-        
-        setActionLoading(true); // ⏳ Start Loading
+        if(!statusFiling || actionLoading) return;
+        setActionLoading(true); 
         try {
-            // Passing remarks: "" tells backend to send standard status update email
-            await axios.put(`${API_BASE}/tracker/update/${statusFiling.id}`, { 
-                status: newStatus,
-                remarks: "" 
-            });
+            await axios.put(`${API_BASE}/tracker/update/${statusFiling.id}`, { status: newStatus, remarks: "" });
             setStatusFiling(null);
             fetchData(); 
-            alert(`Status updated to ${newStatus}. Notification sent to user.`);
+            alert(`Status updated to ${newStatus}. Notification sent.`);
         } catch (e) {
             console.error(e);
-            alert("Update Failed: " + (e.response?.data || "Server Error"));
+            alert("Update Failed.");
         } finally {
-            setActionLoading(false); // 🛑 Stop Loading
+            setActionLoading(false); 
         }
     };
 
-    // ✅ User: Edit Details
     const handleDetailsUpdate = async (formData) => {
         if(!detailsFiling) return;
         try {
             await axios.put(`${API_BASE}/tracker/update/${detailsFiling.id}`, formData);
             setDetailsFiling(null);
             fetchData();
-            alert("Details updated successfully.");
+            alert("Details updated.");
         } catch (e) {
-            alert("Update Details Failed");
+            alert("Update Failed");
         }
     };
 
-    // ✅ Admin Only: Delete Filing
     const handleDelete = async (e, id) => {
         e.stopPropagation(); 
         if (!isSuperAdmin) {
@@ -159,24 +151,16 @@ const FilingTrackerPage = () => {
         try {
             await axios.delete(`${API_BASE}/tracker/delete/${id}`);
             fetchData(); 
-            alert("Filing deleted successfully.");
+            alert("Filing deleted.");
         } catch (err) {
-            alert("Failed to delete filing.");
+            alert("Failed to delete.");
         }
     };
 
-    // ✅ Admin: Send Remarks (Separate Feature)
     const handleSendRemarks = async (remarks) => {
         if(!remarksFiling || actionLoading) return;
-        
         setActionLoading(true);
         try {
-            // This is a simulation, replace with actual endpoint if available
-            console.log("Sending Email to:", remarksFiling.contactEmail, "Message:", remarks);
-            
-            // If you have a backend endpoint for ad-hoc emails:
-            // await axios.post(`${API_BASE}/tracker/send-remarks`, { ... });
-            
             alert(`Email successfully sent to owner (${remarksFiling.contactEmail})`);
             setRemarksFiling(null);
         } catch (error) {
@@ -186,11 +170,9 @@ const FilingTrackerPage = () => {
         }
     };
 
-    // ✅ User: Save Alerts -> Notify Admin
     const handleSaveAlerts = async (types) => {
         if(!alertFiling || actionLoading) return;
-        
-        setActionLoading(true); // ⏳ Start Loading
+        setActionLoading(true); 
         try {
             const payload = {
                 userEmail: currentUser.email,
@@ -200,22 +182,40 @@ const FilingTrackerPage = () => {
                 triggers: types,
                 timestamp: new Date().toISOString()
             };
-            
-            // Triggers the admin email on backend
             await axios.post(`${API_BASE}/notifications/notify-admin`, payload);
-            
-            alert(`Alerts configured! Request sent to Admin for ${alertFiling.displayId}.`);
+            alert(`Alerts configured!`);
             setAlertFiling(null);
-
         } catch (error) {
-            console.error("Alert Trigger Failed", error);
-            alert("Failed to configure alerts. Please check connection.");
+            alert("Failed to configure alerts.");
         } finally {
-            setActionLoading(false); // 🛑 Stop Loading
+            setActionLoading(false); 
         }
     };
 
-    // --- 8. RENDER HELPERS ---
+    // --- 7. RENDER LOCKED STATE IF NO ACCESS ---
+    if (!hasAccess) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
+                <div className="max-w-md w-full bg-white rounded-[2.5rem] shadow-2xl p-10 text-center border border-slate-100">
+                    <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <Lock size={32} className="text-slate-400" />
+                    </div>
+                    <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight mb-2">Feature Locked</h2>
+                    <p className="text-sm text-slate-500 font-medium mb-8 leading-relaxed">
+                        The Filing Tracker is available exclusively for <strong>Pro</strong> and <strong>Enterprise</strong> plans. Track applications, set alerts, and manage your portfolio.
+                    </p>
+                    <button 
+                        onClick={() => onNavigate('pricing')}
+                        className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200"
+                    >
+                        Upgrade to Pro
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // --- 8. RENDER MAIN CONTENT ---
     const getStatusStyle = (s) => {
         const val = (s || '').toUpperCase();
         if (val.includes('GRANTED')) return { bg: 'bg-emerald-100', text: 'text-emerald-700', dot: 'bg-emerald-500' };
@@ -234,7 +234,7 @@ const FilingTrackerPage = () => {
     return (
         <div className="min-h-screen bg-slate-50 p-6 md:p-12 font-sans text-left">
             
-            {/* HEADER SECTION */}
+            {/* HEADER */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
                 <div className="flex items-center gap-5">
                     <div className="bg-white p-4 rounded-3xl shadow-xl shadow-indigo-100 border border-slate-100">
@@ -270,10 +270,8 @@ const FilingTrackerPage = () => {
                 <StatCard label="Expired" value={stats.expired} icon={AlertCircle} color="rose" onClick={() => setStatusFilter('EXPIRED')} active={statusFilter === 'EXPIRED'} />
             </div>
 
-            {/* MAIN DATA TABLE/LIST */}
+            {/* MAIN LIST */}
             <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-2xl shadow-slate-200/50 overflow-hidden min-h-[600px]">
-                
-                {/* Toolbar */}
                 <div className="p-8 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center gap-6">
                     <h2 className="text-lg font-black text-slate-800 uppercase tracking-widest flex items-center gap-3">
                         <Database size={20} className="text-slate-400"/> Portfolio Assets
@@ -290,7 +288,6 @@ const FilingTrackerPage = () => {
                     </div>
                 </div>
 
-                {/* List Content */}
                 <div className="p-6 md:p-8 space-y-4">
                     {loading ? (
                         <div className="py-32 text-center flex flex-col items-center">
@@ -307,22 +304,18 @@ const FilingTrackerPage = () => {
                             const isOwner = currentUser && (item.ownerId === currentUser.id);
                             const style = getStatusStyle(item.status);
                             
-                            // 🔒 Permissions
                             const canDelete = isSuperAdmin; 
                             const canEditStatus = isSuperAdmin;
                             const canSendRemarks = isSuperAdmin;
                             const canEditDetails = isOwner && !item.isSynced && !isSuperAdmin; 
                             const canSetAlert = isOwner; 
 
-                            // ✅ LOGIC: Correct Icon based on Type
                             const isPatent = item.type === 'PATENT';
 
                             return (
                                 <div key={item.id} className="group flex flex-col md:flex-row items-center justify-between p-6 rounded-[2rem] border border-slate-100 bg-white hover:border-indigo-200 hover:shadow-xl hover:shadow-indigo-100/40 transition-all duration-300 cursor-pointer transform hover:-translate-y-1" onClick={() => setSelectedFiling(item)}>
                                     
-                                    {/* Asset Info */}
                                     <div className="flex items-center gap-6 w-full md:w-auto">
-                                        {/* Icon Box */}
                                         <div className={`w-16 h-16 rounded-2xl flex flex-col items-center justify-center shadow-inner ${isPatent ? 'bg-indigo-50 text-indigo-600' : 'bg-cyan-50 text-cyan-600'}`}>
                                             <span className="text-[10px] font-black uppercase tracking-widest">{isPatent ? 'PAT' : 'TM'}</span>
                                             {isPatent ? <Shield size={18} className="mt-1"/> : <Globe size={18} className="mt-1"/>}
@@ -331,7 +324,6 @@ const FilingTrackerPage = () => {
                                         <div className="flex-1">
                                             <div className="flex items-center gap-3 mb-1">
                                                 <h4 className="font-black text-slate-900 text-lg line-clamp-1">{item.title}</h4>
-                                                {/* Ownership Tag */}
                                                 {isOwner ? (
                                                     <span className="text-[8px] font-black px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-700 uppercase tracking-wider">Owner</span>
                                                 ) : (
@@ -347,48 +339,22 @@ const FilingTrackerPage = () => {
                                         </div>
                                     </div>
 
-                                    {/* Right Side: Status & Actions */}
                                     <div className="flex items-center gap-4 mt-4 md:mt-0 w-full md:w-auto justify-between md:justify-end">
-                                        
-                                        {/* Status Pill */}
                                         <div className={`px-4 py-2 rounded-xl flex items-center gap-2 border ${style.bg} ${style.text} border-transparent`}>
                                             <div className={`w-2 h-2 rounded-full ${style.dot} animate-pulse`}></div>
                                             <span className="text-[10px] font-black uppercase tracking-widest">{item.status}</span>
                                         </div>
 
-                                        {/* Action Buttons - ALWAYS VISIBLE */}
                                         <div className="flex items-center gap-2">
-                                            
-                                            {canSetAlert && (
-                                                <ActionButton icon={BellRing} onClick={(e) => { e.stopPropagation(); setAlertFiling(item); }} color="amber" tooltip="Configure Alerts" />
-                                            )}
-
-                                            {canSendRemarks && (
-                                                <ActionButton icon={Mail} onClick={(e) => { e.stopPropagation(); setRemarksFiling(item); }} color="blue" tooltip="Send Remarks" />
-                                            )}
-
-                                            {canEditStatus && (
-                                                <ActionButton icon={CheckSquare} onClick={(e) => { e.stopPropagation(); setStatusFiling(item); }} color="indigo" tooltip="Update Status" />
-                                            )}
-
-                                            {canEditDetails && (
-                                                <ActionButton icon={Edit3} onClick={(e) => { e.stopPropagation(); setDetailsFiling(item); }} color="emerald" tooltip="Edit Details" />
-                                            )}
-
-                                            {canDelete ? (
-                                                // 🔴 RED DELETE BUTTON (Always Visible)
-                                                <button 
-                                                    onClick={(e) => handleDelete(e, item.id)}
-                                                    className="p-3 rounded-2xl transition-all text-rose-600 bg-rose-50 hover:bg-rose-100 border border-transparent hover:border-rose-200 hover:shadow-lg hover:-translate-y-1 active:scale-95"
-                                                    title="Delete Asset"
-                                                >
+                                            {canSetAlert && <ActionButton icon={BellRing} onClick={(e) => { e.stopPropagation(); setAlertFiling(item); }} color="amber" tooltip="Configure Alerts" />}
+                                            {canSendRemarks && <ActionButton icon={Mail} onClick={(e) => { e.stopPropagation(); setRemarksFiling(item); }} color="blue" tooltip="Send Remarks" />}
+                                            {canEditStatus && <ActionButton icon={CheckSquare} onClick={(e) => { e.stopPropagation(); setStatusFiling(item); }} color="indigo" tooltip="Update Status" />}
+                                            {canEditDetails && <ActionButton icon={Edit3} onClick={(e) => { e.stopPropagation(); setDetailsFiling(item); }} color="emerald" tooltip="Edit Details" />}
+                                            {canDelete && (
+                                                <button onClick={(e) => handleDelete(e, item.id)} className="p-3 rounded-2xl transition-all text-rose-600 bg-rose-50 hover:bg-rose-100 border border-transparent hover:border-rose-200 hover:shadow-lg hover:-translate-y-1 active:scale-95" title="Delete Asset">
                                                     <Trash2 size={20} />
                                                 </button>
-                                            ) : (
-                                                // 🔒 LOCKED ICON (Grey/Slate)
-                                                <div className="p-3 text-slate-400 bg-slate-50 rounded-2xl cursor-not-allowed border border-transparent" title="Delete Locked"><Lock size={18}/></div>
                                             )}
-                                            
                                             <ChevronRight size={16} className="text-slate-300 ml-2" />
                                         </div>
                                     </div>
@@ -399,9 +365,7 @@ const FilingTrackerPage = () => {
                 </div>
             </div>
 
-            {/* ================= MODALS ================= */}
-
-            {/* 1. VIEW DETAILS MODAL */}
+            {/* MODALS */}
             {selectedFiling && (
                 <Modal onClose={() => setSelectedFiling(null)} title={selectedFiling.title} subtitle={selectedFiling.displayId}>
                     <div className="grid grid-cols-2 gap-6 mb-8">
@@ -413,33 +377,23 @@ const FilingTrackerPage = () => {
                         <InfoItem label="Contact Email" value={selectedFiling.contactEmail} />
                     </div>
                     <div className="bg-slate-50 p-8 rounded-[2rem] border border-slate-100 mb-8 max-h-60 overflow-y-auto">
-                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Abstract / Description</h4>
+                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Description</h4>
                         <p className="text-sm text-slate-600 leading-relaxed font-medium">{selectedFiling.description}</p>
                     </div>
-                    <a href={selectedFiling.sourceLink} target="_blank" rel="noreferrer" className="block w-full py-5 bg-slate-900 text-white text-center rounded-2xl font-black uppercase text-xs tracking-[0.3em] hover:bg-indigo-600 hover:shadow-xl hover:shadow-indigo-200 transition-all transform hover:-translate-y-1">View Official Source</a>
+                    <a href={selectedFiling.sourceLink} target="_blank" rel="noreferrer" className="block w-full py-5 bg-slate-900 text-white text-center rounded-2xl font-black uppercase text-xs tracking-[0.3em] hover:bg-indigo-600 transition-all">View Official Source</a>
                 </Modal>
             )}
 
-            {/* 2. ADMIN: UPDATE STATUS MODAL (No Remarks field, Loading state) */}
-            {statusFiling && (
-                <Modal onClose={() => setStatusFiling(null)} title="Update Status" subtitle={`Target: ${statusFiling.displayId}`} small>
-                    <div className="space-y-3 mb-8">
-                        {['GRANTED', 'PENDING', 'UNDER EXAMINATION', 'EXPIRED'].map(status => (
-                            <button 
-                                key={status} 
-                                onClick={() => handleStatusUpdate(status)} 
-                                disabled={actionLoading} // Disable while sending email
-                                className="w-full py-4 text-xs font-black rounded-2xl border-2 border-slate-100 hover:border-indigo-600 hover:text-indigo-600 hover:bg-indigo-50 transition-all uppercase tracking-[0.1em] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                            >
-                                {actionLoading ? <Loader2 className="animate-spin" size={16} /> : status}
-                            </button>
-                        ))}
-                    </div>
-                    <button onClick={() => setStatusFiling(null)} className="w-full py-4 text-xs font-black text-slate-400 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-colors">Cancel</button>
-                </Modal>
-            )}
+            {statusFiling && <Modal onClose={() => setStatusFiling(null)} title="Update Status" small>
+                <div className="space-y-3 mb-8">
+                    {['GRANTED', 'PENDING', 'UNDER EXAMINATION', 'EXPIRED'].map(status => (
+                        <button key={status} onClick={() => handleStatusUpdate(status)} disabled={actionLoading} className="w-full py-4 text-xs font-black rounded-2xl border-2 border-slate-100 hover:border-indigo-600 hover:text-indigo-600 hover:bg-indigo-50 transition-all uppercase tracking-[0.1em]">
+                            {actionLoading ? <Loader2 className="animate-spin inline" /> : status}
+                        </button>
+                    ))}
+                </div>
+            </Modal>}
 
-            {/* 3. ADMIN: SEND REMARKS (Standalone, Loading state) */}
             {remarksFiling && (
                 <Modal onClose={() => setRemarksFiling(null)} title="Send Remarks" subtitle={`To: ${remarksFiling.contactEmail}`} small>
                     <form onSubmit={(e) => { e.preventDefault(); handleSendRemarks(e.target.remarks.value); }}>
@@ -454,12 +408,10 @@ const FilingTrackerPage = () => {
                 </Modal>
             )}
 
-            {/* 4. USER: EDIT DETAILS */}
             {detailsFiling && (
                 <EditDetailsModal filing={detailsFiling} onClose={() => setDetailsFiling(null)} onSave={handleDetailsUpdate} />
             )}
 
-            {/* 5. ALERTS (Loading State Added) */}
             {alertFiling && (
                 <AlertConfigModal filing={alertFiling} onClose={() => setAlertFiling(null)} onSave={handleSaveAlerts} loading={actionLoading} />
             )}
@@ -467,16 +419,12 @@ const FilingTrackerPage = () => {
     );
 };
 
-/* --- REUSABLE COMPONENTS --- */
-
+// --- SHARED COMPONENTS ---
 const Modal = ({ children, onClose, title, subtitle, small }) => (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in zoom-in-95 duration-200">
         <div className={`bg-white rounded-[3rem] ${small ? 'w-[450px]' : 'max-w-3xl w-full'} p-10 shadow-2xl border border-white/20 ring-1 ring-black/5`}>
             <div className="flex justify-between items-start mb-8">
-                <div>
-                    <h2 className="text-3xl font-black text-slate-900 uppercase leading-tight tracking-tight">{title}</h2>
-                    {subtitle && <p className="text-sm text-slate-400 font-bold mt-2 font-mono tracking-widest">{subtitle}</p>}
-                </div>
+                <div><h2 className="text-3xl font-black text-slate-900 uppercase leading-tight tracking-tight">{title}</h2>{subtitle && <p className="text-sm text-slate-400 font-bold mt-2 font-mono tracking-widest">{subtitle}</p>}</div>
                 <button onClick={onClose} className="p-3 bg-slate-50 rounded-2xl hover:bg-rose-50 hover:text-rose-600 transition-all shadow-sm"><X size={24} /></button>
             </div>
             {children}
@@ -485,24 +433,13 @@ const Modal = ({ children, onClose, title, subtitle, small }) => (
 );
 
 const ActionButton = ({ icon: Icon, onClick, color, tooltip }) => (
-    <button 
-        onClick={onClick}
-        className={`p-3 rounded-2xl transition-all text-slate-400 hover:text-${color}-600 hover:bg-${color}-50 border border-transparent hover:border-${color}-100 hover:shadow-lg hover:-translate-y-1 active:scale-95`}
-        title={tooltip}
-    >
-        <Icon size={20} />
-    </button>
+    <button onClick={onClick} className={`p-3 rounded-2xl transition-all text-slate-400 hover:text-${color}-600 hover:bg-${color}-50 border border-transparent hover:border-${color}-100 hover:shadow-lg hover:-translate-y-1 active:scale-95`} title={tooltip}><Icon size={20} /></button>
 );
 
 const StatCard = ({ label, value, icon: Icon, onClick, active, color }) => (
     <div onClick={onClick} className={`p-6 rounded-[2.5rem] border-2 flex justify-between items-center cursor-pointer transition-all duration-300 hover:-translate-y-1 ${active ? `bg-${color}-600 border-${color}-600 shadow-2xl shadow-${color}-200 scale-105` : 'bg-white border-slate-100 hover:shadow-xl hover:border-indigo-100 shadow-sm'}`}>
-        <div>
-            <p className={`text-[10px] font-black uppercase tracking-[0.2em] mb-2 ${active ? 'text-white/70' : 'text-slate-400'}`}>{label}</p>
-            <p className={`text-4xl font-black ${active ? 'text-white' : 'text-slate-900'}`}>{value}</p>
-        </div>
-        <div className={`p-4 rounded-2xl ${active ? 'bg-white/20 text-white' : `bg-${color}-50 text-${color}-500`}`}>
-            <Icon className="size-6" />
-        </div>
+        <div><p className={`text-[10px] font-black uppercase tracking-[0.2em] mb-2 ${active ? 'text-white/70' : 'text-slate-400'}`}>{label}</p><p className={`text-4xl font-black ${active ? 'text-white' : 'text-slate-900'}`}>{value}</p></div>
+        <div className={`p-4 rounded-2xl ${active ? 'bg-white/20 text-white' : `bg-${color}-50 text-${color}-500`}`}><Icon className="size-6" /></div>
     </div>
 );
 
@@ -535,7 +472,6 @@ const EditDetailsModal = ({ filing, onClose, onSave }) => {
     );
 };
 
-// Updated Alert Modal to support Loading State
 const AlertConfigModal = ({ filing, onClose, onSave, loading }) => {
     const [selectedTypes, setSelectedTypes] = useState([]);
     const toggleType = (type) => {

@@ -10,7 +10,7 @@ import DashboardHome from './components/DashboardHome.jsx';
 import ProfilePage from './components/ProfilePage.jsx';
 import PatentsPage from './components/PatentsPage.jsx';
 import NewFilingPage from './components/NewFilingPage.jsx';
-import AnalysisPage from './components/AnalysisPage.jsx';
+import AnalysisPage from './components/AnalysisPage.jsx'; 
 import SettingsPage from './components/SettingsPage.jsx';
 import SearchResultsPage from './components/SearchResultsPage.jsx'; 
 import PatentDetailsPage from './components/PatentDetailsPage.jsx';
@@ -19,35 +19,29 @@ import LandscapeVisualizationPage from './components/LandscapeVisualizationPage.
 import FilingTrackerPage from './components/FilingTrackerPage.jsx';
 import PricingPage from './components/PricingPage.jsx';
 
+
 // Services & Styles
 import { authAPI } from './services/ai.js';
 import 'leaflet/dist/leaflet.css';
 
-// --- HELPER: AUTH NAVIGATION WRAPPERS ---
-// These wrappers inject the 'navigate' function into Login/Register pages
-// so that buttons like "Create Account" or "Forgot Password" work correctly.
+// --- HELPER: NAVIGATION WRAPPERS ---
 
 const LoginWithNav = ({ onLogin }) => {
   const navigate = useNavigate();
-  return (
-    <LoginPage 
-      onLogin={onLogin} 
-      onNavigate={(path) => navigate(`/${path}`)} 
-    />
-  );
+  return <LoginPage onLogin={onLogin} onNavigate={(path) => navigate(`/${path}`)} />;
 };
 
 const RegisterWithNav = ({ onLogin }) => {
   const navigate = useNavigate();
-  return (
-    <RegisterPage 
-      onLogin={onLogin} 
-      onNavigate={(path) => navigate(`/${path}`)} 
-    />
-  );
+  return <RegisterPage onLogin={onLogin} onNavigate={(path) => navigate(`/${path}`)} />;
 };
 
-// --- WRAPPER COMPONENTS FOR DASHBOARD ---
+const LandingWithNav = () => {
+  const navigate = useNavigate();
+  return <LandingPage onNavigate={(path) => navigate(path)} />;
+};
+
+// --- MAIN DASHBOARD ROUTING LOGIC ---
 
 const DashboardWithRouter = ({ user, handleLogout, handleUpdateUser }) => {
   const navigate = useNavigate();
@@ -65,7 +59,6 @@ const DashboardWithRouter = ({ user, handleLogout, handleUpdateUser }) => {
 
   const getCurrentPageId = () => {
     const path = location.pathname.substring(1); 
-    // Return path or default to dashboard
     return path.split('/')[0] || 'dashboard';
   };
 
@@ -81,18 +74,24 @@ const DashboardWithRouter = ({ user, handleLogout, handleUpdateUser }) => {
         <Route path="profile" element={<ProfilePage user={user} onUpdateUser={handleUpdateUser} onBack={() => navigate('/overview')} />} />
         <Route path="patents" element={<PatentsWithNav />} />
         <Route path="new-filing" element={<NewFilingPage />} />
-        <Route path="analysis" element={<AnalysisPage />} />
-        <Route path="settings" element={<SettingsPage />} />
+        
+        {/* AI ANALYSIS ROUTE */}
+        <Route path="ai-analysis" element={<AnalysisPage />} />
+        
+        {/* 🟢 CRITICAL FIX: Pass the user prop here */}
+        <Route path="settings" element={<SettingsPage user={user} />} />
+        
         <Route path="search" element={<SearchWithNav />} />
         <Route path="patent-details" element={<DetailsWithNav />} />
         
-        {/* Analytics & Specialized Routes */}
+        {/* ANALYTICS ROUTES */}
         <Route path="legal-dashboard" element={<LegalDashboardPage />} />
         <Route path="landscape" element={<LandscapeVisualizationPage />} />
+        
         <Route path="filing-tracker" element={<FilingTrackerPage user={user} onNavigate={handleNavigate} />} />
         <Route path="pricing" element={<PricingPage onNavigate={handleNavigate} onUpdateUser={handleUpdateUser} />} />
 
-        {/* Catch-all for dashboard */}
+        {/* Catch-all */}
         <Route path="*" element={<Navigate to="/overview" replace />} />
       </Routes>
     </DashboardLayout>
@@ -101,30 +100,21 @@ const DashboardWithRouter = ({ user, handleLogout, handleUpdateUser }) => {
 
 const PatentsWithNav = () => {
   const navigate = useNavigate();
-  const handleViewPatent = (patent) => {
-    navigate('/patent-details', { state: { patent } });
-  };
-  return <PatentsPage onViewPatent={handleViewPatent} />;
+  return <PatentsPage onViewPatent={(patent) => navigate('/patent-details', { state: { patent } })} />;
 };
 
 const SearchWithNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const initialKeyword = location.state?.keyword || '';
-
-  const handleViewPatent = (patent) => {
-    navigate('/patent-details', { state: { patent } });
-  };
-  return <SearchResultsPage initialKeyword={initialKeyword} onViewPatent={handleViewPatent} />;
+  return <SearchResultsPage initialKeyword={initialKeyword} onViewPatent={(patent) => navigate('/patent-details', { state: { patent } })} />;
 };
 
 const DetailsWithNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const patent = location.state?.patent;
-
   if (!patent) return <Navigate to="/search" />;
-
   return <PatentDetailsPage patent={patent} onBack={() => navigate(-1)} />;
 };
 
@@ -137,16 +127,24 @@ const App = () => {
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem('token');
-      if (token) {
+      const storedUser = localStorage.getItem('user');
+
+      if (token && storedUser) {
+        setUser(JSON.parse(storedUser));
+        setLoading(false);
+      } else if (token) {
         try {
           const userData = await authAPI.getCurrentUser();
           setUser(userData);
+          localStorage.setItem('user', JSON.stringify(userData));
         } catch (error) {
           console.error('Session expired:', error);
           handleLogout();
         }
+        setLoading(false);
+      } else {
+        setLoading(false);
       }
-      setLoading(false);
     };
     checkAuth();
   }, []);
@@ -182,9 +180,9 @@ const App = () => {
     <div className="min-h-screen font-sans text-slate-900 bg-white">
       <Routes>
         {/* Public Routes */}
-        <Route path="/" element={<LandingPage onNavigate={(path) => window.location.href = path} />} />
+        <Route path="/" element={<LandingWithNav />} />
         
-        {/* Auth Routes with Navigation Wrapper */}
+        {/* Auth Routes */}
         <Route 
           path="/login" 
           element={!user ? <LoginWithNav onLogin={handleLogin} /> : <Navigate to="/overview" />} 

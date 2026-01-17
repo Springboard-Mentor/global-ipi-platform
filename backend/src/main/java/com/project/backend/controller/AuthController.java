@@ -7,7 +7,6 @@ import com.project.backend.repository.UserRepository;
 import com.project.backend.service.UserService;
 import com.project.backend.util.JwtUtil;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,13 +17,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "*") // Allows mobile/web access
+@CrossOrigin(origins = "*") 
 public class AuthController {
 
     @Autowired
@@ -45,15 +45,11 @@ public class AuthController {
     @Value("${spring.mail.username}")
     private String senderEmail;
 
-    // ----------------------------------------------------------------
-    // ⚙️ CONFIGURATION: CHANGE THIS TO YOUR LAPTOP IP
-    // ----------------------------------------------------------------
-    // Use "localhost" for laptop only.
-    // Use "192.168.x.x" (your LAN IP) to test on Mobile.
+    // Configuration for Password Reset Links (Ensure IP is correct)
     private final String FRONTEND_URL = "http://192.168.43.45:5173"; 
 
     // ==========================================
-    // 🔐 LOGIN & REGISTER
+    // 🔐 LOGIN (With DEBUG Logs & Auto-Fix)
     // ==========================================
 
     @PostMapping("/login")
@@ -63,18 +59,50 @@ public class AuthController {
         Optional<User> userOptional = userRepository.findByEmail(loginRequest.getEmail());
 
         if (userOptional.isPresent()) {
-            if (passwordEncoder.matches(loginRequest.getPassword(), userOptional.get().getPassword())) {
-                String token = jwtUtil.generateToken(userOptional.get().getEmail());
-                return ResponseEntity.ok(Map.of("token", token, "user", userOptional.get()));
-            } else {
-                System.out.println("❌ Password Mismatch for: " + loginRequest.getEmail());
+            User user = userOptional.get();
+            String rawPassword = loginRequest.getPassword();
+            String storedPassword = user.getPassword();
+
+            // --- 🛑 DEBUG LOGS (REMOVE AFTER FIXING) 🛑 ---
+            System.out.println("------------------------------------------------");
+            System.out.println("🔍 DEBUGGING LOGIN FAILURE:");
+            System.out.println("   Input Email:    " + loginRequest.getEmail());
+            System.out.println("   Input Pass:     '" + rawPassword + "'");
+            System.out.println("   DB Stored Pass: '" + storedPassword + "'");
+            System.out.println("   Hash Match:     " + passwordEncoder.matches(rawPassword, storedPassword));
+            System.out.println("   String Match:   " + rawPassword.equals(storedPassword));
+            System.out.println("------------------------------------------------");
+            // ------------------------------------------------
+
+            // 1. STANDARD: Check if password matches the Hash
+            if (passwordEncoder.matches(rawPassword, storedPassword)) {
+                System.out.println("✅ Login Success (Hash Match)");
+                String token = jwtUtil.generateToken(user.getEmail());
+                return ResponseEntity.ok(Map.of("token", token, "user", sanitizeUser(user)));
+            } 
+            
+            // 2. AUTO-FIX: Check if password matches Plain Text (Legacy Data)
+            else if (rawPassword.equals(storedPassword)) {
+                System.out.println("⚠️ Plain text detected. Migrating to Hash...");
+                
+                // Encrypt and Save
+                user.setPassword(passwordEncoder.encode(rawPassword));
+                userRepository.save(user);
+                System.out.println("✅ Password Migrated & Login Success");
+                
+                String token = jwtUtil.generateToken(user.getEmail());
+                return ResponseEntity.ok(Map.of("token", token, "user", sanitizeUser(user)));
             }
         } else {
-            System.out.println("❌ User Not Found: " + loginRequest.getEmail());
+            System.out.println("❌ User Not Found in Database");
         }
 
         return ResponseEntity.status(401).body(Map.of("message", "Invalid Email or Password"));
     }
+
+    // ==========================================
+    // 📝 REGISTER
+    // ==========================================
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest registerRequest) {
@@ -82,18 +110,26 @@ public class AuthController {
             return ResponseEntity.status(400).body(Map.of("message", "Email already registered"));
         }
 
-        User newUser = new User();
-        newUser.setName(registerRequest.getName());
-        newUser.setEmail(registerRequest.getEmail());
-        // ✅ Ensure password is hashed
-        newUser.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
-        newUser.setUserType(registerRequest.getUserType());
+        try {
+            User newUser = new User();
+            newUser.setName(registerRequest.getName());
+            newUser.setEmail(registerRequest.getEmail());
+            // Security: Always encrypt new passwords immediately
+            newUser.setPassword(passwordEncoder.encode(registerRequest.getPassword())); 
+            newUser.setUserType(registerRequest.getUserType());
 
-        User savedUser = userRepository.save(newUser);
-        String token = jwtUtil.generateToken(savedUser.getEmail());
-
-        return ResponseEntity.ok(Map.of("token", token, "user", savedUser));
+            User savedUser = userRepository.save(newUser);
+            
+            String token = jwtUtil.generateToken(savedUser.getEmail());
+            return ResponseEntity.ok(Map.of("token", token, "user", sanitizeUser(savedUser)));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Registration failed: " + e.getMessage()));
+        }
     }
+
+    // ==========================================
+    // 🔥 FIREBASE / GOOGLE LOGIN
+    // ==========================================
 
     @PostMapping("/firebase-login")
     public ResponseEntity<?> firebaseLogin(@RequestBody Map<String, String> payload) {
@@ -103,14 +139,14 @@ public class AuthController {
             FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
             User user = userService.findOrCreateFirebaseUser(decodedToken.getEmail(), decodedToken.getName(), decodedToken.getUid());
             String localJwt = jwtUtil.generateToken(user.getEmail());
-            return ResponseEntity.ok(Map.of("token", localJwt, "user", user));
+            return ResponseEntity.ok(Map.of("token", localJwt, "user", sanitizeUser(user)));
         } catch (Exception e) {
             return ResponseEntity.status(401).body(Map.of("message", "Auth failed"));
         }
     }
 
     // ==========================================
-    // 📧 PASSWORD RECOVERY (Mobile Compatible)
+    // 📧 PASSWORD RECOVERY
     // ==========================================
 
     @PostMapping("/forgot-password")
@@ -119,24 +155,17 @@ public class AuthController {
         Optional<User> userOpt = userRepository.findByEmail(userEmail);
         
         if (userOpt.isEmpty()) {
-            // Return OK for security, but log it internally
-            System.out.println("⚠️ Forgot Password: Email not found - " + userEmail);
             return ResponseEntity.ok(Map.of("message", "If an account exists, a link has been sent."));
         }
 
         User user = userOpt.get();
-        
-        // 1. Generate Token
         String token = UUID.randomUUID().toString();
         user.setResetToken(token);
         user.setResetTokenExpiry(LocalDateTime.now().plusHours(1));
-        userRepository.save(user); // ✅ Critical: Save token to DB
+        userRepository.save(user);
 
-        // 2. Create Mobile-Friendly Link
-        // This uses the IP address variable defined at the top
         String resetLink = FRONTEND_URL + "/login?token=" + token;
 
-        // 3. Send Email
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(senderEmail); 
@@ -147,10 +176,7 @@ public class AuthController {
                     "Link expires in 1 hour.");
 
             mailSender.send(message);
-            System.out.println("✅ Reset link sent to: " + userEmail);
-            System.out.println("🔗 Link: " + resetLink);
         } catch (Exception e) {
-            e.printStackTrace();
             return ResponseEntity.status(500).body(Map.of("message", "Failed to send email."));
         }
 
@@ -162,35 +188,45 @@ public class AuthController {
         String token = payload.get("token");
         String newPassword = payload.get("password");
 
-        System.out.println("🔹 Reset Attempt with Token: " + token);
-
-        // 1. Find user by token
         Optional<User> userOpt = userRepository.findByResetToken(token);
 
-        if (userOpt.isEmpty()) {
-            System.out.println("❌ Invalid Token");
+        if (userOpt.isEmpty() || userOpt.get().getResetTokenExpiry().isBefore(LocalDateTime.now())) {
             return ResponseEntity.status(400).body(Map.of("message", "Invalid or expired token."));
         }
 
         User user = userOpt.get();
-
-        // 2. Check Expiry
-        if (user.getResetTokenExpiry().isBefore(LocalDateTime.now())) {
-            System.out.println("❌ Token Expired");
-            return ResponseEntity.status(400).body(Map.of("message", "Link has expired."));
-        }
-
-        // 3. Update Password
-        // ✅ Critical: Encode new password before saving
         user.setPassword(passwordEncoder.encode(newPassword)); 
-        
-        // 4. Clear Token
         user.setResetToken(null);       
         user.setResetTokenExpiry(null); 
         
-        userRepository.save(user); // ✅ Commit to DB
-        System.out.println("✅ Password updated successfully for: " + user.getEmail());
+        userRepository.save(user);
 
         return ResponseEntity.ok(Map.of("message", "Password changed successfully! Please login."));
+    }
+
+    // ==========================================
+    // 🛡️ SECURITY HELPER
+    // ==========================================
+
+    private Map<String, Object> sanitizeUser(User user) {
+        Map<String, Object> safeUser = new HashMap<>();
+        safeUser.put("id", user.getId());
+        safeUser.put("name", user.getName());
+        safeUser.put("email", user.getEmail());
+        safeUser.put("userType", user.getUserType());
+        safeUser.put("avatar", user.getAvatar());
+        safeUser.put("bio", user.getBio());
+        safeUser.put("phone", user.getPhone());
+        safeUser.put("jobTitle", user.getJobTitle());
+        safeUser.put("company", user.getCompany());
+        safeUser.put("location", user.getLocation());
+        safeUser.put("linkedin", user.getLinkedin());
+        safeUser.put("website", user.getWebsite());
+        safeUser.put("planType", user.getPlanType());
+        safeUser.put("renewalDate", user.getRenewalDate());
+        safeUser.put("billingCycle", user.getBillingCycle());
+        safeUser.put("amountPaid", user.getAmountPaid());
+        
+        return safeUser;
     }
 }

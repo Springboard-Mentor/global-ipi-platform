@@ -4,6 +4,7 @@ D:\infosys\global ipi platform (2)\global ipi platform\backend\src\main\java\com
 D:\infosys\global ipi platform (2)\global ipi platform\backend\src\main\java\com\project\backend\config\RestTemplateConfig.java
 D:\infosys\global ipi platform (2)\global ipi platform\backend\src\main\java\com\project\backend\dto\Data.java
 D:\infosys\global ipi platform (2)\global ipi platform\backend\src\main\java\com\project\backend\entity\Subscription.java
+D:\infosys\global ipi platform (2)\global ipi platform\backend\src\main\java\com\project\backend\entity\Settings.java
 D:\infosys\global ipi platform (2)\global ipi platform\backend\src\main\java\com\project\backend\controller\GeoController.java
 D:\infosys\global ipi platform (2)\global ipi platform\backend\src\main\java\com\project\backend\dto\SubscriptionDTO.java
 D:\infosys\global ipi platform (2)\global ipi platform\backend\src\main\java\com\project\backend\controller\PatentController.java
@@ -50,7 +51,10 @@ D:\infosys\global ipi platform (2)\global ipi platform\backend\src\main\java\com
 D:\infosys\global ipi platform (2)\global ipi platform\backend\src\main\java\com\project\backend\repository\UserRepository.java
 D:\infosys\global ipi platform (2)\global ipi platform\backend\src\main\java\com\project\backend\controller\UserController.java
 D:\infosys\global ipi platform (2)\global ipi platform\backend\src\main\java\com\project\backend\dto\FilingDTO.java
+D:\infosys\global ipi platform (2)\global ipi platform\backend\src\main\java\com\project\backend\config\WebConfig.java
 D:\infosys\global ipi platform (2)\global ipi platform\backend\src\main\java\com\project\backend\service\LocalPatentService.java
 D:\infosys\global ipi platform (2)\global ipi platform\backend\src\main\java\com\project\backend\entity\UserFiling.java
+D:\infosys\global ipi platform (2)\global ipi platform\backend\src\main\java\com\project\backend\controller\SettingsController.java
 D:\infosys\global ipi platform (2)\global ipi platform\backend\src\main\java\com\project\backend\controller\SubscriptionController.java
 D:\infosys\global ipi platform (2)\global ipi platform\backend\src\main\java\com\project\backend\service\IPAssetService.java
+D:\infosys\global ipi platform (2)\global ipi platform\backend\src\main\java\com\project\backend\repository\SettingsRepository.java

@@ -1,383 +1,334 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Check, X, ArrowLeft, Smartphone,
-  CreditCard, Landmark, Loader2, Clock
+import { 
+  Check, ArrowLeft, Zap, Shield, Crown, 
+  Clock, AlertTriangle, X, RefreshCw 
 } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
+import axios from 'axios';
 import confetti from 'canvas-confetti';
 
-const REFUND_WINDOW = 15 * 60 * 1000; // 15 minutes
+// --- CONFIGURATION ---
+const RAZORPAY_KEY_ID = "rzp_test_1DP5mmOlF5G5ag"; 
+const API_BASE = "http://localhost:5001/api"; 
 
 const PricingPage = ({ onNavigate, onUpdateUser }) => {
   const [user, setUser] = useState(null);
-  const [billingCycle, setBillingCycle] = useState('monthly');
-  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [billingCycle, setBillingCycle] = useState('monthly'); 
+  const [loading, setLoading] = useState(false);
+  const [refundAmount, setRefundAmount] = useState(0);
 
-  const [isPaymentOpen, setIsPaymentOpen] = useState(false);
-  const [paymentStep, setPaymentStep] = useState('methods');
-  const [selectedMethod, setSelectedMethod] = useState(null);
-  const [timeLeft, setTimeLeft] = useState(null);
-
-  const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
-
-  /* ================= USER INIT ================= */
+  // --- 1. LOAD USER DATA ---
   useEffect(() => {
-    const stored = localStorage.getItem('user');
-    if (!stored) return;
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      const parsedUser = JSON.parse(storedUser);
+      console.log("👤 Pricing Page Loaded. Current User Plan:", parsedUser.planType); // DEBUG LOG
+      setUser(parsedUser);
+      if (parsedUser.subscriptionDate) calculateRefundValue(parsedUser);
+    } else {
+        console.warn("⚠️ No user found in LocalStorage!");
+    }
+  }, []);
 
-    const u = JSON.parse(stored);
-    setUser(u);
+  // --- 2. REFUND CALCULATOR ---
+  useEffect(() => {
+    let interval;
+    if (user?.planType && user.planType !== 'STARTUP') {
+      interval = setInterval(() => calculateRefundValue(user), 60000);
+    }
+    return () => clearInterval(interval);
+  }, [user]);
 
-    if (!u.subscriptionDate) return;
+  const calculateRefundValue = (currentUser) => {
+    if (!currentUser.subscriptionDate || !currentUser.amountPaid) {
+      setRefundAmount(0);
+      return;
+    }
+    const start = new Date(currentUser.subscriptionDate).getTime();
+    const now = new Date().getTime();
+    const durationDays = currentUser.durationDays || 30; 
+    const totalDurationMs = durationDays * 24 * 60 * 60 * 1000;
+    const timeUsed = now - start;
+    const percentageUsed = Math.min(Math.max(timeUsed / totalDurationMs, 0), 1);
+    const refund = currentUser.amountPaid * (1 - percentageUsed);
+    setRefundAmount(Math.max(0, Math.floor(refund)));
+  };
 
-    const elapsed = Date.now() - new Date(u.subscriptionDate).getTime();
+  // --- 3. RAZORPAY PAYMENT LOGIC ---
+  const loadRazorpay = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
 
-    if (elapsed >= REFUND_WINDOW) {
-      setTimeLeft(0);
+  const handleSubscribe = async (plan) => {
+    if (plan.monthlyPrice === 0) return;
+
+    setLoading(true);
+    const res = await loadRazorpay();
+
+    if (!res) {
+      alert('Razorpay SDK failed to load.');
+      setLoading(false);
       return;
     }
 
-    startTimer(u.subscriptionDate);
-  }, []);
+    const amount = billingCycle === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice;
+    
+    const options = {
+      key: RAZORPAY_KEY_ID, 
+      currency: "INR", 
+      amount: amount * 100, 
+      name: "Global IP Platform",
+      description: `${plan.name} - ${billingCycle}`,
+      image: "https://cdn-icons-png.flaticon.com/512/2038/2038022.png",
+      handler: function (response) {
+        console.log("💰 Payment Success ID:", response.razorpay_payment_id);
+        updateUserPlan(plan, amount, response.razorpay_payment_id);
+      },
+      prefill: {
+        name: user?.name || "User",
+        email: user?.email || "user@example.com",
+        contact: user?.phone || "9999999999"
+      },
+      theme: { color: "#4F46E5" }
+    };
 
-  /* ================= TIMER ================= */
-  const startTimer = (date) => {
-    const interval = setInterval(() => {
-      const endTime = new Date(date).getTime() + REFUND_WINDOW;
-      const diff = endTime - Date.now();
-
-      if (diff <= 0) {
-        clearInterval(interval);
-        setTimeLeft(0);
-        return;
-      }
-
-      const m = Math.floor(diff / 60000);
-      const s = Math.floor((diff % 60000) / 1000);
-      setTimeLeft(`${m}:${s < 10 ? '0' : ''}${s}`);
-    }, 1000);
+    const paymentObject = new window.Razorpay(options);
+    paymentObject.open();
+    setLoading(false);
   };
 
-  /* ================= PLANS ================= */
-  const plans = [
-    {
-      id: 'PRO',
-      name: 'Professional',
-      price: 29,
-      yearly: 290,
-      features: ['50 Patent Tracking', 'Email Alerts', 'PDF Export']
-    },
-    {
-      id: 'ENTERPRISE',
-      name: 'Enterprise',
-      price: 99,
-      yearly: 990,
-      recommended: true,
-      features: ['Unlimited Tracking', 'Team Access', 'Priority Support']
-    },
-    {
-      id: 'ULTIMATE',
-      name: 'Ultimate',
-      price: 199,
-      yearly: 1990,
-      features: ['AI Predictions', 'Global Data', 'White Label']
-    }
-  ];
-
-  const getPrice = () =>
-    billingCycle === 'monthly'
-      ? selectedPlan.price
-      : selectedPlan.yearly;
-
-  /* ================= PAYMENT SUCCESS ================= */
-  const completePayment = () => {
-    setPaymentStep('processing');
-
-    setTimeout(() => {
-      const subDate = new Date().toISOString();
-
-      const updatedUser = {
-        ...user,
-        planType: selectedPlan.id,
-        subscriptionDate: subDate
-      };
-
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      setUser(updatedUser);
-      onUpdateUser?.(updatedUser);
-
-      startTimer(subDate);
-      setPaymentStep('success');
-
-      confetti({ particleCount: 200, spread: 90 });
-    }, 2000);
-  };
-
-  /* ================= CANCEL SUBSCRIPTION ================= */
-  const cancelSubscription = () => {
-    if (!timeLeft || timeLeft === 0) return;
+  // --- 4. SUBSCRIBE UPDATE LOGIC ---
+  const updateUserPlan = async (plan, amountPaid = 0, paymentId = 'free_tier') => {
+    const startDate = new Date();
+    const durationDays = billingCycle === 'monthly' ? 30 : 365;
+    const renewalDate = new Date();
+    renewalDate.setDate(renewalDate.getDate() + durationDays);
 
     const updatedUser = {
       ...user,
-      planType: null,
-      subscriptionDate: null
+      planType: plan.id, 
+      plan: plan.id,          
+      planName: plan.name,    
+      billingCycle,
+      subscriptionDate: startDate.toISOString(),
+      renewalDate: renewalDate.toDateString(), 
+      amountPaid: amountPaid,
+      durationDays: durationDays
     };
+
+    try {
+        console.log("🚀 Syncing Subscription to Backend...");
+        await axios.post(`${API_BASE}/subscriptions/subscribe`, {
+            userId: user.id,
+            planName: plan.id, 
+            billingCycle: billingCycle,
+            amount: amountPaid,
+            paymentId: paymentId 
+        });
+        console.log("✅ Backend Sync Success!");
+    } catch (error) {
+        console.error("❌ Backend Sync Failed:", error);
+        alert("Payment successful, but server sync failed. Please contact support.");
+    }
 
     localStorage.setItem('user', JSON.stringify(updatedUser));
     setUser(updatedUser);
-    onUpdateUser?.(updatedUser);
+    if (onUpdateUser) onUpdateUser(updatedUser);
 
-    setTimeLeft(null);
-    alert('Subscription cancelled. Refund will be processed.');
+    confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
   };
 
-  if (!user) return null;
+  // --- 5. 🛑 DEBUGGED CANCEL LOGIC 🛑 ---
+  const handleCancel = async () => {
+    // 🛑 LOG 1: Start
+    console.log("🖱️ Cancel Button Clicked");
+
+    if (!user || !user.id) {
+        console.error("❌ User ID missing in state:", user);
+        alert("Error: User ID missing. Try logging in again.");
+        return;
+    }
+
+    if (window.confirm(`Are you sure you want to cancel? Refund value: ₹${refundAmount}`)) {
+      
+      // 🛑 LOG 2: Sending Request
+      console.log(`🚀 Sending POST request to: ${API_BASE}/subscriptions/cancel`);
+      console.log("📦 Payload:", { userId: user.id });
+
+      try {
+          const response = await axios.post(`${API_BASE}/subscriptions/cancel`, { 
+              userId: user.id 
+          });
+
+          // 🛑 LOG 3: Success
+          console.log("✅ Backend Response:", response.data);
+
+          // Update Local State to Free Tier
+          const updatedUser = {
+            ...user,
+            planType: 'STARTUP',
+            plan: 'STARTUP', 
+            planName: 'Inventor Basic',
+            subscriptionDate: null,
+            renewalDate: null,
+            amountPaid: 0
+          };
+          
+          console.log("🔄 Updating Local Storage...");
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+          setUser(updatedUser);
+          if (onUpdateUser) onUpdateUser(updatedUser);
+          
+          alert("Subscription Cancelled Successfully.");
+          
+          // Optional: Force reload to clear any cached UI states
+          // window.location.reload(); 
+
+      } catch (error) {
+          // 🛑 LOG 4: Error Handling
+          console.error("❌ CANCEL REQUEST FAILED:", error);
+          
+          if (error.response) {
+              console.error("   Server Error Data:", error.response.data);
+              console.error("   Server Status:", error.response.status);
+              alert(`Server Error: ${error.response.data.error || "Failed to cancel"}`);
+          } else if (error.request) {
+              console.error("   No response received from backend.");
+              alert("Network Error: Backend is not reachable.");
+          } else {
+              alert("Error: " + error.message);
+          }
+      }
+    }
+  };
+
+  // --- PLANS DATA ---
+  const plans = [
+    {
+      id: 'STARTUP',
+      name: 'Inventor Basic',
+      monthlyPrice: 0,
+      yearlyPrice: 0,
+      description: 'Essential tools for students & starters.',
+      features: ['Basic Patent Search', 'View Public IP Analytics', 'No Filings Allowed', 'Email Support'],
+      color: 'bg-slate-500',
+      btnText: 'Current Plan'
+    },
+    {
+      id: 'PRO',
+      name: 'IP Professional',
+      monthlyPrice: 199,  
+      yearlyPrice: 1999,
+      popular: true,
+      description: 'Perfect for freelancers & individual agents.',
+      features: ['10 Patent Searches / Month', 'Full IP Analytics Access', '5 Patent Filing Application', 'Send Request to Admin', 'Priority Email Support'],
+      color: 'bg-indigo-600',
+      btnText: 'Subscribe @ ₹199'
+    },
+    {
+      id: 'ENTERPRISE',
+      name: 'Global Enterprise',
+      monthlyPrice: 499, 
+      yearlyPrice: 4999,
+      description: 'Unlimited power for serious firms.',
+      features: ['Unlimited Searches', 'Unlimited Filings', 'Download AI Reports', 'Real-time Status', 'Dedicated Admin Support'],
+      color: 'bg-gradient-to-r from-purple-600 to-pink-600',
+      btnText: 'Go Enterprise @ ₹499'
+    }
+  ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 pb-32">
-
+    <div className="min-h-screen bg-slate-50 font-sans pb-20">
       {/* HEADER */}
-      <div className="flex justify-between items-center px-10 py-6 text-white">
-        <button
-          onClick={() => onNavigate('dashboard')}
-          className="flex items-center gap-2 font-black text-sm"
-        >
-          <ArrowLeft size={18} /> Dashboard
-        </button>
+      <div className="bg-[#0f172a] text-white px-6 py-4 shadow-xl sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+          <button onClick={() => onNavigate('dashboard')} className="flex items-center gap-2 text-slate-300 hover:text-white transition font-semibold">
+            <ArrowLeft size={20} /> Back to Dashboard
+          </button>
 
-        {timeLeft > 0 && (
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-xl">
-              <Clock size={14} />
-              <span className="font-black text-xs">
-                Refund available: {timeLeft}
-              </span>
+          {/* Show Active Plan Details if NOT Startup */}
+          {user?.planType && user.planType !== 'STARTUP' && (
+            <div className="flex items-center gap-4 bg-slate-800 p-2 pr-4 rounded-xl border border-slate-700 animate-in fade-in slide-in-from-top-2">
+              <div className="bg-emerald-500/20 text-emerald-400 p-2 rounded-lg"><Crown size={20} /></div>
+              <div className="text-left">
+                <p className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Active Plan</p>
+                <p className="font-bold text-white text-sm leading-none">{user.planName || user.planType}</p>
+              </div>
+              <div className="h-8 w-[1px] bg-slate-700 mx-2"></div>
+              <div className="text-right">
+                 <p className="text-[10px] text-slate-400 uppercase font-bold">Refund Value</p>
+                 <p className="text-emerald-400 font-mono font-bold text-sm">₹{refundAmount}</p>
+              </div>
+              <button onClick={handleCancel} className="ml-2 px-3 py-1.5 bg-red-500/10 text-red-400 border border-red-500/50 rounded-lg text-xs font-bold hover:bg-red-500 hover:text-white transition">Cancel</button>
             </div>
-
-            <button
-              onClick={cancelSubscription}
-              className="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-xl font-black text-xs"
-            >
-              Cancel Plan
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* HERO */}
-      <div className="text-center text-white py-16">
-        <h1 className="text-6xl font-black mb-3">
-          Choose Your Global IP Plan
-        </h1>
-        <p className="opacity-90 font-semibold">
-          Simple pricing. Powerful protection.
-        </p>
-
-        <div className="flex justify-center gap-4 mt-8">
-          {['monthly', 'yearly'].map(cycle => (
-            <button
-              key={cycle}
-              onClick={() => setBillingCycle(cycle)}
-              className={`px-8 py-3 rounded-full font-black text-sm transition ${
-                billingCycle === cycle
-                  ? 'bg-white text-indigo-700'
-                  : 'bg-white/20'
-              }`}
-            >
-              {cycle.toUpperCase()}
-            </button>
-          ))}
+          )}
         </div>
       </div>
 
-      {/* PRICING CARDS */}
-      <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-10 px-8 -mt-10">
-        {plans.map(plan => {
-          const active = user.planType === plan.id;
-
-          return (
-            <div
-              key={plan.id}
-              className={`bg-white rounded-[2.5rem] p-10 shadow-2xl transition transform hover:-translate-y-3 ${
-                plan.recommended ? 'ring-4 ring-pink-500' : ''
-              }`}
-            >
-              {plan.recommended && (
-                <span className="inline-block bg-pink-500 text-white text-xs font-black px-4 py-1 rounded-full mb-4">
-                  MOST POPULAR
-                </span>
-              )}
-
-              <h3 className="font-black text-sm uppercase">
-                {plan.name}
-              </h3>
-
-              <p className="text-6xl font-black my-6">
-                ${billingCycle === 'monthly' ? plan.price : plan.yearly}
-              </p>
-
-              <ul className="space-y-3 mb-10">
-                {plan.features.map(f => (
-                  <li key={f} className="flex gap-2 font-bold">
-                    <Check className="text-indigo-600" size={16} />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-
-              <button
-                disabled={active}
-                onClick={() => {
-                  setSelectedPlan(plan);
-                  setIsPaymentOpen(true);
-                  setPaymentStep('methods');
-                }}
-                className={`w-full py-4 rounded-xl font-black uppercase text-sm ${
-                  active
-                    ? 'bg-emerald-500 text-white'
-                    : 'bg-gradient-to-r from-indigo-600 to-pink-600 text-white'
-                }`}
-              >
-                {active ? 'Active Plan' : 'Upgrade'}
-              </button>
-
-              {active && timeLeft === 0 && (
-                <p className="text-xs text-center mt-3 opacity-70">
-                  Refund period expired
-                </p>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* ================= PAYMENT MODAL ================= */}
-      {isPaymentOpen && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center">
-          <div className="bg-white w-full max-w-md rounded-3xl overflow-hidden">
-
-            <div className="bg-gradient-to-r from-indigo-600 to-pink-600 text-white px-6 py-4 flex justify-between">
-              <span className="font-black">Global IP Payment</span>
-              <button onClick={() => setIsPaymentOpen(false)}>
-                <X />
-              </button>
-            </div>
-
-            {paymentStep === 'methods' && (
-              <div className="p-6 space-y-4">
-
-                <button onClick={() => setSelectedMethod('upi')} className="payment-btn">
-                  <Smartphone /> UPI (Google Pay / PhonePe)
-                </button>
-
-                <button onClick={() => setSelectedMethod('card')} className="payment-btn">
-                  <CreditCard /> Credit / Debit Card
-                </button>
-
-                <button onClick={() => setSelectedMethod('net')} className="payment-btn">
-                  <Landmark /> Net Banking
-                </button>
-
-                {selectedMethod === 'upi' && (
-                  <div className="space-y-4 text-center">
-                    {!isMobile && (
-                      <QRCodeSVG
-                        value={`upi://pay?pa=globalip@upi&am=${getPrice()}`}
-                        size={180}
-                        className="mx-auto"
-                      />
-                    )}
-
-                    <button onClick={completePayment} className="confirm-btn">
-                      Confirm Payment
-                    </button>
-                  </div>
-                )}
-
-                {selectedMethod === 'card' && (
-                  <div className="space-y-3">
-                    <input className="input" placeholder="Card Number" />
-                    <input className="input" placeholder="Card Holder Name" />
-                    <div className="flex gap-3">
-                      <input className="input" placeholder="MM/YY" />
-                      <input className="input" placeholder="CVV" />
-                    </div>
-                    <button onClick={completePayment} className="confirm-btn">
-                      Pay ${getPrice()}
-                    </button>
-                  </div>
-                )}
-
-                {selectedMethod === 'net' && (
-                  <div className="space-y-3">
-                    <select className="input">
-                      <option>Select Bank</option>
-                      <option>SBI</option>
-                      <option>HDFC</option>
-                      <option>ICICI</option>
-                    </select>
-                    <input className="input" placeholder="Account Number" />
-                    <input className="input" placeholder="IFSC Code" />
-                    <button onClick={completePayment} className="confirm-btn">
-                      Pay ${getPrice()}
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {paymentStep === 'processing' && (
-              <div className="p-20 text-center">
-                <Loader2 className="animate-spin mx-auto" size={48} />
-                <p className="font-black mt-6">Processing Payment...</p>
-              </div>
-            )}
-
-            {paymentStep === 'success' && (
-              <div className="p-10 text-center space-y-4">
-                <Check size={48} className="text-emerald-500 mx-auto" />
-                <h2 className="text-2xl font-black">
-                  Plan Activated 🎉
-                </h2>
-                <button
-                  onClick={() => onNavigate('dashboard')}
-                  className="confirm-btn"
-                >
-                  Go to Dashboard
-                </button>
-              </div>
-            )}
+      <div className="max-w-7xl mx-auto px-6 py-12">
+        <div className="text-center mb-16">
+          <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-4 tracking-tight">Accessible Innovation Pricing</h1>
+          <p className="text-lg text-slate-600 max-w-2xl mx-auto">Get started for as low as ₹199. Cancel anytime.</p>
+          
+          {/* Billing Cycle Toggle */}
+          <div className="flex justify-center items-center mt-8 gap-4 select-none">
+            <span className={`text-sm font-bold ${billingCycle === 'monthly' ? 'text-slate-900' : 'text-slate-400'}`}>Monthly</span>
+            <button onClick={() => setBillingCycle(prev => prev === 'monthly' ? 'yearly' : 'monthly')} className="relative w-14 h-7 bg-indigo-600 rounded-full p-1 transition-all cursor-pointer">
+              <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform ${billingCycle === 'yearly' ? 'translate-x-7' : 'translate-x-0'}`}></div>
+            </button>
+            <span className={`text-sm font-bold ${billingCycle === 'yearly' ? 'text-slate-900' : 'text-slate-400'}`}>Yearly <span className="text-emerald-600 text-xs bg-emerald-100 px-2 py-0.5 rounded-full ml-1 font-extrabold">-20%</span></span>
           </div>
         </div>
-      )}
 
-      {/* INLINE STYLES */}
-      <style>{`
-        .payment-btn {
-          width: 100%;
-          padding: 14px;
-          border-radius: 14px;
-          font-weight: 800;
-          display: flex;
-          gap: 12px;
-          align-items: center;
-          border: 2px solid #e5e7eb;
-        }
-        .confirm-btn {
-          width: 100%;
-          background: linear-gradient(to right, #6366f1, #ec4899);
-          color: white;
-          padding: 14px;
-          border-radius: 14px;
-          font-weight: 900;
-        }
-        .input {
-          width: 100%;
-          padding: 12px;
-          border-radius: 12px;
-          border: 2px solid #e5e7eb;
-        }
-      `}</style>
+        {/* Pricing Cards */}
+        <div className="grid md:grid-cols-3 gap-8 items-start">
+          {plans.map((plan) => {
+            const isCurrent = user?.planType === plan.id; 
+            const price = billingCycle === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice;
+
+            return (
+              <div key={plan.id} className={`relative bg-white rounded-3xl shadow-xl border-2 transition-all hover:-translate-y-2 hover:shadow-2xl overflow-hidden flex flex-col h-full ${plan.popular ? 'border-indigo-600 scale-105 z-10' : 'border-slate-100'}`}>
+                {plan.popular && <div className="bg-indigo-600 text-white text-center text-xs font-bold py-1.5 uppercase tracking-widest">Best Value</div>}
+                
+                <div className="p-8 pb-0 flex-1">
+                  <h3 className="text-xl font-bold text-slate-900">{plan.name}</h3>
+                  <p className="text-slate-500 text-sm mt-2 min-h-[40px]">{plan.description}</p>
+                  
+                  <div className="my-6">
+                    <span className="text-5xl font-extrabold text-slate-900">₹{price}</span>
+                    <span className="text-slate-400 font-medium">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
+                  </div>
+                  
+                  <button 
+                    onClick={() => handleSubscribe(plan)} 
+                    disabled={isCurrent || loading} 
+                    className={`w-full py-3.5 rounded-xl font-bold text-sm uppercase tracking-wide transition-all shadow-md ${isCurrent ? 'bg-emerald-100 text-emerald-700 cursor-default shadow-none border border-emerald-200' : plan.popular ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-200' : 'bg-slate-900 text-white hover:bg-slate-800'}`}
+                  >
+                    {loading ? 'Processing...' : (isCurrent ? 'Current Plan' : plan.btnText)}
+                  </button>
+                </div>
+                
+                <div className="p-8">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">What's included</p>
+                  <ul className="space-y-4">
+                    {plan.features.map((feature, i) => (
+                      <li key={i} className="flex items-start gap-3">
+                        <div className={`mt-0.5 p-0.5 rounded-full flex-shrink-0 ${plan.popular ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-600'}`}><Check size={14} strokeWidth={3} /></div>
+                        <span className="text-sm font-medium text-slate-700 leading-snug">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 };

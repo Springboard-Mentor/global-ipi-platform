@@ -3,13 +3,13 @@ import {
     Search, Filter, Grid, List, ChevronLeft, ChevronRight, 
     Check, Database, Globe, User, Calendar, MapPin, Loader2, 
     RefreshCcw, Zap, Cpu, Map as MapIcon, Layers, AlertCircle,
-    ArrowUpRight
+    ArrowUpRight, Lock, Crown, AlertTriangle, Info
 } from 'lucide-react';
 import axios from 'axios';
 import { searchAPI } from '../api/searchAPI';
 import MapViewPage from './MapViewPage';
 
-const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
+const SearchResultsPage = ({ initialKeyword = '', onViewPatent, user: propUser }) => {
     
     // --- CONFIGURATION ---
     const API_BASE = "http://192.168.43.45:5001/api";
@@ -18,6 +18,92 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
     const isInitialMount = useRef(true);
     const searchInProgress = useRef(false);
     const isSyncingRef = useRef(false);
+
+    // --- PLAN & ACCESS LOGIC ---
+    const getUserData = () => {
+        if (propUser) return propUser;
+        try {
+            return JSON.parse(localStorage.getItem('user')) || {};
+        } catch (e) { return {}; }
+    };
+    const currentUser = getUserData();
+
+    // 1. Define Plan Levels & Limits
+    const PLAN_LEVELS = { 'STARTUP': 1, 'PRO': 2, 'ENTERPRISE': 3 };
+    const SEARCH_LIMITS = { 'STARTUP': 5, 'PRO': 10, 'ENTERPRISE': Infinity };
+    const CYCLE_DAYS = 15; // 15-day Reset Cycle
+
+    const userPlan = currentUser?.planType || 'STARTUP';
+    const userLevel = PLAN_LEVELS[userPlan] || 1;
+    const limitMax = SEARCH_LIMITS[userPlan] || 5;
+
+    const hasAccess = (requiredLevel) => userLevel >= PLAN_LEVELS[requiredLevel];
+
+    // --- SEARCH QUOTA TRACKING ---
+    const [quotaInfo, setQuotaInfo] = useState({ count: 0, resetDate: null });
+
+    // Helper: Load Quota from Storage
+    const getStorageKey = () => `search_quota_${currentUser.id || 'guest'}`;
+
+    const loadQuota = () => {
+        try {
+            const data = JSON.parse(localStorage.getItem(getStorageKey()));
+            if (!data) return { count: 0, cycleStart: Date.now(), lastKeyword: '' };
+
+            const now = Date.now();
+            const cycleStart = new Date(data.cycleStart).getTime();
+            const daysPassed = (now - cycleStart) / (1000 * 60 * 60 * 24);
+
+            // Check if 15-day cycle has passed
+            if (daysPassed >= CYCLE_DAYS) {
+                // Reset Cycle
+                const newCycle = { count: 0, cycleStart: now, lastKeyword: '' };
+                localStorage.setItem(getStorageKey(), JSON.stringify(newCycle));
+                return newCycle;
+            }
+            return data;
+        } catch (e) {
+            return { count: 0, cycleStart: Date.now(), lastKeyword: '' };
+        }
+    };
+
+    // Initialize Quota State
+    useEffect(() => {
+        const data = loadQuota();
+        const resetDate = new Date(data.cycleStart);
+        resetDate.setDate(resetDate.getDate() + CYCLE_DAYS);
+        setQuotaInfo({ count: data.count, resetDate });
+    }, [currentUser.id]);
+
+    // Logic: Check if we can search (Consumes quota ONLY if new keyword)
+    const consumeSearchQuota = (newKeyword) => {
+        if (userPlan === 'ENTERPRISE') return true; // Unlimited
+
+        const data = loadQuota();
+        const cleanKeyword = newKeyword.trim().toLowerCase();
+
+        // If keyword is same as last searched, allow it (Free refinement/filter change)
+        if (data.lastKeyword === cleanKeyword) return true;
+
+        // If Limit Reached
+        if (data.count >= limitMax) {
+            const resetStr = new Date(quotaInfo.resetDate).toLocaleDateString();
+            alert(`🚫 Search Limit Reached!\n\nYou have used ${data.count}/${limitMax} keywords for your ${userPlan} plan.\n\nYour quota resets on ${resetStr}.\nUpgrade to Enterprise for unlimited access.`);
+            return false;
+        }
+
+        // Increment Quota
+        data.count += 1;
+        data.lastKeyword = cleanKeyword;
+        localStorage.setItem(getStorageKey(), JSON.stringify(data));
+        
+        // Update UI
+        const resetDate = new Date(data.cycleStart);
+        resetDate.setDate(resetDate.getDate() + CYCLE_DAYS);
+        setQuotaInfo({ count: data.count, resetDate });
+        
+        return true;
+    };
 
     // --- STATE ---
     const loadSavedState = () => {
@@ -33,7 +119,6 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
     const [results, setResults] = useState(shouldRestore ? (savedState.results || []) : []);
     const [loading, setLoading] = useState(false);
     const [trackingLoading, setTrackingLoading] = useState(null);
-    const [error, setError] = useState(null); // Keep error state for potential use
     const [viewMode, setViewMode] = useState(shouldRestore ? savedState.viewMode : 'list'); 
     const [showFilters, setShowFilters] = useState(true);
     const [trackedIds, setTrackedIds] = useState(shouldRestore ? savedState.trackedIds : {});
@@ -66,27 +151,27 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
         sessionStorage.setItem('searchPageParams', JSON.stringify(stateToSave));
     }, [results, filters, currentPage, itemsPerPage, totalResults, totalPages, trackedIds, viewMode, activeSource, searchTrigger, hasSearched, keywordInput]);
 
-    // --- CORE LOGIC (Local -> API -> Sync) ---
+    // --- CORE SEARCH LOGIC ---
     const fetchResults = useCallback(async () => {
         const query = filters.keyword ? filters.keyword.trim() : '';
         const hasActiveFilters = (filters.jurisdictions && filters.jurisdictions.length > 0) || 
                                  (filters.statuses && filters.statuses.length > 0);
 
-        // Don't search if empty and no filters
         if (!query && !hasActiveFilters) return;
         
-        // Prevent double execution
+        // 🛑 CHECK 15-DAY LIMIT (Only if keyword changed)
+        if (query && !consumeSearchQuota(query)) return;
+
         if (searchInProgress.current) return;
         searchInProgress.current = true;
 
         setLoading(true);
-        setError(null);
 
         try {
-            // ✅ PARAMETER ALIGNMENT: Ensure frontend matches backend expectations
+            // ✅ PARAMETER ALIGNMENT
             const params = {
                 keyword: query || null,
-                q: query || null, // Send both aliases
+                q: query || null,
                 ipType: filters.ipType === 'both' ? null : filters.ipType.toUpperCase(),
                 jurisdictions: filters.jurisdictions?.length > 0 ? filters.jurisdictions.join(',') : null,
                 statuses: filters.statuses?.length > 0 ? filters.statuses.join(',') : null,
@@ -94,42 +179,34 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
                 size: itemsPerPage,
             };
 
-            // 1. CHECK LOCAL DB FIRST
-            console.log("🔍 Checking Local DB...");
+            console.log("🔍 Checking Local DB with params:", params);
+            
+            // 1. Try Local DB
             const localRes = await searchAPI.searchAll({ ...params, source: 'local' });
             
-            // Extract response parts safely
             let content = localRes?.content || [];
             let totalElements = localRes?.totalElements || 0;
             let totalPagesResult = localRes?.totalPages || 0;
 
             if (totalElements > 0) {
-                // ✅ Found in Local DB -> Show results, NO API CALL.
-                console.log(`✅ Found ${totalElements} items locally.`);
                 setResults(content);
                 setTotalResults(totalElements);
                 setTotalPages(totalPagesResult);
                 setActiveSource('local');
-                if (filters.source !== 'local') setFilters(prev => ({...prev, source: 'local'})); // Implicitly update state source if needed
             } else {
-                // 2. Not in Local -> CHECK EXTERNAL API
+                // 2. Try External API
                 console.log("⚠️ Local empty. Fetching from External API...");
                 
-                // Note: API wrapper handles source param
                 const apiRes = await searchAPI.searchAll({ ...params, source: 'api' });
                 const apiContent = apiRes?.content || [];
                 
                 if (apiContent.length > 0) {
-                    console.log(`🌐 API found ${apiContent.length} items. Syncing...`);
-                    
-                    // Display API Results immediately
                     setResults(apiContent);
                     setTotalResults(apiRes.totalElements || apiContent.length);
                     setTotalPages(apiRes.totalPages || 1);
                     setActiveSource('api');
-                    if (filters.source !== 'api') setFilters(prev => ({...prev, source: 'api'}));
 
-                    // 3. AUTO-SYNC: Save items to DB (Backend handles deduplication)
+                    // 3. Auto-Sync to Local
                     if (!isSyncingRef.current) {
                         isSyncingRef.current = true;
                         axios.post(`${API_BASE}/ipassets/sync`, apiContent)
@@ -138,7 +215,6 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
                             .finally(() => { isSyncingRef.current = false; });
                     }
                 } else {
-                    // No results found anywhere
                     setResults([]);
                     setTotalResults(0);
                     setTotalPages(0);
@@ -148,18 +224,16 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
             setHasSearched(true);
         } catch (err) {
             console.error('Search Workflow Error:', err);
-            setError("Connection disrupted. Please retry.");
         } finally {
             setLoading(false);
-            setTimeout(() => { searchInProgress.current = false; }, 500); // Small delay
+            setTimeout(() => { searchInProgress.current = false; }, 500);
         }
-    }, [filters, currentPage, itemsPerPage]);
+    }, [filters, currentPage, itemsPerPage]); // Removed quota function from deps to prevent loop
 
     // --- EFFECTS ---
     useEffect(() => {
         if (isInitialMount.current) {
             isInitialMount.current = false;
-            // Trigger search on mount if keyword exists (e.g. from nav)
             if (initialKeyword) setSearchTrigger(t => t + 1);
             return;
         }
@@ -167,7 +241,7 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
 
     useEffect(() => {
         if (searchTrigger > 0) fetchResults();
-    }, [searchTrigger, currentPage, itemsPerPage]);
+    }, [searchTrigger]);
 
     // --- HANDLERS ---
     const handleManualSearch = () => {
@@ -176,16 +250,15 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
         setSearchTrigger(t => t + 1);
     };
 
-    const handleFilterUpdate = (key, value) => {
-        setFilters(prev => ({ ...prev, [key]: value }));
-        setCurrentPage(1);
-        setSearchTrigger(t => t + 1);
-    };
-
     const handleCheckboxFilter = (type, value, checked) => {
         setFilters(prev => {
             const current = prev[type] || [];
-            const next = checked ? [...current, value] : current.filter(item => item !== value);
+            let next;
+            if (checked) {
+                next = current.includes(value) ? current : [...current, value];
+            } else {
+                next = current.filter(item => item !== value);
+            }
             return { ...prev, [type]: next };
         });
         setCurrentPage(1);
@@ -205,34 +278,33 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
 
     const handleTrack = async (e, id) => {
         e.stopPropagation();
-        if (trackedIds[id]) return;
-
-        const storedUser = localStorage.getItem('user');
-        if (!storedUser) {
-            alert("Please log in to sync assets to your dashboard.");
-            return;
-        }
         
-        let userEmail = "";
-        try {
-            const parsedUser = JSON.parse(storedUser);
-            userEmail = parsedUser.email;
-        } catch (err) {
-            console.error("Error parsing user data", err);
+        if (!hasAccess('PRO')) {
+            alert("🔒 Access Denied: Asset Tracking requires an IP Professional plan. Please upgrade.");
             return;
         }
+
+        if (trackedIds[id]) return;
 
         setTrackingLoading(id);
         
         try {
-            await axios.post(`${API_BASE}/tracker/add/${id}`, { email: userEmail });
+            await axios.post(`${API_BASE}/tracker/add/${id}`, { email: currentUser.email });
             setTrackedIds(prev => ({ ...prev, [id]: true }));
         } catch (err) { 
             console.error("Tracking Error:", err);
-            alert("Failed to sync asset. Please try again.");
+            alert("Failed to sync asset.");
         } finally { 
             setTrackingLoading(null); 
         }
+    };
+
+    const toggleMapView = () => {
+        if (!hasAccess('PRO')) {
+            alert("🔒 Access Denied: Map Visualization requires an IP Professional plan or higher.");
+            return;
+        }
+        setViewMode('map');
     };
 
     const getPageNumbers = () => {
@@ -247,7 +319,6 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
         return pages;
     };
 
-    // UI Styles
     const getStatusColor = (s) => {
         const val = (s || '').toUpperCase();
         if (['ACTIVE', 'GRANTED'].some(v => val.includes(v))) return 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20';
@@ -292,11 +363,15 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
                         {/* Actions */}
                         <div className="flex items-center gap-3">
                             <button 
-                                onClick={() => setViewMode('map')}
-                                className="group flex items-center gap-2.5 pl-3 pr-4 py-2 bg-slate-900 hover:bg-indigo-600 text-white rounded-lg text-xs font-bold transition-all shadow-lg shadow-slate-900/20 hover:shadow-indigo-500/30 active:scale-95"
+                                onClick={toggleMapView}
+                                className={`group flex items-center gap-2.5 pl-3 pr-4 py-2 rounded-lg text-xs font-bold transition-all shadow-lg active:scale-95 ${
+                                    hasAccess('PRO') 
+                                    ? 'bg-slate-900 hover:bg-indigo-600 text-white shadow-slate-900/20 hover:shadow-indigo-500/30' 
+                                    : 'bg-slate-200 text-slate-500 cursor-not-allowed'
+                                }`}
                             >
                                 <div className="p-1 bg-white/10 rounded-md">
-                                    <MapIcon size={14} className="text-white" />
+                                    {hasAccess('PRO') ? <MapIcon size={14} className="text-white" /> : <Lock size={14} />}
                                 </div>
                                 <span className="uppercase tracking-wide">Map View</span>
                             </button>
@@ -313,6 +388,30 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
             <div className="relative z-10 max-w-[1600px] mx-auto px-4 md:px-6 py-8">
                 {/* SEARCH HERO */}
                 <div className="max-w-4xl mx-auto mb-12">
+                    
+                    {/* QUOTA INDICATOR (Visible for non-Enterprise) */}
+                    {userPlan !== 'ENTERPRISE' && (
+                        <div className="mb-4 bg-white/80 backdrop-blur-sm border border-slate-100 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                                    <Info size={16} />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-bold text-slate-900 uppercase tracking-wide">Search Quota (15-Day Cycle)</p>
+                                    <p className="text-[10px] text-slate-500 font-medium">
+                                        Resets on: {quotaInfo.resetDate ? new Date(quotaInfo.resetDate).toLocaleDateString() : 'Calculating...'}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <span className={`text-xl font-black ${quotaInfo.count >= limitMax ? 'text-red-500' : 'text-indigo-600'}`}>
+                                    {quotaInfo.count}
+                                </span>
+                                <span className="text-xs font-bold text-slate-400"> / {limitMax}</span>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="relative group">
                         <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 rounded-[2rem] opacity-20 group-hover:opacity-40 blur transition duration-500"></div>
                         <div className="relative flex items-center bg-white rounded-[1.8rem] shadow-xl shadow-indigo-500/10 ring-1 ring-slate-900/5 transition-all">
@@ -347,8 +446,7 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
                             <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
                                 <div className="flex justify-between items-center mb-6">
                                     <h3 className="text-xs font-bold text-slate-900 uppercase tracking-widest flex items-center gap-2">
-                                        <Filter size={14} className="text-indigo-600"/> 
-                                        Filters
+                                        <Filter size={14} className="text-indigo-600"/> Filters
                                     </h3>
                                     {hasSearched && (
                                         <button onClick={handleClearFilters} className="text-[10px] font-bold text-rose-500 hover:text-rose-600 uppercase tracking-wide transition-colors">
@@ -358,21 +456,20 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
                                 </div>
 
                                 <div className="space-y-8">
+                                    {/* ✅ CORRECTED JURISDICTIONS */}
                                     <FilterGroup label="Jurisdiction">
                                         <div className="grid grid-cols-2 gap-2">
                                             {['US', 'EP', 'CN', 'IN', 'JP', 'KR', 'GB', 'DE'].map(code => (
                                                 <Checkbox 
                                                     key={code} 
                                                     label={code} 
-                                                    checked={filters.jurisdictions.includes(code)}
-                                                    onChange={(e) => handleCheckboxFilter('jurisdictions', code, e.target.checked)}
+                                                    checked={filters.jurisdictions.includes(code)} 
+                                                    onChange={(e) => handleCheckboxFilter('jurisdictions', code, e.target.checked)} 
                                                 />
                                             ))}
                                         </div>
                                     </FilterGroup>
-
                                     <div className="h-px bg-slate-100" />
-
                                     <FilterGroup label="Asset Type">
                                         <div className="space-y-1">
                                             {['both', 'patent', 'trademark'].map(type => (
@@ -380,30 +477,22 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
                                                     <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${filters.ipType === type ? 'border-indigo-600' : 'border-slate-300'}`}>
                                                         {filters.ipType === type && <div className="w-2 h-2 rounded-full bg-indigo-600" />}
                                                     </div>
-                                                    <input 
-                                                        type="radio" 
-                                                        name="ipType" 
-                                                        checked={filters.ipType === type} 
-                                                        onChange={() => { setFilters(prev => ({...prev, ipType: type})); setSearchTrigger(prev => prev + 1); }} 
-                                                        className="hidden" 
-                                                    />
+                                                    <input type="radio" name="ipType" checked={filters.ipType === type} onChange={() => { setFilters(prev => ({...prev, ipType: type})); setSearchTrigger(prev => prev + 1); }} className="hidden" />
                                                     <span className="text-sm font-medium text-slate-700 capitalize">{type}</span>
                                                 </label>
                                             ))}
                                         </div>
                                     </FilterGroup>
-
                                     <div className="h-px bg-slate-100" />
-                                    
                                     <FilterGroup label="Status">
                                         <div className="space-y-1">
                                             {['ACTIVE', 'PENDING', 'EXPIRED', 'GRANTED'].map(status => (
                                                 <div key={status} className="flex items-center">
                                                     <Checkbox 
                                                         label={status} 
-                                                        checked={filters.statuses.includes(status)}
-                                                        onChange={(e) => handleCheckboxFilter('statuses', status, e.target.checked)}
-                                                        fullWidth
+                                                        checked={filters.statuses.includes(status)} 
+                                                        onChange={(e) => handleCheckboxFilter('statuses', status, e.target.checked)} 
+                                                        fullWidth 
                                                     />
                                                 </div>
                                             ))}
@@ -477,6 +566,7 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
                                                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{activeSource}</span>
                                                         </div>
                                                         
+                                                        {/* SYNC / TRACK BUTTON - WITH LOCK */}
                                                         <div className="flex gap-3">
                                                             <button 
                                                                 onClick={(e) => handleTrack(e, item.id)}
@@ -484,11 +574,16 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
                                                                 className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wide transition-all border flex items-center gap-2 ${
                                                                     trackedIds[item.id] 
                                                                         ? 'bg-emerald-55 text-emerald-600 border-emerald-100' 
-                                                                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                                                                        : hasAccess('PRO') 
+                                                                            ? 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                                                                            : 'bg-slate-100 text-slate-400 cursor-not-allowed border-slate-100'
                                                                 }`}
                                                             >
-                                                                {trackingLoading === item.id ? <Loader2 className="animate-spin" size={12}/> : trackedIds[item.id] ? <Check size={12} strokeWidth={3}/> : <RefreshCcw size={12}/>}
-                                                                {trackedIds[item.id] ? 'Synced' : 'Sync'}
+                                                                {trackingLoading === item.id ? <Loader2 className="animate-spin" size={12}/> : 
+                                                                 trackedIds[item.id] ? <Check size={12} strokeWidth={3}/> : 
+                                                                 hasAccess('PRO') ? <RefreshCcw size={12}/> : <Lock size={12}/>}
+                                                                
+                                                                {trackedIds[item.id] ? 'Synced' : hasAccess('PRO') ? 'Sync' : 'Locked'}
                                                             </button>
                                                             
                                                             <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0 shadow-lg">
@@ -522,7 +617,6 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
 
                                     <div className="flex items-center gap-2">
                                         <PageNav onClick={() => setCurrentPage(p => Math.max(1, p-1))} disabled={currentPage === 1} icon={<ChevronLeft size={16}/>} />
-                                        
                                         <div className="flex gap-1">
                                             {getPageNumbers().map(p => (
                                                 <button 
@@ -538,7 +632,6 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
                                                 </button>
                                             ))}
                                         </div>
-                                        
                                         <PageNav onClick={() => setCurrentPage(p => Math.min(totalPages, p+1))} disabled={currentPage === totalPages} icon={<ChevronRight size={16}/>} />
                                     </div>
                                 </div>
