@@ -198,28 +198,7 @@ const MyFilingDetail = () => {
     const fetchFiling = async () => {
       try {
         setLoading(true);
-        const token = localStorage.getItem('token');
-        const headers = { 'Authorization': `Bearer ${token}` };
-        const BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8081';
-
-        // Try fetching from Filing Tracker first
-        const trackerResp = await fetch(`${BASE_URL}/api/filing-tracker/${id}`, { headers });
-        if (trackerResp.ok) {
-          const data = await trackerResp.json();
-          // Normalize data to match PatentFiling structure for UI components
-          const normalized = {
-            ...data,
-            applicantName: data.assignee || 'Unknown',
-            inventors: data.inventors ? [{ name: data.inventors }] : [],
-            startLine: 1, // dummy
-            abstractText: data.abstractText,
-            status: data.currentStatus
-          };
-          setFiling(normalized);
-          return;
-        }
-
-        // Fallback to Patent Filings (User submitted)
+        // Only fetch User Submitted Patent (Submission)
         const f = await getFilingById(parseInt(id));
         setFiling(f);
       } catch (error) {

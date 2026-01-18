@@ -105,7 +105,7 @@ const FilingDetail = () => {
         <div className="bg-white/10 backdrop-blur-xl rounded-xl p-6 border border-white/20">
           <h2 className="text-xl font-semibold mb-4">Filing Information</h2>
           <div className="space-y-3">
-                <div>
+            <div>
               <label className="text-sm text-white/70">Title</label>
               <p className="font-medium">{filing.title}</p>
             </div>
@@ -125,11 +125,10 @@ const FilingDetail = () => {
             </div>
             <div>
               <label className="text-sm text-white/70">Status</label>
-              <span className={`inline-block px-3 py-1 rounded-full text-sm mt-1 ${
-                (filing.currentStatus || '').toUpperCase() === 'GRANTED' ? 'bg-green-500/20 text-green-400' :
-                (filing.currentStatus || '').toUpperCase() === 'EXPIRED' ? 'bg-red-500/20 text-red-400' :
-                'bg-yellow-500/20 text-yellow-400'
-              }`}>
+              <span className={`inline-block px-3 py-1 rounded-full text-sm mt-1 ${(filing.currentStatus || '').toUpperCase() === 'GRANTED' ? 'bg-green-500/20 text-green-400' :
+                  (filing.currentStatus || '').toUpperCase() === 'EXPIRED' ? 'bg-red-500/20 text-red-400' :
+                    'bg-yellow-500/20 text-yellow-400'
+                }`}>
                 {filing.currentStatus || filing.status || 'Unknown'}
               </span>
             </div>
@@ -153,14 +152,12 @@ const FilingDetail = () => {
               </div>
               <button
                 onClick={() => setAlertEnabled(!alertEnabled)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  alertEnabled ? 'bg-purple-600' : 'bg-gray-600'
-                }`}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${alertEnabled ? 'bg-purple-600' : 'bg-gray-600'
+                  }`}
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    alertEnabled ? 'translate-x-6' : 'translate-x-1'
-                  }`}
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${alertEnabled ? 'translate-x-6' : 'translate-x-1'
+                    }`}
                 />
               </button>
             </div>
@@ -170,50 +167,32 @@ const FilingDetail = () => {
         <div className="bg-white/10 backdrop-blur-xl rounded-xl p-6 border border-white/20">
           <h2 className="text-xl font-semibold mb-4">Status Timeline</h2>
           <div className="space-y-4">
-            {(() => {
-              const idx = resolveCurrentIndex();
-              const timelineItems = [
-                { status: 'Filed', date: formatDate(filing.filingDate) },
-                { status: 'Under Examination', date: null },
-                { status: 'Granted', date: formatDate(filing.grantDate) },
-                { status: 'Expiry', date: formatDate(filing.expiryDate) }
-              ];
+            <div className="relative">
+              <div className="absolute left-3 top-0 h-full w-px bg-white/20" />
 
-              return timelineItems.map((item, index) => {
-                let itemStatus = 'upcoming';
-                if (idx >= 0) {
-                  if (index < idx) itemStatus = 'completed';
-                  else if (index === idx) itemStatus = 'current';
-                } else {
-                  // no resolved index: mark Filed as completed if filingDate exists
-                  if (index === 0 && item.date) itemStatus = 'completed';
-                }
-
-                return (
-                  <div key={item.status} className="flex items-center space-x-4">
-                    <div className={`w-4 h-4 rounded-full border-2 ${
-                      itemStatus === 'completed'
-                        ? 'bg-green-500 border-green-500'
-                        : itemStatus === 'current'
-                        ? 'bg-yellow-500 border-yellow-500'
-                        : 'border-gray-500'
-                    }`} />
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <span className={`font-medium ${
-                          itemStatus === 'completed' ? 'text-white' : 'text-white/60'
-                        }`}>
-                          {item.status}
-                        </span>
-                        {item.date && (
-                          <span className="text-sm text-white/70">{item.date}</span>
-                        )}
-                      </div>
+              <div className="space-y-8">
+                {[
+                  { label: 'Priority Date', date: formatDate(filing.priorityDate), desc: 'Initial priority filing', active: !!filing.priorityDate },
+                  { label: 'Application Filed', date: formatDate(filing.filingDate), desc: 'Patent application officially filed', active: !!filing.filingDate },
+                  { label: 'Published', date: formatDate(filing.publicationDate), desc: 'Patent published for public access', active: !!filing.publicationDate },
+                  { label: 'Patent Granted', date: formatDate(filing.grantDate), desc: 'Patent legally granted', active: !!filing.grantDate }
+                ].map((item, index) => (
+                  <div key={index} className="relative flex gap-6">
+                    <div className="relative z-10 flex items-center justify-center w-6">
+                      <div className={`rounded-full border-2 border-white/30 ${item.active
+                          ? "w-6 h-6 bg-green-400 shadow-[0_0_14px_rgba(34,197,94,0.9)]"
+                          : "w-4 h-4 bg-blue-400"
+                        }`} />
+                    </div>
+                    <div>
+                      <h4 className="text-white text-sm font-medium">{item.label}</h4>
+                      <p className="text-gray-400 text-xs">{item.date || '—'}</p>
+                      <p className="text-gray-500 text-xs mt-1">{item.desc}</p>
                     </div>
                   </div>
-                );
-              });
-            })()}
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
