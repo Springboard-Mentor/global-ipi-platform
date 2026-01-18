@@ -57,6 +57,45 @@ public class AuthController {
     }
 
     // --------------------------
+    // ADMIN LOGIN
+    // --------------------------
+    @PostMapping("/admin/login")
+    public ResponseEntity<?> adminLogin(@RequestBody LoginRequest request) {
+        try {
+            Authentication auth = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getEmail(),
+                            request.getPassword()
+                    )
+            );
+
+            UserDetails user = (UserDetails) auth.getPrincipal();
+
+            // Check if user has admin role
+            boolean isAdmin = user.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+            if (!isAdmin) {
+                return ResponseEntity.status(403).body(
+                        Map.of("message", "Access denied: Admins only")
+                );
+            }
+
+            String token = jwtUtil.generateToken(user.getUsername());
+
+            return ResponseEntity.ok(Map.of(
+                    "token", token,
+                    "message", "Admin login successful"
+            ));
+
+        } catch (BadCredentialsException ex) {
+            return ResponseEntity.status(401).body(
+                    Map.of("message", "Invalid email or password")
+            );
+        }
+    }
+
+    // --------------------------
     // REGISTER
     // --------------------------
     @PostMapping("/register")
