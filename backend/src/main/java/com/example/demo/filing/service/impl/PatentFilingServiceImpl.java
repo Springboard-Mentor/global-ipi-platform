@@ -208,6 +208,13 @@ public class PatentFilingServiceImpl implements PatentFilingService {
     }
 
     @Override
+    public PatentFilingResponse getFilingByIdAdmin(Long id) {
+        PatentFiling filing = filingRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Filing not found"));
+        return mapToResponse(filing);
+    }
+
+    @Override
     public String computeStatus(PatentFilingResponse filing) {
         if (filing.getGrantDate() != null) {
             return "GRANTED";
