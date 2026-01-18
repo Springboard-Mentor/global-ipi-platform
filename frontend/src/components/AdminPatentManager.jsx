@@ -1328,6 +1328,8 @@ const AdminPatentManager = ({ onBack }) => {
     }
   };
 
+  const apiHealthStatus = 'Healthy'; // Mock data
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {!isAuthenticated ? (
@@ -1598,30 +1600,34 @@ const AdminPatentManager = ({ onBack }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             {/* Card 1: Backend / API Health */}
             {/* Card 1: Backend / API Health */}
-            <div className="bg-gradient-to-br from-teal-50 to-cyan-100 rounded-xl shadow-lg p-6 border-2 border-teal-300">
+            {/* Card 1: Backend / API Health */}
+            <div className={`rounded-xl shadow-lg p-6 border-2 ${apiHealthStatus === 'Healthy'
+              ? 'bg-gradient-to-br from-teal-50 to-cyan-100 border-teal-300'
+              : 'bg-gradient-to-br from-red-50 to-rose-100 border-red-300'
+              }`}>
               <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 text-teal-700 mb-2">
+                  <div className={`flex items-center gap-2 mb-2 ${apiHealthStatus === 'Healthy' ? 'text-teal-700' : 'text-red-700'}`}>
                     <Server className="w-5 h-5" />
                     <p className="text-sm font-semibold uppercase tracking-wide">Backend / API Health</p>
                   </div>
 
                   <div className="flex items-baseline gap-2">
-                    <p className="text-4xl font-bold text-teal-800">45ms</p>
-                    <span className="text-sm font-medium text-teal-600">Avg Response</span>
+                    <p className={`text-4xl font-bold ${apiHealthStatus === 'Healthy' ? 'text-teal-800' : 'text-red-800'}`}>45ms</p>
+                    <span className={`text-sm font-medium ${apiHealthStatus === 'Healthy' ? 'text-teal-600' : 'text-red-600'}`}>Avg Response</span>
                   </div>
 
                   <div className="flex items-center gap-1.5 mt-2 mb-3">
                     <span className="relative flex h-2.5 w-2.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-teal-600"></span>
+                      <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${apiHealthStatus === 'Healthy' ? 'bg-teal-400' : 'bg-red-400'}`}></span>
+                      <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${apiHealthStatus === 'Healthy' ? 'bg-teal-600' : 'bg-red-600'}`}></span>
                     </span>
-                    <span className="text-xs font-bold text-teal-700">Healthy</span>
-                    <span className="text-teal-400 mx-1">•</span>
-                    <span className="text-xs text-teal-700 font-medium">Uptime: 99.9%</span>
+                    <span className={`text-xs font-bold ${apiHealthStatus === 'Healthy' ? 'text-teal-700' : 'text-red-700'}`}>{apiHealthStatus}</span>
+                    <span className={`${apiHealthStatus === 'Healthy' ? 'text-teal-400' : 'text-red-400'} mx-1`}>•</span>
+                    <span className={`text-xs font-medium ${apiHealthStatus === 'Healthy' ? 'text-teal-700' : 'text-red-700'}`}>Uptime: 99.9%</span>
                   </div>
 
-                  <div className="flex items-center gap-3 text-xs text-teal-600 pt-2 border-t border-teal-200">
+                  <div className={`flex items-center gap-3 text-xs pt-2 border-t ${apiHealthStatus === 'Healthy' ? 'text-teal-600 border-teal-200' : 'text-red-600 border-red-200'}`}>
                     <span className="flex items-center gap-1" title="Max Response Time">
                       <Activity className="w-3 h-3" /> Max: 120ms
                     </span>
@@ -1635,25 +1641,29 @@ const AdminPatentManager = ({ onBack }) => {
                 </div>
 
                 <div className="self-start ml-4">
-                  <div className="bg-teal-200 p-4 rounded-xl shadow-inner">
-                    <Server className="w-10 h-10 text-teal-700" />
+                  <div className={`p-4 rounded-xl shadow-inner ${apiHealthStatus === 'Healthy' ? 'bg-teal-200' : 'bg-red-200'}`}>
+                    <Server className={`w-10 h-10 ${apiHealthStatus === 'Healthy' ? 'text-teal-700' : 'text-red-700'}`} />
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Card 2: Database Health */}
-            <div className="bg-gradient-to-br from-teal-50 to-cyan-100 rounded-xl shadow-lg p-6 border-2 border-teal-300">
+            {/* Card 2: Database Health */}
+            <div className={`rounded-xl shadow-lg p-6 border-2 ${backendStatus === 'error'
+              ? 'bg-gradient-to-br from-red-50 to-rose-100 border-red-300'
+              : 'bg-gradient-to-br from-teal-50 to-cyan-100 border-teal-300'
+              }`}>
               <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 text-teal-700 mb-2">
+                  <div className={`flex items-center gap-2 mb-2 ${backendStatus === 'error' ? 'text-red-700' : 'text-teal-700'}`}>
                     <Database className="w-5 h-5" />
                     <p className="text-sm font-semibold uppercase tracking-wide">Database Health</p>
                   </div>
 
                   <div className="flex items-baseline gap-2">
-                    <p className="text-4xl font-bold text-teal-800">85</p>
-                    <span className="text-sm font-medium text-teal-600">Active Conn.</span>
+                    <p className={`text-4xl font-bold ${backendStatus === 'error' ? 'text-red-800' : 'text-teal-800'}`}>85</p>
+                    <span className={`text-sm font-medium ${backendStatus === 'error' ? 'text-red-600' : 'text-teal-600'}`}>Active Conn.</span>
                   </div>
 
                   <div className="flex items-center gap-1.5 mt-2 mb-3">
@@ -1681,24 +1691,24 @@ const AdminPatentManager = ({ onBack }) => {
                         <span className="text-xs font-bold text-red-700">Disconnected</span>
                       </>
                     )}
-                    <span className="text-teal-400 mx-1">•</span>
-                    <span className="text-xs text-teal-700 font-medium">Latency: 12ms</span>
+                    <span className={`${backendStatus === 'error' ? 'text-red-400' : 'text-teal-400'} mx-1`}>•</span>
+                    <span className={`text-xs font-medium ${backendStatus === 'error' ? 'text-red-700' : 'text-teal-700'}`}>Latency: 12ms</span>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-teal-600 pt-2 border-t border-teal-200">
+                  <div className={`flex flex-wrap items-center gap-3 text-xs pt-2 border-t ${backendStatus === 'error' ? 'text-red-600 border-red-200' : 'text-teal-600 border-teal-200'}`}>
                     <span className="font-semibold bg-white/40 px-1.5 py-0.5 rounded">PostgreSQL</span>
                     <span className="flex items-center gap-1">
                       Perf: <span className="font-bold text-green-700">Normal</span>
                     </span>
-                    <div className="ml-auto opacity-75 bg-teal-200/50 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-teal-800">
+                    <div className={`ml-auto opacity-75 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${backendStatus === 'error' ? 'bg-red-200/50 text-red-800' : 'bg-teal-200/50 text-teal-800'}`}>
                       Production
                     </div>
                   </div>
                 </div>
 
                 <div className="self-start ml-4">
-                  <div className="bg-teal-200 p-4 rounded-xl shadow-inner">
-                    <Database className="w-10 h-10 text-teal-700" />
+                  <div className={`p-4 rounded-xl shadow-inner ${backendStatus === 'error' ? 'bg-red-200' : 'bg-teal-200'}`}>
+                    <Database className={`w-10 h-10 ${backendStatus === 'error' ? 'text-red-700' : 'text-teal-700'}`} />
                   </div>
                 </div>
               </div>
