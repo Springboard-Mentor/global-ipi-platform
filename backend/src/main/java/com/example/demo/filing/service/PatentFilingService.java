@@ -17,4 +17,6 @@ public interface PatentFilingService {
     void deleteFiling(Long id, Long userId);
     
     String computeStatus(PatentFilingResponse filing);
+
+    PatentFilingResponse getFilingByIdAdmin(Long id);
 }

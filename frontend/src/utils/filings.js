@@ -25,9 +25,9 @@ export async function createFiling(formData) {
     const total = Math.round(base * patentTypeMultiplier * applicantMultiplier * jurisdictionMultiplier);
 
     // Map inventors array
-    const inventors = Array.isArray(formData.inventors) 
+    const inventors = Array.isArray(formData.inventors)
       ? formData.inventors.map(inv => ({ name: inv.name || inv }))
-      : formData.inventors 
+      : formData.inventors
         ? [{ name: typeof formData.inventors === 'string' ? formData.inventors : formData.inventors.name || '' }]
         : [];
 
@@ -70,13 +70,13 @@ export async function createFiling(formData) {
     };
 
     const headers = getAuthHeaders();
-    
+
     // Debug: Check if token exists
     if (!headers.Authorization) {
       console.error('No token found in localStorage. User must be logged in.');
       throw new Error('You must be logged in to submit a patent filing. Please log in and try again.');
     }
-    
+
     console.log('Sending request to:', API_BASE_URL);
     console.log('Authorization header present:', !!headers.Authorization);
 
@@ -149,16 +149,10 @@ export async function getFilingById(id) {
 // Map backend response to frontend format
 function mapBackendToFrontend(backendFiling) {
   return {
-    id: backendFiling.id,
-    applicationNumber: backendFiling.applicationNumber,
-    title: backendFiling.title,
-    jurisdiction: backendFiling.jurisdiction,
-    filingDate: backendFiling.filingDate,
-    expiryDate: backendFiling.expiryDate,
-    grantDate: backendFiling.grantDate,
-    status: backendFiling.status,
-    trackedAt: backendFiling.createdAt,
-    raw: backendFiling, // Store full backend data
+    ...backendFiling, // Include all backend fields
+    trackedAt: backendFiling.createdAt, // key mapping for frontend compatibility
+    // Ensure critical fields are accessible at top level if naming differs
+    abstract: backendFiling.abstractText,
   };
 }
 
@@ -167,7 +161,7 @@ export function computeStatus(filing) {
   if (filing.status) {
     return filing.status;
   }
-  
+
   // Fallback computation
   try {
     if (filing.grantDate) return 'GRANTED';
