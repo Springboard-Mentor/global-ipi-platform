@@ -21,17 +21,17 @@ const KPIStats = ({ data = [] }) => {
     },
     {
       label: "Filed",
-      value: getCountNormalized("FILED"),
+      value: getCountNormalized(IP_STATUSES.FILED),
       color: "text-blue-300",
     },
     {
       label: "Under Examination",
-      value: getCountNormalized("UNDER_EXAMINATION"),
+      value: getCountNormalized(IP_STATUSES.UNDER_EXAMINATION),
       color: "text-yellow-300",
     },
     {
       label: "Granted",
-      value: getCountNormalized("GRANTED"),
+      value: getCountNormalized(IP_STATUSES.GRANTED),
       color: "text-green-300",
     },
   ];
