@@ -30,6 +30,10 @@ import PatentFilingWizard from "./components/PatentFilingWizard";
 import AdminLogin from "./admin/pages/AdminLogin";
 import AdminDashboard from "./admin/pages/AdminDashboard";
 import AdminFilingDetail from "./admin/pages/AdminFilingDetail";
+import AdminUserManagement from "./admin/pages/AdminUserManagement";
+import AdminFilingsManagement from "./admin/pages/AdminFilingsManagement";
+import AdminFinanceManagement from "./admin/pages/AdminFinanceManagement";
+import AdminSettings from "./admin/pages/AdminSettings";
 
 function App() {
   return (
@@ -40,7 +44,11 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/users" element={<AdminUserManagement />} />
+          <Route path="/admin/filings" element={<AdminFilingsManagement />} />
           <Route path="/admin/filings/:id" element={<AdminFilingDetail />} />
+          <Route path="/admin/finance" element={<AdminFinanceManagement />} />
+          <Route path="/admin/settings" element={<AdminSettings />} />
           <Route path="/register" element={<Register />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/profile" element={<Profile />} />
