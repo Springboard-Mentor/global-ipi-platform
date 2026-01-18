@@ -128,13 +128,35 @@ const PatentPDFDocument = ({ filing }) => (
   </Document>
 );
 
-const steps = ['Filed', 'Under Examination', 'Granted', 'Expiry'];
+const RealTrackingTimeline = ({ filing }) => {
+  const steps = [
+    { label: 'Priority Date', date: filing.priorityDate, desc: 'Initial priority filing' },
+    { label: 'Application Filed', date: filing.filingDate, desc: 'Patent application officially filed' },
+    { label: 'Published', date: filing.publicationDate, desc: 'Patent published for public access' },
+    { label: 'Patent Granted', date: filing.grantDate, desc: 'Patent legally granted' }
+  ];
 
-const FilingTimeline = ({ filing }) => {
+  return (
+    <div className="relative border-l-2 border-white/20 ml-3 space-y-8 py-2">
+      {steps.map((step, idx) => (
+        <div key={idx} className="relative pl-6">
+          <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full border-2 border-white/30 ${step.date ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.6)]' : 'bg-blue-500'}`} />
+          <div>
+            <h4 className="text-sm font-semibold text-white">{step.label}</h4>
+            <p className="text-xs text-white/50">{step.date || '—'}</p>
+            <p className="text-xs text-white/40 mt-0.5">{step.desc}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const StandardTimeline = ({ filing }) => {
+  const steps = ['Filed', 'Under Examination', 'Granted', 'Expiry'];
   const now = new Date();
   const grant = filing.grantDate ? new Date(filing.grantDate) : null;
   const expiry = filing.expiryDate ? new Date(filing.expiryDate) : null;
-
   let currentIndex = 0;
   if (grant) currentIndex = 2;
   else if (expiry && now > expiry) currentIndex = 3;
@@ -158,6 +180,14 @@ const FilingTimeline = ({ filing }) => {
   );
 };
 
+const FilingTimeline = ({ filing }) => {
+  // Determine if this is a "real" tracked filing or a user submission
+  const isTracked = filing.source === 'IP_SEARCH' || filing.priorityDate || filing.publicationDate;
+
+  if (isTracked) return <RealTrackingTimeline filing={filing} />;
+  return <StandardTimeline filing={filing} />;
+};
+
 const MyFilingDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -168,6 +198,28 @@ const MyFilingDetail = () => {
     const fetchFiling = async () => {
       try {
         setLoading(true);
+        const token = localStorage.getItem('token');
+        const headers = { 'Authorization': `Bearer ${token}` };
+        const BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8081';
+
+        // Try fetching from Filing Tracker first
+        const trackerResp = await fetch(`${BASE_URL}/api/filing-tracker/${id}`, { headers });
+        if (trackerResp.ok) {
+          const data = await trackerResp.json();
+          // Normalize data to match PatentFiling structure for UI components
+          const normalized = {
+            ...data,
+            applicantName: data.assignee || 'Unknown',
+            inventors: data.inventors ? [{ name: data.inventors }] : [],
+            startLine: 1, // dummy
+            abstractText: data.abstractText,
+            status: data.currentStatus
+          };
+          setFiling(normalized);
+          return;
+        }
+
+        // Fallback to Patent Filings (User submitted)
         const f = await getFilingById(parseInt(id));
         setFiling(f);
       } catch (error) {

@@ -27,6 +27,15 @@ public class FilingTracker {
     @Column(name = "title")
     private String title;
 
+    @Column(name = "abstract_text", columnDefinition = "TEXT")
+    private String abstractText;
+
+    @Column(name = "inventors")
+    private String inventors;
+
+    @Column(name = "assignee")
+    private String assignee;
+
     @Column(name = "application_number", nullable = false)
     private String applicationNumber;
 
@@ -38,6 +47,12 @@ public class FilingTracker {
 
     @Column(name = "filing_date")
     private LocalDate filingDate;
+
+    @Column(name = "priority_date")
+    private LocalDate priorityDate;
+
+    @Column(name = "publication_date")
+    private LocalDate publicationDate;
 
     @Column(name = "grant_date")
     private LocalDate grantDate;

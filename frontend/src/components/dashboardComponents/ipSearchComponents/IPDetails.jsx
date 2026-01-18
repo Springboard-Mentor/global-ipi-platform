@@ -18,7 +18,7 @@ const IPDetails = () => {
     jurisdiction: location.state.ip.country || location.state.ip.jurisdiction,
     status: location.state.ip.legalStatus || location.state.ip.status,
   } : null;
-  
+
   const [ip, setIp] = useState(initialState);
   const [loading, setLoading] = useState(!initialState);
   const [error, setError] = useState(null);
@@ -66,11 +66,10 @@ Priority Date: ${formatDate(ip.priorityDate)}
 Grant Date: ${formatDate(ip.grantDate)}
 Last Updated: ${formatDate(ip.updatedOn)}
 
-IP Duration: ${
-      ip.filingDate
+IP Duration: ${ip.filingDate
         ? `20 Years (Expires in ${new Date(ip.filingDate).getFullYear() + 20})`
         : "N/A"
-    }
+      }
 
 Inventor(s): ${ip.inventor || ip.inventorName || "N/A"}
 Reference Source: ${ip.referenceSource || "N/A"}
@@ -219,10 +218,10 @@ Generated from IP Portal
     status === "GRANTED"
       ? "bg-green-500 shadow-[0_0_20px_rgba(34,197,94,0.8)]"
       : status === "PENDING"
-      ? "bg-yellow-500"
-      : status === "ACTIVE"
-      ? "bg-green-500"
-      : "bg-gray-500";
+        ? "bg-yellow-500"
+        : status === "ACTIVE"
+          ? "bg-green-500"
+          : "bg-gray-500";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 px-6 py-8">
@@ -274,11 +273,16 @@ Generated from IP Portal
                   const BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8081';
                   const payload = {
                     title: ip.title,
+                    abstractText: ip.abstract || ip.abstractText || null,
+                    inventors: ip.inventor || ip.inventorName || null,
+                    assignee: ip.assignee || ip.ownerName || null,
                     applicationNumber: ip.number || ip.applicationNumber || null,
                     jurisdiction: ip.jurisdiction || null,
                     ipType: ip.type || ip.kind || 'Patent',
-                    filingDate: filingDate !== 'N/A' ? filingDate : null,
-                    grantDate: grantDate || null,
+                    filingDate: ip.filingDate ? new Date(ip.filingDate).toISOString().split('T')[0] : null,
+                    priorityDate: ip.priorityDate ? new Date(ip.priorityDate).toISOString().split('T')[0] : null,
+                    publicationDate: ip.publicationDate ? new Date(ip.publicationDate).toISOString().split('T')[0] : null,
+                    grantDate: ip.grantDate ? new Date(ip.grantDate).toISOString().split('T')[0] : null,
                   };
 
                   const token = localStorage.getItem('token');
@@ -407,7 +411,7 @@ Generated from IP Portal
           </div>
         </div>
 
-        
+
         <p className="mt-4 text-gray-400 text-sm">
           <span className="text-white">Abstract:</span> {ip.abstract || ip.abstractText || "N/A"}
         </p>
@@ -436,11 +440,10 @@ Generated from IP Portal
                 <div key={index} className="relative flex gap-6">
                   <div className="relative z-10">
                     <div
-                      className={`w-6 h-6 rounded-full ${
-                        item.active
-                          ? "w-6 h-6 bg-green-400 shadow-[0_0_14px_rgba(34,197,94,0.9)]"
-                          : "w-4 h-4 bg-blue-400"
-                      } rounded-full border-2 border-white/30`}
+                      className={`w-6 h-6 rounded-full ${item.active
+                        ? "w-6 h-6 bg-green-400 shadow-[0_0_14px_rgba(34,197,94,0.9)]"
+                        : "w-4 h-4 bg-blue-400"
+                        } rounded-full border-2 border-white/30`}
                     />
                   </div>
 

@@ -26,8 +26,8 @@ public class FilingTrackerServiceImpl implements FilingTrackerService {
     @Override
     public FilingTrackerDto track(TrackRequest request, Long userId) {
         // Log incoming request for debugging
-        log.debug("track() called userId={} applicationNumber={} filingDate={} grantDate={}",
-            userId, request.getApplicationNumber(), request.getFilingDate(), request.getGrantDate());
+        log.debug("track() called userId={} applicationNumber={} filing={}, priority={}, pub={}, grant={}",
+            userId, request.getApplicationNumber(), request.getFilingDate(), request.getPriorityDate(), request.getPublicationDate(), request.getGrantDate());
         // Prevent duplicate tracking per user + application number
         String appNo = request.getApplicationNumber();
         if (appNo != null) {
@@ -43,6 +43,8 @@ public class FilingTrackerServiceImpl implements FilingTrackerService {
 
                 LocalDate incomingFiling = request.getFilingDate();
                 LocalDate incomingGrant = request.getGrantDate();
+                LocalDate incomingPriority = request.getPriorityDate();
+                LocalDate incomingPub = request.getPublicationDate();
 
                 // Compute expiry using incoming or existing dates (20 years standard)
                 LocalDate filingDateForExpiry = incomingFiling != null ? incomingFiling : existingFiling;
@@ -68,6 +70,18 @@ public class FilingTrackerServiceImpl implements FilingTrackerService {
                 // If incoming provides filingDate or we previously lacked it, update
                 if (incomingFiling != null && (existingFiling == null || !incomingFiling.equals(existingFiling))) {
                     existing.setFilingDate(incomingFiling);
+                    changed = true;
+                }
+
+                // Update Priority Date
+                if (incomingPriority != null && (existing.getPriorityDate() == null || !incomingPriority.equals(existing.getPriorityDate()))) {
+                    existing.setPriorityDate(incomingPriority);
+                    changed = true;
+                }
+
+                // Update Publication Date
+                if (incomingPub != null && (existing.getPublicationDate() == null || !incomingPub.equals(existing.getPublicationDate()))) {
+                    existing.setPublicationDate(incomingPub);
                     changed = true;
                 }
 
@@ -100,6 +114,8 @@ public class FilingTrackerServiceImpl implements FilingTrackerService {
 
         LocalDate filingDate = request.getFilingDate();
         LocalDate grantDate = request.getGrantDate();
+        LocalDate priorityDate = request.getPriorityDate();
+        LocalDate publicationDate = request.getPublicationDate();
 
         // Compute expiry date: patents run for 20 years from filing date.
         // If filing date is not provided, fall back to grant date to compute expiry.
@@ -128,11 +144,17 @@ public class FilingTrackerServiceImpl implements FilingTrackerService {
 
         FilingTracker f = FilingTracker.builder()
                 .userId(userId)
+                .userId(userId)
                 .title(request.getTitle())
+                .abstractText(request.getAbstractText())
+                .inventors(request.getInventors())
+                .assignee(request.getAssignee())
                 .applicationNumber(request.getApplicationNumber())
                 .jurisdiction(request.getJurisdiction())
                 .ipType(request.getIpType())
                 .filingDate(filingDate)
+                .priorityDate(priorityDate)
+                .publicationDate(publicationDate)
                 .grantDate(grantDate)
                 .expiryDate(expiry)
                 .renewalDate(renewal)
@@ -180,10 +202,15 @@ public class FilingTrackerServiceImpl implements FilingTrackerService {
         FilingTrackerDto d = new FilingTrackerDto();
         d.setId(f.getId());
         d.setTitle(f.getTitle());
+        d.setAbstractText(f.getAbstractText());
+        d.setInventors(f.getInventors());
+        d.setAssignee(f.getAssignee());
         d.setApplicationNumber(f.getApplicationNumber());
         d.setJurisdiction(f.getJurisdiction());
         d.setIpType(f.getIpType());
         d.setFilingDate(f.getFilingDate());
+        d.setPriorityDate(f.getPriorityDate());
+        d.setPublicationDate(f.getPublicationDate());
         d.setGrantDate(f.getGrantDate());
         d.setExpiryDate(f.getExpiryDate());
         d.setRenewalDate(f.getRenewalDate());
