@@ -87,7 +87,7 @@ const LegalStatusDashboard = () => {
           [IP_STATUSES.FILED]: 0,
           [IP_STATUSES.PUBLISHED]: 0,
           [IP_STATUSES.GRANTED]: 0,
-          // [IP_STATUSES.UNDER_EXAMINATION]: 0,
+          [IP_STATUSES.UNDER_EXAMINATION]: 0,
           // [IP_STATUSES.PENDING_REVIEW]: 0,
           // [IP_STATUSES.ABANDONED]: 0,
         };

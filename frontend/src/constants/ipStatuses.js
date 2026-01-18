@@ -1,5 +1,5 @@
 export const IP_STATUSES = {
-  // UNDER_EXAMINATION: 'Under Examination',
+  UNDER_EXAMINATION: 'UNDER_EXAMINATION',
    FILED: 'FILED',
   PUBLISHED: 'PUBLISHED',
   GRANTED: 'GRANTED',
@@ -9,6 +9,7 @@ export const IP_STATUSES = {
 };
 
 export const STATUS_COLORS = {
+  [IP_STATUSES.UNDER_EXAMINATION]: '#F59E0B',
   [IP_STATUSES.FILED]: '#06B6D4',
   [IP_STATUSES.PUBLISHED]: '#F59E0B',
   [IP_STATUSES.GRANTED]: '#10B981',
@@ -18,6 +19,7 @@ export const STATUS_COLORS = {
 };
 
 export const STATUS_TOOLTIPS = {
+  [IP_STATUSES.UNDER_EXAMINATION]: 'Application under examination by patent office',
   [IP_STATUSES.FILED]: 'Application submitted and awaiting initial review',
   [IP_STATUSES.PUBLISHED]: 'Patent examiner reviewing for patentability',
   [IP_STATUSES.GRANTED]: 'Patent/trademark approved and rights are active',

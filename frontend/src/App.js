@@ -45,11 +45,11 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/ipActivity" element={<IPActivity />} />
-
+          
           <Route path="/filing-tracker-dashboard" element={<ProtectedFilingTracker><FilingTrackerDashboard /></ProtectedFilingTracker>} />
           <Route path="/filing-list" element={<ProtectedFilingTracker><FilingList /></ProtectedFilingTracker>} />
           <Route path="/filing-detail/:id" element={<ProtectedFilingTracker><FilingDetail /></ProtectedFilingTracker>} />
-
+          
           {/* Patent filing routes (legacy and new wizard) */}
           <Route path="/patent-filing" element={<PatentFiling />} />
           <Route path="/file-patent" element={<PatentFilingWizard />} />
@@ -67,7 +67,7 @@ function App() {
           <Route path="/ip-search" element={<IPSearch />} />
           <Route path="/search-results" element={<SearchResults />} />
           <Route path="/ip/:id" element={<IPDetails />} />
-          <Route path="/legal-status" element={<LegalStatusDashboard />} />
+          <Route path="/legal-status" element={<LegalStatusDashboard/>} />
 
         </Routes>
       </div>
