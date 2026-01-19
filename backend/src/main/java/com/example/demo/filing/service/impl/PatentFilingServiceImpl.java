@@ -215,11 +215,75 @@ public class PatentFilingServiceImpl implements PatentFilingService {
     }
 
     @Override
+    public List<PatentFilingResponse> getAllFilingsAdmin() {
+        return filingRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public PatentFilingResponse updateFilingStatusAdmin(Long id, String status) {
+        PatentFiling filing = filingRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Filing not found"));
+        
+        filing.setStatus(status);
+        
+        // precise handling for GRANTED
+        if ("GRANTED".equalsIgnoreCase(status)) {
+            if (filing.getGrantDate() == null) {
+                filing.setGrantDate(LocalDate.now());
+            }
+        }
+        
+        filingRepository.save(filing);
+        return mapToResponse(filing);
+    }
+    
+    @Override
+    public PatentFilingResponse updateFilingFeedbackAdmin(Long id, String feedback) {
+        PatentFiling filing = filingRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Filing not found"));
+        filing.setAdminFeedback(feedback);
+        filingRepository.save(filing);
+        return mapToResponse(filing);
+    }
+
+    @Override
+    @Transactional
+    public void performBulkAction(List<Long> ids, String action, String value) {
+        if (ids == null || ids.isEmpty()) return;
+
+        List<PatentFiling> filings = filingRepository.findAllById(ids);
+        
+        for (PatentFiling f : filings) {
+            if ("DELETE".equalsIgnoreCase(action)) {
+                filingRepository.delete(f);
+            } else if ("UPDATE_STATUS".equalsIgnoreCase(action)) {
+                f.setStatus(value);
+                 // precise handling for GRANTED
+                if ("GRANTED".equalsIgnoreCase(value)) {
+                    if (f.getGrantDate() == null) {
+                        f.setGrantDate(LocalDate.now());
+                    }
+                }
+                filingRepository.save(f);
+            }
+        }
+    }
+
+    @Override
     public String computeStatus(PatentFilingResponse filing) {
+        // This method relies on the DTO. Logic mirrors the entity method.
         if (filing.getGrantDate() != null) {
             return "GRANTED";
         }
         
+        // Preserve manual statuses if present in the specific flow
+        String current = filing.getStatus();
+        if (isManualStatus(current)) {
+            return current;
+        }
+
         LocalDate now = LocalDate.now();
         if (filing.getExpiryDate() != null) {
             if (now.isAfter(filing.getExpiryDate())) {
@@ -240,7 +304,13 @@ public class PatentFilingServiceImpl implements PatentFilingService {
         if (filing.getGrantDate() != null) {
             return "GRANTED";
         }
-        
+
+        // Preserve manual intermediate statuses
+        String current = filing.getStatus();
+        if (isManualStatus(current)) {
+            return current;
+        }
+
         LocalDate now = LocalDate.now();
         if (filing.getExpiryDate() != null) {
             if (now.isAfter(filing.getExpiryDate())) {
@@ -255,6 +325,16 @@ public class PatentFilingServiceImpl implements PatentFilingService {
         }
         
         return "FILED";
+    }
+    
+    private boolean isManualStatus(String status) {
+        if (status == null) return false;
+        return status.equalsIgnoreCase("Under Examination") || 
+               status.equalsIgnoreCase("Under Review") ||
+               status.equalsIgnoreCase("Pending Response") || 
+               status.equalsIgnoreCase("APPROVED") || 
+               status.equalsIgnoreCase("REJECTED") || 
+               status.equalsIgnoreCase("Withdrawn");
     }
     
     private PatentFilingResponse mapToResponse(PatentFiling filing) {
@@ -326,6 +406,7 @@ public class PatentFilingServiceImpl implements PatentFilingService {
         
         response.setCreatedAt(filing.getCreatedAt());
         response.setUpdatedAt(filing.getUpdatedAt());
+        response.setAdminFeedback(filing.getAdminFeedback());
         
         return response;
     }

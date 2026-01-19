@@ -63,6 +63,7 @@ public class PatentFilingResponse {
 
     private Instant createdAt;
     private Instant updatedAt;
+    private String adminFeedback;
 
     @Data
     public static class InventorResponse {

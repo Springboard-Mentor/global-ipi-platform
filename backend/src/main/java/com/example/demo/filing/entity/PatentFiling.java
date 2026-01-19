@@ -139,6 +139,9 @@ public class PatentFiling {
     @Column(nullable = false)
     private Instant updatedAt;
 
+    @Column(columnDefinition = "TEXT")
+    private String adminFeedback;
+
     @PrePersist
     protected void onCreate() {
         createdAt = Instant.now();

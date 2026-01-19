@@ -19,4 +19,12 @@ public interface PatentFilingService {
     String computeStatus(PatentFilingResponse filing);
 
     PatentFilingResponse getFilingByIdAdmin(Long id);
+    
+    List<PatentFilingResponse> getAllFilingsAdmin();
+    
+    PatentFilingResponse updateFilingStatusAdmin(Long id, String status);
+    
+    PatentFilingResponse updateFilingFeedbackAdmin(Long id, String feedback);
+    
+    void performBulkAction(List<Long> ids, String action, String value);
 }

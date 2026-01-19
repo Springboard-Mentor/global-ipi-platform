@@ -153,25 +153,33 @@ const RealTrackingTimeline = ({ filing }) => {
 };
 
 const StandardTimeline = ({ filing }) => {
-  const steps = ['Filed', 'Under Examination', 'Granted', 'Expiry'];
-  const now = new Date();
-  const grant = filing.grantDate ? new Date(filing.grantDate) : null;
-  const expiry = filing.expiryDate ? new Date(filing.expiryDate) : null;
+  const steps = ['Filed', 'Under Review', 'Approved', 'Granted', 'EXPIRED'];
+  // We map backend status to timeline steps.
+  // We can add "Pending Response" or others if needed, but let's stick to a main flow.
+
+  // Statuses: FILED, Under Review, Under Examination, Pending Response, APPROVED, GRANTED, REJECTED, Withdrawn, EXPIRING SOON, EXPIRED
+  const status = filing.status || 'FILED';
+
   let currentIndex = 0;
-  if (grant) currentIndex = 2;
-  else if (expiry && now > expiry) currentIndex = 3;
-  else if (expiry) currentIndex = 1;
+  if (status === 'Under Review' || status === 'Pending Response' || status === 'Under Examination') currentIndex = 1;
+  else if (status === 'APPROVED') currentIndex = 2;
+  else if (status === 'GRANTED') currentIndex = 3;
+  else if (status === 'EXPIRED') currentIndex = 4;
+  else if (status === 'REJECTED' || status === 'Withdrawn') currentIndex = -1; // Specific handling?
 
   return (
     <div className="space-y-4">
       {steps.map((s, i) => {
-        const dateLabel = i === 0 ? (filing.filingDate || '—') : i === 2 ? (filing.grantDate || '—') : i === 3 ? (filing.expiryDate || '—') : '—';
+        let isActive = i <= currentIndex;
+        let isCurrent = i === currentIndex;
+        let dateValues = [filing.filingDate, null, null, filing.grantDate, filing.expiryDate];
+
         return (
           <div key={s} className="flex items-center gap-4">
-            <div className={`w-3 h-3 rounded-full ${i < currentIndex ? 'bg-green-400' : i === currentIndex ? 'bg-yellow-400' : 'bg-white/20'}`} />
+            <div className={`w-3 h-3 rounded-full ${isActive ? (isCurrent ? 'bg-yellow-400' : 'bg-green-400') : 'bg-white/20'}`} />
             <div>
-              <div className={`text-sm font-medium ${i <= currentIndex ? 'text-white' : 'text-white/50'}`}>{s}</div>
-              <div className="text-xs text-white/50">{dateLabel}</div>
+              <div className={`text-sm font-medium ${isActive ? 'text-white' : 'text-white/50'}`}>{s}</div>
+              {dateValues[i] && <div className="text-xs text-white/50">{dateValues[i]}</div>}
             </div>
           </div>
         );
@@ -246,6 +254,21 @@ const MyFilingDetail = () => {
             </PDFDownloadLink>
           </div>
         </div>
+
+        {/* ADMIN FEEDBACK BANNER */}
+        {filing.adminFeedback && (
+          <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 flex gap-4">
+            <div className="p-2 bg-blue-500/20 rounded-full h-fit">
+              <svg className="w-6 h-6 text-blue-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="font-semibold text-blue-200">Latest Update from Examiner</h3>
+              <p className="text-blue-100/80 mt-1">{filing.adminFeedback}</p>
+            </div>
+          </div>
+        )}
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
