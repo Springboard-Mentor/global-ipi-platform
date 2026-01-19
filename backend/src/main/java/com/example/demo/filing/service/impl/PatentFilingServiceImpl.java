@@ -21,6 +21,7 @@ public class PatentFilingServiceImpl implements PatentFilingService {
 
     private final PatentFilingRepository filingRepository;
     private final InventorRepository inventorRepository;
+    private final com.example.demo.monitoring.MonitoringService monitoringService;
 
     @Override
     @Transactional
@@ -101,6 +102,7 @@ public class PatentFilingServiceImpl implements PatentFilingService {
 
     @Override
     public PatentFilingResponse getFilingById(Long id, Long userId) {
+        monitoringService.recordPatentView();
         PatentFiling filing = filingRepository.findByIdAndUserId(id, userId)
             .orElseThrow(() -> new RuntimeException("Filing not found"));
         return mapToResponse(filing);
@@ -209,6 +211,7 @@ public class PatentFilingServiceImpl implements PatentFilingService {
 
     @Override
     public PatentFilingResponse getFilingByIdAdmin(Long id) {
+        monitoringService.recordPatentView();
         PatentFiling filing = filingRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Filing not found"));
         return mapToResponse(filing);

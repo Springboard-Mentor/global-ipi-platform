@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import org.springframework.data.domain.PageRequest;
 
 import com.example.demo.ip.client.ExternalPatentClient;
@@ -29,388 +28,150 @@ public class IPSearchService {
     private final ExternalPatentClient externalPatentClient;
 
     private final IPAssetRepository repository;
+    private final com.example.demo.monitoring.MonitoringService monitoringService;
 
     public IPSearchResultDTO getIPDetails(Long id) {
+        monitoringService.recordPatentView();
         IPAsset asset = repository.findById(id)
                 .orElseThrow(() -> new IPAssetNotFoundException("IP Asset not found with id: " + id));
 
+        return mapToDTO(asset);
+    }
+
+    public List<IPSearchResultDTO> search(IPSearchRequest request) {
+        monitoringService.recordSearch();
+        if (request == null || request.getQuery() == null || request.getQuery().isBlank()) {
+            return List.of();
+        }
+        
+        String query = request.getQuery().trim();
+        String source = request.getSource() == null ? "EXTERNAL" : request.getSource().trim();
+
+        if ("LOCAL".equalsIgnoreCase(source)) {
+            log.info("Fetching data from LOCAL DATABASE");
+            List<IPAsset> cachedAssets = repository.findByTitleContainingIgnoreCaseOrApplicationNumberContainingIgnoreCase(query, query);
+            
+            if (cachedAssets.isEmpty()) return List.of();
+
+            return cachedAssets.stream().map(this::mapToDTO).toList();
+        }
+
+        log.info("Fetching data from GOOGLE PATENTS (SerpAPI)");
+        List<IPSearchResultDTO> results = new ArrayList<>();
+        for (int page = 0; page < 3; page++) {
+            List<IPSearchResultDTO> pageResults = externalPatentClient.searchPatents(query, PAGE_SIZE);
+            if (pageResults == null || pageResults.isEmpty()) break;
+            results.addAll(pageResults);
+        }
+
+        if (results.isEmpty()) {
+             // Fallback to local
+             return repository.findByTitleContainingIgnoreCase(query, PageRequest.of(0, PAGE_SIZE))
+                    .getContent().stream()
+                    .map(this::mapToDTO)
+                    .toList();
+        }
+
+        // Cache External Results
+        List<IPAsset> assets = results.stream()
+                .map(this::mapToEntity)
+                .filter(asset -> asset.getApplicationNumber() != null && !repository.existsByApplicationNumber(asset.getApplicationNumber()))
+                .toList();
+        
+        if (!assets.isEmpty()) {
+            List<IPAsset> savedAssets = repository.saveAll(assets);
+            // Sync DTOs with saved IDs and data
+            for (IPSearchResultDTO dto : results) {
+                 savedAssets.stream()
+                     .filter(s -> s.getApplicationNumber() != null && s.getApplicationNumber().equals(dto.getApplicationNumber()))
+                     .findFirst()
+                     .ifPresent(s -> {
+                         dto.setId(s.getId());
+                         dto.setUpdatedOn(s.getUpdatedOn() != null ? s.getUpdatedOn().toString() : null);
+                     });
+                 
+                 // Ensure status logic for display match the saved entity logic
+                 String legalStatus = deriveStatus(
+                     dto.getFilingDate() != null ? parseDate(dto.getFilingDate()) : null,
+                     dto.getGrantDate() != null ? parseDate(dto.getGrantDate()) : null
+                 );
+                 dto.setLegalStatus(legalStatus);
+            }
+        } else {
+             // For results that already existed
+             for (IPSearchResultDTO dto : results) {
+                 if (dto.getId() == null && dto.getApplicationNumber() != null) {
+                     repository.findByApplicationNumber(dto.getApplicationNumber()).ifPresent(existing -> {
+                         dto.setId(existing.getId());
+                         dto.setLegalStatus(existing.getLegalStatus());
+                         dto.setUpdatedOn(existing.getUpdatedOn() != null ? existing.getUpdatedOn().toString() : null);
+                     });
+                 }
+             }
+        }
+        
+        return results;
+    }
+    
+    private IPSearchResultDTO mapToDTO(IPAsset asset) {
         IPSearchResultDTO dto = new IPSearchResultDTO();
-        // Map asset fields into DTO
         dto.setId(asset.getId());
         dto.setTitle(asset.getTitle());
         dto.setApplicationNumber(asset.getApplicationNumber());
         dto.setCountry(asset.getCountry());
+        dto.setLegalStatus(asset.getLegalStatus());
         dto.setAssetType(asset.getAssetType());
         dto.setOwnerName(asset.getOwnerName());
         dto.setInventorName(asset.getInventorName());
         dto.setReferenceSource(asset.getReferenceSource());
-
         dto.setFilingDate(asset.getFilingDate() != null ? asset.getFilingDate().toString() : null);
         dto.setPublicationDate(asset.getPublicationDate() != null ? asset.getPublicationDate().toString() : null);
         dto.setPriorityDate(asset.getPriorityDate() != null ? asset.getPriorityDate().toString() : null);
-
-        // Ensure grantDate is populated in the DTO if present
         dto.setGrantDate(asset.getGrantDate() != null ? asset.getGrantDate().toString() : null);
-
-        // Include abstractText and updatedOn
-        dto.setAbstractText(asset.getAbstractText());
         dto.setUpdatedOn(asset.getUpdatedOn() != null ? asset.getUpdatedOn().toString() : null);
-
+        dto.setAbstractText(asset.getAbstractText());
         dto.setPatentLink(asset.getPatentLink());
         dto.setPdfLink(asset.getPdfLink());
         dto.setThumbnail(asset.getThumbnail());
-
-        // Derive status consistently here so frontend sees the same logic as the search
-        // cache:
-        // 1) If grant date exists => GRANTED
-        // 2) Else if expiry (filingDate + 20 years) is before today => EXPIRED
-        // 3) Otherwise => FILED
-        String derivedStatus = "FILED";
-        LocalDate filing = asset.getFilingDate();
-        LocalDate grant = asset.getGrantDate();
-        LocalDate expiry = null;
-        if (filing != null)
-            expiry = filing.plusYears(20);
-        else if (grant != null)
-            expiry = grant.plusYears(20);
-
-        if (grant != null)
-            derivedStatus = "GRANTED";
-        else if (expiry != null && expiry.isBefore(LocalDate.now()))
-            derivedStatus = "EXPIRED";
-        else
-            derivedStatus = "FILED";
-
-        dto.setLegalStatus(derivedStatus);
-
         return dto;
     }
 
-    public List<IPSearchResultDTO> search(IPSearchRequest request) {
+    private IPAsset mapToEntity(IPSearchResultDTO dto) {
+        IPAsset asset = new IPAsset();
+        asset.setTitle(dto.getTitle());
+        asset.setAssetType(dto.getAssetType());
+        asset.setApplicationNumber(dto.getApplicationNumber());
+        asset.setCountry(dto.getCountry());
+        asset.setOwnerName(dto.getOwnerName());
+        asset.setInventorName(dto.getInventorName());
+        asset.setReferenceSource(dto.getReferenceSource());
+        asset.setAbstractText(dto.getAbstractText());
 
-        // 🔒 Basic validation
-        if (request == null || request.getQuery() == null || request.getQuery().isBlank()) {
-            return List.of();
-        }
+        asset.setFilingDate(parseDate(dto.getFilingDate()));
+        asset.setPublicationDate(parseDate(dto.getPublicationDate()));
+        asset.setPriorityDate(parseDate(dto.getPriorityDate()));
+        asset.setGrantDate(parseDate(dto.getGrantDate()));
 
-        String query = request.getQuery().trim();
-
-        // 🔹 Normalize source
-        String source = request.getSource() == null
-                ? "EXTERNAL"
-                : request.getSource().trim();
-
-        if ("LOCAL".equalsIgnoreCase(source)) {
-            log.info("Fetching data from LOCAL DATABASE");
-        } else {
-            log.info("Fetching data from GOOGLE PATENTS (SerpAPI)");
-        }
-
-        // =====================================================
-        // 1️⃣ LOCAL DATABASE SEARCH
-        // =====================================================
-        if ("LOCAL".equalsIgnoreCase(source)) {
-
-            List<IPAsset> cachedAssets = repository
-                    .findByTitleContainingIgnoreCaseOrApplicationNumberContainingIgnoreCase(
-                            query, query);
-
-            if (cachedAssets.isEmpty()) {
-                return List.of();
-            }
-
-            return cachedAssets.stream()
-                    .map(assetDto -> {
-                        IPSearchResultDTO dto = new IPSearchResultDTO();
-                        dto.setId(assetDto.getId());
-                        dto.setTitle(assetDto.getTitle());
-                        dto.setApplicationNumber(assetDto.getApplicationNumber());
-                        dto.setCountry(assetDto.getCountry());
-                        dto.setLegalStatus(assetDto.getLegalStatus());
-                        dto.setAssetType(assetDto.getAssetType());
-                        dto.setOwnerName(assetDto.getOwnerName());
-                        dto.setInventorName(assetDto.getInventorName());
-                        dto.setReferenceSource(assetDto.getReferenceSource());
-                        dto.setFilingDate(
-                                assetDto.getFilingDate() != null
-                                        ? assetDto.getFilingDate().toString()
-                                        : null);
-                        dto.setPublicationDate(
-                                assetDto.getPublicationDate() != null
-                                        ? assetDto.getPublicationDate().toString()
-                                        : null);
-                        dto.setPriorityDate(
-                                assetDto.getPriorityDate() != null
-                                        ? assetDto.getPriorityDate().toString()
-                                        : null);
-                        dto.setGrantDate(
-                                assetDto.getGrantDate() != null
-                                        ? assetDto.getGrantDate().toString()
-                                        : null);
-                        dto.setUpdatedOn(
-                                assetDto.getUpdatedOn() != null
-                                        ? assetDto.getUpdatedOn().toString()
-                                        : null);
-                        dto.setAbstractText(assetDto.getAbstractText());
-                        dto.setPatentLink(assetDto.getPatentLink());
-                        dto.setPdfLink(assetDto.getPdfLink());
-                        dto.setThumbnail(assetDto.getThumbnail());
-                        return dto;
-                    })
-                    .toList();
-
-        }
-
-        // =====================================================
-        // 2️⃣ EXTERNAL SOURCE (SerpAPI / Google Patents)
-        // =====================================================
-        List<IPSearchResultDTO> results = new ArrayList<>();
-
-        // int MAX_PAGES = 10; // 200 results max
-
-        // for (int page = 0; page < MAX_PAGES; page++) {
-        // List<IPSearchResultDTO> pageResults =
-        // externalPatentClient.searchPatents(query, PAGE_SIZE, page);
-
-        // if (pageResults.isEmpty()) break;
-
-        // results.addAll(pageResults);
-        // }
-
-        for (int page = 0; page < 3; page++) { // 3 pages = max 60 results
-            List<IPSearchResultDTO> pageResults = externalPatentClient.searchPatents(query, PAGE_SIZE);
-
-            if (pageResults == null || pageResults.isEmpty()) {
-                break;
-            }
-
-            results.addAll(pageResults);
-        }
-
-        if (results == null || results.isEmpty()) {
-            // fallback to local DB
-            return repository.findByTitleContainingIgnoreCase(
-                    query,
-                    PageRequest.of(0, PAGE_SIZE)).
-
-                    getContent().stream()
-                    .map(asset -> {
-                        IPSearchResultDTO dto = new IPSearchResultDTO();
-                        dto.setId(asset.getId());
-                        dto.setTitle(asset.getTitle());
-                        dto.setApplicationNumber(asset.getApplicationNumber());
-                        dto.setCountry(asset.getCountry());
-                        dto.setLegalStatus(asset.getLegalStatus());
-                        dto.setAssetType(asset.getAssetType());
-                        dto.setOwnerName(asset.getOwnerName());
-                        dto.setInventorName(asset.getInventorName());
-                        dto.setFilingDate(asset.getFilingDate() != null ? asset.getFilingDate().toString() : null);
-                        dto.setPublicationDate(asset.getPublicationDate() != null ? asset.getPublicationDate().toString() : null);
-                        dto.setPriorityDate(asset.getPriorityDate() != null ? asset.getPriorityDate().toString() : null);
-                        dto.setGrantDate(asset.getGrantDate() != null ? asset.getGrantDate().toString() : null);
-                        dto.setUpdatedOn(asset.getUpdatedOn() != null ? asset.getUpdatedOn().toString() : null);
-                        dto.setAbstractText(asset.getAbstractText());
-                        dto.setReferenceSource(asset.getReferenceSource());
-                        dto.setPatentLink(asset.getPatentLink());
-                        dto.setPdfLink(asset.getPdfLink());
-                        dto.setThumbnail(asset.getThumbnail());
-                        return dto;
-                    })
-                    .toList();
-        }
-
-        // =====================================================
-        // 3️⃣ CACHE EXTERNAL RESULTS INTO DB (derive status & dates)
-        // =====================================================
-        List<IPAsset> assets = results.stream()
-                .map(dto -> {
-                    IPAsset asset = new IPAsset();
-                    asset.setTitle(dto.getTitle());
-                    asset.setAssetType(dto.getAssetType());
-                    asset.setApplicationNumber(dto.getApplicationNumber());
-                    asset.setCountry(dto.getCountry());
-                    asset.setOwnerName(dto.getOwnerName());
-                    asset.setInventorName(dto.getInventorName());
-                    asset.setReferenceSource(dto.getReferenceSource());
-                    asset.setAbstractText(dto.getAbstractText());
-
-                    // ----- Parse dates if present -----
-                    LocalDate filing = null;
-                    LocalDate grant = null;
-                    if (dto.getFilingDate() != null && !dto.getFilingDate().trim().isEmpty()) {
-                        try {
-                            filing = LocalDate.parse(dto.getFilingDate());
-                            asset.setFilingDate(filing);
-                        } catch (Exception e) {
-                            log.warn("Failed to parse filing date: {}", dto.getFilingDate());
-                        }
-                    }
-
-                    if (dto.getPublicationDate() != null && !dto.getPublicationDate().trim().isEmpty()) {
-                        try {
-                            asset.setPublicationDate(LocalDate.parse(dto.getPublicationDate()));
-                        } catch (Exception e) {
-                            log.warn("Failed to parse publication date: {}", dto.getPublicationDate());
-                        }
-                    }
-
-                    if (dto.getPriorityDate() != null && !dto.getPriorityDate().trim().isEmpty()) {
-                        try {
-                            asset.setPriorityDate(LocalDate.parse(dto.getPriorityDate()));
-                        } catch (Exception e) {
-                            log.warn("Failed to parse priority date: {}", dto.getPriorityDate());
-                        }
-                    }
-
-                    if (dto.getGrantDate() != null && !dto.getGrantDate().trim().isEmpty()) {
-                        try {
-                            grant = LocalDate.parse(dto.getGrantDate());
-                            asset.setGrantDate(grant);
-                        } catch (Exception e) {
-                            log.warn("Failed to parse grant date: {}", dto.getGrantDate());
-                        }
-                    }
-
-                    asset.setPatentLink(dto.getPatentLink());
-                    asset.setPdfLink(dto.getPdfLink());
-                    asset.setThumbnail(dto.getThumbnail());
-
-                    // ----- Derive status using rules:
-                    // 1) If grant date is present => GRANTED
-                    // 2) Else if expiry date (filingDate + 20 years) is before today => EXPIRED
-                    // 3) Otherwise => FILED
-                    // Note: we use filing date to compute expiry when available; if filing date is
-                    // missing
-                    // but grant date exists, we still treat as GRANTED above.
-                    String derivedStatus = "FILED";
-                    LocalDate expiry = null;
-                    if (filing != null) {
-                        expiry = filing.plusYears(20);
-                    } else if (grant != null) {
-                        // If filing date missing, fall back to grant date for expiry calculation
-                        expiry = grant.plusYears(20);
-                    }
-
-                    if (grant != null) {
-                        derivedStatus = "GRANTED";
-                    } else if (expiry != null && expiry.isBefore(LocalDate.now())) {
-                        derivedStatus = "EXPIRED";
-                    } else {
-                        derivedStatus = "FILED";
-                    }
-
-                    asset.setLegalStatus(derivedStatus);
-
-                    return asset;
-                })
-                .filter(asset -> asset.getApplicationNumber() != null &&
-                        !repository.existsByApplicationNumber(asset.getApplicationNumber()))
-                .toList();
-
-        if (!assets.isEmpty()) {
-            List<IPAsset> savedAssets = repository.saveAll(assets);
-            
-            // Map saved assets back to DTOs to ensure IDs and all fields are included
-            // Match by application number since that's unique
-            for (IPSearchResultDTO dto : results) {
-                savedAssets.stream()
-                    .filter(saved -> saved.getApplicationNumber() != null && 
-                           saved.getApplicationNumber().equals(dto.getApplicationNumber()))
-                    .findFirst()
-                    .ifPresent(saved -> {
-                        // Update DTO with ID and ensure all fields are populated from saved entity
-                        dto.setId(saved.getId());
-                        // Ensure dates are properly formatted from saved entity
-                        // Always update from saved entity to get the most accurate data
-                        dto.setFilingDate(saved.getFilingDate() != null ? saved.getFilingDate().toString() : dto.getFilingDate());
-                        dto.setPublicationDate(saved.getPublicationDate() != null ? saved.getPublicationDate().toString() : dto.getPublicationDate());
-                        dto.setPriorityDate(saved.getPriorityDate() != null ? saved.getPriorityDate().toString() : dto.getPriorityDate());
-                        dto.setGrantDate(saved.getGrantDate() != null ? saved.getGrantDate().toString() : dto.getGrantDate());
-                        // Always set updatedOn from saved entity (should be set by @PrePersist/@PreUpdate)
-                        dto.setUpdatedOn(saved.getUpdatedOn() != null ? saved.getUpdatedOn().toString() : null);
-                        // Ensure other fields are populated
-                        if (saved.getAbstractText() != null) {
-                            dto.setAbstractText(saved.getAbstractText());
-                        }
-                        if (saved.getLegalStatus() != null) {
-                            dto.setLegalStatus(saved.getLegalStatus());
-                        }
-                        if (saved.getPatentLink() != null) {
-                            dto.setPatentLink(saved.getPatentLink());
-                        }
-                        if (saved.getPdfLink() != null) {
-                            dto.setPdfLink(saved.getPdfLink());
-                        }
-                        if (saved.getThumbnail() != null) {
-                            dto.setThumbnail(saved.getThumbnail());
-                        }
-                    });
-            }
-        }
+        asset.setPatentLink(dto.getPatentLink());
+        asset.setPdfLink(dto.getPdfLink());
+        asset.setThumbnail(dto.getThumbnail());
         
-        // For results that already existed in DB (not in savedAssets), fetch from DB to get updatedOn
-        for (IPSearchResultDTO dto : results) {
-            if (dto.getId() == null && dto.getApplicationNumber() != null) {
-                repository.findByApplicationNumber(dto.getApplicationNumber())
-                    .ifPresent(existing -> {
-                        dto.setId(existing.getId());
-                        // Update dates from existing record
-                        dto.setFilingDate(existing.getFilingDate() != null ? existing.getFilingDate().toString() : dto.getFilingDate());
-                        dto.setPublicationDate(existing.getPublicationDate() != null ? existing.getPublicationDate().toString() : dto.getPublicationDate());
-                        dto.setPriorityDate(existing.getPriorityDate() != null ? existing.getPriorityDate().toString() : dto.getPriorityDate());
-                        dto.setGrantDate(existing.getGrantDate() != null ? existing.getGrantDate().toString() : dto.getGrantDate());
-                        // Get updatedOn from existing record
-                        dto.setUpdatedOn(existing.getUpdatedOn() != null ? existing.getUpdatedOn().toString() : null);
-                        // Update other fields if missing
-                        if (existing.getAbstractText() != null) {
-                            dto.setAbstractText(existing.getAbstractText());
-                        }
-                        if (existing.getLegalStatus() != null) {
-                            dto.setLegalStatus(existing.getLegalStatus());
-                        }
-                    });
-            }
+        asset.setLegalStatus(deriveStatus(asset.getFilingDate(), asset.getGrantDate()));
+        return asset;
+    }
+
+    private LocalDate parseDate(String dateStr) {
+        if (dateStr == null || dateStr.trim().isEmpty()) return null;
+        try {
+            return LocalDate.parse(dateStr);
+        } catch (Exception e) {
+            return null;
         }
+    }
 
-        // =====================================================
-        // 4️⃣ RETURN RESULTS TO FRONTEND
-        // =====================================================
-        // 4️⃣ Derive and set status on returned DTOs as well so frontend sees
-        // the same status logic without waiting for DB cache refresh.
-        // This mirrors the rules used when caching to DB above.
-        // =====================================================
-        for (IPSearchResultDTO dto : results) {
-            LocalDate filing = null;
-            LocalDate grant = null;
-            try {
-                if (dto.getFilingDate() != null && !dto.getFilingDate().trim().isEmpty()) {
-                    filing = LocalDate.parse(dto.getFilingDate());
-                }
-                if (dto.getGrantDate() != null && !dto.getGrantDate().trim().isEmpty()) {
-                    grant = LocalDate.parse(dto.getGrantDate());
-                }
-            } catch (Exception e) {
-                log.warn("Failed to parse dates for status derivation: {}", e.getMessage());
-            }
-            
-            LocalDate expiry = null;
-            if (filing != null)
-                expiry = filing.plusYears(20);
-            else if (grant != null)
-                expiry = grant.plusYears(20);
-
-            String derivedStatus;
-            if (grant != null) {
-                derivedStatus = "GRANTED";
-            } else if (expiry != null && expiry.isBefore(LocalDate.now())) {
-                derivedStatus = "EXPIRED";
-            } else {
-                derivedStatus = "FILED";
-            }
-
-            dto.setLegalStatus(derivedStatus);
-        }
-
-        return results;
+    private String deriveStatus(LocalDate filing, LocalDate grant) {
+        if (grant != null) return "GRANTED";
+        if (filing != null && filing.plusYears(20).isBefore(LocalDate.now())) return "EXPIRED";
+        return "FILED";
     }
 }
