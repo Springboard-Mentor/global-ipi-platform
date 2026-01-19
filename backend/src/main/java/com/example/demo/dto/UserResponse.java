@@ -11,4 +11,6 @@ public class UserResponse {
     private String email;
     private String phone;
     private String countryCode;
+    private String status;
+    private java.time.Instant disabledAt;
 }

@@ -55,8 +55,8 @@ const Dashboard = () => {
     threatLevel < 33
       ? "text-green-400"
       : threatLevel < 66
-      ? "text-yellow-300"
-      : "text-red-400";
+        ? "text-yellow-300"
+        : "text-red-400";
 
   // logout button
   const [openProfileMenu, setOpenProfileMenu] = useState(false);
@@ -70,6 +70,8 @@ const Dashboard = () => {
     }
   };
 
+  const [userData, setUserData] = useState(null);
+
   // Close dropdown when clicking outside
   React.useEffect(() => {
     const handleClickOutside = (event) => {
@@ -80,6 +82,37 @@ const Dashboard = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [openProfileMenu]);
+
+  // Fetch User Data to check Status
+  React.useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+        const res = await fetch("http://localhost:8080/api/users/me", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        setUserData(data);
+      } catch (e) {
+        console.error("Failed to fetch user", e);
+      }
+    }
+    fetchUser();
+  }, []);
+
+  // Calc days until deletion
+  const getDaysLeft = () => {
+    if (!userData || !userData.disabledAt) return 30;
+    const disabledDate = new Date(userData.disabledAt);
+    const deleteDate = new Date(disabledDate);
+    deleteDate.setDate(deleteDate.getDate() + 30);
+
+    const now = new Date();
+    const diffTime = Math.abs(deleteDate - now);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#2A1A4A] via-[#301B55] to-[#4B1F70] text-white p-6">
@@ -163,7 +196,7 @@ const Dashboard = () => {
                   </svg>
                   Profile
                 </button>
-                
+
                 <button
                   onClick={() => {
                     navigate("/profile?edit=true");
@@ -176,9 +209,9 @@ const Dashboard = () => {
                   </svg>
                   Edit Profile
                 </button>
-                
+
                 <div className="border-t border-white/20 my-1"></div>
-                
+
                 <button
                   onClick={() => {
                     navigate("/subscription-status");
@@ -191,7 +224,7 @@ const Dashboard = () => {
                   </svg>
                   Subscription
                 </button>
-                
+
                 <button
                   onClick={() => {
                     navigate("/help");
@@ -204,7 +237,7 @@ const Dashboard = () => {
                   </svg>
                   Help
                 </button>
-                
+
                 <button
                   onClick={() => {
                     navigate("/feedback");
@@ -217,9 +250,9 @@ const Dashboard = () => {
                   </svg>
                   Send Feedback
                 </button>
-                
+
                 <div className="border-t border-white/20 my-1"></div>
-                
+
                 <button
                   onClick={() => {
                     logout(); // clear tokens, sessions, etc.
@@ -249,6 +282,25 @@ const Dashboard = () => {
           </button>
         </div>
       </div>
+
+      {/* DISABLED ACCOUNT ALERT */}
+      {userData?.status === 'Disabled' && (
+        <div className="mb-6 bg-red-500/20 border border-red-500/50 rounded-lg p-4 flex items-center gap-4 animate-pulse">
+          <div className="p-2 bg-red-500 rounded-full">
+            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <div>
+            <h3 className="font-bold text-red-100 text-lg">Account Disabled</h3>
+            <p className="text-red-200">
+              Your account has been disabled by the administrator.
+              It will be permanently deleted in <span className="font-bold text-white">{getDaysLeft()} days</span>.
+              Please contact support if you believe this is an error.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* TOP GRID SECTION */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -487,11 +539,10 @@ const Dashboard = () => {
               <button
                 key={loc.label}
                 onClick={() => setSelectedRegion(loc.region)}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border text-left transition ${
-                  selectedRegion === loc.region
-                    ? "bg-purple-600/40 border-purple-300"
-                    : "bg-white/5 border-white/10 hover:bg-white/10"
-                }`}
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border text-left transition ${selectedRegion === loc.region
+                  ? "bg-purple-600/40 border-purple-300"
+                  : "bg-white/5 border-white/10 hover:bg-white/10"
+                  }`}
               >
                 <div>
                   <p className="font-medium text-[11px]">{loc.region}</p>
@@ -503,7 +554,7 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
-      
+
       <UpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}

@@ -5,7 +5,7 @@ const BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8081';
 
 const FilingTrackerDashboard = () => {
   const navigate = useNavigate();
-  const [stats, setStats] = useState({ total: 0, granted: 0, renewalDue: 0, expired: 0 });
+  const [stats, setStats] = useState({ total:0, granted:0, renewalDue:0, expired:0 });
   const [recent, setRecent] = useState([]);
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -137,10 +137,11 @@ const FilingTrackerDashboard = () => {
                       <p className="text-sm text-white/60 mt-1">{filing.applicationNumber}</p>
                     </div>
                     <div>
-                      <span className={`px-3 py-1 rounded-full text-xs ${(filing.currentStatus || '').toUpperCase() === 'GRANTED' ? 'bg-green-500/20 text-green-400' :
-                          (filing.currentStatus || '').toUpperCase() === 'EXPIRED' ? 'bg-red-500/20 text-red-400' :
-                            'bg-yellow-500/20 text-yellow-400'
-                        }`}>{filing.currentStatus || 'Unknown'}</span>
+                      <span className={`px-3 py-1 rounded-full text-xs ${
+                        (filing.currentStatus || '').toUpperCase() === 'GRANTED' ? 'bg-green-500/20 text-green-400' :
+                        (filing.currentStatus || '').toUpperCase() === 'EXPIRED' ? 'bg-red-500/20 text-red-400' :
+                        'bg-yellow-500/20 text-yellow-400'
+                      }`}>{filing.currentStatus || 'Unknown'}</span>
                     </div>
                   </div>
 
@@ -154,8 +155,8 @@ const FilingTrackerDashboard = () => {
 
                 <div className="mt-4 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <button onClick={() => navigate(`/filing-detail/${filing.id}`)} className="px-3 py-1 bg-white/5 rounded-md">View</button>
-                    <button onClick={() => navigate(`/filing-detail/${filing.id}`)} className="px-3 py-1 bg-white/5 rounded-md">Edit</button>
+                    <button onClick={() => navigate(`/filing/${filing.id}`)} className="px-3 py-1 bg-white/5 rounded-md">View</button>
+                    <button onClick={() => navigate(`/filing/${filing.id}`)} className="px-3 py-1 bg-white/5 rounded-md">Edit</button>
                   </div>
                   <div className="flex items-center gap-3">
                     <button

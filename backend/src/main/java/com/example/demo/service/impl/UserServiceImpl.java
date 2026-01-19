@@ -21,6 +21,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository repo;
     private final PasswordEncoder passwordEncoder;
+    private final com.example.demo.notification.service.NotificationService notificationService;
 
     // -----------------------------
     // REGISTER
@@ -67,15 +68,42 @@ public class UserServiceImpl implements UserService {
         return repo.save(user);
     }
 
+    // -----------------------------
+    // ADMIN ACTIONS
+    // -----------------------------
     @Override
     public User updateUser(Long id, User details) {
         User user = repo.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        user.setName(details.getName());
-        user.setEmail(details.getEmail());
-        user.setPhone(details.getPhone());
-        user.setCountryCode(details.getCountryCode());
+        if (details.getName() != null) user.setName(details.getName());
+        if (details.getEmail() != null) user.setEmail(details.getEmail());
+        if (details.getPhone() != null) user.setPhone(details.getPhone());
+        if (details.getCountryCode() != null) user.setCountryCode(details.getCountryCode());
+        if (details.getRole() != null) user.setRole(details.getRole());
+        if (details.getSubscription() != null) user.setSubscription(details.getSubscription());
+
+        // Handle Status Change
+        if (details.getStatus() != null && !details.getStatus().equals(user.getStatus())) {
+            
+            // If admin is disabling the account
+            if ("Inactive".equalsIgnoreCase(details.getStatus()) || "Disabled".equalsIgnoreCase(details.getStatus())) {
+                user.setStatus("Disabled");
+                user.setDisabledAt(Instant.now());
+
+                // Send Alert Notification
+                com.example.demo.notification.dto.NotificationRequest notif = new com.example.demo.notification.dto.NotificationRequest();
+                notif.setUserId(user.getId());
+                notif.setMessage("Your account has been disabled. It will be permanently deleted in 30 days if no action is taken.");
+                notif.setType("ALERT");
+                notificationService.create(notif);
+
+            } else {
+                // Re-enabling
+                user.setStatus(details.getStatus());
+                user.setDisabledAt(null); // Clear disable timer
+            }
+        }
 
         return repo.save(user);
     }
@@ -84,6 +112,18 @@ public class UserServiceImpl implements UserService {
     public void deleteUser(Long id) {
         User user = repo.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (user.getDisabledAt() == null) {
+            throw new RuntimeException("User must be disabled before deletion.");
+        }
+
+        // Check 30-day window
+        Instant thirdyDaysAgo = Instant.now().minus(java.time.Duration.ofDays(30));
+        
+        if (user.getDisabledAt().isAfter(thirdyDaysAgo)) {
+             throw new RuntimeException("Account can only be deleted 30 days after being disabled.");
+        }
+
         repo.delete(user);
     }
 

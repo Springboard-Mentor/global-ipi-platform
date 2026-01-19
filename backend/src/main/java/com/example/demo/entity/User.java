@@ -27,6 +27,7 @@ public class User {
     private String email;
 
     @Column(nullable = false)
+    @com.fasterxml.jackson.annotation.JsonIgnore
     private String password;
 
     private String phone;
@@ -36,11 +37,19 @@ public class User {
     @Column(nullable = false)
     private String role;
 
+    private String status;
+
+    private String subscription;
+
     private Instant createdAt;
+
+    private Instant disabledAt;
 
     @PrePersist
     public void prePersist() {
         if (role == null) role = "USER";
+        if (status == null) status = "Active";
+        if (subscription == null) subscription = "Free";
         if (createdAt == null) createdAt = Instant.now();
     }
 }

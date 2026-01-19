@@ -37,7 +37,9 @@ public class UserProfileController {
                 user.getName(),
                 user.getEmail(),
                 user.getPhone(),
-                user.getCountryCode()
+                user.getCountryCode(),
+                user.getStatus(),
+                user.getDisabledAt()
         );
 
         return ResponseEntity.ok(response);
@@ -60,7 +62,9 @@ public class UserProfileController {
                     updatedUser.getName(),
                     updatedUser.getEmail(),
                     updatedUser.getPhone(),
-                    updatedUser.getCountryCode()
+                    updatedUser.getCountryCode(),
+                    updatedUser.getStatus(),
+                    updatedUser.getDisabledAt()
             );
 
             return ResponseEntity.ok(response);
