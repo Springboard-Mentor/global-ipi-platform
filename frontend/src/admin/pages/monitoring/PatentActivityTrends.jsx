@@ -3,37 +3,33 @@ import React, { useState } from 'react';
 const PatentActivityTrends = () => {
   const [timeRange, setTimeRange] = useState('30d');
   const [category, setCategory] = useState('all');
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const patentStats = {
-    totalPatents: 15234,
-    newFilings: 456,
-    grantedPatents: 234,
-    pendingApplications: 1892,
-    rejectedApplications: 89
-  };
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('http://localhost:8081/api/admin/monitoring/trends', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        if (res.ok) {
+          const json = await res.json();
+          setData(json);
+        }
+      } catch (e) {
+        console.error("Failed to load patent trends", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [timeRange]); // Refresh when filter changes (future implementation)
 
-  const trendingCategories = [
-    { category: 'Artificial Intelligence', patents: 2847, growth: '+45%' },
-    { category: 'Biotechnology', patents: 1923, growth: '+32%' },
-    { category: 'Renewable Energy', patents: 1456, growth: '+28%' },
-    { category: 'Medical Devices', patents: 1234, growth: '+18%' },
-    { category: 'Automotive', patents: 987, growth: '+12%' }
-  ];
+  if (loading) return <div className="text-white text-center py-20">Loading Trends...</div>;
+  if (!data) return <div className="text-white text-center py-20">Failed to load data</div>;
 
-  const jurisdictions = [
-    { country: 'United States', patents: 5678, percentage: 37.3 },
-    { country: 'China', patents: 3456, percentage: 22.7 },
-    { country: 'European Union', patents: 2345, percentage: 15.4 },
-    { country: 'Japan', patents: 1789, percentage: 11.7 },
-    { country: 'Others', patents: 1966, percentage: 12.9 }
-  ];
-
-  const filingStatus = [
-    { status: 'Published', count: 8945, color: 'bg-blue-500' },
-    { status: 'Granted', count: 3456, color: 'bg-green-500' },
-    { status: 'Pending', count: 2134, color: 'bg-yellow-500' },
-    { status: 'Rejected', count: 699, color: 'bg-red-500' }
-  ];
+  const { patentStats, trendingCategories, jurisdictions, filingStatus } = data;
 
   return (
     <div className="space-y-6">
@@ -57,7 +53,7 @@ const PatentActivityTrends = () => {
 
       {/* Patent Overview */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        {Object.entries(patentStats).map(([key, value]) => (
+        {patentStats && Object.entries(patentStats).map(([key, value]) => (
           <div key={key} className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-4">
             <p className="text-gray-400 text-sm capitalize">{key.replace(/([A-Z])/g, ' $1')}</p>
             <p className="text-2xl font-bold text-white">{value.toLocaleString()}</p>
@@ -86,7 +82,7 @@ const PatentActivityTrends = () => {
             <div className="text-center text-gray-400">
               <div className="text-4xl mb-2">🥧</div>
               <p>Category Distribution</p>
-              <p className="text-sm">Top: AI & Machine Learning</p>
+              <p className="text-sm">Top: {trendingCategories?.[0]?.category || 'N/A'}</p>
             </div>
           </div>
         </div>
@@ -98,7 +94,7 @@ const PatentActivityTrends = () => {
             <div className="text-center text-gray-400">
               <div className="text-4xl mb-2">🗺️</div>
               <p>Jurisdiction Map</p>
-              <p className="text-sm">Leading: United States</p>
+              <p className="text-sm">Leading: {jurisdictions?.[0]?.country || 'N/A'}</p>
             </div>
           </div>
         </div>
@@ -110,7 +106,7 @@ const PatentActivityTrends = () => {
             <div className="text-center text-gray-400">
               <div className="text-4xl mb-2">✅</div>
               <p>Grant Rate Chart</p>
-              <p className="text-sm">Average: 72.3%</p>
+              <p className="text-sm">Driven by real data</p>
             </div>
           </div>
         </div>
@@ -129,7 +125,7 @@ const PatentActivityTrends = () => {
               </tr>
             </thead>
             <tbody>
-              {trendingCategories.map((item, index) => (
+              {trendingCategories && trendingCategories.map((item, index) => (
                 <tr key={index} className="border-b border-white/10">
                   <td className="text-white py-3">{item.category}</td>
                   <td className="text-right text-white py-3">{item.patents.toLocaleString()}</td>
@@ -146,7 +142,7 @@ const PatentActivityTrends = () => {
         <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6">
           <h3 className="text-xl font-semibold text-white mb-4">Filing Status Distribution</h3>
           <div className="space-y-4">
-            {filingStatus.map((status, index) => (
+            {filingStatus && filingStatus.map((status, index) => (
               <div key={index} className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className={`w-4 h-4 rounded ${status.color}`}></div>
@@ -161,12 +157,12 @@ const PatentActivityTrends = () => {
         <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6">
           <h3 className="text-xl font-semibold text-white mb-4">Top Jurisdictions</h3>
           <div className="space-y-4">
-            {jurisdictions.map((jurisdiction, index) => (
+            {jurisdictions && jurisdictions.map((jurisdiction, index) => (
               <div key={index} className="flex items-center justify-between">
                 <span className="text-white">{jurisdiction.country}</span>
                 <div className="flex items-center gap-3">
                   <span className="text-gray-400">{jurisdiction.patents.toLocaleString()}</span>
-                  <span className="text-white font-semibold">{jurisdiction.percentage}%</span>
+                  <span className="text-white font-semibold">{jurisdiction.percentage.toFixed(1)}%</span>
                 </div>
               </div>
             ))}

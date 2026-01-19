@@ -3,7 +3,7 @@ import React from 'react';
 const FileRow = ({ label, file }) => (
   <div className="flex items-center justify-between py-1">
     <div className="text-sm text-white/80">{label}</div>
-    <div className="text-sm text-white">{file ? (file.name || (Array.isArray(file) ? file.map(f=>f.name).join(', ') : file)) : '—'}</div>
+    <div className="text-sm text-white">{file ? (file.name || (Array.isArray(file) ? file.map(f => f.name).join(', ') : (typeof file === 'string' ? file : ''))) : '—'}</div>
   </div>
 );
 
@@ -27,7 +27,7 @@ const StepReviewSubmit = ({ formData, setStep }) => {
           <div className="text-sm text-white/80">Email: {formData.email}</div>
           <div className="text-sm text-white/80">Role: {formData.filingRole} {formData.isInventor ? '(Inventor)' : ''}</div>
           <div className="mt-3">
-            <button onClick={()=>setStep(0)} className="px-3 py-1 bg-white/10 rounded">Edit</button>
+            <button onClick={() => setStep(0)} className="px-3 py-1 bg-white/10 rounded">Edit</button>
           </div>
         </div>
 
@@ -38,7 +38,7 @@ const StepReviewSubmit = ({ formData, setStep }) => {
           <div className="text-sm text-white/80">Field: {formData.technicalField}</div>
           <div className="text-sm text-white/80">Title: {formData.title}</div>
           <div className="mt-3">
-            <button onClick={()=>setStep(1)} className="px-3 py-1 bg-white/10 rounded">Edit</button>
+            <button onClick={() => setStep(1)} className="px-3 py-1 bg-white/10 rounded">Edit</button>
           </div>
         </div>
       </div>
@@ -64,7 +64,7 @@ const StepReviewSubmit = ({ formData, setStep }) => {
         <div className="border-t border-white/10 my-2" />
         <div className="text-sm font-semibold">Total (mock): ${total}</div>
         <div className="mt-2">
-          <button onClick={()=>setStep(2)} className="px-3 py-1 bg-white/10 rounded">Edit Payment</button>
+          <button onClick={() => setStep(2)} className="px-3 py-1 bg-white/10 rounded">Edit Payment</button>
         </div>
         <div className="mt-3 text-sm text-white/80">Payment method: {formData.paymentMethod || '—'}</div>
         <div className="text-sm text-green-300">Payment status: {formData.paymentStatus}</div>

@@ -42,9 +42,17 @@ public class PatentFilingController {
             PatentFilingResponse response = filingService.createFiling(userId, request);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (Exception e) {
+            e.printStackTrace();
+            String message = e.getMessage() != null ? e.getMessage() : "Error occurred: " + e.getClass().getSimpleName();
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(Map.of("message", e.getMessage()));
+                .body(Map.of("message", message));
         }
+    }
+
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<?> handleJsonParseException(org.springframework.http.converter.HttpMessageNotReadableException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("message", "Invalid Request Data: " + e.getMessage()));
     }
 
     @GetMapping

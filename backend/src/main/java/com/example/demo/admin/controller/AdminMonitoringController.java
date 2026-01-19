@@ -24,4 +24,9 @@ public class AdminMonitoringController {
     public ResponseEntity<com.example.demo.monitoring.ActivityStatsData> getActivityStats() {
         return ResponseEntity.ok(monitoringService.getActivityStats());
     }
+
+    @GetMapping("/trends")
+    public ResponseEntity<com.example.demo.monitoring.PatentTrendsData> getPatentTrends() {
+        return ResponseEntity.ok(monitoringService.getPatentTrends());
+    }
 }

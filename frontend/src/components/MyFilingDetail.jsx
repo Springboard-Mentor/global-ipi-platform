@@ -293,7 +293,7 @@ const MyFilingDetail = () => {
                     {filing.inventors && filing.inventors.length > 0 ? (
                       filing.inventors.map((inv, i) => (
                         <span key={i} className="inline-block bg-purple-500/20 text-purple-200 text-sm px-3 py-1 rounded-full border border-purple-500/30">
-                          {inv.name || inv}
+                          {inv.name || (typeof inv === 'string' ? inv : '')}
                         </span>
                       ))
                     ) : <span className="text-white/50">N/A</span>}

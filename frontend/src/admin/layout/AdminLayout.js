@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAdminUI } from '../context/AdminUIContext';
 
 const AdminLayout = ({ children }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+    // Get UI Settings from Context
+    const { uiSettings } = useAdminUI();
 
     const menuItems = [
         { name: 'Dashboard', path: '/admin/dashboard', icon: <path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z" /> },
@@ -20,77 +24,171 @@ const AdminLayout = ({ children }) => {
         navigate("/admin/login");
     };
 
+    // Determine Theme Styles
+    const getThemeStyles = () => {
+        const id = uiSettings?.activeThemeId || 'dark';
+        switch (id) {
+            case 'light': return {
+                bg: '#f9fafb',
+                sidebar: '#ffffff',
+                text: '#1f2937',
+                subtext: '#4b5563',
+                border: '#e5e7eb',
+                hover: '#f3f4f6'
+            };
+            case 'corporate': return {
+                bg: '#0f172a',
+                sidebar: '#1e293b',
+                text: '#ffffff',
+                subtext: '#cbd5e1',
+                border: '#334155',
+                hover: '#334155'
+            };
+            case 'nature': return {
+                bg: '#064e3b',
+                sidebar: '#022c22',
+                text: '#ffffff',
+                subtext: '#a7f3d0',
+                border: '#065f46',
+                hover: '#065f46'
+            };
+            default: return {
+                bg: '#0f1214',
+                sidebar: '#161b22',
+                text: '#ffffff',
+                subtext: '#9ca3af',
+                border: '#30363d',
+                hover: '#1f2937'
+            };
+        }
+    };
+    const theme = getThemeStyles();
+
+    // Check if Topbar Layout is active
+    const isTopbarLayout = uiSettings?.activeLayoutId === 'topbar';
+
     return (
-        <div className="flex h-screen bg-[#0f1214] text-white font-sans overflow-hidden">
-            {/* Sidebar */}
-            <aside
-                className={`${isSidebarCollapsed ? 'w-20' : 'w-64'} bg-[#161b22] border-r border-[#30363d] transition-all duration-300 flex flex-col z-20`}
-            >
-                <div className="h-16 flex items-center justify-center border-b border-[#30363d] cursor-pointer" onClick={() => setSidebarCollapsed(!isSidebarCollapsed)}>
-                    {isSidebarCollapsed ? (
-                        <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">G</span>
-                    ) : (
-                        <span className="text-xl font-bold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">GLOBAL IPI</span>
-                    )}
-                </div>
-
-                <nav className="flex-1 overflow-y-auto py-4">
-                    <ul className="space-y-2 px-3">
-                        {menuItems.map((item) => {
-                            const isActive = location.pathname === item.path;
-                            return (
-                                <li key={item.name}>
-                                    <button
-                                        onClick={() => navigate(item.path)}
-                                        className={`w-full flex items-center gap-4 px-3 py-3 rounded-xl transition-all duration-200 group ${isActive
-                                            ? 'bg-blue-600/10 text-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.15)]'
-                                            : 'text-gray-400 hover:bg-[#1f2937] hover:text-white'
-                                            }`}
-                                    >
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            width="20" height="20"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeWidth="2"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            className={`transition-colors ${isActive ? 'text-blue-400' : 'text-gray-500 group-hover:text-white'}`}
-                                        >
-                                            {item.icon}
-                                        </svg>
-                                        {!isSidebarCollapsed && <span className="font-medium text-sm">{item.name}</span>}
-                                    </button>
-                                </li>
-                            );
-                        })}
-                    </ul>
-                </nav>
-
-                <div className="p-4 border-t border-[#30363d]">
-                    <button
-                        onClick={handleLogout}
-                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors ${isSidebarCollapsed ? 'justify-center' : ''}`}
+        <div
+            className="flex h-screen font-sans overflow-hidden transition-colors duration-300"
+            style={{
+                backgroundColor: theme.bg,
+                color: theme.text,
+                fontFamily: uiSettings?.fontFamily || 'Inter, sans-serif'
+            }}
+        >
+            {/* Sidebar - Only show if NOT topbar layout */}
+            {!isTopbarLayout && (
+                <aside
+                    className={`${isSidebarCollapsed ? 'w-20' : 'w-64'} border-r transition-all duration-300 flex flex-col z-20`}
+                    style={{ backgroundColor: theme.sidebar, borderColor: theme.border }}
+                >
+                    <div
+                        className="h-16 flex items-center justify-center border-b cursor-pointer gap-2"
+                        style={{ borderColor: theme.border }}
+                        onClick={() => setSidebarCollapsed(!isSidebarCollapsed)}
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                        {!isSidebarCollapsed && <span>Logout</span>}
-                    </button>
-                </div>
-            </aside>
+                        {isSidebarCollapsed ? (
+                            uiSettings.logoUrl ? (
+                                <img src={uiSettings.logoUrl} alt="Logo" className="h-8 w-8 object-contain" />
+                            ) : (
+                                <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
+                                    {(uiSettings.companyName || "G").charAt(0)}
+                                </span>
+                            )
+                        ) : (
+                            <>
+                                {uiSettings.logoUrl && <img src={uiSettings.logoUrl} alt="Logo" className="h-8 w-8 object-contain" />}
+                                <span className="text-xl font-bold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 truncate px-2">
+                                    {uiSettings.companyName || "GLOBAL IPI"}
+                                </span>
+                            </>
+                        )}
+                    </div>
+
+                    <nav className="flex-1 overflow-y-auto py-4">
+                        <ul className="space-y-2 px-3">
+                            {menuItems.map((item) => {
+                                const isActive = location.pathname === item.path;
+                                return (
+                                    <li key={item.name}>
+                                        <button
+                                            onClick={() => navigate(item.path)}
+                                            style={{
+                                                color: isActive ? '#60a5fa' : theme.subtext, // blue-400 for active
+                                                backgroundColor: isActive ? 'rgba(59,130,246,0.1)' : 'transparent',
+                                            }}
+                                            onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.backgroundColor = theme.hover; }}
+                                            onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.backgroundColor = 'transparent'; }}
+                                            className={`w-full flex items-center gap-4 px-3 py-3 rounded-xl transition-all duration-200 group`}
+                                        >
+                                            <span className={isActive ? 'text-blue-400' : ''}>
+                                                {/* Clone icon to apply color if needed, but current SVG inherits color */}
+                                                {item.icon}
+                                            </span>
+                                            {!isSidebarCollapsed && <span className="font-medium text-sm">{item.name}</span>}
+                                        </button>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </nav>
+
+                    <div className="p-4 border-t" style={{ borderColor: theme.border }}>
+                        <button
+                            onClick={handleLogout}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors ${isSidebarCollapsed ? 'justify-center' : ''}`}
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                            {!isSidebarCollapsed && <span>Logout</span>}
+                        </button>
+                    </div>
+                </aside>
+            )}
 
             {/* Main Content */}
             <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
-                {/* Background Gradients */}
-                <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-                    <div className="absolute top-[-10%] right-[10%] w-96 h-96 bg-blue-600/10 rounded-full blur-[100px]"></div>
-                    <div className="absolute bottom-[-10%] left-[10%] w-96 h-96 bg-purple-600/10 rounded-full blur-[100px]"></div>
-                </div>
+                {/* Background Gradients (Optional - keep for Dark/Default) */}
+                {uiSettings.activeThemeId === 'dark' && (
+                    <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+                        <div className="absolute top-[-10%] right-[10%] w-96 h-96 bg-blue-600/10 rounded-full blur-[100px]"></div>
+                        <div className="absolute bottom-[-10%] left-[10%] w-96 h-96 bg-purple-600/10 rounded-full blur-[100px]"></div>
+                    </div>
+                )}
 
                 {/* Top Navbar */}
-                <header className="h-16 border-b border-[#30363d] bg-[#0f1214]/80 backdrop-blur-md flex items-center justify-between px-6 z-10">
+                <header
+                    className="h-16 border-b flex items-center justify-between px-6 z-10 backdrop-blur-md"
+                    style={{
+                        backgroundColor: isTopbarLayout ? theme.sidebar : 'transparent', // Make it solid if it's the main nav
+                        borderColor: theme.border
+                    }}
+                >
                     <div className="flex items-center gap-3">
-                        <h2 className="text-lg font-semibold text-white">Dashboard Overview</h2>
+                        {/* If Topbar, show Brand and Nav */}
+                        {isTopbarLayout ? (
+                            <>
+                                <div className="flex items-center gap-2 mr-6">
+                                    {uiSettings.logoUrl && <img src={uiSettings.logoUrl} alt="Logo" className="h-8 w-8 object-contain" />}
+                                    <span className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
+                                        {uiSettings.companyName || "GLOBAL IPI"}
+                                    </span>
+                                </div>
+                                <nav className="hidden md:flex gap-1">
+                                    {menuItems.map(item => (
+                                        <button
+                                            key={item.name}
+                                            onClick={() => navigate(item.path)}
+                                            style={{ color: location.pathname === item.path ? '#60a5fa' : theme.subtext }}
+                                            className="px-3 py-2 text-sm font-medium hover:text-blue-400 transition-colors"
+                                        >
+                                            {item.name}
+                                        </button>
+                                    ))}
+                                </nav>
+                            </>
+                        ) : (
+                            <h2 className="text-lg font-semibold" style={{ color: theme.text }}>Dashboard Overview</h2>
+                        )}
                     </div>
 
                     <div className="flex items-center gap-6">
@@ -98,23 +196,19 @@ const AdminLayout = ({ children }) => {
                             <input
                                 type="text"
                                 placeholder="Global search..."
-                                className="bg-[#161b22] border border-[#30363d] rounded-full py-1.5 px-4 pl-10 text-sm text-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 w-64 transition-all"
+                                className="bg-transparent border rounded-full py-1.5 px-4 pl-10 text-sm focus:outline-none focus:border-blue-500 w-64 transition-all"
+                                style={{ borderColor: theme.border, color: theme.text }}
                             />
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                         </div>
 
                         <div className="flex items-center gap-4">
-                            <button className="relative p-2 text-gray-400 hover:text-white transition-colors rounded-full hover:bg-[#1f2937]">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-                                <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-[#0f1214]"></span>
-                            </button>
-
-                            <div className="flex items-center gap-3 pl-4 border-l border-[#30363d]">
+                            <div className="flex items-center gap-3 pl-4 border-l" style={{ borderColor: theme.border }}>
                                 <div className="text-right hidden md:block">
-                                    <p className="text-sm font-medium text-white">Super Admin</p>
-                                    <p className="text-xs text-gray-500">System Administrator</p>
+                                    <p className="text-sm font-medium" style={{ color: theme.text }}>Super Admin</p>
+                                    <p className="text-xs" style={{ color: theme.subtext }}>System Administrator</p>
                                 </div>
-                                <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white shadow-lg ring-2 ring-[#0f1214]">
+                                <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white shadow-lg ring-2" style={{ ringColor: theme.bg }}>
                                     SA
                                 </div>
                             </div>
@@ -123,7 +217,7 @@ const AdminLayout = ({ children }) => {
                 </header>
 
                 {/* Scrollable Content */}
-                <main className="flex-1 overflow-y-auto p-6 z-10 scrollbar-thin scrollbar-thumb-[#30363d] scrollbar-track-transparent">
+                <main className="flex-1 overflow-y-auto p-6 z-10 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
                     {children}
                 </main>
             </div>

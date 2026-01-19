@@ -24,12 +24,15 @@ export async function createFiling(formData) {
     const jurisdictionMultiplier = (formData.jurisdiction || '').toLowerCase().includes('us') ? 1.5 : (formData.jurisdiction || '').toLowerCase().includes('wipo') ? 1.8 : 1;
     const total = Math.round(base * patentTypeMultiplier * applicantMultiplier * jurisdictionMultiplier);
 
-    // Map inventors array
+    // Map inventors array safely
     const inventors = Array.isArray(formData.inventors)
-      ? formData.inventors.map(inv => ({ name: inv.name || inv }))
-      : formData.inventors
-        ? [{ name: typeof formData.inventors === 'string' ? formData.inventors : formData.inventors.name || '' }]
-        : [];
+      ? formData.inventors.map(inv => {
+        let nameVal = '';
+        if (typeof inv === 'string') nameVal = inv;
+        else if (inv && typeof inv === 'object' && inv.name) nameVal = inv.name;
+        return { name: String(nameVal) };
+      })
+      : [];
 
     const requestBody = {
       applicantName: formData.applicantName,
@@ -61,9 +64,9 @@ export async function createFiling(formData) {
       priorityClaim: formData.priorityClaim,
       priorityApplicationNumber: formData.priorityApplicationNumber,
       priorityDate: formData.priorityDate,
-      specificationFilePath: formData.specificationFile ? formData.specificationFile.name : null,
-      claimsFilePath: formData.claimsFile ? formData.claimsFile.name : null,
-      drawingsFilePaths: formData.drawingsFiles ? formData.drawingsFiles.map(f => f.name) : [],
+      specificationFilePath: formData.specificationFile && formData.specificationFile.name ? String(formData.specificationFile.name) : null,
+      claimsFilePath: formData.claimsFile && formData.claimsFile.name ? String(formData.claimsFile.name) : null,
+      drawingsFilePaths: formData.drawingsFiles ? formData.drawingsFiles.filter(f => f && f.name).map(f => String(f.name)) : [],
       paymentMethod: formData.paymentMethod,
       paymentStatus: formData.paymentStatus,
       totalFee: total,

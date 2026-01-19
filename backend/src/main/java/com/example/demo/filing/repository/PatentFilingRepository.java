@@ -17,4 +17,15 @@ public interface PatentFilingRepository extends JpaRepository<PatentFiling, Long
     List<PatentFiling> findByUserIdOrderByCreatedAtDesc(Long userId);
     
     List<PatentFiling> findByStatus(String status);
+
+    @org.springframework.data.jpa.repository.Query("SELECT p.status, COUNT(p) FROM PatentFiling p GROUP BY p.status")
+    List<Object[]> countByStatus();
+
+    @org.springframework.data.jpa.repository.Query("SELECT p.technicalField, COUNT(p) FROM PatentFiling p GROUP BY p.technicalField")
+    List<Object[]> countByTechnicalField();
+
+    @org.springframework.data.jpa.repository.Query("SELECT p.jurisdiction, COUNT(p) FROM PatentFiling p GROUP BY p.jurisdiction")
+    List<Object[]> countByJurisdiction();
+
+    long countByCreatedAtAfter(java.time.Instant date);
 }
