@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment - <%= planName %> Plan</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .payment-card {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .plan-info {
+            margin-bottom: 2rem;
+        }
+        
+        .plan-name {
+            font-size: 2rem;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+        
+        .plan-price {
+            font-size: 2.5rem;
+            color: #667eea;
+            font-weight: bold;
+        }
+        
+        .qr-section {
+            margin: 2rem 0;
+        }
+        
+        .qr-title {
+            font-size: 1.2rem;
+            color: #555;
+            margin-bottom: 1rem;
+        }
+        
+        .qr-code {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto;
+            border: 4px solid #f0f0f0;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .qr-code img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .status {
+            margin: 2rem 0;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 8px;
+            color: #666;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .simulate-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            margin-top: 1rem;
+        }
+        
+        .simulate-btn:hover {
+            background: #45a049;
+        }
+        
+        .back-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            font-size: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 1rem;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .back-btn:hover {
+            background: #5a6268;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="payment-card">
+            <div class="plan-info">
+                <h1 class="plan-name"><%= planName %> Plan</h1>
+                <div class="plan-price"><%= planPrice %></div>
+            </div>
+            
+            <div class="qr-section">
+                <h2 class="qr-title">Scan QR Code to Pay</h2>
+                <div class="qr-code">
+                    <img src="<%= qrCodeUrl %>" alt="Payment QR Code">
+                </div>
+            </div>
+            
+            <div class="status">
+                <span class="loading"></span>
+                Scanning... Waiting for payment
+            </div>
+            
+            <form action="/simulate-payment" method="POST">
+                <input type="hidden" name="planId" value="<%= planId %>">
+                <input type="hidden" name="planName" value="<%= planName %>">
+                <input type="hidden" name="planPrice" value="<%= planPrice %>">
+                <button type="submit" class="simulate-btn">Simulate Payment Success</button>
+            </form>
+            
+            <a href="/pricing" class="back-btn">← Back to Plans</a>
+        </div>
+    </div>
+</body>
+</html>

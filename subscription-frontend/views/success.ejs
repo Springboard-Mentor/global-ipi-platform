@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Successful - Global IP Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .success-card {
+            background: white;
+            border-radius: 16px;
+            padding: 3rem 2rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            background: #4CAF50;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 2rem;
+        }
+        
+        .success-icon::before {
+            content: "✓";
+            color: white;
+            font-size: 3rem;
+            font-weight: bold;
+        }
+        
+        .success-title {
+            font-size: 2.5rem;
+            color: #333;
+            margin-bottom: 1rem;
+        }
+        
+        .success-message {
+            font-size: 1.2rem;
+            color: #666;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        
+        .details {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            text-align: left;
+        }
+        
+        .details h3 {
+            color: #333;
+            margin-bottom: 1rem;
+        }
+        
+        .details p {
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-success {
+            background: #4CAF50;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="success-card">
+            <div class="success-icon"></div>
+            
+            <h1 class="success-title">Payment Successful!</h1>
+            
+            <p class="success-message">
+                Congratulations! Your subscription has been activated successfully. 
+                You now have access to all the features of your chosen plan.
+            </p>
+            
+            <div class="details">
+                <h3>Subscription Details</h3>
+                <p><strong>Plan:</strong> Premium Plan</p>
+                <p><strong>Status:</strong> Active</p>
+                <p><strong>Next Billing:</strong> <%= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString() %></p>
+                <p><strong>Transaction ID:</strong> TXN<%= Math.random().toString(36).substr(2, 9).toUpperCase() %></p>
+            </div>
+            
+            <div class="action-buttons">
+                <a href="/pricing" class="btn btn-secondary">View Plans</a>
+                <a href="#" class="btn btn-primary">Go to Dashboard</a>
+                <a href="#" class="btn btn-success">Download Invoice</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
