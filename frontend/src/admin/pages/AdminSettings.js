@@ -25,15 +25,16 @@ const UIManagement = () => {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const res = await fetch('http://localhost:8081/api/admin/ui/settings', {
+        const adminToken = localStorage.getItem('adminToken') || localStorage.getItem('token');
+        const BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8081";
+        
+        const res = await fetch(`${BASE_URL}/api/admin/ui/settings`, {
           headers: {
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${adminToken}`
           }
         });
         if (res.ok) {
           const data = await res.json();
-          // Merge with default values in case some fields are missing
           setSettings(prev => ({ ...prev, ...data }));
         }
       } catch (err) {
@@ -48,11 +49,13 @@ const UIManagement = () => {
 
   const saveSettings = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:8081/api/admin/ui/settings', {
+      const adminToken = localStorage.getItem('adminToken') || localStorage.getItem('token');
+      const BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8081";
+      
+      const res = await fetch(`${BASE_URL}/api/admin/ui/settings`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${adminToken}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(settings)
@@ -78,11 +81,13 @@ const UIManagement = () => {
     formData.append("file", file);
 
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:8081/api/admin/ui/upload', {
+      const adminToken = localStorage.getItem('adminToken') || localStorage.getItem('token');
+      const BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8081";
+      
+      const res = await fetch(`${BASE_URL}/api/admin/ui/upload`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${adminToken}`
         },
         body: formData
       });
