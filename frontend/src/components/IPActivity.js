@@ -8,7 +8,7 @@ import TableRow from "./dashboardComponents/TableRow";
 import KPIStats from "./dashboardComponents/KPIStats";
 import { logout } from "../utils/logout";
 import LandscapeVisualization from "./dashboardComponents/LandscapeVisualization";
-import { fetchAllIPAssets, fetchStatusSummary } from "../api/ipApi";
+import { fetchAllIPAssets, fetchStatusSummary, subscribeToIP, listSubscriptions } from "../api/ipApi";
 const IPActivity = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
@@ -83,8 +83,37 @@ const IPActivity = () => {
     page * itemsPerPage
   );
 
-  // logout button
+  // State for components
   const [openProfileMenu, setOpenProfileMenu] = useState(false);
+  const [watchedIds, setWatchedIds] = useState(new Set());
+
+  useEffect(() => {
+    // Load existing subscriptions
+    listSubscriptions().then((data) => {
+      const ids = new Set(data.content.map(s => s.ipAssetId));
+      setWatchedIds(ids);
+    }).catch(console.error);
+  }, []);
+
+  const handleWatch = async (id) => {
+    try {
+      await subscribeToIP(id);
+      setWatchedIds(prev => new Set([...prev, id]));
+      alert("Asset added to watchlist!");
+    } catch (err) {
+      alert("Failed to watch asset. You might already be watching it.");
+    }
+  };
+
+  const handleExport = (item) => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(item));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", `IP_Asset_${item.applicationNumber || item.id}.json`);
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#2A1A4A] via-[#301B55] to-[#4B1F70] text-white p-6">
@@ -219,7 +248,7 @@ const IPActivity = () => {
                 <th className="text-left pb-3">Status</th>
                 <th className="text-left pb-3">Filed On</th>
                 <th className="text-left pb-3">Last Updated</th>
-                <th className="text-left pb-3">Actions</th>
+                <th className="text-left pb-3 text-center">Actions</th>
               </tr>
             </thead>
 
@@ -229,15 +258,43 @@ const IPActivity = () => {
                   key={item.id || i}
                   item={item}
                   actions={
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation(); // prevent row expand
-                        navigate(`/ip/${item.id}`);
-                      }}
-                      className="px-3 py-1 bg-blue-600/80 hover:bg-blue-700 rounded text-xs text-white transition"
-                    >
-                      View Details
-                    </button>
+                    <div className="flex gap-2 justify-center">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/ip/${item.id}`);
+                        }}
+                        className="p-1.5 bg-blue-600/80 hover:bg-blue-700 rounded text-xs text-white transition tooltip"
+                        title="View Details"
+                      >
+                        👁️
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleWatch(item.id);
+                        }}
+                        disabled={watchedIds.has(item.id)}
+                        className={`p-1.5 rounded text-xs text-white transition ${
+                          watchedIds.has(item.id) 
+                            ? "bg-green-600/50 cursor-not-allowed" 
+                            : "bg-purple-600/80 hover:bg-purple-700"
+                        }`}
+                        title={watchedIds.has(item.id) ? "Watching" : "Watch status"}
+                      >
+                        {watchedIds.has(item.id) ? "✅" : "🔔"}
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleExport(item);
+                        }}
+                        className="p-1.5 bg-white/10 hover:bg-white/20 rounded text-xs text-white transition"
+                        title="Export JSON"
+                      >
+                        📥
+                      </button>
+                    </div>
                   }
                 >
                   <StatusBadge status={item.legalStatus} />

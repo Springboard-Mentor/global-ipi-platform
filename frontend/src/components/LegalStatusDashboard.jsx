@@ -73,47 +73,77 @@ const LegalStatusDashboard = () => {
       };
     }
 
-    const getYear = (date) =>
-      date ? new Date(date).getFullYear().toString() : "Unknown";
+    const getTimeKey = (date, period) => {
+      if (!date) return "Unknown";
+      const d = new Date(date);
+      if (isNaN(d.getTime())) return "Unknown";
+
+      switch (period) {
+        case "monthly":
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        case "weekly":
+          const week = Math.ceil(d.getDate() / 7);
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-W${week}`;
+        case "half-yearly":
+          const half = d.getMonth() < 6 ? "H1" : "H2";
+          return `${d.getFullYear()}-${half}`;
+        default: // yearly
+          return d.getFullYear().toString();
+      }
+    };
+
+    // Filter Raw Data
+    let filteredAssets = ipAssets;
+    if (selectedStatus !== "all") {
+      filteredAssets = filteredAssets.filter(
+        (item) => item.legalStatus === selectedStatus
+      );
+    }
+    if (selectedField !== "all") {
+      filteredAssets = filteredAssets.filter(
+        (item) => item.assetType === selectedField
+      );
+    }
 
     /* ===== Filing Trends (Area Chart) ===== */
-    const filingTrends = Object.values(
-      ipAssets.reduce((acc, item) => {
-        const period = getYear(item.filingDate); //
+    const filingTrendsMap = filteredAssets.reduce((acc, item) => {
+      const period = getTimeKey(item.filingDate, timePeriod);
+      acc[period] = acc[period] || {
+        period,
+        [IP_STATUSES.FILED]: 0,
+        [IP_STATUSES.PUBLISHED]: 0,
+        [IP_STATUSES.GRANTED]: 0,
+        [IP_STATUSES.UNDER_EXAMINATION]: 0,
+      };
 
-        acc[period] = acc[period] || {
-          period,
+      const status = item.legalStatus;
+      if (status && acc[period].hasOwnProperty(status)) {
+        acc[period][status]++;
+      }
+      return acc;
+    }, {});
 
-          [IP_STATUSES.FILED]: 0,
-          [IP_STATUSES.PUBLISHED]: 0,
-          [IP_STATUSES.GRANTED]: 0,
-          [IP_STATUSES.UNDER_EXAMINATION]: 0,
-          // [IP_STATUSES.PENDING_REVIEW]: 0,
-          // [IP_STATUSES.ABANDONED]: 0,
-        };
-
-        const status = item.legalStatus; 
-        if (!status) return acc;
-        acc[period][status] = (acc[period][status] || 0) + 1;
-
-        return acc;
-      }, {})
-    ).sort((a, b) => a.period.localeCompare(b.period));
+    const filingTrends = Object.values(filingTrendsMap).sort((a, b) =>
+      a.period.localeCompare(b.period)
+    );
 
     /* ===== Field-wise Trends (Line Chart) ===== */
-    const fieldTrends = Object.values(
-      ipAssets.reduce((acc, item) => {
-        const period = getYear(item.filingDate); //
-        acc[period] = acc[period] || { period, PATENT: 0, TRADEMARK: 0 };
+    const fieldTrendsMap = filteredAssets.reduce((acc, item) => {
+      const period = getTimeKey(item.filingDate, timePeriod);
+      acc[period] = acc[period] || { period, PATENT: 0, TRADEMARK: 0 };
+      if (item.assetType === "PATENT" || item.assetType === "TRADEMARK") {
+        acc[period][item.assetType]++;
+      }
+      return acc;
+    }, {});
 
-        acc[period][item.assetType] = (acc[period][item.assetType] || 0) + 1; //
-        return acc;
-      }, {})
+    const fieldTrends = Object.values(fieldTrendsMap).sort((a, b) =>
+      a.period.localeCompare(b.period)
     );
 
     /* ===== Lifecycle KPI ===== */
-    const lifecycleData = ipAssets
-      .filter((i) => i.filingDate && i.updatedOn) //
+    const lifecycleData = filteredAssets
+      .filter((i) => i.filingDate && i.updatedOn)
       .map((item) => {
         const filed = new Date(item.filingDate);
         const updated = new Date(item.updatedOn);
@@ -123,13 +153,27 @@ const LegalStatusDashboard = () => {
         return { ...item, processingDays };
       });
 
+    /* ===== Status Distribution (Pie Chart) ===== */
+    const statusDistMap = filteredAssets.reduce((acc, item) => {
+      const status = item.legalStatus || "Unknown";
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {});
+
+    const statusDistribution = Object.entries(statusDistMap).map(
+      ([status, count]) => ({
+        status,
+        count,
+      })
+    );
+
     return {
       filingTrends,
       fieldTrends,
       lifecycleData,
-      statusDistribution: statusSummary,
+      statusDistribution,
     };
-  }, [ipAssets, statusSummary]);
+  }, [ipAssets, statusSummary, timePeriod, selectedStatus, selectedField]);
 
   // Enhanced data processing with time period filtering
   // const processedData = useMemo(() => {
@@ -373,10 +417,10 @@ const LegalStatusDashboard = () => {
               <option value="all" className="bg-gray-800">
                 All Fields
               </option>
-              <option value="Patent" className="bg-gray-800">
+              <option value="PATENT" className="bg-gray-800">
                 Patents
               </option>
-              <option value="Trademark" className="bg-gray-800">
+              <option value="TRADEMARK" className="bg-gray-800">
                 Trademarks
               </option>
             </select>
@@ -432,11 +476,11 @@ const LegalStatusDashboard = () => {
           <div className="text-3xl font-bold text-white mb-2">
             {processedData.lifecycleData?.length
               ? Math.round(
-                  processedData.lifecycleData.reduce(
-                    (acc, item) => acc + item.processingDays,
-                    0
-                  ) / processedData.lifecycleData.length
-                )
+                processedData.lifecycleData.reduce(
+                  (acc, item) => acc + item.processingDays,
+                  0
+                ) / processedData.lifecycleData.length
+              )
               : 0}
           </div>
           <div className="text-sm text-purple-100 font-medium flex items-center gap-1">
@@ -495,6 +539,22 @@ const LegalStatusDashboard = () => {
                   stackId="1"
                   stroke="#10B981"
                   fill="#10B981"
+                  fillOpacity={0.8}
+                />
+                <Area
+                  type="monotone"
+                  dataKey={IP_STATUSES.UNDER_EXAMINATION}
+                  stackId="1"
+                  stroke="#F59E0B"
+                  fill="#F59E0B"
+                  fillOpacity={0.8}
+                />
+                <Area
+                  type="monotone"
+                  dataKey={IP_STATUSES.PUBLISHED}
+                  stackId="1"
+                  stroke="#8B5CF6"
+                  fill="#8B5CF6"
                   fillOpacity={0.8}
                 />
                 <Area
