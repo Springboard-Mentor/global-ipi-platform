@@ -164,7 +164,6 @@ const AdminUserManagement = () => {
     // Subscription badges
     Free: "bg-gray-700 text-gray-300 border border-gray-600",
     Pro: "bg-blue-900 text-blue-300 border border-blue-700",
-    Premium: "bg-indigo-900 text-indigo-300 border border-indigo-700",
     Enterprise: "bg-orange-900 text-orange-300 border border-orange-700"
   };
 
@@ -172,7 +171,6 @@ const AdminUserManagement = () => {
   const subscriptionColors = {
     Free: { bg: "bg-gray-50", border: "border-gray-200", text: "text-gray-900" },
     Pro: { bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-900" },
-    Premium: { bg: "bg-indigo-50", border: "border-indigo-200", text: "text-indigo-900" },
     Enterprise: { bg: "bg-orange-50", border: "border-orange-200", text: "text-orange-900" }
   };
 
@@ -230,7 +228,6 @@ const AdminUserManagement = () => {
             <option value="all">All Subscriptions</option>
             <option value="Free">Free</option>
             <option value="Pro">Pro</option>
-            <option value="Premium">Premium</option>
             <option value="Enterprise">Enterprise</option>
           </select>
 
@@ -248,7 +245,7 @@ const AdminUserManagement = () => {
             { label: "Total Users", value: users.length, icon: "👥" },
             { label: "Active Users", value: users.filter(u => (u.status || "").toLowerCase() === "active").length, icon: "✅" },
             { label: "Inactive Users", value: users.filter(u => (u.status || "").toLowerCase() === "inactive").length, icon: "⏸️" },
-            { label: "Premium/Pro Users", value: users.filter(u => ["Premium", "Pro", "Enterprise"].includes(u.subscription)).length, icon: "⭐" },
+            { label: "Free/Pro Users", value: users.filter(u => ["Free", "Pro", "Enterprise"].includes(u.subscription)).length, icon: "⭐" },
             { label: "Free Users", value: users.filter(u => u.subscription === "Free").length, icon: "📦" },
           ].map(({ label, value, icon }) => (
             <div
@@ -316,7 +313,7 @@ const AdminUserManagement = () => {
                       <span className={`px-3 py-1 text-xs rounded-full font-semibold ${badge[u.subscription] || badge.Free}`}>
                         {u.subscription || "Free"}
                       </span>
-                      {["Premium", "Pro", "Enterprise"].includes(u.subscription) && (
+                      {["Free", "Pro", "Enterprise"].includes(u.subscription) && (
                         <span className="text-xs text-yellow-400">★</span>
                       )}
                     </div>
@@ -421,7 +418,6 @@ const AdminUserManagement = () => {
                   >
                     <option value="Free">Free</option>
                     <option value="Pro">Pro</option>
-                    <option value="Premium">Premium</option>
                     <option value="Enterprise">Enterprise</option>
                   </select>
                 </div>
@@ -503,15 +499,6 @@ const AdminUserManagement = () => {
                             <p className="text-blue-300 text-sm">✓ 100 Queries/month</p>
                             <p className="text-blue-300 text-sm">✓ Email Support</p>
                             <p className="text-blue-300 text-sm">✓ Patent Tracking</p>
-                          </>
-                        )}
-                        {selectedUserForSub.subscription === "Premium" && (
-                          <>
-                            <p className="text-indigo-300 text-sm">✓ Unlimited IP Search</p>
-                            <p className="text-indigo-300 text-sm">✓ Unlimited Queries</p>
-                            <p className="text-indigo-300 text-sm">✓ Priority Support</p>
-                            <p className="text-indigo-300 text-sm">✓ Advanced Analytics</p>
-                            <p className="text-indigo-300 text-sm">✓ Custom Reports</p>
                           </>
                         )}
                         {selectedUserForSub.subscription === "Enterprise" && (

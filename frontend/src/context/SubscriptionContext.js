@@ -29,7 +29,7 @@ export const SubscriptionProvider = ({ children }) => {
       });
       
       if (response.data.subscription) {
-        setCurrentPlan(response.data.subscription);
+        setCurrentPlan(response.data.subscription.toLowerCase());
       }
     } catch (error) {
       console.error('Error fetching subscription:', error);

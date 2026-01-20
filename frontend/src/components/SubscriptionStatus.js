@@ -30,6 +30,17 @@ const SubscriptionStatus = () => {
     return 'bg-green-500';
   };
 
+  if (!plan) {
+    return (
+      <div className="min-h-screen bg-[#2A1A4A] flex items-center justify-center text-white">
+        <div className="text-center">
+          <p className="text-xl mb-4">Loading subscription details...</p>
+          <button onClick={() => navigate('/dashboard')} className="px-4 py-2 bg-white/10 rounded-lg">Back to Dashboard</button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#2A1A4A] via-[#301B55] to-[#4B1F70] text-white p-6">
       <div className="max-w-4xl mx-auto">
@@ -59,11 +70,11 @@ const SubscriptionStatus = () => {
             <div className="space-y-3 mb-6">
               <div className="flex justify-between">
                 <span>IP Searches</span>
-                <span>{plan.features.ipSearch.limit === -1 ? 'Unlimited' : `${plan.features.ipSearch.limit}/month`}</span>
+                <span>{plan.features.ipSearch?.limit === -1 ? 'Unlimited' : `${plan.features.ipSearch?.limit}/month`}</span>
               </div>
               <div className="flex justify-between">
                 <span>Filing Tracking</span>
-                <span>{plan.features.filingTracker.limit === -1 ? 'Unlimited' : `${plan.features.filingTracker.limit} filings`}</span>
+                <span>{plan.features.filingTracker?.limit === -1 ? 'Unlimited' : `${plan.features.filingTracker?.limit} filings`}</span>
               </div>
               <div className="flex justify-between">
                 <span>Email Alerts</span>
@@ -85,7 +96,7 @@ const SubscriptionStatus = () => {
               </div>
             </div>
 
-            {currentPlan !== 'enterprise' && (
+            {currentPlan?.toLowerCase() !== 'enterprise' && (
               <button
                 onClick={() => navigate('/pricing')}
                 className="w-full py-3 bg-purple-600 hover:bg-purple-700 rounded-lg font-semibold"
@@ -104,10 +115,10 @@ const SubscriptionStatus = () => {
                 <div className="flex justify-between mb-2">
                   <span>IP Searches</span>
                   <span>
-                    {usage.ipSearch} / {plan.features.ipSearch.limit === -1 ? '∞' : plan.features.ipSearch.limit}
+                    {usage.ipSearch} / {plan.features.ipSearch?.limit === -1 ? '∞' : plan.features.ipSearch?.limit}
                   </span>
                 </div>
-                {plan.features.ipSearch.limit !== -1 && (
+                {plan.features.ipSearch?.limit !== -1 && (
                   <div className="w-full bg-white/20 rounded-full h-2">
                     <div
                       className={`h-2 rounded-full ${getUsageColor(getUsagePercentage('ipSearch'))}`}
@@ -121,10 +132,10 @@ const SubscriptionStatus = () => {
                 <div className="flex justify-between mb-2">
                   <span>Filing Tracking</span>
                   <span>
-                    {usage.filingTracker} / {plan.features.filingTracker.limit === -1 ? '∞' : plan.features.filingTracker.limit}
+                    {usage.filingTracker} / {plan.features.filingTracker?.limit === -1 ? '∞' : plan.features.filingTracker?.limit}
                   </span>
                 </div>
-                {plan.features.filingTracker.limit !== -1 && (
+                {plan.features.filingTracker?.limit !== -1 && (
                   <div className="w-full bg-white/20 rounded-full h-2">
                     <div
                       className={`h-2 rounded-full ${getUsageColor(getUsagePercentage('filingTracker'))}`}
