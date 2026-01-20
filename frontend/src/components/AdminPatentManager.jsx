@@ -1397,7 +1397,7 @@ const AdminPatentManager = ({ onBack }) => {
                   <button
                     type="button"
                     onClick={onBack || (() => window.history.back())}
-                    className="flex items-center gap-2 px-4 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all backdrop-blur-sm border border-white/30 text-sm font-medium"
+                    className="flex items-center gap-2 px-4 py-1.5 bg-white hover:bg-gray-100 text-blue-700 rounded-lg transition-all shadow-md text-sm font-bold"
                   >
                     <ArrowLeft className="w-4 h-4" />
                     Back to Dashboard
