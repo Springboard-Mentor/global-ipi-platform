@@ -15,23 +15,29 @@ const LiveTraffic = () => {
   const fetchTrafficData = async () => {
     try {
       const token = localStorage.getItem("adminToken");
-      // This would be a real-time endpoint in production
       const res = await axios.get("http://localhost:8081/api/admin/monitoring/traffic", {
         headers: { Authorization: `Bearer ${token}` }
       });
-      // For now, generate mock data
-      generateMockTrafficData();
+
+      const data = res.data;
+      setTrafficData(data.trafficData || generateMockTrafficData());
+      setRealtimeStats(data.realtimeStats || generateMockRealtimeStats());
+
+      // Set server load data
+      if (data.serverLoad) {
+        // Server load is used in the component but not stored in state
+      }
     } catch (error) {
       console.error("Failed to fetch traffic data", error);
-      generateMockTrafficData();
+      // Fallback to mock data
+      setTrafficData(generateMockTrafficData());
+      setRealtimeStats(generateMockRealtimeStats());
     }
   };
 
   const generateMockTrafficData = () => {
     const now = new Date();
     const data = [];
-
-    // Generate last 60 seconds of data
     for (let i = 59; i >= 0; i--) {
       const time = new Date(now.getTime() - i * 1000);
       data.push({
@@ -41,16 +47,15 @@ const LiveTraffic = () => {
         errors: Math.random() > 0.9 ? Math.floor(Math.random() * 3) : 0
       });
     }
-
-    setTrafficData(data);
-    setRealtimeStats({
-      currentUsers: Math.floor(Math.random() * 100) + 50,
-      requestsPerSecond: Math.floor(Math.random() * 15) + 5,
-      activeConnections: Math.floor(Math.random() * 200) + 100,
-      bandwidth: Math.floor(Math.random() * 50) + 20
-    });
-    setLoading(false);
+    return data;
   };
+
+  const generateMockRealtimeStats = () => ({
+    currentUsers: Math.floor(Math.random() * 100) + 50,
+    requestsPerSecond: Math.floor(Math.random() * 15) + 5,
+    activeConnections: Math.floor(Math.random() * 200) + 100,
+    bandwidth: Math.floor(Math.random() * 50) + 20
+  });
 
   useEffect(() => {
     fetchTrafficData();

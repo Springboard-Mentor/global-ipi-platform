@@ -15,18 +15,46 @@ const PatentActivityTrends = () => {
     const fetchData = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await fetch('http://localhost:8081/api/admin/monitoring/trends', {
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
-        });
-        if (res.ok) {
-          const json = await res.json();
+        const [trendsRes, filingRes, categoryRes, grantRes] = await Promise.all([
+          fetch('http://localhost:8081/api/admin/monitoring/trends', {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+          }),
+          fetch('http://localhost:8081/api/admin/monitoring/charts/filing-trends', {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+          }),
+          fetch('http://localhost:8081/api/admin/monitoring/charts/categories', {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+          }),
+          fetch('http://localhost:8081/api/admin/monitoring/charts/grant-rates', {
+            headers: token ? { Authorization: `Bearer ${token}` } : {}
+          })
+        ]);
+
+        if (trendsRes.ok) {
+          const json = await trendsRes.json();
           setData(json);
+        }
+
+        if (filingRes.ok) {
+          const filingData = await filingRes.json();
+          setFilingTrends(filingData);
+        }
+
+        if (categoryRes.ok) {
+          const categoryData = await categoryRes.json();
+          setCategoryData(categoryData);
+        }
+
+        if (grantRes.ok) {
+          const grantData = await grantRes.json();
+          setGrantRateData(grantData);
         }
       } catch (e) {
         console.error("Failed to load patent trends", e);
+        // Fallback to mock data
+        generateMockData();
       } finally {
         setLoading(false);
-        generateMockData();
       }
     };
     fetchData();

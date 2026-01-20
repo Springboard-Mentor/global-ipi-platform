@@ -15,15 +15,31 @@ const ActivityTrends = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("adminToken");
-      const res = await axios.get("http://localhost:8081/api/admin/monitoring/activity", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setStats(res.data);
+      const [activityRes, userActivityRes, featureRes, sessionRes] = await Promise.all([
+        axios.get("http://localhost:8081/api/admin/monitoring/activity", {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.get("http://localhost:8081/api/admin/monitoring/charts/user-activity", {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.get("http://localhost:8081/api/admin/monitoring/charts/feature-usage", {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.get("http://localhost:8081/api/admin/monitoring/charts/session-duration", {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      ]);
+
+      setStats(activityRes.data);
+      setUserActivityData(userActivityRes.data);
+      setFeatureUsageData(featureRes.data);
+      setSessionData(sessionRes.data);
     } catch (err) {
       console.error("Failed to fetch activity stats", err);
+      // Fallback to mock data
+      generateMockData();
     } finally {
       setLoading(false);
-      generateMockData();
     }
   };
 

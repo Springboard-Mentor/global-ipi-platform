@@ -42,16 +42,49 @@ const APIHealthCharts = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("adminToken");
-      const res = await axios.get(API_URL, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setStats(res.data);
+      const [healthRes, trafficRes, responseRes] = await Promise.all([
+        axios.get(API_URL, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${API_URL}/charts/traffic`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${API_URL}/charts/response-performance`, { headers: { Authorization: `Bearer ${token}` } })
+      ]);
+
+      setStats(healthRes.data);
+      setTrafficData(trafficRes.data.length > 0 ? trafficRes.data : generateMockTrafficData());
+      setResponseData(responseRes.data.length > 0 ? responseRes.data : generateMockResponseData());
     } catch (error) {
       console.error("Failed to fetch health stats", error);
+      // Fallback to mock data
+      setTrafficData(generateMockTrafficData());
+      setResponseData(generateMockResponseData());
     } finally {
       setLoading(false);
-      generateMockData(); // Generate mock chart data
     }
+  };
+
+  const generateMockTrafficData = () => {
+    const now = new Date();
+    const data = [];
+    for (let i = 23; i >= 0; i--) {
+      const time = new Date(now.getTime() - i * 60 * 60 * 1000);
+      data.push({
+        time: time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        requests: Math.floor(Math.random() * 100) + 50,
+        errors: Math.floor(Math.random() * 10)
+      });
+    }
+    return data;
+  };
+
+  const generateMockResponseData = () => {
+    const data = [];
+    for (let i = 0; i < 6; i++) {
+      data.push({
+        endpoint: `/api/endpoint${i + 1}`,
+        avgResponse: Math.floor(Math.random() * 200) + 50,
+        requests: Math.floor(Math.random() * 500) + 100
+      });
+    }
+    return data;
   };
 
   useEffect(() => {
