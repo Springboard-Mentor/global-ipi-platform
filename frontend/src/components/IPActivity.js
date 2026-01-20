@@ -262,12 +262,17 @@ const IPActivity = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          navigate(`/ip/${item.id}`);
+                          console.log("Navigating to IP details for ID:", item.id);
+                          if (item.id) {
+                            navigate(`/ip/${item.id}`);
+                          } else {
+                            console.error("No ID found for item:", item);
+                          }
                         }}
-                        className="p-1.5 bg-blue-600/80 hover:bg-blue-700 rounded text-xs text-white transition tooltip"
+                        className="p-1.5 bg-blue-600/80 hover:bg-blue-700 rounded text-xs text-white transition tooltip flex items-center justify-center min-w-[32px] min-h-[32px]"
                         title="View Details"
                       >
-                        👁️
+                        <span className="text-base leading-none">👁️</span>
                       </button>
                       <button
                         onClick={(e) => {

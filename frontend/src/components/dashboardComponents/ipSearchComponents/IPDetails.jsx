@@ -134,6 +134,10 @@ Generated from IP Portal
     };
     fetchIPDetails();
   }, [id, ip]);
+
+  useEffect(() => {
+    if (ip) console.log("IP DETAILS FROM API:", ip);
+  }, [ip]);
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center">
@@ -207,9 +211,6 @@ Generated from IP Portal
       active: Boolean(ip.grantDate),
     },
   ];
-  useEffect(() => {
-    if (ip) console.log("IP DETAILS FROM API:", ip);
-  }, [ip]);
 
   //  Status Badge Styling
   const status = (ip.status || ip.legalStatus)?.toUpperCase() || "UNKNOWN";
