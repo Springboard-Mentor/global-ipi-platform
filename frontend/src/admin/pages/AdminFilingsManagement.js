@@ -55,7 +55,9 @@ const AdminFilingsManagement = () => {
   const fetchAnalytics = async () => {
     try {
       const response = await axios.get(`${BASE_URL}/api/admin/monitoring/all-data`, getAuthHeaders());
-      setAnalyticsData(response.data.chartData);
+      if (response.data && response.data.chartData) {
+        setAnalyticsData(response.data.chartData);
+      }
     } catch (error) {
       console.error("Failed to fetch analytics", error);
     }

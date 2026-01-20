@@ -405,13 +405,41 @@ public class MonitoringService {
 
     public List<Map<String, Object>> getFilingTrendsData() {
         List<Map<String, Object>> data = new ArrayList<>();
-        for (int i = 11; i >= 0; i--) {
-            Map<String, Object> item = new java.util.HashMap<>();
-            java.time.LocalDate date = java.time.LocalDate.now().minusMonths(i);
-            item.put("month", date.format(java.time.format.DateTimeFormatter.ofPattern("MMM yyyy")));
-            item.put("filings", (long) (Math.random() * 200 + 100));
-            item.put("grants", (long) (Math.random() * 150 + 50));
-            data.add(item);
+        List<Object[]> results = filingRepository.countByMonthNative();
+        
+        if (results == null || results.isEmpty()) {
+             // Fallback to empty structure if no data, to ensure chart renders empty state
+             for (int i = 11; i >= 0; i--) {
+                Map<String, Object> item = new java.util.HashMap<>();
+                java.time.LocalDate date = java.time.LocalDate.now().minusMonths(i);
+                item.put("month", date.format(java.time.format.DateTimeFormatter.ofPattern("MMM yyyy")));
+                item.put("filings", 0);
+                item.put("grants", 0);
+                data.add(item);
+            }
+        } else {
+            for (Object[] row : results) {
+                Map<String, Object> item = new java.util.HashMap<>();
+                item.put("month", row[0]);
+                item.put("filings", ((Number) row[1]).longValue());
+                item.put("grants", ((Number) row[2]).longValue());
+                data.add(item);
+            }
+        }
+        return data;
+    }
+
+    public List<Map<String, Object>> getProcessingTimeData() {
+        List<Map<String, Object>> data = new ArrayList<>();
+        List<Object[]> results = filingRepository.getAverageProcessingTimePerField();
+        
+        if (results != null) {
+            for (Object[] row : results) {
+                Map<String, Object> item = new java.util.HashMap<>();
+                item.put("field", row[0] != null ? row[0] : "Unknown");
+                item.put("avgDays", row[1] != null ? ((Number) row[1]).doubleValue() : 0.0);
+                data.add(item);
+            }
         }
         return data;
     }

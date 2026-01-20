@@ -67,6 +67,7 @@ public class AdminMonitoringController {
         chartData.put("featureUsage", monitoringService.getFeatureUsageData());
         chartData.put("sessionDuration", monitoringService.getSessionDurationData());
         chartData.put("filingTrends", monitoringService.getFilingTrendsData());
+        chartData.put("processingTimes", monitoringService.getProcessingTimeData());
         chartData.put("categories", monitoringService.getCategoryData());
         chartData.put("grantRates", monitoringService.getGrantRateData());
         chartData.put("jurisdictions", monitoringService.getJurisdictionData());
@@ -115,5 +116,10 @@ public class AdminMonitoringController {
     @GetMapping("/charts/grant-rates")
     public ResponseEntity<List<Map<String, Object>>> getGrantRateData() {
         return ResponseEntity.ok(monitoringService.getGrantRateData());
+    }
+
+    @GetMapping("/charts/processing-times")
+    public ResponseEntity<List<Map<String, Object>>> getProcessingTimeData() {
+        return ResponseEntity.ok(monitoringService.getProcessingTimeData());
     }
 }

@@ -27,7 +27,14 @@ const PatentActivityTrends = () => {
       } catch (e) {
         console.error("Failed to load patent trends", e);
         // Fallback to mock data
-        generateMockData();
+        // No fallback to mock data on error
+        console.warn("Using empty data due to load failure", e);
+        // Initialize empty structure to allow rendering
+        setData({});
+        setFilingTrends([]);
+        setCategoryData([]);
+        setGrantRateData([]);
+        setJurisdictionData([]);
       } finally {
         setLoading(false);
       }
@@ -35,58 +42,13 @@ const PatentActivityTrends = () => {
     fetchData();
   }, [timeRange]); // Refresh when filter changes (future implementation)
 
-  const generateMockData = () => {
-    // Generate filing trends data
-    const trends = [];
-    const now = new Date();
-    for (let i = 11; i >= 0; i--) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      trends.push({
-        month: date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-        filings: Math.floor(Math.random() * 200) + 100,
-        grants: Math.floor(Math.random() * 150) + 50
-      });
-    }
-    setFilingTrends(trends);
-
-    // Generate category data
-    const categories = [
-      { name: 'AI & ML', value: 25, color: '#3B82F6' },
-      { name: 'Biotech', value: 20, color: '#10B981' },
-      { name: 'Renewable Energy', value: 18, color: '#F59E0B' },
-      { name: 'Software', value: 15, color: '#EF4444' },
-      { name: 'Hardware', value: 12, color: '#8B5CF6' },
-      { name: 'Other', value: 10, color: '#6B7280' }
-    ];
-    setCategoryData(categories);
-
-    // Generate jurisdiction data
-    const jurisdictions = [
-      { country: 'US', patents: 450, percentage: 35.2 },
-      { country: 'CN', patents: 320, percentage: 25.0 },
-      { country: 'JP', patents: 180, percentage: 14.1 },
-      { country: 'EP', patents: 150, percentage: 11.7 },
-      { country: 'KR', patents: 120, percentage: 9.4 },
-      { country: 'Other', patents: 50, percentage: 3.9 }
-    ];
-    setJurisdictionData(jurisdictions);
-
-    // Generate grant rate data
-    const grantRates = [];
-    for (let i = 11; i >= 0; i--) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      grantRates.push({
-        month: date.toLocaleDateString('en-US', { month: 'short' }),
-        rate: Math.floor(Math.random() * 20) + 60 // 60-80% grant rate
-      });
-    }
-    setGrantRateData(grantRates);
-  };
+  // No mock data generation - strict real data policy
 
   if (loading) return <div className="text-white text-center py-20">Loading Trends...</div>;
-  if (!data) return <div className="text-white text-center py-20">Failed to load data</div>;
 
-  const { patentStats, trendingCategories, jurisdictions, filingStatus } = data;
+  // Ensure data object exists to preventing destructuring crash
+  const safeData = data || {};
+  const { patentStats, trendingCategories, jurisdictions, filingStatus } = safeData;
 
   return (
     <div className="space-y-6">
