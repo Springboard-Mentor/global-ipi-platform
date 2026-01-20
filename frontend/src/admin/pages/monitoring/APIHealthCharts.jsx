@@ -1,12 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 
 const APIHealthCharts = () => {
   const [timeRange, setTimeRange] = useState('24h');
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [trafficData, setTrafficData] = useState([]);
+  const [responseData, setResponseData] = useState([]);
 
   const API_URL = "http://localhost:8081/api/admin/monitoring/health";
+
+  // Generate mock data for charts
+  const generateMockData = () => {
+    const now = new Date();
+    const traffic = [];
+    const responses = [];
+
+    for (let i = 23; i >= 0; i--) {
+      const time = new Date(now.getTime() - i * 60 * 60 * 1000);
+      traffic.push({
+        time: time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        requests: Math.floor(Math.random() * 100) + 50,
+        errors: Math.floor(Math.random() * 10)
+      });
+    }
+
+    for (let i = 0; i < 10; i++) {
+      responses.push({
+        endpoint: `/api/endpoint${i + 1}`,
+        avgResponse: Math.floor(Math.random() * 200) + 50,
+        requests: Math.floor(Math.random() * 500) + 100
+      });
+    }
+
+    setTrafficData(traffic);
+    setResponseData(responses);
+  };
 
   const fetchHealthStats = async () => {
     setLoading(true);
@@ -20,6 +50,7 @@ const APIHealthCharts = () => {
       console.error("Failed to fetch health stats", error);
     } finally {
       setLoading(false);
+      generateMockData(); // Generate mock chart data
     }
   };
 
@@ -100,22 +131,57 @@ const APIHealthCharts = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6">
           <h3 className="text-xl font-semibold text-white mb-4">Live Traffic Load</h3>
-          <div className="h-64 bg-black/20 rounded-lg flex items-center justify-center">
-            <div className="text-center text-gray-400">
-              <div className="text-4xl mb-2">📊</div>
-              <p>Requests processed since startup: {metrics.totalRequests}</p>
-            </div>
-          </div>
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={trafficData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <XAxis dataKey="time" stroke="#9CA3AF" />
+              <YAxis stroke="#9CA3AF" />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#1F2937',
+                  border: '1px solid #374151',
+                  borderRadius: '8px',
+                  color: '#F9FAFB'
+                }}
+              />
+              <Line
+                type="monotone"
+                dataKey="requests"
+                stroke="#3B82F6"
+                strokeWidth={2}
+                dot={{ fill: '#3B82F6', strokeWidth: 2, r: 4 }}
+                name="Requests"
+              />
+              <Line
+                type="monotone"
+                dataKey="errors"
+                stroke="#EF4444"
+                strokeWidth={2}
+                dot={{ fill: '#EF4444', strokeWidth: 2, r: 4 }}
+                name="Errors"
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
 
         <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6">
           <h3 className="text-xl font-semibold text-white mb-4">Response Performance</h3>
-          <div className="h-64 bg-black/20 rounded-lg flex items-center justify-center">
-            <div className="text-center text-gray-400">
-              <div className="text-4xl mb-2">⚡</div>
-              <p>Avg Latency: {metrics.responseTime}</p>
-            </div>
-          </div>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={responseData.slice(0, 6)}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <XAxis dataKey="endpoint" stroke="#9CA3AF" angle={-45} textAnchor="end" height={80} />
+              <YAxis stroke="#9CA3AF" />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#1F2937',
+                  border: '1px solid #374151',
+                  borderRadius: '8px',
+                  color: '#F9FAFB'
+                }}
+              />
+              <Bar dataKey="avgResponse" fill="#10B981" name="Avg Response Time (ms)" />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
 

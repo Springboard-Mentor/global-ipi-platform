@@ -3,12 +3,14 @@ import AdminLayout from '../layout/AdminLayout';
 import APIHealthCharts from './monitoring/APIHealthCharts';
 import ActivityTrends from './monitoring/ActivityTrends';
 import PatentActivityTrends from './monitoring/PatentActivityTrends';
+import LiveTraffic from './monitoring/LiveTraffic';
 
 const AdminMonitoring = () => {
   const [activeTab, setActiveTab] = useState('api-health');
 
   const tabs = [
     { id: 'api-health', name: 'API Health', component: APIHealthCharts },
+    { id: 'live-traffic', name: 'Live Traffic', component: LiveTraffic },
     { id: 'activity-trends', name: 'Activity Trends', component: ActivityTrends },
     { id: 'patent-trends', name: 'Patent Trends', component: PatentActivityTrends }
   ];

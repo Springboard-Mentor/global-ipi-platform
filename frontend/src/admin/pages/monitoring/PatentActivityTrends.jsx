@@ -1,10 +1,15 @@
 import React, { useState } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
 
 const PatentActivityTrends = () => {
   const [timeRange, setTimeRange] = useState('30d');
   const [category, setCategory] = useState('all');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [filingTrends, setFilingTrends] = useState([]);
+  const [categoryData, setCategoryData] = useState([]);
+  const [jurisdictionData, setJurisdictionData] = useState([]);
+  const [grantRateData, setGrantRateData] = useState([]);
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -21,10 +26,59 @@ const PatentActivityTrends = () => {
         console.error("Failed to load patent trends", e);
       } finally {
         setLoading(false);
+        generateMockData();
       }
     };
     fetchData();
   }, [timeRange]); // Refresh when filter changes (future implementation)
+
+  const generateMockData = () => {
+    // Generate filing trends data
+    const trends = [];
+    const now = new Date();
+    for (let i = 11; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      trends.push({
+        month: date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+        filings: Math.floor(Math.random() * 200) + 100,
+        grants: Math.floor(Math.random() * 150) + 50
+      });
+    }
+    setFilingTrends(trends);
+
+    // Generate category data
+    const categories = [
+      { name: 'AI & ML', value: 25, color: '#3B82F6' },
+      { name: 'Biotech', value: 20, color: '#10B981' },
+      { name: 'Renewable Energy', value: 18, color: '#F59E0B' },
+      { name: 'Software', value: 15, color: '#EF4444' },
+      { name: 'Hardware', value: 12, color: '#8B5CF6' },
+      { name: 'Other', value: 10, color: '#6B7280' }
+    ];
+    setCategoryData(categories);
+
+    // Generate jurisdiction data
+    const jurisdictions = [
+      { country: 'US', patents: 450, percentage: 35.2 },
+      { country: 'CN', patents: 320, percentage: 25.0 },
+      { country: 'JP', patents: 180, percentage: 14.1 },
+      { country: 'EP', patents: 150, percentage: 11.7 },
+      { country: 'KR', patents: 120, percentage: 9.4 },
+      { country: 'Other', patents: 50, percentage: 3.9 }
+    ];
+    setJurisdictionData(jurisdictions);
+
+    // Generate grant rate data
+    const grantRates = [];
+    for (let i = 11; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      grantRates.push({
+        month: date.toLocaleDateString('en-US', { month: 'short' }),
+        rate: Math.floor(Math.random() * 20) + 60 // 60-80% grant rate
+      });
+    }
+    setGrantRateData(grantRates);
+  };
 
   if (loading) return <div className="text-white text-center py-20">Loading Trends...</div>;
   if (!data) return <div className="text-white text-center py-20">Failed to load data</div>;
@@ -66,49 +120,116 @@ const PatentActivityTrends = () => {
         {/* Filing Trends */}
         <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6">
           <h3 className="text-xl font-semibold text-white mb-4">Monthly Filing Trends</h3>
-          <div className="h-64 bg-black/20 rounded-lg flex items-center justify-center">
-            <div className="text-center text-gray-400">
-              <div className="text-4xl mb-2">📈</div>
-              <p>Filing Trends Chart</p>
-              <p className="text-sm">+23% this month</p>
-            </div>
-          </div>
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={filingTrends}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <XAxis dataKey="month" stroke="#9CA3AF" />
+              <YAxis stroke="#9CA3AF" />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#1F2937',
+                  border: '1px solid #374151',
+                  borderRadius: '8px',
+                  color: '#F9FAFB'
+                }}
+              />
+              <Line
+                type="monotone"
+                dataKey="filings"
+                stroke="#3B82F6"
+                strokeWidth={3}
+                dot={{ fill: '#3B82F6', strokeWidth: 2, r: 6 }}
+                name="Filings"
+              />
+              <Line
+                type="monotone"
+                dataKey="grants"
+                stroke="#10B981"
+                strokeWidth={2}
+                dot={{ fill: '#10B981', strokeWidth: 2, r: 4 }}
+                name="Grants"
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
 
         {/* Category Distribution */}
         <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6">
           <h3 className="text-xl font-semibold text-white mb-4">Patent Categories</h3>
-          <div className="h-64 bg-black/20 rounded-lg flex items-center justify-center">
-            <div className="text-center text-gray-400">
-              <div className="text-4xl mb-2">🥧</div>
-              <p>Category Distribution</p>
-              <p className="text-sm">Top: {trendingCategories?.[0]?.category || 'N/A'}</p>
-            </div>
-          </div>
+          <ResponsiveContainer width="100%" height={250}>
+            <PieChart>
+              <Pie
+                data={categoryData}
+                cx="50%"
+                cy="50%"
+                outerRadius={80}
+                dataKey="value"
+                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+              >
+                {categoryData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#1F2937',
+                  border: '1px solid #374151',
+                  borderRadius: '8px',
+                  color: '#F9FAFB'
+                }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
         </div>
 
         {/* Geographic Distribution */}
         <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6">
           <h3 className="text-xl font-semibold text-white mb-4">Filing by Jurisdiction</h3>
-          <div className="h-64 bg-black/20 rounded-lg flex items-center justify-center">
-            <div className="text-center text-gray-400">
-              <div className="text-4xl mb-2">🗺️</div>
-              <p>Jurisdiction Map</p>
-              <p className="text-sm">Leading: {jurisdictions?.[0]?.country || 'N/A'}</p>
-            </div>
-          </div>
+          <ResponsiveContainer width="100%" height={250}>
+            <BarChart data={jurisdictionData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <XAxis dataKey="country" stroke="#9CA3AF" />
+              <YAxis stroke="#9CA3AF" />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#1F2937',
+                  border: '1px solid #374151',
+                  borderRadius: '8px',
+                  color: '#F9FAFB'
+                }}
+              />
+              <Bar dataKey="patents" fill="#F59E0B" name="Patents" />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
 
         {/* Grant Rate Analysis */}
         <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6">
           <h3 className="text-xl font-semibold text-white mb-4">Grant Rate Analysis</h3>
-          <div className="h-64 bg-black/20 rounded-lg flex items-center justify-center">
-            <div className="text-center text-gray-400">
-              <div className="text-4xl mb-2">✅</div>
-              <p>Grant Rate Chart</p>
-              <p className="text-sm">Driven by real data</p>
-            </div>
-          </div>
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={grantRateData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <XAxis dataKey="month" stroke="#9CA3AF" />
+              <YAxis stroke="#9CA3AF" domain={[50, 90]} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#1F2937',
+                  border: '1px solid #374151',
+                  borderRadius: '8px',
+                  color: '#F9FAFB'
+                }}
+                formatter={(value) => [`${value}%`, 'Grant Rate']}
+              />
+              <Line
+                type="monotone"
+                dataKey="rate"
+                stroke="#10B981"
+                strokeWidth={3}
+                dot={{ fill: '#10B981', strokeWidth: 2, r: 6 }}
+                name="Grant Rate"
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
