@@ -1,145 +1,412 @@
-import React, { useState } from 'react';
-import { Bell, Lock, Server, Check, X, Users, Database, Key } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { 
+  Bell, Lock, Key, Shield, CreditCard, Monitor, Moon, Sun, 
+  Download, Database, Check, RefreshCw, AlertTriangle, Save,
+  Eye, EyeOff
+} from 'lucide-react';
 
-const SettingsPage = () => {
-    const [activeTab, setActiveTab] = useState('notifications');
+// 🔴 Ensure this matches your running Backend IP
+const API_BASE = "http://192.168.43.45:5001/api";
+
+const SettingsPage = ({ user }) => {
+    // Default to 'appearance' since Profile is removed
+    const [activeTab, setActiveTab] = useState('appearance');
+    const [isLoading, setIsLoading] = useState(false);
+    const [successMsg, setSuccessMsg] = useState('');
+    const [showApiKey, setShowApiKey] = useState(false);
+
+    // --- STATE: Holds all settings ---
     const [settings, setSettings] = useState({
+        // Appearance
+        theme: 'light',
+        compactMode: false,
+        // Notifications
         emailNotifications: true,
         criticalAlerts: true,
+        marketingEmails: false,
+        pushNotifications: true,
+        // Security
         twoFactorAuth: false,
+        sessionTimeout: '30',
+        loginAlerts: true,
+        // Privacy
+        publicProfile: true,
+        dataSharing: false,
+        // API
+        geminiKey: ''
     });
 
-    const handleToggle = (key) => {
-        setSettings(prev => ({ ...prev, [key]: !prev[key] }));
+    // --- 1. INITIAL LOAD: Fetch Settings from Backend ---
+    useEffect(() => {
+        const fetchSettings = async () => {
+            if (!user?.id) return;
+
+            try {
+                console.log(`🔵 Fetching settings for User ID: ${user.id}...`);
+                const res = await axios.get(`${API_BASE}/settings/${user.id}`);
+                console.log("✅ Settings Fetched:", res.data);
+                
+                if (res.data) {
+                    // Merge DB data with defaults
+                    setSettings(prev => ({ ...prev, ...res.data }));
+                }
+            } catch (error) {
+                console.error("❌ Failed to fetch settings (using defaults):", error);
+            }
+        };
+        fetchSettings();
+    }, [user]);
+
+    // --- 2. DARK MODE LOGIC (The "Brute Force" Fix) ---
+    useEffect(() => {
+        const root = document.documentElement; // The <html> tag
+        
+        if (settings.theme === 'dark') {
+            // 1. Tell Tailwind to go dark
+            root.classList.add('dark');
+            root.style.colorScheme = 'dark';
+            
+            // 2. 🟢 FORCE the Background Color (Bypasses Tailwind Config)
+            document.body.style.backgroundColor = '#0f172a'; // Dark Slate 900
+            document.body.style.color = '#f8fafc';           // White text
+            
+        } else {
+            // 1. Tell Tailwind to go light
+            root.classList.remove('dark');
+            root.style.colorScheme = 'light';
+            
+            // 2. 🟢 FORCE the Background Color
+            document.body.style.backgroundColor = '#f8fafc'; // Light Slate 50
+            document.body.style.color = '#0f172a';           // Dark text
+        }
+    }, [settings.theme]);
+    // --- 3. AUTO-CLEAR MESSAGES ---
+    useEffect(() => {
+        if (successMsg) {
+            const timer = setTimeout(() => setSuccessMsg(''), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [successMsg]);
+
+    // --- 4. HANDLERS ---
+
+    // Save Immediately (For Toggles/Buttons)
+    const handleSettingChange = async (key, value) => {
+        // 1. Optimistic Update (Update UI instantly)
+        setSettings(prev => ({ ...prev, [key]: value }));
+        
+        // 2. Background Save
+        if (user?.id) {
+            try {
+                await axios.put(`${API_BASE}/settings/${user.id}`, { [key]: value });
+                console.log(`✅ Auto-saved ${key}: ${value}`);
+            } catch (error) {
+                console.error(`❌ Background save failed for ${key}`, error);
+            }
+        }
     };
 
-    const TabButton = ({ id, icon: Icon, label }) => (
+    // Save Manually (For Inputs like API Key)
+    const handleGlobalSave = async () => {
+        if (!user?.id) return;
+        setIsLoading(true);
+        try {
+            await axios.put(`${API_BASE}/settings/${user.id}`, settings);
+            setSuccessMsg('Settings saved successfully!');
+        } catch (error) {
+            console.error("❌ Save Failed:", error);
+            alert("Failed to save settings.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Fake Action for Demo Buttons
+    const simulateAction = (actionName) => {
+        setIsLoading(true);
+        setTimeout(() => {
+            setIsLoading(false);
+            setSuccessMsg(`${actionName} completed successfully!`);
+        }, 1500);
+    };
+
+    // --- COMPONENTS ---
+    const TabButton = ({ id, icon: Icon, label, description }) => (
         <button
             onClick={() => setActiveTab(id)}
-            className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors w-full ${
+            className={`w-full flex items-start gap-4 p-4 rounded-xl transition-all border text-left group ${
                 activeTab === id 
-                    ? 'bg-indigo-50 text-indigo-700' 
-                    : 'text-slate-600 hover:bg-slate-50'
+                    ? 'bg-indigo-50 border-indigo-200 shadow-sm dark:bg-indigo-900/20 dark:border-indigo-700' 
+                    : 'bg-white border-transparent hover:bg-slate-50 hover:border-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-700'
             }`}
         >
-            <Icon className="w-5 h-5" />
-            {label}
+            <div className={`p-2 rounded-lg ${activeTab === id ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300'}`}>
+                <Icon size={20} />
+            </div>
+            <div>
+                <p className={`font-semibold ${activeTab === id ? 'text-indigo-900 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-200'}`}>{label}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">{description}</p>
+            </div>
         </button>
     );
 
-    const ToggleSwitch = ({ label, settingKey, description }) => (
-        <div className="flex items-center justify-between py-4 border-b">
-            <div>
-                <p className="text-sm font-medium text-slate-900">{label}</p>
-                <p className="text-xs text-slate-500 mt-1">{description}</p>
+    const ToggleSwitch = ({ label, settingKey, description, icon: Icon }) => (
+        <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700 hover:border-slate-200 transition-colors">
+            <div className="flex items-center gap-3">
+                {Icon && <div className="p-2 bg-white dark:bg-slate-700 rounded-lg border border-slate-100 dark:border-slate-600 text-slate-500 dark:text-slate-300"><Icon size={18}/></div>}
+                <div>
+                    <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{label}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{description}</p>
+                </div>
             </div>
             <button
-                onClick={() => handleToggle(settingKey)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    settings[settingKey] ? 'bg-indigo-600' : 'bg-slate-200'
+                onClick={() => handleSettingChange(settingKey, !settings[settingKey])}
+                className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                    settings[settingKey] ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600'
                 }`}
             >
-                <span className="sr-only">Toggle {label}</span>
-                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform shadow-sm ${
                     settings[settingKey] ? 'translate-x-6' : 'translate-x-1'
-                }`}></span>
+                }`} />
             </button>
         </div>
     );
 
     return (
-        <div className="max-w-6xl mx-auto space-y-8">
-            <h2 className="text-3xl font-bold text-slate-900">System Settings</h2>
+        <div className="min-h-screen bg-slate-50/50 dark:bg-slate-900 pb-12 transition-colors duration-300">
+            
+            {/* Header */}
+            <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-8 py-6 mb-8 transition-colors duration-300">
+                <div className="max-w-6xl mx-auto flex justify-between items-center">
+                    <div>
+                        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">System Settings</h1>
+                        <p className="text-slate-500 dark:text-slate-400 mt-1">Manage platform preferences and configurations.</p>
+                    </div>
+                    {/* Only show global save if on API or non-auto-save tabs if desired, but kept for clarity */}
+                    <button 
+                        onClick={handleGlobalSave}
+                        disabled={isLoading}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 dark:bg-indigo-600 text-white rounded-xl hover:opacity-90 transition shadow-lg disabled:opacity-70"
+                    >
+                        {isLoading ? <RefreshCw className="animate-spin" size={18}/> : <Save size={18} />}
+                        <span>Save Changes</span>
+                    </button>
+                </div>
+            </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex">
+            <div className="max-w-6xl mx-auto px-6 grid grid-cols-12 gap-8">
                 
-                {/* Sidebar Navigation */}
-                <div className="w-64 border-r p-4 space-y-1 bg-slate-50">
-                    <TabButton id="notifications" icon={Bell} label="Notifications" />
-                    <TabButton id="security" icon={Lock} label="Security" />
-                    <TabButton id="access" icon={Users} label="User Access" />
-                    <TabButton id="api" icon={Key} label="API Keys" />
-                    <TabButton id="data" icon={Database} label="Data Management" />
+                {/* SIDEBAR NAVIGATION */}
+                <div className="col-span-12 lg:col-span-3 space-y-2">
+                    <p className="px-4 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">General</p>
+                    <TabButton id="appearance" icon={Monitor} label="Appearance" description="Theme & Display" />
+                    <TabButton id="notifications" icon={Bell} label="Notifications" description="Email & Push alerts" />
+                    <TabButton id="privacy" icon={Shield} label="Privacy & Data" description="Visibility settings" />
+                    
+                    <p className="px-4 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 mt-6">System</p>
+                    <TabButton id="security" icon={Lock} label="Security" description="2FA & Sessions" />
+                    <TabButton id="api" icon={Key} label="API Keys" description="Gemini Integration" />
+                    <TabButton id="billing" icon={CreditCard} label="Plan & Billing" description="Subscriptions" />
+                    <TabButton id="data" icon={Database} label="Data Management" description="Export & Deletion" />
                 </div>
 
-                {/* Main Content Area */}
-                <div className="flex-1 p-8">
+                {/* MAIN CONTENT AREA */}
+                <div className="col-span-12 lg:col-span-9">
                     
-                    {/* Notifications Tab */}
-                    {activeTab === 'notifications' && (
-                        <div className="space-y-6">
-                            <h3 className="text-2xl font-semibold text-slate-800">Notification Preferences</h3>
-                            <ToggleSwitch 
-                                label="Email Notifications" 
-                                settingKey="emailNotifications" 
-                                description="Receive immediate updates on new filings and deadlines." 
-                            />
-                            <ToggleSwitch 
-                                label="Critical Alerts" 
-                                settingKey="criticalAlerts" 
-                                description="Receive instant SMS notifications for infringement detection." 
-                            />
+                    {successMsg && (
+                        <div className="fixed top-24 right-8 bg-emerald-600 text-white px-4 py-3 rounded-lg shadow-xl flex items-center gap-3 animate-in slide-in-from-right z-50">
+                            <Check size={20} />
+                            <span className="font-medium">{successMsg}</span>
                         </div>
                     )}
 
-                    {/* Security Tab */}
-                    {activeTab === 'security' && (
-                        <div className="space-y-6">
-                            <h3 className="text-2xl font-semibold text-slate-800">Security & Authentication</h3>
-                            <div className="py-4 border-b">
-                                <p className="text-sm font-medium text-slate-900">Two-Factor Authentication (2FA)</p>
-                                <p className="text-xs text-slate-500 mt-1">Status: {settings.twoFactorAuth ? <span className="text-green-600">Active</span> : <span className="text-red-600">Inactive</span>}</p>
-                                <button onClick={() => handleToggle('twoFactorAuth')} className="mt-3 px-4 py-2 text-sm rounded-lg border border-indigo-600 text-indigo-600 hover:bg-indigo-50 transition">
-                                    {settings.twoFactorAuth ? 'Disable 2FA' : 'Enable 2FA'}
-                                </button>
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 min-h-[600px] flex flex-col transition-colors duration-300">
+                        
+                        {/* --- 1. APPEARANCE TAB --- */}
+                        {activeTab === 'appearance' && (
+                            <div className="p-8 space-y-8 animate-in fade-in">
+                                <h3 className="text-xl font-bold text-slate-900 dark:text-white">Interface Theme</h3>
+                                <div className="grid grid-cols-3 gap-4">
+                                    {['light', 'dark', 'system'].map((themeOption) => (
+                                        <button 
+                                            key={themeOption}
+                                            onClick={() => handleSettingChange('theme', themeOption)}
+                                            className={`p-4 border-2 rounded-xl text-center transition-all ${
+                                                settings.theme === themeOption 
+                                                ? 'border-indigo-600 bg-indigo-50 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200 dark:border-indigo-500' 
+                                                : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 dark:text-slate-300'
+                                            }`}
+                                        >
+                                            <div className="mx-auto mb-2 w-10 h-10 flex items-center justify-center bg-white dark:bg-slate-700 rounded-full shadow-sm">
+                                                {themeOption === 'light' && <Sun size={20} />}
+                                                {themeOption === 'dark' && <Moon size={20} />}
+                                                {themeOption === 'system' && <Monitor size={20} />}
+                                            </div>
+                                            <span className="capitalize font-bold text-sm">{themeOption} Mode</span>
+                                        </button>
+                                    ))}
+                                </div>
+                                <ToggleSwitch label="Compact Mode" settingKey="compactMode" description="Reduce whitespace for higher data density." />
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    {/* User Access Tab */}
-                    {activeTab === 'access' && (
-                        <div className="space-y-6">
-                            <h3 className="text-2xl font-semibold text-slate-800">User Access Management</h3>
-                            <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
-                                <p className="text-sm font-medium text-indigo-700">Current Users (Admin View)</p>
-                                <ul className="mt-2 text-sm space-y-1">
-                                    <li className="flex justify-between"><span>B. Admin (You)</span><span className="text-xs bg-green-100 text-green-700 px-2 rounded-full">Active</span></li>
-                                    <li className="flex justify-between"><span>S. Partner</span><span className="text-xs bg-yellow-100 text-yellow-700 px-2 rounded-full">Pending Invite</span></li>
-                                </ul>
-                                <button className="mt-4 px-4 py-2 text-sm rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition">Invite New User</button>
+                        {/* --- 2. NOTIFICATIONS TAB --- */}
+                        {activeTab === 'notifications' && (
+                            <div className="p-8 space-y-8 animate-in fade-in">
+                                <div>
+                                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-1">Email Notifications</h3>
+                                    <div className="grid gap-4 mt-4">
+                                        <ToggleSwitch label="Essential Updates" settingKey="emailNotifications" description="Security alerts and account notifications." />
+                                        <ToggleSwitch label="Marketing Emails" settingKey="marketingEmails" description="Feature announcements and product tips." />
+                                    </div>
+                                </div>
+                                <hr className="border-slate-100 dark:border-slate-700" />
+                                <div>
+                                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-1">Real-time Alerts</h3>
+                                    <div className="grid gap-4 mt-4">
+                                        <ToggleSwitch label="Critical Infringement Alerts" settingKey="criticalAlerts" icon={AlertTriangle} description="Instant SMS when high-risk IP infringement is detected." />
+                                        <ToggleSwitch label="Push Notifications" settingKey="pushNotifications" description="Browser notifications for dashboard updates." />
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    )}
-                    
-                    {/* API Key Management Tab */}
-                    {activeTab === 'api' && (
-                        <div className="space-y-6">
-                             <h3 className="text-2xl font-semibold text-slate-800">API Key Management</h3>
-                             <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
-                                 <p className="text-sm font-medium text-slate-700">Gemini AI Service Key</p>
-                                 <p className="text-xs text-red-500">Key Status: Requires refresh or input.</p>
-                                 <input type="password" placeholder="•••••••••••••••" className="w-full px-4 py-2 border border-slate-300 rounded-lg text-sm" disabled />
-                                 <button className="px-4 py-2 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700 transition">Update API Key</button>
-                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    {/* Data Management Tab */}
-                    {activeTab === 'data' && (
-                        <div className="space-y-6">
-                             <h3 className="text-2xl font-semibold text-slate-800">Data & Backup</h3>
-                             <div className="py-4 border-b">
-                                 <p className="text-sm font-medium text-slate-900">Database Backup</p>
-                                 <p className="text-xs text-slate-500 mt-1">Download a full snapshot of your patent data and user records.</p>
-                                 <button className="mt-3 px-4 py-2 text-sm rounded-lg bg-green-600 text-white hover:bg-green-700 transition">Initiate Backup (.SQL)</button>
-                             </div>
-                             <div className="py-4 border-b">
-                                 <p className="text-sm font-medium text-slate-900">Purge Inactive Records</p>
-                                 <p className="text-xs text-red-500 mt-1">Permanently delete rejected filings older than 5 years.</p>
-                                 <button className="mt-3 px-4 py-2 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700 transition">Run Purge Tool</button>
-                             </div>
-                        </div>
-                    )}
+                        {/* --- 3. PRIVACY TAB --- */}
+                        {activeTab === 'privacy' && (
+                            <div className="p-8 space-y-6 animate-in fade-in">
+                                <h3 className="text-xl font-bold text-slate-900 dark:text-white">Privacy Controls</h3>
+                                <ToggleSwitch label="Public Profile" settingKey="publicProfile" description="Allow other users on the platform to find your firm." />
+                                <ToggleSwitch label="Data Sharing for AI Training" settingKey="dataSharing" description="Allow anonymized data to improve our patent models." />
+                            </div>
+                        )}
+
+                        {/* --- 4. SECURITY TAB --- */}
+                        {activeTab === 'security' && (
+                            <div className="p-8 space-y-8 animate-in fade-in">
+                                <div>
+                                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Authentication</h3>
+                                    <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 rounded-xl p-6 flex items-start gap-4">
+                                        <div className="p-3 bg-white dark:bg-slate-800 rounded-full text-indigo-600 shadow-sm"><Shield size={24}/></div>
+                                        <div className="flex-1">
+                                            <h4 className="font-bold text-indigo-900 dark:text-indigo-300">Two-Factor Authentication</h4>
+                                            <p className="text-sm text-indigo-700 dark:text-indigo-400 mt-1 mb-4">Add an extra layer of security to your account.</p>
+                                            <button 
+                                                onClick={() => handleSettingChange('twoFactorAuth', !settings.twoFactorAuth)}
+                                                className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${settings.twoFactorAuth ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
+                                            >
+                                                {settings.twoFactorAuth ? 'Disable 2FA' : 'Enable 2FA'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Session Settings</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-bold text-slate-700 dark:text-slate-300">Auto-Logout Timer (Minutes)</label>
+                                            <select 
+                                                value={settings.sessionTimeout} 
+                                                onChange={(e) => handleSettingChange('sessionTimeout', e.target.value)}
+                                                className="w-full p-3 bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-white border border-slate-200 rounded-xl outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                                            >
+                                                <option value="15">15 Minutes</option>
+                                                <option value="30">30 Minutes</option>
+                                                <option value="60">1 Hour</option>
+                                                <option value="never">Never (Not Recommended)</option>
+                                            </select>
+                                        </div>
+                                        <ToggleSwitch label="Login Alerts" settingKey="loginAlerts" description="Notify me of new login attempts." />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* --- 5. API KEYS TAB --- */}
+                        {activeTab === 'api' && (
+                            <div className="p-8 space-y-8 animate-in fade-in">
+                                <div>
+                                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Gemini AI Configuration</h3>
+                                    <div className="bg-slate-900 rounded-xl p-6 relative overflow-hidden group mt-4">
+                                        <div className="absolute top-0 right-0 p-32 bg-indigo-500 rounded-full opacity-10 blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Secret Key</label>
+                                        <div className="mt-2 flex gap-3">
+                                            <div className="flex-1 bg-slate-800 rounded-lg flex items-center px-4 border border-slate-700">
+                                                <Key size={16} className="text-indigo-400 mr-3" />
+                                                <input 
+                                                    type={showApiKey ? "text" : "password"} 
+                                                    value={settings.geminiKey || ''}
+                                                    onChange={(e) => setSettings(prev => ({...prev, geminiKey: e.target.value}))} // Just update state, don't save on every keystroke
+                                                    className="bg-transparent border-none text-slate-200 w-full outline-none font-mono text-sm"
+                                                    placeholder="sk-..."
+                                                />
+                                            </div>
+                                            <button onClick={() => setShowApiKey(!showApiKey)} className="p-3 bg-slate-800 text-slate-400 rounded-lg hover:bg-slate-700 hover:text-white transition">
+                                                {showApiKey ? <EyeOff size={20}/> : <Eye size={20}/>}
+                                            </button>
+                                            <button onClick={handleGlobalSave} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 transition font-medium text-sm">Save Key</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* --- 6. BILLING TAB --- */}
+                        {activeTab === 'billing' && (
+                            <div className="p-8 space-y-6 animate-in fade-in">
+                                <h3 className="text-xl font-bold text-slate-900 dark:text-white">Current Subscription</h3>
+                                <div className="p-6 bg-slate-900 text-white rounded-2xl relative overflow-hidden">
+                                    <div className="relative z-10">
+                                        <div className="flex justify-between items-start mb-6">
+                                            <div>
+                                                <p className="text-[10px] font-bold text-indigo-300 uppercase tracking-widest mb-1">Plan</p>
+                                                <h4 className="text-3xl font-black">{user?.planType || 'STARTUP'}</h4>
+                                            </div>
+                                            <span className="px-4 py-1.5 bg-indigo-600 rounded-lg text-xs font-bold uppercase tracking-wider">Active</span>
+                                        </div>
+                                        
+                                        <div className="space-y-3 pt-6 border-t border-slate-700/50">
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-400 text-sm">Billing Cycle</span>
+                                                <span className="font-bold">{user?.billingCycle || 'Monthly'}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-400 text-sm">Amount Paid</span>
+                                                <span className="font-bold text-emerald-400">₹{user?.amountPaid || '0.00'}</span>
+                                            </div>
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-400 text-sm">Next Renewal</span>
+                                                <span className="font-bold text-indigo-300">{user?.renewalDate || 'N/A'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="absolute -bottom-20 -right-20 w-64 h-64 bg-indigo-600 rounded-full opacity-20 blur-3xl"></div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* --- 7. DATA MANAGEMENT TAB --- */}
+                        {activeTab === 'data' && (
+                            <div className="p-8 space-y-8 animate-in fade-in">
+                                <div>
+                                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Export & Backup</h3>
+                                    <div className="p-6 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors flex items-center justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <div className="p-3 bg-green-100 text-green-700 rounded-lg"><Database size={24}/></div>
+                                            <div>
+                                                <h4 className="font-bold text-slate-900 dark:text-white">Download Full Backup</h4>
+                                                <p className="text-sm text-slate-500 dark:text-slate-400">Includes all patent filings and settings.</p>
+                                            </div>
+                                        </div>
+                                        <button onClick={() => simulateAction("Backup Download")} className="px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-white dark:hover:bg-slate-700 hover:shadow-sm transition font-medium text-sm flex items-center gap-2 dark:text-slate-200">
+                                            <Download size={16} /> Download .SQL
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                    </div>
                 </div>
             </div>
         </div>
