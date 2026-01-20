@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
+import { fetchAllMonitoringData } from '../../../api/monitoringApi';
 
 const PatentActivityTrends = () => {
   const [timeRange, setTimeRange] = useState('30d');
@@ -14,41 +15,14 @@ const PatentActivityTrends = () => {
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const [trendsRes, filingRes, categoryRes, grantRes] = await Promise.all([
-          fetch('http://localhost:8081/api/admin/monitoring/trends', {
-            headers: token ? { Authorization: `Bearer ${token}` } : {}
-          }),
-          fetch('http://localhost:8081/api/admin/monitoring/charts/filing-trends', {
-            headers: token ? { Authorization: `Bearer ${token}` } : {}
-          }),
-          fetch('http://localhost:8081/api/admin/monitoring/charts/categories', {
-            headers: token ? { Authorization: `Bearer ${token}` } : {}
-          }),
-          fetch('http://localhost:8081/api/admin/monitoring/charts/grant-rates', {
-            headers: token ? { Authorization: `Bearer ${token}` } : {}
-          })
-        ]);
+        const monitoringData = await fetchAllMonitoringData();
 
-        if (trendsRes.ok) {
-          const json = await trendsRes.json();
-          setData(json);
-        }
-
-        if (filingRes.ok) {
-          const filingData = await filingRes.json();
-          setFilingTrends(filingData);
-        }
-
-        if (categoryRes.ok) {
-          const categoryData = await categoryRes.json();
-          setCategoryData(categoryData);
-        }
-
-        if (grantRes.ok) {
-          const grantData = await grantRes.json();
-          setGrantRateData(grantData);
-        }
+        // Extract patent trends data from the integrated response
+        setData(monitoringData.patentTrends);
+        setFilingTrends(monitoringData.chartData.filingTrends);
+        setCategoryData(monitoringData.chartData.categories);
+        setGrantRateData(monitoringData.chartData.grantRates);
+        setJurisdictionData(monitoringData.chartData.jurisdictions);
       } catch (e) {
         console.error("Failed to load patent trends", e);
         // Fallback to mock data

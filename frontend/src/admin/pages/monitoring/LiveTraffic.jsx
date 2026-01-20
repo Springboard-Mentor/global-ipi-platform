@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { fetchAllMonitoringData } from '../../../api/monitoringApi';
 
 const LiveTraffic = () => {
   const [trafficData, setTrafficData] = useState([]);
@@ -14,19 +14,11 @@ const LiveTraffic = () => {
 
   const fetchTrafficData = async () => {
     try {
-      const token = localStorage.getItem("adminToken");
-      const res = await axios.get("http://localhost:8081/api/admin/monitoring/traffic", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const monitoringData = await fetchAllMonitoringData();
 
-      const data = res.data;
-      setTrafficData(data.trafficData || generateMockTrafficData());
-      setRealtimeStats(data.realtimeStats || generateMockRealtimeStats());
-
-      // Set server load data
-      if (data.serverLoad) {
-        // Server load is used in the component but not stored in state
-      }
+      // Extract traffic data from the integrated response
+      setTrafficData(monitoringData.trafficData || generateMockTrafficData());
+      setRealtimeStats(monitoringData.trafficData?.realtimeStats || generateMockRealtimeStats());
     } catch (error) {
       console.error("Failed to fetch traffic data", error);
       // Fallback to mock data

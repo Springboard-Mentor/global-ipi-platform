@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
+import { fetchAllMonitoringData } from '../../../api/monitoringApi';
 
 const APIHealthCharts = () => {
   const [timeRange, setTimeRange] = useState('24h');
@@ -41,16 +42,16 @@ const APIHealthCharts = () => {
   const fetchHealthStats = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("adminToken");
-      const [healthRes, trafficRes, responseRes] = await Promise.all([
-        axios.get(API_URL, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${API_URL}/charts/traffic`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${API_URL}/charts/response-performance`, { headers: { Authorization: `Bearer ${token}` } })
-      ]);
+      const monitoringData = await fetchAllMonitoringData();
 
-      setStats(healthRes.data);
-      setTrafficData(trafficRes.data.length > 0 ? trafficRes.data : generateMockTrafficData());
-      setResponseData(responseRes.data.length > 0 ? responseRes.data : generateMockResponseData());
+      // Extract relevant data from the integrated response
+      setStats(monitoringData.systemHealth);
+      setTrafficData(monitoringData.chartData.traffic.length > 0
+        ? monitoringData.chartData.traffic
+        : generateMockTrafficData());
+      setResponseData(monitoringData.chartData.responsePerformance.length > 0
+        ? monitoringData.chartData.responsePerformance
+        : generateMockResponseData());
     } catch (error) {
       console.error("Failed to fetch health stats", error);
       // Fallback to mock data

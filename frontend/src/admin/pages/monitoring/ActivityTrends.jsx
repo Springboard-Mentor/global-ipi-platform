@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
+import { fetchAllMonitoringData } from '../../../api/monitoringApi';
 
 const ActivityTrends = () => {
   const [timeRange, setTimeRange] = useState('7d');
@@ -14,26 +15,13 @@ const ActivityTrends = () => {
   const fetchStats = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("adminToken");
-      const [activityRes, userActivityRes, featureRes, sessionRes] = await Promise.all([
-        axios.get("http://localhost:8081/api/admin/monitoring/activity", {
-          headers: { Authorization: `Bearer ${token}` }
-        }),
-        axios.get("http://localhost:8081/api/admin/monitoring/charts/user-activity", {
-          headers: { Authorization: `Bearer ${token}` }
-        }),
-        axios.get("http://localhost:8081/api/admin/monitoring/charts/feature-usage", {
-          headers: { Authorization: `Bearer ${token}` }
-        }),
-        axios.get("http://localhost:8081/api/admin/monitoring/charts/session-duration", {
-          headers: { Authorization: `Bearer ${token}` }
-        })
-      ]);
+      const monitoringData = await fetchAllMonitoringData();
 
-      setStats(activityRes.data);
-      setUserActivityData(userActivityRes.data);
-      setFeatureUsageData(featureRes.data);
-      setSessionData(sessionRes.data);
+      // Extract relevant data from the integrated response
+      setStats(monitoringData.activityStats);
+      setUserActivityData(monitoringData.chartData.userActivity);
+      setFeatureUsageData(monitoringData.chartData.featureUsage);
+      setSessionData(monitoringData.chartData.sessionDuration);
     } catch (err) {
       console.error("Failed to fetch activity stats", err);
       // Fallback to mock data
