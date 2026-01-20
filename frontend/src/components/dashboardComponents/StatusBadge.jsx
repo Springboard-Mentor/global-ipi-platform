@@ -6,31 +6,31 @@ const StatusBadge = ({ status }) => {
   const statusConfig = {
     GRANTED: {
       label: "Granted",
-      style: "bg-green-400/20 text-green-300 border-green-400/40"
+      style: "bg-green-500 text-white border-green-600"
     },
     FILED: {
       label: "Filed",
-      style: "bg-blue-400/20 text-blue-300 border-blue-400/40"
+      style: "bg-blue-500 text-white border-blue-600"
     },
     UNDER_EXAMINATION: {
       label: "Under Examination",
-      style: "bg-yellow-400/20 text-yellow-300 border-yellow-400/40"
+      style: "bg-yellow-500 text-black border-yellow-600"
     },
     PENDING_REVIEW: {
       label: "Pending Review",
-      style: "bg-yellow-400/20 text-yellow-300 border-yellow-400/40"
+      style: "bg-orange-500 text-white border-orange-600"
     },
     EXPIRED: {
       label: "Expired",
-      style: "bg-gray-400/20 text-gray-300 border-gray-400/40"
+      style: "bg-gray-500 text-white border-gray-600"
     },
     PUBLISHED: {
       label: "Published",
-      style: "bg-blue-400/20 text-blue-300 border-blue-400/40"
+      style: "bg-purple-500 text-white border-purple-600"
     },
     UNKNOWN: {
       label: "Unknown",
-      style: "bg-gray-400/20 text-gray-300 border-gray-400/40"
+      style: "bg-red-500 text-white border-red-600"
     }
   };
 

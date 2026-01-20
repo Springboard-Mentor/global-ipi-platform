@@ -32,7 +32,7 @@ const FeatureGuard = ({ feature, requiredPlan = 'pro', children, fallback }) => 
           </div>
           <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded">
             <span className="bg-purple-600 text-white px-3 py-1 rounded-full text-sm">
-              🔒 Premium
+              🔒 Pro
             </span>
           </div>
         </div>

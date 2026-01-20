@@ -64,10 +64,8 @@ export const SubscriptionProvider = ({ children }) => {
   const checkFeatureAccess = (feature) => {
     const plan = currentPlan.toLowerCase();
     const plans = {
-      free: { search: true, filingTracker: false, alerts: false, analytics: false, apiAccess: false },
-      basic: { search: true, filingTracker: true, alerts: false, analytics: false, apiAccess: false },
+      free: { search: true, filingTracker: true, alerts: false, analytics: false, apiAccess: false },
       pro: { search: true, filingTracker: true, alerts: true, analytics: true, apiAccess: false },
-      premium: { search: true, filingTracker: true, alerts: true, analytics: true, apiAccess: false },
       enterprise: { search: true, filingTracker: true, alerts: true, analytics: true, apiAccess: true }
     };
     return (plans[plan] || plans.free)[feature] || false;
@@ -77,9 +75,7 @@ export const SubscriptionProvider = ({ children }) => {
     const plan = currentPlan.toLowerCase();
     const limits = {
       free: { ipSearch: 10, filingTracker: 5 },
-      basic: { ipSearch: 50, filingTracker: 20 },
       pro: { ipSearch: 100, filingTracker: 50 },
-      premium: { ipSearch: 500, filingTracker: 200 },
       enterprise: { ipSearch: -1, filingTracker: -1 }
     };
     const limit = (limits[plan] || limits.free)[feature];

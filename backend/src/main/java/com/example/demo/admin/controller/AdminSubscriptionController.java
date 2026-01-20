@@ -10,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -72,10 +71,9 @@ public class AdminSubscriptionController {
                         Map.of("name", "Mar", "value", 5000)
                 ))
                 .planDistribution(List.of(
-                        Map.of("name", "Free", "value", userRepository.findAll().stream().filter(u -> "Free".equals(u.getSubscription())).count()),
-                        Map.of("name", "Basic", "value", userRepository.findAll().stream().filter(u -> "Basic".equals(u.getSubscription())).count()),
-                        Map.of("name", "Premium", "value", userRepository.findAll().stream().filter(u -> "Premium".equals(u.getSubscription())).count()),
-                        Map.of("name", "Enterprise", "value", userRepository.findAll().stream().filter(u -> "Enterprise".equals(u.getSubscription())).count())
+                        Map.of("name", "Free", "value", userRepository.findAll().stream().filter(u -> "Free".equalsIgnoreCase(u.getSubscription())).count()),
+                        Map.of("name", "Pro", "value", userRepository.findAll().stream().filter(u -> "Pro".equalsIgnoreCase(u.getSubscription())).count()),
+                        Map.of("name", "Enterprise", "value", userRepository.findAll().stream().filter(u -> "Enterprise".equalsIgnoreCase(u.getSubscription())).count())
                 ))
                 .build();
 

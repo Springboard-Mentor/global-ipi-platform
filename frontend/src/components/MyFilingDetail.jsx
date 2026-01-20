@@ -202,6 +202,11 @@ const MyFilingDetail = () => {
   const [filing, setFiling] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Correction State
+  const [isEditingCorrection, setIsEditingCorrection] = useState(false);
+  const [editedFields, setEditedFields] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
+
   useEffect(() => {
     const fetchFiling = async () => {
       try {
@@ -218,6 +223,67 @@ const MyFilingDetail = () => {
     };
     if (id) fetchFiling();
   }, [id]);
+
+  const handleSaveCorrections = async () => {
+    try {
+      setIsSaving(true);
+      const { updateFiling } = await import('../utils/filings');
+
+      // Construct a clean PatentFilingRequest object to satisfy backend validation
+      const requestData = {
+        applicantName: editedFields.applicantName || filing.applicantName,
+        applicantType: filing.applicantType || "Individual",
+        nationality: filing.nationality,
+        addressStreet: filing.addressStreet || "Unknown Street",
+        addressCity: filing.addressCity || "Unknown City",
+        addressState: filing.addressState || "Unknown State",
+        addressPostalCode: filing.addressPostalCode || "000000",
+        correspondenceSame: filing.correspondenceSame ?? true,
+        correspondenceStreet: filing.correspondenceStreet,
+        correspondenceCity: filing.correspondenceCity,
+        correspondenceState: filing.correspondenceState,
+        correspondencePostalCode: filing.correspondencePostalCode,
+        email: filing.email,
+        phone: filing.phone || "0000000000",
+        filingRole: filing.filingRole || "Applicant",
+        isInventor: filing.isInventor ?? true,
+        idType: filing.idType || "Passport",
+        idNumber: filing.idNumber || "N/A",
+
+        patentType: filing.patentType || "Utility",
+        jurisdiction: filing.jurisdiction,
+        technicalField: editedFields.technicalField || filing.technicalField,
+        title: editedFields.title || filing.title,
+        abstractText: editedFields.abstractText || filing.abstractText,
+        problemStatement: editedFields.problemStatement || filing.problemStatement,
+        novelty: editedFields.novelty || filing.novelty,
+        inventors: (editedFields.inventors || filing.inventors || []).map(inv => ({
+          name: typeof inv === 'string' ? inv : (inv.name || inv.toString())
+        })),
+        priorityClaim: filing.priorityClaim ?? false,
+        priorityApplicationNumber: filing.priorityApplicationNumber,
+        priorityDate: filing.priorityDate,
+
+        specificationFilePath: filing.specificationFilePath,
+        claimsFilePath: filing.claimsFilePath,
+        drawingsFilePaths: filing.drawingsFilePaths || [],
+
+        paymentMethod: filing.paymentMethod,
+        paymentStatus: filing.paymentStatus,
+        totalFee: filing.totalFee
+      };
+
+      const updated = await updateFiling(parseInt(id), requestData);
+      setFiling(updated);
+      setIsEditingCorrection(false);
+      alert("Changes saved successfully!");
+    } catch (err) {
+      console.error("Failed to save changes:", err);
+      alert(`Failed to save changes: ${err.message || "Unknown error"}`);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleDocClick = (docName) => {
     alert(`Demo Limitation: Actual file content for "${docName}" was not persisted to the server (only the filename was tracked). The 'Download Dossier' PDF lists these files as part of the official record.`);
@@ -238,9 +304,25 @@ const MyFilingDetail = () => {
               <button onClick={() => navigate('/my-filings')} className="text-white/60 hover:text-white transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
               </button>
-              <h1 className="text-3xl font-bold tracking-tight">{filing.title}</h1>
+              {isEditingCorrection ? (
+                <div className="flex-1">
+                  <label className="text-xs text-blue-300 uppercase font-bold tracking-wider mb-1 block">Filing Title</label>
+                  <input
+                    className="w-full bg-black/40 border border-blue-500/50 rounded-xl px-4 py-2 text-2xl font-bold text-white focus:outline-none focus:border-blue-400"
+                    defaultValue={filing.title}
+                    onChange={(e) => setEditedFields(prev => ({ ...prev, title: e.target.value }))}
+                  />
+                  {filing.requestedUpdateFields?.includes('title') && (
+                    <span className="inline-block mt-2 px-2 py-0.5 bg-red-500/20 text-red-300 text-[10px] font-bold uppercase rounded border border-red-500/30">Action Required</span>
+                  )}
+                </div>
+              ) : (
+                <h1 className="text-3xl font-bold tracking-tight">{filing.title}</h1>
+              )}
             </div>
-            <p className="text-white/60 mt-1 ml-9">App #: <span className="font-mono text-purple-200">{filing.applicationNumber || "PENDING"}</span> • {filing.jurisdiction} • Last Updated: {new Date(filing.updatedAt || Date.now()).toLocaleDateString()}</p>
+            {!isEditingCorrection && (
+              <p className="text-white/60 mt-1 ml-9">App #: <span className="font-mono text-purple-200">{filing.applicationNumber || "PENDING"}</span> • {filing.jurisdiction} • Last Updated: {new Date(filing.updatedAt || Date.now()).toLocaleDateString()}</p>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <div className={`px-4 py-1.5 rounded-full text-xs font-bold tracking-wide uppercase ${status === 'GRANTED' ? 'bg-green-500/20 text-green-300 border border-green-500/30' : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'}`}>{status}</div>
@@ -257,16 +339,50 @@ const MyFilingDetail = () => {
 
         {/* ADMIN FEEDBACK BANNER */}
         {filing.adminFeedback && (
-          <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 flex gap-4">
-            <div className="p-2 bg-blue-500/20 rounded-full h-fit">
-              <svg className="w-6 h-6 text-blue-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+          <div className={`${filing.requestedUpdateFields?.length > 0 ? 'bg-blue-500/10 border-blue-500/30' : 'bg-green-500/10 border-green-500/30'} border rounded-xl p-6 flex flex-col md:flex-row gap-6`}>
+            <div className={`p-3 ${filing.requestedUpdateFields?.length > 0 ? 'bg-blue-500/20 text-blue-300' : 'bg-green-500/20 text-green-300'} rounded-full h-fit w-fit`}>
+              {filing.requestedUpdateFields?.length > 0 ? (
+                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              ) : (
+                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
             </div>
-            <div>
-              <h3 className="font-semibold text-blue-200">Latest Update from Examiner</h3>
-              <p className="text-blue-100/80 mt-1">{filing.adminFeedback}</p>
+            <div className="flex-1">
+              <h3 className={`font-bold text-xl ${filing.requestedUpdateFields?.length > 0 ? 'text-blue-200' : 'text-green-200'}`}>
+                {filing.requestedUpdateFields?.length > 0 ? 'Action Required: Correction Requested' : 'Corrections Submitted & Pending Review'}
+              </h3>
+              <p className="text-white/80 mt-2 text-lg italic">"{filing.adminFeedback}"</p>
+
+              {filing.requestedUpdateFields && filing.requestedUpdateFields.length > 0 && (
+                <div className="mt-4 p-4 bg-black/20 rounded-lg border border-white/5">
+                  <p className="text-sm font-semibold text-blue-300 uppercase tracking-wider mb-2">Requested changes to:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {filing.requestedUpdateFields.map(f => (
+                      <span key={f} className="px-3 py-1 bg-blue-400/20 text-blue-100 rounded text-sm border border-blue-400/30 font-medium capitalize">
+                        {f.replace(/([A-Z])/g, ' $1')}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
+            {filing.requestedUpdateFields?.length > 0 && !isEditingCorrection && (
+              <div className="flex items-center">
+                <button
+                  onClick={() => {
+                    setIsEditingCorrection(true);
+                    setEditedFields({});
+                  }}
+                  className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl transition-all font-bold shadow-lg hover:shadow-blue-500/25 whitespace-nowrap"
+                >
+                  Correct Fields Now
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -283,8 +399,21 @@ const MyFilingDetail = () => {
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="text-xs text-purple-300 uppercase font-bold tracking-wider mb-1 block">Applicant Name</label>
-                  <p className="text-white font-medium text-lg">{filing.applicantName}</p>
+                  <div className="flex items-center gap-2 mb-1">
+                    <label className="text-xs text-purple-300 uppercase font-bold tracking-wider block">Applicant Name</label>
+                    {isEditingCorrection && filing.requestedUpdateFields?.includes('applicantName') && (
+                      <span className="px-1.5 py-0.5 bg-red-500/20 text-red-300 text-[9px] font-bold uppercase rounded border border-red-500/30">Action Required</span>
+                    )}
+                  </div>
+                  {isEditingCorrection ? (
+                    <input
+                      className={`w-full bg-black/40 border rounded px-3 py-2 text-white ${filing.requestedUpdateFields?.includes('applicantName') ? 'border-red-500/50' : 'border-blue-500/30'}`}
+                      defaultValue={filing.applicantName}
+                      onChange={(e) => setEditedFields(prev => ({ ...prev, applicantName: e.target.value }))}
+                    />
+                  ) : (
+                    <p className="text-white font-medium text-lg">{filing.applicantName}</p>
+                  )}
                   <p className="text-white/60 text-sm mt-1">{filing.nationality}</p>
                 </div>
                 <div>
@@ -302,25 +431,66 @@ const MyFilingDetail = () => {
               </div>
             </div>
 
-            {/* Abstract */}
-            <div className="bg-white/5 p-6 rounded-2xl border border-white/10 backdrop-blur-sm">
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>
-                Abstract
-              </h3>
+            <div className="flex items-center gap-2 mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>
+              <h3 className="text-lg font-semibold">Abstract</h3>
+              {isEditingCorrection && filing.requestedUpdateFields?.includes('abstract') && (
+                <span className="px-2 py-0.5 bg-red-500/20 text-red-300 text-[10px] font-bold uppercase rounded border border-red-500/30">Action Required</span>
+              )}
+            </div>
+            {isEditingCorrection ? (
+              <textarea
+                rows="5"
+                className={`w-full bg-black/40 border rounded px-3 py-2 text-white text-sm ${filing.requestedUpdateFields?.includes('abstract') ? 'border-red-500/50' : 'border-blue-500/30'}`}
+                defaultValue={filing.abstractText}
+                onChange={(e) => setEditedFields(prev => ({ ...prev, abstractText: e.target.value }))}
+              />
+            ) : (
               <p className="text-white/80 leading-relaxed text-sm bg-black/20 p-4 rounded-xl border border-white/5">
                 {filing.abstractText || "No abstract provided."}
               </p>
-            </div>
+            )}
 
             {/* Full Description */}
             <div className="bg-white/5 p-6 rounded-2xl border border-white/10 backdrop-blur-sm">
-              <h3 className="text-lg font-semibold mb-4">Detailed Description</h3>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold">Detailed Description</h3>
+                {isEditingCorrection && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setIsEditingCorrection(false)}
+                      className="px-4 py-1.5 rounded-lg border border-white/20 text-sm hover:bg-white/10"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      disabled={isSaving}
+                      onClick={handleSaveCorrections}
+                      className="px-6 py-1.5 rounded-lg bg-green-600 hover:bg-green-500 text-sm font-bold shadow-lg shadow-green-500/20"
+                    >
+                      {isSaving ? 'Saving...' : 'Save All Corrections'}
+                    </button>
+                  </div>
+                )}
+              </div>
 
               <div className="space-y-6">
                 <div>
-                  <label className="text-xs text-purple-300 uppercase font-bold tracking-wider mb-2 block">Technical Field</label>
-                  <p className="text-white/90 text-sm">{filing.technicalField || "N/A"}</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <label className="text-xs text-purple-300 uppercase font-bold tracking-wider block">Technical Field</label>
+                    {isEditingCorrection && filing.requestedUpdateFields?.includes('technicalField') && (
+                      <span className="px-1.5 py-0.5 bg-red-500/20 text-red-300 text-[9px] font-bold uppercase rounded border border-red-500/30">Action Required</span>
+                    )}
+                  </div>
+                  {isEditingCorrection ? (
+                    <input
+                      className={`w-full bg-black/40 border rounded px-3 py-2 text-white text-sm ${filing.requestedUpdateFields?.includes('technicalField') ? 'border-red-500/50' : 'border-blue-500/30'}`}
+                      defaultValue={filing.technicalField}
+                      onChange={(e) => setEditedFields(prev => ({ ...prev, technicalField: e.target.value }))}
+                    />
+                  ) : (
+                    <p className="text-white/90 text-sm">{filing.technicalField || "N/A"}</p>
+                  )}
                 </div>
 
                 <div>
@@ -329,8 +499,22 @@ const MyFilingDetail = () => {
                 </div>
 
                 <div>
-                  <label className="text-xs text-purple-300 uppercase font-bold tracking-wider mb-2 block">Novelty Claims & Invention</label>
-                  <p className="text-white/80 text-sm leading-relaxed">{filing.novelty || "N/A"}</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <label className="text-xs text-purple-300 uppercase font-bold tracking-wider block">Novelty Claims & Invention</label>
+                    {isEditingCorrection && filing.requestedUpdateFields?.includes('novelty') && (
+                      <span className="px-1.5 py-0.5 bg-red-500/20 text-red-300 text-[9px] font-bold uppercase rounded border border-red-500/30">Action Required</span>
+                    )}
+                  </div>
+                  {isEditingCorrection ? (
+                    <textarea
+                      rows="4"
+                      className={`w-full bg-black/40 border rounded px-3 py-2 text-white text-sm ${filing.requestedUpdateFields?.includes('novelty') ? 'border-red-500/50' : 'border-blue-500/30'}`}
+                      defaultValue={filing.novelty}
+                      onChange={(e) => setEditedFields(prev => ({ ...prev, novelty: e.target.value }))}
+                    />
+                  ) : (
+                    <p className="text-white/80 text-sm leading-relaxed">{filing.novelty || "N/A"}</p>
+                  )}
                 </div>
               </div>
             </div>

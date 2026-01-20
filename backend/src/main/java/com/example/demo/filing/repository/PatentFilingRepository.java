@@ -28,4 +28,20 @@ public interface PatentFilingRepository extends JpaRepository<PatentFiling, Long
     List<Object[]> countByJurisdiction();
 
     long countByCreatedAtAfter(java.time.Instant date);
+
+    @org.springframework.data.jpa.repository.Query(nativeQuery = true, 
+        value = "SELECT TO_CHAR(created_at, 'Mon YYYY') as month, COUNT(*) as count, " +
+                "SUM(CASE WHEN status = 'GRANTED' THEN 1 ELSE 0 END) as grants " +
+                "FROM patent_filings " +
+                "WHERE created_at > NOW() - INTERVAL '12 months' " +
+                "GROUP BY TO_CHAR(created_at, 'Mon YYYY'), date_trunc('month', created_at) " +
+                "ORDER BY date_trunc('month', created_at)")
+    List<Object[]> countByMonthNative();
+
+    @org.springframework.data.jpa.repository.Query(nativeQuery = true,
+        value = "SELECT technical_field, AVG(EXTRACT(DAY FROM (grant_date - filing_date))) as avg_days " +
+                "FROM patent_filings " +
+                "WHERE status = 'GRANTED' AND grant_date IS NOT NULL AND filing_date IS NOT NULL " +
+                "GROUP BY technical_field")
+    List<Object[]> getAverageProcessingTimePerField();
 }

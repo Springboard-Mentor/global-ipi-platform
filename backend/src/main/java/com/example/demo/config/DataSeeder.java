@@ -25,9 +25,56 @@ public class DataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
+        migrateLegacyPlans(); // Added migration logic
         seedPlans();
         seedUsers();
         seedHistory();
+    }
+
+    private void migrateLegacyPlans() {
+        System.out.println("Checking for legacy subscription plans (Basic/Premium)...");
+        
+        // 1. Rename existing plan entities
+        planRepository.findByName("Basic").ifPresent(plan -> {
+            System.out.println("Migrating plan: Basic -> Pro");
+            plan.setName("Pro");
+            planRepository.save(plan);
+        });
+
+        planRepository.findByName("Premium").ifPresent(plan -> {
+            System.out.println("Migrating plan: Premium -> Enterprise");
+            plan.setName("Enterprise");
+            plan.setPrice(99.0); // Align with new enterprise price
+            planRepository.save(plan);
+        });
+
+        // 2. Update existing users who have "Basic" or "Premium" strings
+        userRepository.findAll().forEach(user -> {
+            boolean updated = false;
+            if ("Basic".equalsIgnoreCase(user.getSubscription())) {
+                user.setSubscription("Pro");
+                updated = true;
+            } else if ("Premium".equalsIgnoreCase(user.getSubscription())) {
+                user.setSubscription("Enterprise");
+                updated = true;
+            }
+            if (updated) {
+                System.out.println("Migrated user " + user.getEmail() + " to new subscription name.");
+                userRepository.save(user);
+            }
+        });
+
+        // 3. Update history records
+        historyRepository.findAll().forEach(h -> {
+            boolean updated = false;
+            if ("Basic".equalsIgnoreCase(h.getOldPlan())) { h.setOldPlan("Pro"); updated = true; }
+            if ("Basic".equalsIgnoreCase(h.getNewPlan())) { h.setNewPlan("Pro"); updated = true; }
+            if ("Premium".equalsIgnoreCase(h.getOldPlan())) { h.setOldPlan("Enterprise"); updated = true; }
+            if ("Premium".equalsIgnoreCase(h.getNewPlan())) { h.setNewPlan("Enterprise"); updated = true; }
+            if (updated) {
+                historyRepository.save(h);
+            }
+        });
     }
 
     private void seedUsers() {
@@ -51,7 +98,7 @@ public class DataSeeder implements CommandLineRunner {
             user1.setPassword(passwordEncoder.encode("user123"));
             user1.setRole("USER");
             user1.setStatus("Active");
-            user1.setSubscription("Premium");
+            user1.setSubscription("Pro");
             userRepository.save(user1);
 
             // Enterprise User
@@ -81,26 +128,17 @@ public class DataSeeder implements CommandLineRunner {
                     .build());
 
             planRepository.save(SubscriptionPlan.builder()
-                    .name("Basic")
+                    .name("Pro")
                     .price(29.0)
                     .period("monthly")
                     .features(Arrays.asList("Advanced IP Search", "100 Queries/month", "Email Support", "Patent Tracking"))
-                    .popular(false)
-                    .active(true)
-                    .build());
-
-            planRepository.save(SubscriptionPlan.builder()
-                    .name("Premium")
-                    .price(99.0)
-                    .period("monthly")
-                    .features(Arrays.asList("Unlimited IP Search", "Unlimited Queries", "Priority Support", "Advanced Analytics", "Custom Reports"))
                     .popular(true)
                     .active(true)
                     .build());
 
             planRepository.save(SubscriptionPlan.builder()
                     .name("Enterprise")
-                    .price(299.0)
+                    .price(99.0)
                     .period("monthly")
                     .features(Arrays.asList("Unlimited Everything", "Dedicated Support", "API Access", "Custom Integration", "SLA Guaranteed"))
                     .popular(false)
@@ -128,8 +166,8 @@ public class DataSeeder implements CommandLineRunner {
                     .userId(2L)
                     .userName("John Doe")
                     .oldPlan("Free")
-                    .newPlan("Premium")
-                    .amount(99.0)
+                    .newPlan("Pro")
+                    .amount(29.0)
                     .action("UPGRADED")
                     .build());
 

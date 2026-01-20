@@ -142,6 +142,11 @@ public class PatentFiling {
     @Column(columnDefinition = "TEXT")
     private String adminFeedback;
 
+    @ElementCollection
+    @CollectionTable(name = "patent_filing_requested_updates", joinColumns = @JoinColumn(name = "filing_id"))
+    @Column(name = "field_name")
+    private List<String> requestedUpdateFields = new ArrayList<>();
+
     @PrePersist
     protected void onCreate() {
         createdAt = Instant.now();
