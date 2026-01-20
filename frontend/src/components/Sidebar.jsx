@@ -91,12 +91,12 @@ const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem, onLogout, userPro
         <div className="p-6 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
           <button
             onClick={onClose}
-            className="p-2 rounded-xl hover:bg-gradient-to-br hover:from-blue-50 hover:to-purple-50"
+            className="p-2 rounded-xl hover:bg-red-500 group transition-colors duration-200"
           >
             {isOpen ? (
-              <X size={24} className="text-gray-700" />
+              <X size={24} className="text-gray-700 group-hover:text-white transition-colors duration-200" />
             ) : (
-              <Menu size={24} className="text-gray-700" />
+              <Menu size={24} className="text-gray-700 group-hover:text-white transition-colors duration-200" />
             )}
           </button>
         </div>
