@@ -48,3 +48,4 @@ Thumbs.db               # Windows
 
 # Other Temporary Configuration Files
 *.local
+*.zip

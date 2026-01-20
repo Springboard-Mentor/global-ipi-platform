@@ -1,226 +1,437 @@
-// components/ProfilePage.jsx
-import React, { useState } from 'react';
-import { profileAPI } from '../services/ai.js';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios'; 
+import { 
+  Camera, User, Mail, Briefcase, MapPin, Phone, 
+  Building, Save, CheckCircle, AlertCircle, Shield,
+  Globe, Linkedin, CreditCard, Calendar, Trash2 // Added Trash2 Icon
+} from 'lucide-react';
 
-const ProfilePage = ({ user, onUpdateUser }) => {
-  // Initialize state from props
-  const [name, setName] = useState(user.name);
-  const [email, setEmail] = useState(user.email);
-  const [bio, setBio] = useState(user.bio || 'Senior IP Attorney specializing in international patent law and AI regulation.');
+const API_BASE = "http://localhost:5001/api"; 
+
+const ProfilePage = ({ user, onUpdateUser, onBack }) => {
   
-  const [isSaved, setIsSaved] = useState(false);
+  // --- 1. STATE MANAGEMENT ---
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    jobTitle: '',
+    company: '',
+    location: '',
+    bio: '',
+    linkedin: '',
+    website: ''
+  });
+
+  const [avatarPreview, setAvatarPreview] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [successMsg, setSuccessMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const handleSave = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError(null);
-    setIsSaved(false);
-
-    try {
-      // ✅ CRITICAL FIX: We must send the 'id' so the backend knows who to update
-      const updatePayload = { 
-        id: user.id,        // <--- THIS WAS MISSING
-        name: name, 
-        email: email, 
-        bio: bio 
-      };
-
-      console.log("Sending Update:", updatePayload); // Debug log
-
-      const response = await profileAPI.updateProfile(updatePayload); 
-      
-      // Update global state with the response
-      onUpdateUser(response.user); 
-      
-      setIsSaved(true);
-      setTimeout(() => setIsSaved(false), 3000);
-    } catch (err) {
-      console.error("Profile Save Error:", err);
-      setError(err.message || 'Failed to update profile');
-    } finally {
-      setIsLoading(false);
+  // --- 2. INITIALIZE DATA ---
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        jobTitle: user.jobTitle || '',
+        company: user.company || '',
+        location: user.location || '',
+        bio: user.bio || '',
+        linkedin: user.linkedin || '',
+        website: user.website || ''
+      });
+      setAvatarPreview(user.avatar || null);
     }
+  }, [user]);
+
+  // --- 3. HANDLERS ---
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // ✅ UPLOAD AVATAR
   const handleAvatarChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      setError('Please select an image file');
+      setErrorMsg('Please select a valid image file.');
       return;
     }
-    if (file.size > 1024 * 1024) {
-      setError('Image must be less than 1MB');
+    if (file.size > 2 * 1024 * 1024) { 
+      setErrorMsg('Image size must be less than 2MB.');
       return;
     }
 
+    const objectUrl = URL.createObjectURL(file);
+    setAvatarPreview(objectUrl);
+
+    const uploadData = new FormData();
+    uploadData.append('file', file);
+    uploadData.append('userId', user.id);
+
     try {
       setIsLoading(true);
-      setError(null);
-      // Ensure your backend supports avatar upload or this mock will fail
-      // For now, we assume profileAPI handles this.
-      const response = await profileAPI.uploadAvatar(file);
-      onUpdateUser({ avatar: response.avatarUrl });
-      setIsSaved(true);
-      setTimeout(() => setIsSaved(false), 3000);
+      const res = await axios.post(`${API_BASE}/users/upload-avatar`, uploadData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      onUpdateUser({ ...user, avatar: res.data.avatarUrl });
+      setSuccessMsg('Avatar updated successfully!');
     } catch (err) {
-      setError(err.message || 'Failed to upload avatar');
+      console.error("Avatar Upload Error:", err);
+      setErrorMsg('Failed to upload avatar.');
+      setAvatarPreview(user.avatar); 
     } finally {
       setIsLoading(false);
+      setTimeout(() => setSuccessMsg(''), 3000);
+    }
+  };
+
+  // ✅ NEW: REMOVE AVATAR
+  const handleRemoveAvatar = async () => {
+    if (!window.confirm("Are you sure you want to remove your profile picture?")) return;
+
+    try {
+      setIsLoading(true);
+      // Call Backend Delete Endpoint
+      await axios.delete(`${API_BASE}/users/${user.id}/avatar`);
+      
+      setAvatarPreview(null);
+      onUpdateUser({ ...user, avatar: null }); // Update global state
+      setSuccessMsg('Profile picture removed.');
+    } catch (err) {
+      console.error("Remove Avatar Error:", err);
+      setErrorMsg('Failed to remove avatar. Ensure backend is restarted.');
+    } finally {
+      setIsLoading(false);
+      setTimeout(() => setSuccessMsg(''), 3000);
+    }
+  };
+
+  // UPDATE PROFILE TEXT
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setErrorMsg('');
+    setSuccessMsg('');
+
+    try {
+      const res = await axios.put(`${API_BASE}/users/${user.id}`, formData);
+      onUpdateUser(res.data);
+      setSuccessMsg('Profile details saved successfully.');
+    } catch (err) {
+      console.error("Update Error:", err);
+      setErrorMsg('Failed to save profile changes.');
+    } finally {
+      setIsLoading(false);
+      setTimeout(() => setSuccessMsg(''), 3000);
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Success Message */}
-      {isSaved && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 animate-in fade-in slide-in-from-top-2">
-          <div className="flex items-center gap-3">
-            <svg className="h-5 w-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-            <p className="text-green-700 font-medium">Profile updated successfully!</p>
-          </div>
-        </div>
-      )}
+    <div className="min-h-screen bg-slate-50/50 pb-12">
+      
+      {/* HEADER BANNER */}
+      <div className="h-48 bg-gradient-to-r from-slate-800 to-slate-900 relative w-full rounded-b-[2.5rem] shadow-lg">
+        <button onClick={onBack} className="absolute top-6 left-6 text-white/80 hover:text-white text-sm font-bold uppercase tracking-widest bg-black/20 px-4 py-2 rounded-xl backdrop-blur-sm transition-all hover:bg-black/40">
+          ← Back to Dashboard
+        </button>
+      </div>
 
-      {/* Error Message */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 animate-in fade-in slide-in-from-top-2">
-          <div className="flex items-center gap-3">
-            <svg className="h-5 w-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-            <p className="text-red-700">{error}</p>
-          </div>
-        </div>
-      )}
-
-      <div className="bg-white shadow-sm border border-slate-100 rounded-xl overflow-hidden">
-        <div className="px-6 py-6 border-b border-slate-100 bg-slate-50/50">
-          <h3 className="text-lg font-medium leading-6 text-slate-900">Profile Settings</h3>
-          <p className="mt-1 text-sm text-slate-500">Update your firm credentials and preferences.</p>
-        </div>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 relative z-10">
         
-        <form onSubmit={handleSave} className="px-6 py-8 space-y-8">
-          {/* Avatar Section */}
-          <div className="flex items-center gap-x-8">
-            <div className="h-24 w-24 flex-none rounded-full bg-indigo-100 text-indigo-600 text-3xl font-bold flex items-center justify-center border-2 border-white shadow-md overflow-hidden">
-              {user.avatar ? (
-                <img src={user.avatar} alt={name} className="h-full w-full object-cover" />
+        {/* PROFILE HEADER CARD */}
+        <div className="bg-white rounded-3xl shadow-xl p-6 mb-8 border border-slate-100 flex flex-col sm:flex-row items-center sm:items-end gap-6">
+          
+          {/* Avatar Area */}
+          <div className="relative group">
+            <div className="h-32 w-32 rounded-full border-4 border-white shadow-lg bg-slate-100 flex items-center justify-center overflow-hidden relative">
+              {avatarPreview ? (
+                <img src={avatarPreview} alt="Profile" className="h-full w-full object-cover" />
               ) : (
-                name ? name.charAt(0).toUpperCase() : 'U'
+                <User size={48} className="text-slate-300" />
               )}
-            </div>
-            <div>
-              <label htmlFor="avatar-upload" className="cursor-pointer">
-                <span className="rounded-md bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50 inline-block transition-colors">
-                  Change avatar
-                </span>
-                <input
-                  id="avatar-upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarChange}
-                  className="hidden"
-                />
-              </label>
-              <p className="mt-2 text-xs text-slate-500">JPG, GIF or PNG. 1MB max.</p>
-            </div>
-          </div>
-
-          {/* Form Fields */}
-          <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
-            <div className="sm:col-span-3">
-              <label htmlFor="full-name" className="block text-sm font-medium leading-6 text-slate-900">
-                Full name
-              </label>
-              <div className="mt-2">
-                <input
-                  type="text"
-                  name="full-name"
-                  id="full-name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 px-3"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="sm:col-span-3">
-              <label htmlFor="email" className="block text-sm font-medium leading-6 text-slate-900">
-                Email address
-              </label>
-              <div className="mt-2">
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 px-3"
-                  required
-                />
-              </div>
             </div>
             
-            <div className="sm:col-span-3">
-              <label htmlFor="userType" className="block text-sm font-medium leading-6 text-slate-900">
-                Account Type (Uneditable)
-              </label>
-              <div className="mt-2">
-                <input
-                  type="text"
-                  id="userType"
-                  value={user.userType || 'N/A'}
-                  disabled
-                  className="block w-full rounded-md border-0 py-1.5 text-slate-500 bg-slate-100 shadow-sm ring-1 ring-inset ring-slate-300 sm:text-sm sm:leading-6 px-3 cursor-not-allowed"
-                />
+            {/* 1. Upload Button (Overlay) */}
+            <label className="absolute inset-0 flex items-center justify-center bg-black/40 text-white opacity-0 group-hover:opacity-100 rounded-full cursor-pointer transition-all duration-200 z-10">
+              <div className="flex flex-col items-center gap-1">
+                <Camera className="w-6 h-6 drop-shadow-md" />
+                <span className="text-[10px] font-bold uppercase">Change</span>
               </div>
+              <input type="file" className="hidden" accept="image/*" onChange={handleAvatarChange} />
+            </label>
+
+            {/* 2. Upload Icon Indicator (Bottom Right) */}
+            <div className="absolute bottom-1 right-1 bg-white p-1.5 rounded-full shadow-md border border-slate-100 text-indigo-600 z-20">
+               <Camera size={14} />
             </div>
 
-            <div className="sm:col-span-6">
-              <label htmlFor="bio" className="block text-sm font-medium leading-6 text-slate-900">
-                Bio
-              </label>
-              <div className="mt-2">
-                <textarea
-                  id="bio"
-                  name="bio"
-                  rows={3}
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  className="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 px-3"
-                />
-              </div>
-              <p className="mt-3 text-sm leading-6 text-slate-600">Brief description for your firm profile.</p>
-            </div>
+            {/* 3. ✅ DELETE BUTTON (Top Right - Only shows if avatar exists) */}
+            {avatarPreview && (
+                <button 
+                    onClick={handleRemoveAvatar}
+                    className="absolute top-0 right-0 bg-rose-50 p-1.5 rounded-full shadow-md border border-rose-100 text-rose-600 hover:bg-rose-600 hover:text-white transition-colors z-30 transform hover:scale-110"
+                    title="Remove Avatar"
+                >
+                    <Trash2 size={14} />
+                </button>
+            )}
           </div>
 
-          <div className="flex items-center gap-x-4 border-t border-slate-100 pt-6">
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-70 disabled:cursor-not-allowed transition-all"
-            >
-              {isLoading ? (
-                <span className="flex items-center gap-2">
-                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Saving...
-                </span>
-              ) : (
-                'Save changes'
-              )}
-            </button>
+          {/* User Info Display */}
+          <div className="flex-1 text-center sm:text-left mb-2">
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">{formData.name || 'User Name'}</h1>
+            <p className="text-slate-500 font-medium flex items-center justify-center sm:justify-start gap-2 mt-1">
+              {formData.jobTitle || 'No Job Title'} 
+              <span className="text-slate-300">•</span>
+              {formData.company || 'No Company'}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2 justify-center sm:justify-start">
+               <span className="px-3 py-1 rounded-lg bg-indigo-50 text-indigo-700 text-[10px] font-black border border-indigo-100 uppercase tracking-wider flex items-center gap-1">
+                 <Shield size={10} /> {user.userType || 'MEMBER'}
+               </span>
+               <span className="px-3 py-1 rounded-lg bg-slate-100 text-slate-600 text-[10px] font-bold border border-slate-200">
+                 {user.email}
+               </span>
+            </div>
           </div>
-        </form>
+        </div>
+
+        {/* FEEDBACK MESSAGES */}
+        {successMsg && (
+          <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-3 text-emerald-700 shadow-sm animate-in fade-in slide-in-from-top-2">
+            <CheckCircle className="w-5 h-5 flex-shrink-0" />
+            <p className="text-sm font-bold">{successMsg}</p>
+          </div>
+        )}
+        {errorMsg && (
+          <div className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-3 text-rose-700 shadow-sm animate-in fade-in slide-in-from-top-2">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <p className="text-sm font-bold">{errorMsg}</p>
+          </div>
+        )}
+
+        {/* FORM GRID */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* LEFT COLUMN: Edit Form */}
+          <div className="lg:col-span-2 space-y-6">
+            <form onSubmit={handleSave} className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+              <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/50">
+                <h3 className="font-bold text-slate-800 text-lg">Edit Personal Information</h3>
+              </div>
+              
+              <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                {/* Name */}
+                <div className="col-span-2">
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Full Name</label>
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <input 
+                      name="name" 
+                      value={formData.name} 
+                      onChange={handleChange}
+                      className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all font-bold text-slate-700"
+                      placeholder="Your Full Name"
+                    />
+                  </div>
+                </div>
+
+                {/* Job Title */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Job Title</label>
+                  <div className="relative">
+                    <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <input 
+                      name="jobTitle" 
+                      value={formData.jobTitle} 
+                      onChange={handleChange}
+                      className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-indigo-500 outline-none transition-all font-medium text-slate-700"
+                      placeholder="e.g. Patent Attorney"
+                    />
+                  </div>
+                </div>
+
+                {/* Company */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Company</label>
+                  <div className="relative">
+                    <Building className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <input 
+                      name="company" 
+                      value={formData.company} 
+                      onChange={handleChange}
+                      className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-indigo-500 outline-none transition-all font-medium text-slate-700"
+                      placeholder="Company Name"
+                    />
+                  </div>
+                </div>
+
+                {/* Contact Info */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Email (Read Only)</label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <input 
+                      name="email" 
+                      value={formData.email} 
+                      readOnly
+                      className="w-full pl-12 pr-4 py-3.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 font-medium cursor-not-allowed"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Phone</label>
+                  <div className="relative">
+                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <input 
+                      name="phone" 
+                      value={formData.phone} 
+                      onChange={handleChange}
+                      className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-indigo-500 outline-none transition-all font-medium text-slate-700"
+                      placeholder="+1 234 567 890"
+                    />
+                  </div>
+                </div>
+
+                {/* Location */}
+                <div className="col-span-2">
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Location</label>
+                  <div className="relative">
+                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <input 
+                      name="location" 
+                      value={formData.location} 
+                      onChange={handleChange}
+                      className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-indigo-500 outline-none transition-all font-medium text-slate-700"
+                      placeholder="City, Country"
+                    />
+                  </div>
+                </div>
+
+                {/* Socials */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">LinkedIn</label>
+                  <div className="relative">
+                    <Linkedin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <input 
+                      name="linkedin" 
+                      value={formData.linkedin} 
+                      onChange={handleChange}
+                      className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-indigo-500 outline-none transition-all font-medium text-slate-700"
+                      placeholder="Linkedin Profile URL"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Website</label>
+                  <div className="relative">
+                    <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <input 
+                      name="website" 
+                      value={formData.website} 
+                      onChange={handleChange}
+                      className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-indigo-500 outline-none transition-all font-medium text-slate-700"
+                      placeholder="https://..."
+                    />
+                  </div>
+                </div>
+
+                {/* Bio */}
+                <div className="col-span-2">
+                  <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Bio</label>
+                  <textarea 
+                    name="bio"
+                    rows="4" 
+                    value={formData.bio} 
+                    onChange={handleChange}
+                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-indigo-500 outline-none transition-all text-slate-700 font-medium leading-relaxed resize-none"
+                    placeholder="Tell us a bit about yourself..."
+                  ></textarea>
+                </div>
+              </div>
+
+              <div className="px-8 py-6 bg-slate-50 border-t border-slate-100 flex justify-end">
+                <button 
+                  type="submit" 
+                  disabled={isLoading}
+                  className="flex items-center gap-2 px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-xl shadow-indigo-200 transition-all transform active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></span> : <Save size={18} />}
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* RIGHT COLUMN: Subscription & Status */}
+          <div className="space-y-6">
+            
+            {/* Subscription Card - Based on User.java fields */}
+            <div className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-3xl shadow-xl p-8 text-white relative overflow-hidden">
+               <div className="absolute -top-12 -right-12 w-48 h-48 bg-white/5 rounded-full blur-3xl"></div>
+               <div className="absolute bottom-0 left-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl"></div>
+               
+               <div className="relative z-10">
+                 <div className="flex items-center gap-3 mb-6">
+                    <div className="p-3 bg-white/10 rounded-xl backdrop-blur-sm">
+                        <CreditCard size={24} className="text-indigo-300" />
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-200">Current Plan</p>
+                        <h3 className="text-xl font-black tracking-tight">{user.planType || 'STARTUP'}</h3>
+                    </div>
+                 </div>
+
+                 <div className="space-y-4 border-t border-white/10 pt-4">
+                    <div className="flex justify-between items-center">
+                        <span className="text-xs font-medium text-slate-300 flex items-center gap-2">
+                            <Calendar size={12}/> Renewing On
+                        </span>
+                        <span className="text-sm font-bold text-white">{user.renewalDate || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                        <span className="text-xs font-medium text-slate-300">Billing Cycle</span>
+                        <span className="text-sm font-bold text-white capitalize">{user.billingCycle || 'Monthly'}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                        <span className="text-xs font-medium text-slate-300">Amount Paid</span>
+                        <span className="text-sm font-bold text-emerald-400">₹{user.amountPaid || '0'}</span>
+                    </div>
+                 </div>
+
+                 <button className="w-full mt-8 py-3 bg-white text-indigo-900 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-indigo-50 transition-colors shadow-lg">
+                    Upgrade Plan
+                 </button>
+               </div>
+            </div>
+
+            {/* Account Status */}
+            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
+               <h4 className="text-sm font-bold text-slate-900 mb-4">Account Status</h4>
+               <div className="flex items-center gap-3 p-3 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-100">
+                  <CheckCircle size={18} />
+                  <div>
+                      <p className="text-xs font-black uppercase tracking-wide">Active</p>
+                      <p className="text-[10px] opacity-80">Your account is in good standing.</p>
+                  </div>
+               </div>
+               <div className="mt-4 text-xs text-slate-400 text-center">
+                  Member since {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+               </div>
+            </div>
+
+          </div>
+
+        </div>
       </div>
     </div>
   );

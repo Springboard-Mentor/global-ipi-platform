@@ -6,9 +6,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class UserService {
@@ -19,46 +25,76 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
-    }
+    private final String UPLOAD_DIR = "uploads/avatars/";
 
-    public Optional<User> findByEmail(String email) {
-        return userRepository.findByEmail(email);
-    }
+    public List<User> getAllUsers() { return userRepository.findAll(); }
+
+    public Optional<User> findByEmail(String email) { return userRepository.findByEmail(email); }
     
     public User createUser(User user) {
         if (userRepository.existsByEmail(user.getEmail())) {
             throw new RuntimeException("User with this email already exists");
         }
+        user.setPassword(passwordEncoder.encode(user.getPassword())); 
         return userRepository.save(user);
     }
-    
-    /**
-     * Finds a user by email, or creates a new user record for Firebase/Google login.
-     * This handles the auto-registration process.
-     */
+
+    public User updateUserProfile(Long id, User updates) {
+        User existingUser = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (updates.getName() != null) existingUser.setName(updates.getName());
+        if (updates.getPhone() != null) existingUser.setPhone(updates.getPhone());
+        if (updates.getJobTitle() != null) existingUser.setJobTitle(updates.getJobTitle());
+        if (updates.getCompany() != null) existingUser.setCompany(updates.getCompany());
+        if (updates.getLocation() != null) existingUser.setLocation(updates.getLocation());
+        if (updates.getBio() != null) existingUser.setBio(updates.getBio());
+        if (updates.getLinkedin() != null) existingUser.setLinkedin(updates.getLinkedin());
+        if (updates.getWebsite() != null) existingUser.setWebsite(updates.getWebsite());
+
+        return userRepository.save(existingUser);
+    }
+
+    public String saveAvatar(Long userId, MultipartFile file) throws IOException {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Path uploadPath = Paths.get(UPLOAD_DIR);
+        if (!Files.exists(uploadPath)) {
+            Files.createDirectories(uploadPath);
+        }
+
+        String filename = UUID.randomUUID() + "_" + file.getOriginalFilename();
+        Path filePath = uploadPath.resolve(filename);
+        Files.copy(file.getInputStream(), filePath);
+
+        String fileUrl = "http://localhost:5001/uploads/avatars/" + filename;
+        user.setAvatar(fileUrl);
+        userRepository.save(user);
+
+        return fileUrl;
+    }
+
+    // --- 🔴 DELETE LOGIC ---
+    public void deleteAvatar(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        
+        // Remove the reference from the database
+        user.setAvatar(null);
+        userRepository.save(user);
+    }
+
     @Transactional
     public User findOrCreateFirebaseUser(String email, String name, String firebaseUid) {
-        
-        // 1. Check if user already exists
         Optional<User> userOptional = userRepository.findByEmail(email);
+        if (userOptional.isPresent()) return userOptional.get();
         
-        if (userOptional.isPresent()) {
-            return userOptional.get();
-        }
-        
-        // 2. If user does not exist, create a new local user account
         User newUser = new User();
         newUser.setName(name); 
         newUser.setEmail(email);
-        
-        // 🚨 IMPORTANT: Since the password is not provided, we must set a strong, unique placeholder.
-        // The passwordEncoder hashes the Firebase UID, making it secure and unique.
         newUser.setPassword(passwordEncoder.encode(firebaseUid)); 
-        
-        // 🔧 FIXED: Changed from "USER" to "Individual" to match your existing system
-        newUser.setUserType("Individual"); // Default role/type for Google sign-ups
+        newUser.setUserType("Individual"); 
         
         return userRepository.save(newUser);
     }

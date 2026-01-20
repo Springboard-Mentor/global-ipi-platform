@@ -7,9 +7,5 @@ import java.util.List;
 
 @Repository
 public interface SubscriptionRepository extends JpaRepository<Subscription, Integer> {
-    // Find all subscriptions for a specific user
-    List<Subscription> findByUserId(Integer userId);
-    
-    // Check if a user is already subscribed to an asset
-    boolean existsByUserIdAndIpAssetId(Integer userId, Integer ipAssetId);
+    List<Subscription> findByUserId(Long userId);
 }
