@@ -69,6 +69,7 @@ public class AdminMonitoringController {
         chartData.put("filingTrends", monitoringService.getFilingTrendsData());
         chartData.put("categories", monitoringService.getCategoryData());
         chartData.put("grantRates", monitoringService.getGrantRateData());
+        chartData.put("jurisdictions", monitoringService.getJurisdictionData());
 
         allData.put("chartData", chartData);
 
