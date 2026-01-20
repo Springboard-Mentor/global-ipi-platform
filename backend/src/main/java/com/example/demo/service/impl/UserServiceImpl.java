@@ -22,6 +22,8 @@ public class UserServiceImpl implements UserService {
     private final UserRepository repo;
     private final PasswordEncoder passwordEncoder;
     private final com.example.demo.notification.service.NotificationService notificationService;
+    private final com.example.demo.subscription.repository.SubscriptionPlanRepository planRepository;
+    private final com.example.demo.subscription.repository.SubscriptionHistoryRepository historyRepository;
 
     // -----------------------------
     // REGISTER
@@ -174,5 +176,40 @@ public class UserServiceImpl implements UserService {
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         repo.save(user);
+    }
+
+    @Override
+    public void upgradeSubscription(String email, String planName) {
+        User user = repo.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        String oldPlan = user.getSubscription() != null ? user.getSubscription() : "Free";
+        
+        // Find plan details to get price
+        double amount = planRepository.findByName(planName)
+                .map(p -> p.getPrice())
+                .orElse(0.0);
+
+        user.setSubscription(planName);
+        repo.save(user);
+
+        // Record history
+        com.example.demo.subscription.entity.SubscriptionHistory history = com.example.demo.subscription.entity.SubscriptionHistory.builder()
+                .userId(user.getId())
+                .userName(user.getName())
+                .oldPlan(oldPlan)
+                .newPlan(planName)
+                .amount(amount)
+                .action("UPGRADED")
+                .build();
+        
+        historyRepository.save(history);
+
+        // Send confirmation notification
+        com.example.demo.notification.dto.NotificationRequest notif = new com.example.demo.notification.dto.NotificationRequest();
+        notif.setUserId(user.getId());
+        notif.setMessage("Success! You've upgraded to the " + planName + " plan.");
+        notif.setType("SUBSCRIPTION");
+        notificationService.create(notif);
     }
 }

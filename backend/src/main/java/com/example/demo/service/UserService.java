@@ -23,4 +23,6 @@ public interface UserService {
     User updateProfile(String email, UpdateProfileRequest request);
 
     void changePassword(String email, ChangePasswordRequest request);
+
+    void upgradeSubscription(String email, String planName);
 }
