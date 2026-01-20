@@ -48,15 +48,15 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
 
   // Format date and time
   const formatDateTime = () => {
-    const options = { 
-      weekday: 'short', 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
+    const options = {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
     };
     const date = currentDateTime.toLocaleDateString('en-US', options);
-    const time = currentDateTime.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
+    const time = currentDateTime.toLocaleTimeString('en-US', {
+      hour: '2-digit',
       minute: '2-digit',
       second: '2-digit'
     });
@@ -102,16 +102,16 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
       return {
         type: userProfile.subscriptionType,
         daysLeft,
-        startDate: startDate.toLocaleDateString('en-US', { 
-          year: 'numeric', 
-          month: 'long', 
+        startDate: startDate.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
           day: 'numeric',
           hour: '2-digit',
           minute: '2-digit'
         }),
-        endDate: endDate.toLocaleDateString('en-US', { 
-          year: 'numeric', 
-          month: 'long', 
+        endDate: endDate.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
           day: 'numeric',
           hour: '2-digit',
           minute: '2-digit'
@@ -129,14 +129,14 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
   };
 
   const subscriptionDetails = getSubscriptionDetails();
-  
+
   return (
     <div className="bg-gradient-to-r from-teal-600 via-blue-600 to-indigo-700 border-b border-teal-500/30 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 shadow-lg">
       <div className="flex items-center gap-1 sm:gap-2 md:gap-3 justify-between">
 
         {/* Left Section - Menu, Logo, Subscription */}
         <div className="flex items-center gap-1 sm:gap-2 md:gap-3 flex-shrink-0">
-          <button 
+          <button
             onClick={onMenuClick}
             className={`p-1.5 sm:p-2 hover:bg-white/20 rounded-xl transition ${sidebarOpen ? 'invisible' : ''}`}
           >
@@ -184,12 +184,12 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
                     <span className="text-gray-600">Days Remaining:</span>
                     <span className="font-semibold text-gray-800">{subscriptionDetails.daysLeft} days</span>
                   </div>
-                  
+
                   <div className="flex justify-between">
                     <span className="text-gray-600">Start Date:</span>
                     <span className="font-medium text-gray-800 text-xs">{subscriptionDetails.startDate}</span>
                   </div>
-                  
+
                   <div className="flex justify-between">
                     <span className="text-gray-600">End Date:</span>
                     <span className="font-medium text-gray-800 text-xs">{subscriptionDetails.endDate}</span>
@@ -212,7 +212,7 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
                           <span className="font-mono text-xs text-gray-700 break-all text-right max-w-[180px]">{subscriptionDetails.paymentId}</span>
                         </div>
                       </div>
-                      
+
                       {subscriptionDetails.orderId !== 'N/A' && (
                         <div className="flex justify-between items-start">
                           <span className="text-gray-600">Order ID:</span>
@@ -243,7 +243,7 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
             </div>
           </div>
         </div>
-        
+
         {/* Center Section - Search Bar */}
         <form onSubmit={handleSearch} className="flex-1 max-w-[180px] sm:max-w-xs md:max-w-md lg:max-w-lg xl:max-w-xl 2xl:max-w-2xl mx-1 sm:mx-2 md:mx-3">
           <div className="relative">
@@ -276,11 +276,11 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
           </div>
 
           <div className="relative" ref={notificationRef}>
-            <button 
+            <button
               onClick={() => setShowNotifications(!showNotifications)}
               className="p-1.5 sm:p-2 hover:bg-white/20 rounded-xl relative transition"
             >
-              <Bell size={16} className="sm:w-[18px] sm:h-[18px] text-white" />
+              <Bell size={16} className="sm:w-[18px] sm:h-[18px] text-yellow-400" />
               {notifications.length > 0 && (
                 <span className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 w-2 h-2 bg-yellow-400 rounded-full animate-pulse shadow-lg"></span>
               )}
@@ -291,7 +291,7 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
               <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 max-h-96 overflow-y-auto">
                 <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-3 rounded-t-xl flex items-center justify-between">
                   <h3 className="font-bold">Notifications</h3>
-                  <button 
+                  <button
                     onClick={() => setShowNotifications(false)}
                     className="p-1 hover:bg-white/20 rounded-full transition"
                     title="Close notifications"
@@ -299,7 +299,7 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
                     <X size={18} className="text-white" />
                   </button>
                 </div>
-                
+
                 {notifications.length === 0 ? (
                   <div className="p-6 text-center text-gray-500">
                     <Bell size={32} className="mx-auto mb-2 opacity-50" />
@@ -362,16 +362,16 @@ const HeaderBar = ({ onMenuClick, onProfileClick, userProfile, onSearch, current
               </div>
               <div className="text-[10px] md:text-xs text-white/90 drop-shadow-sm truncate max-w-[100px] lg:max-w-[150px] xl:max-w-[200px]">{userProfile.email}</div>
             </div>
-            
-            <button 
+
+            <button
               onClick={onProfileClick}
               className="w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 lg:w-10 lg:h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center overflow-hidden shadow-lg ring-2 ring-white/30 hover:ring-white/50 transition flex-shrink-0"
               title={`${userProfile.firstName} ${userProfile.lastName}`}
             >
               {userProfile.photoURL ? (
-                <img 
-                  src={userProfile.photoURL} 
-                  alt="Profile" 
+                <img
+                  src={userProfile.photoURL}
+                  alt="Profile"
                   className="w-full h-full object-cover"
                 />
               ) : (

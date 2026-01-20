@@ -24,7 +24,7 @@ const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem, onLogout, userPro
   const [showToast, setShowToast] = useState(false);
   const [toastTimer, setToastTimer] = useState(5);
   const [lockedFeature, setLockedFeature] = useState('');
-  
+
   // Handle toast auto-dismiss with countdown
   React.useEffect(() => {
     let interval;
@@ -105,106 +105,103 @@ const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem, onLogout, userPro
         <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent hover:scrollbar-thumb-gray-400">
           {/* Main Menu */}
           <nav className="p-4 space-y-2">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isFilingTracker = item.id === 'filing';
-            const isLegalStatus = item.id === 'legal';
-            const isLeaderboard = item.id === 'leaderboard';
-            const isLocked = ((isFilingTracker || isLegalStatus || isLeaderboard) && isBasicUser);
-            
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  if (isLocked) {
-                    handleLockedFeatureClick(item.label);
-                  } else {
-                    setActiveItem(item.id);
-                  }
-                }}
-                className={`
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              const isFilingTracker = item.id === 'filing';
+              const isLegalStatus = item.id === 'legal';
+              const isLeaderboard = item.id === 'leaderboard';
+              const isLocked = ((isFilingTracker || isLegalStatus || isLeaderboard) && isBasicUser);
+
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    if (isLocked) {
+                      handleLockedFeatureClick(item.label);
+                    } else {
+                      setActiveItem(item.id);
+                    }
+                  }}
+                  className={`
                   w-full flex items-center gap-3 px-4 py-3 rounded-xl transition
-                  ${
-                    activeItem === item.id
+                  ${activeItem === item.id
                       ? "bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg"
-                      : "text-gray-600 hover:bg-gradient-to-br hover:from-blue-50 hover:to-purple-50"
-                  }
+                      : "text-gray-600 hover:text-gray-900 hover:bg-gradient-to-br hover:from-blue-200 hover:to-purple-200"
+                    }
                 `}
-              >
-                <Icon size={20} />
-                <span className="font-medium">{item.label}</span>
-                {isLocked && <Lock size={16} className="ml-auto" />}
-              </button>
-            );
-          })}
+                >
+                  <Icon size={20} />
+                  <span className="font-medium">{item.label}</span>
+                  {isLocked && <Lock size={16} className="ml-auto" />}
+                </button>
+              );
+            })}
 
-          {/* Patent Filing - Visible for all users, locked for basic */}
-          <button
-            key={patentFilingItem.id}
-            onClick={() => {
-              if (isBasicUser) {
-                handleLockedFeatureClick(patentFilingItem.label);
-              } else {
-                setActiveItem(patentFilingItem.id);
-              }
-            }}
-            className={`
-              w-full flex items-center gap-3 px-4 py-3 rounded-xl transition
-              ${
-                activeItem === patentFilingItem.id
-                  ? "bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg"
-                  : "text-gray-600 hover:bg-gradient-to-br hover:from-blue-50 hover:to-purple-50"
-              }
-            `}
-          >
-            <FileCheck size={20} />
-            <span className="font-medium">{patentFilingItem.label}</span>
-            {isBasicUser && <Lock size={16} className="ml-auto" />}
-          </button>
-
-          {/* Upgrade to Pro Button */}
-          {userProfile?.subscriptionType !== "pro" && userProfile?.subscriptionType !== "enterprise" && (
+            {/* Patent Filing - Visible for all users, locked for basic */}
             <button
-              onClick={() => setShowUpgradeModal(true)}
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg hover:shadow-xl hover:scale-105 mt-4 relative overflow-hidden group"
-            >
-              <Crown size={20} className="animate-pulse" />
-              <span className="font-bold">Upgrade to Pro</span>
-              <Sparkles size={16} className="ml-auto" />
-              <div className="absolute inset-0 bg-white/20 transform translate-x-full group-hover:translate-x-0 transition-transform duration-500" />
-            </button>
-          )}
-        </nav>
-
-        {/* Bottom Menu */}
-        <div className="p-4 pt-2 space-y-2">
-          <div className="border-t border-gray-100 pt-2">
-            {bottomItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.id}
-                onClick={() =>
-                  item.id === "logout"
-                    ? onLogout()
-                    : setActiveItem(item.id)
+              key={patentFilingItem.id}
+              onClick={() => {
+                if (isBasicUser) {
+                  handleLockedFeatureClick(patentFilingItem.label);
+                } else {
+                  setActiveItem(patentFilingItem.id);
                 }
-                className={`
-                  w-full flex items-center gap-3 px-4 py-3 rounded-xl transition
-                  ${
-                    activeItem === item.id
-                      ? "bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg"
-                      : "text-gray-600 hover:bg-gradient-to-br hover:from-blue-50 hover:to-purple-50"
-                  }
-                `}
+              }}
+              className={`
+              w-full flex items-center gap-3 px-4 py-3 rounded-xl transition
+              ${activeItem === patentFilingItem.id
+                  ? "bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gradient-to-br hover:from-blue-200 hover:to-purple-200"
+                }
+            `}
+            >
+              <FileCheck size={20} />
+              <span className="font-medium">{patentFilingItem.label}</span>
+              {isBasicUser && <Lock size={16} className="ml-auto" />}
+            </button>
+
+            {/* Upgrade to Pro Button */}
+            {userProfile?.subscriptionType !== "pro" && userProfile?.subscriptionType !== "enterprise" && (
+              <button
+                onClick={() => setShowUpgradeModal(true)}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-lg hover:shadow-xl hover:scale-105 mt-4 relative overflow-hidden group"
               >
-                <Icon size={20} />
-                <span className="font-medium">{item.label}</span>
+                <Crown size={20} className="animate-pulse" />
+                <span className="font-bold">Upgrade to Pro</span>
+                <Sparkles size={16} className="ml-auto" />
+                <div className="absolute inset-0 bg-white/20 transform translate-x-full group-hover:translate-x-0 transition-transform duration-500" />
               </button>
-            );
-          })}
+            )}
+          </nav>
+
+          {/* Bottom Menu */}
+          <div className="p-4 pt-2 space-y-2">
+            <div className="border-t border-gray-100 pt-2">
+              {bottomItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() =>
+                      item.id === "logout"
+                        ? onLogout()
+                        : setActiveItem(item.id)
+                    }
+                    className={`
+                  w-full flex items-center gap-3 px-4 py-3 rounded-xl transition
+                  ${activeItem === item.id
+                        ? "bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg"
+                        : "text-gray-600 hover:text-gray-900 hover:bg-gradient-to-br hover:from-blue-200 hover:to-purple-200"
+                      }
+                `}
+                  >
+                    <Icon size={20} />
+                    <span className="font-medium">{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
         </div>
       </div>
 
@@ -227,7 +224,7 @@ const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem, onLogout, userPro
                 <X size={16} />
               </button>
             </div>
-            
+
             <div className="p-4">
               <p className="text-gray-800 font-semibold mb-2">
                 {lockedFeature} is a premium feature
@@ -235,7 +232,7 @@ const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem, onLogout, userPro
               <p className="text-gray-600 text-sm mb-3">
                 Please upgrade to <span className="font-bold text-blue-600">Pro</span> or <span className="font-bold text-purple-600">Enterprise</span> to access this feature.
               </p>
-              
+
               <div className="flex items-center justify-between">
                 <button
                   onClick={() => {
@@ -248,7 +245,7 @@ const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem, onLogout, userPro
                   <Crown size={16} />
                   Upgrade Now
                 </button>
-                
+
                 <div className="flex items-center gap-2 text-gray-500 text-sm">
                   <div className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center font-bold">
                     {toastTimer}
@@ -257,10 +254,10 @@ const Sidebar = ({ isOpen, onClose, activeItem, setActiveItem, onLogout, userPro
                 </div>
               </div>
             </div>
-            
+
             {/* Progress bar */}
             <div className="h-1 bg-gray-200">
-              <div 
+              <div
                 className="h-full bg-gradient-to-r from-orange-500 to-red-500 transition-all duration-1000 ease-linear"
                 style={{ width: `${(toastTimer / 5) * 100}%` }}
               ></div>
