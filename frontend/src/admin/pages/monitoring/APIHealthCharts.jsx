@@ -45,13 +45,12 @@ const APIHealthCharts = () => {
       const monitoringData = await fetchAllMonitoringData();
 
       // Extract relevant data from the integrated response
-      setStats(monitoringData.systemHealth);
-      setTrafficData(monitoringData.chartData.traffic.length > 0
-        ? monitoringData.chartData.traffic
-        : generateMockTrafficData());
-      setResponseData(monitoringData.chartData.responsePerformance.length > 0
-        ? monitoringData.chartData.responsePerformance
-        : generateMockResponseData());
+      setStats(monitoringData.systemHealth || {});
+      const trafficChartData = monitoringData.chartData?.traffic || [];
+      const responseChartData = monitoringData.chartData?.responsePerformance || [];
+      
+      setTrafficData(trafficChartData.length > 0 ? trafficChartData : generateMockTrafficData());
+      setResponseData(responseChartData.length > 0 ? responseChartData : generateMockResponseData());
     } catch (error) {
       console.error("Failed to fetch health stats", error);
       // Fallback to mock data

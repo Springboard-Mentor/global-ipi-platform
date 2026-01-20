@@ -18,10 +18,10 @@ const ActivityTrends = () => {
       const monitoringData = await fetchAllMonitoringData();
 
       // Extract relevant data from the integrated response
-      setStats(monitoringData.activityStats);
-      setUserActivityData(monitoringData.chartData.userActivity);
-      setFeatureUsageData(monitoringData.chartData.featureUsage);
-      setSessionData(monitoringData.chartData.sessionDuration);
+      setStats(monitoringData.activityStats || {});
+      setUserActivityData(monitoringData.chartData?.userActivity || []);
+      setFeatureUsageData(monitoringData.chartData?.featureUsage || []);
+      setSessionData(monitoringData.chartData?.sessionDuration || []);
     } catch (err) {
       console.error("Failed to fetch activity stats", err);
       // Fallback to mock data

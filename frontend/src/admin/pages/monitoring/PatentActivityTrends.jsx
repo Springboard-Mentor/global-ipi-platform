@@ -18,11 +18,11 @@ const PatentActivityTrends = () => {
         const monitoringData = await fetchAllMonitoringData();
 
         // Extract patent trends data from the integrated response
-        setData(monitoringData.patentTrends);
-        setFilingTrends(monitoringData.chartData.filingTrends);
-        setCategoryData(monitoringData.chartData.categories);
-        setGrantRateData(monitoringData.chartData.grantRates);
-        setJurisdictionData(monitoringData.chartData.jurisdictions);
+        setData(monitoringData.patentTrends || {});
+        setFilingTrends(monitoringData.chartData?.filingTrends || []);
+        setCategoryData(monitoringData.chartData?.categories || []);
+        setGrantRateData(monitoringData.chartData?.grantRates || []);
+        setJurisdictionData(monitoringData.chartData?.jurisdictions || []);
       } catch (e) {
         console.error("Failed to load patent trends", e);
         // Fallback to mock data

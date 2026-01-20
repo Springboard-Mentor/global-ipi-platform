@@ -17,13 +17,25 @@ const LiveTraffic = () => {
       const monitoringData = await fetchAllMonitoringData();
 
       // Extract traffic data from the integrated response
-      setTrafficData(monitoringData.trafficData || generateMockTrafficData());
-      setRealtimeStats(monitoringData.trafficData?.realtimeStats || generateMockRealtimeStats());
+      if (monitoringData.trafficData) {
+        const trafficDataPoints = Array.isArray(monitoringData.trafficData) 
+          ? monitoringData.trafficData 
+          : monitoringData.trafficData.trafficData || [];
+        const stats = monitoringData.trafficData.realtimeStats || generateMockRealtimeStats();
+        
+        setTrafficData(trafficDataPoints.length > 0 ? trafficDataPoints : generateMockTrafficData());
+        setRealtimeStats(stats);
+      } else {
+        setTrafficData(generateMockTrafficData());
+        setRealtimeStats(generateMockRealtimeStats());
+      }
+      setLoading(false);
     } catch (error) {
       console.error("Failed to fetch traffic data", error);
       // Fallback to mock data
       setTrafficData(generateMockTrafficData());
       setRealtimeStats(generateMockRealtimeStats());
+      setLoading(false);
     }
   };
 
