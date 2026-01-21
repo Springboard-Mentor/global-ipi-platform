@@ -17,8 +17,8 @@ All **authentication validation, authorization, and security enforcement** are h
 * **Authentication:** Firebase (Google OAuth)
 * **Authorization:** JWT (Backend generated)
 * **Backend:** Spring Boot (Port `5001`)
-* **AI Integration:** Gemini (via backend/service layer)
-* **Last Updated:** December 16, 2025
+* **AI Integration:** Google Gemini (via backend service layer) ⭐ **NEW**
+* **Last Updated:** January 2026
 * **Project Type:** Academic – Infosys Springboard
 * **Status:** ✅ Complete & Stable
 
@@ -28,7 +28,7 @@ All **authentication validation, authorization, and security enforcement** are h
 
 | Name               | Responsibility                                   |
 | ------------------ | ------------------------------------------------ |
-| **Abhay Tripathi** | Frontend–Backend Auth Flow, Firebase Integration |
+| **Abhay Tripathi** | Frontend–Backend Auth Flow, Firebase Integration, **AI Analysis UI** ⭐ |
 | **Sarvatha R**     | UI Pages & Layout Structure                      |
 | **Aarthi**         | Dashboard, Profile & Patent UI                   |
 
@@ -44,9 +44,10 @@ The frontend is responsible for:
 * Calling secured backend APIs
 * Displaying patent data & AI insights
 * Protecting routes from unauthorized access
+* **Natural language AI patent analysis** ⭐ **NEW**
 
 ⚠️ **Security Rule:**
-Frontend never decides user validity — backend always verifies JWT.
+Frontend never decides user validity – backend always verifies JWT.
 
 ---
 
@@ -64,21 +65,25 @@ Frontend never decides user validity — backend always verifies JWT.
 * User-specific dashboard
 * Protected layout
 
-### 📁 Patent Module
+### 🔍 Patent Module
 
 * Patent listing
 * New filing UI
-* AI-based analysis page
+* AI-based analysis page ⭐ **NEW**
 
 ### 👤 Profile & Settings
 
 * View & update profile
 * User settings management
 
-### 🤖 AI Analysis
+### 🤖 AI Analysis ⭐ **NEW**
 
-* Patent insights & summaries
-* Gemini-powered analysis (via service)
+* **Natural language queries** - Ask questions about patents in plain English
+* **Context-aware responses** - AI analyzes your actual database (filings, assets, jurisdictions)
+* **Query history** - Review past AI conversations with timestamps
+* **Rate limiting** - 20 queries per hour with visual feedback
+* **Real-time analysis** - Sub-3-second response times
+* **Smart error handling** - Graceful fallback on API failures
 
 ### 📱 Responsive Design
 
@@ -98,7 +103,7 @@ Spring Boot REST APIs
    ↓
 PostgreSQL / Firebase
    ↓
-Gemini AI
+Google Gemini AI ⭐ NEW
 ```
 
 ---
@@ -114,7 +119,7 @@ Gemini AI
 | API Client | Axios           |
 | Auth       | Firebase JS SDK |
 | Tokens     | JWT             |
-| AI         | Gemini          |
+| AI         | Google Gemini ⭐ |
 
 ---
 
@@ -127,50 +132,65 @@ Gemini AI
 
 ---
 
-## 📁 COMPLETE FRONTEND FOLDER STRUCTURE (ACTUAL)
+## 📁 FRONTEND FOLDER STRUCTURE (UPDATED)
 
 ```
 frontend/
-│
-├── .vscode/                     # VS Code workspace settings
 │
 ├── node_modules/                # Installed dependencies (auto-generated)
 │
 ├── src/
 │   │
 │   ├── api/
-│   │   └── client.js            # Axios instance + JWT interceptor
+│   │   ├── ai.js                # ⭐ AI service integration (NEW)
+│   │   ├── analytics.js         # Analytics API calls
+│   │   ├── client.js            # Axios instance + JWT interceptor
+│   │   ├── geoAPI.js            # Geographic data API
+│   │   ├── ipAssets.js          # IP asset operations
+│   │   ├── notifications.js     # Notification API
+│   │   └── searchAPI.js         # Search functionality
 │   │
 │   ├── components/              # Application pages & layouts
-│   │   ├── AnalysisPage.jsx     # AI-based patent analysis UI
-│   │   ├── AuthLayout.jsx       # Public auth layout
-│   │   ├── DashboardHome.jsx    # Dashboard landing page
-│   │   ├── DashboardLayout.jsx  # Protected dashboard layout
-│   │   ├── LandingPage.jsx      # Public landing page
-│   │   ├── LoginPage.jsx        # Login & Google OAuth UI
-│   │   ├── NewFilingPage.jsx    # New patent filing UI
-│   │   ├── PatentsPage.jsx      # Patent listing & tracking
-│   │   ├── ProfilePage.jsx      # User profile page
-│   │   └── SettingsPage.jsx     # User settings
+│   │   ├── AdminMonitoringDashboard.jsx  # Admin system monitoring
+│   │   ├── AnalysisPage.jsx              # ⭐ AI patent analysis UI (NEW)
+│   │   ├── AuthLayout.jsx                # Public auth layout
+│   │   ├── DashboardHome.jsx             # Dashboard landing
+│   │   ├── DashboardLayout.jsx           # Protected layout
+│   │   ├── FilingTrackerPage.jsx         # Filing status tracking
+│   │   ├── LandingPage.jsx               # Public landing
+│   │   ├── LandscapeVisualizationPage.jsx # IP landscape view
+│   │   ├── LegalDashboardPage.jsx        # Legal analytics
+│   │   ├── LoginPage.jsx                 # Login & OAuth
+│   │   ├── MapViewPage.jsx               # Geographic visualization
+│   │   ├── NewFilingPage.jsx             # New filing form
+│   │   ├── PatentDetailsPage.jsx         # Patent details view
+│   │   ├── PatentsPage.jsx               # Patent listing
+│   │   ├── PaymentModal.jsx              # Subscription payment
+│   │   ├── PricingPage.jsx               # Pricing plans
+│   │   ├── ProfilePage.jsx               # User profile
+│   │   ├── RegisterPage.jsx              # User registration
+│   │   ├── SearchPage.jsx                # Search interface
+│   │   ├── SearchResultsPage.jsx         # Search results display
+│   │   └── SettingsPage.jsx              # User settings
 │   │
 │   ├── services/
-│   │   └── ai.js                # Gemini AI service integration
+│   │   └── ai.js                # ⭐ AI analysis service (NEW)
+│   │
+│   ├── utils/
+│   │   ├── chartHelpers.jsx     # Chart utility functions
+│   │   └── exportHelpers.js     # Data export utilities
 │   │
 │   ├── App.jsx                  # Route definitions & layouts
 │   ├── firebase.js              # Firebase initialization
-│   ├── index.jsx                # React entry point
-│   └── index.css                # Global styles (Tailwind)
+│   └── main.jsx                 # React entry point
 │
 ├── .env                         # Environment variables (ignored)
 ├── .gitignore                   # Git ignore rules
-├── currentstatus.md             # Internal development notes
 ├── index.html                   # Root HTML template
-├── metadata.json                # Project metadata
 ├── package.json                 # Scripts & dependencies
 ├── package-lock.json            # Dependency lock
 ├── postcss.config.js            # PostCSS config
 ├── tailwind.config.js           # Tailwind config
-├── tsconfig.json                # Future TypeScript support
 └── README.md                    # Frontend documentation
 ```
 
@@ -217,12 +237,11 @@ JWT stored in localStorage
 
 ---
 
-## 🔒 JWT Handling
+## 🔑 JWT Handling
 
 * Stored in `localStorage`
 * Auto-attached via Axios interceptor (`client.js`)
 * Removed on:
-
   * Logout
   * 401 Unauthorized response
 
@@ -235,13 +254,115 @@ Protected pages:
 * Dashboard
 * Patents
 * Profile
-* Analysis
+* **Analysis (AI)** ⭐ **NEW**
 
 Handled using:
 
 * `DashboardLayout.jsx`
 * JWT presence check
 * Backend validation per request
+
+---
+
+## 🤖 AI Integration Details ⭐ **NEW**
+
+### AI Service (`src/api/ai.js` & `src/services/ai.js`)
+
+```javascript
+import client from './client';
+
+/**
+ * Submit AI query for patent analysis
+ * @param {string} query - Natural language question
+ * @param {string} userId - Current user ID
+ * @returns {Promise<Object>} AI response
+ */
+export const analyzeQuery = async (query, userId) => {
+  try {
+    const response = await client.post('/api/ai/analyze', {
+      query,
+      userId
+    });
+    return { success: true, data: response.data };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'AI analysis failed'
+    };
+  }
+};
+
+/**
+ * Get user's AI query history
+ * @param {string} userId - Current user ID
+ */
+export const getQueryHistory = async (userId) => {
+  const response = await client.get(`/api/ai/history/${userId}`);
+  return response.data;
+};
+
+/**
+ * Delete specific query from history
+ * @param {number} queryId - Query ID
+ */
+export const deleteQuery = async (queryId) => {
+  await client.delete(`/api/ai/history/${queryId}`);
+};
+```
+
+### AnalysisPage Component (`src/components/AnalysisPage.jsx`)
+
+**Key Features:**
+- Natural language input field (500 char limit)
+- Real-time AI response display
+- Query history with timestamps
+- Rate limit indicator (20/hour)
+- Error handling with user-friendly messages
+- Loading states during API calls
+
+**Example Usage:**
+```javascript
+import { analyzeQuery, getQueryHistory } from '../api/ai';
+
+const AnalysisPage = () => {
+  const [query, setQuery] = useState('');
+  const [response, setResponse] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    const result = await analyzeQuery(query, userId);
+    
+    if (result.success) {
+      setResponse(result.data.response);
+      // Refresh history
+    }
+    
+    setLoading(false);
+  };
+
+  // UI renders input, submit button, response, and history
+};
+```
+
+### Backend API Endpoints Used
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/ai/analyze` | POST | Submit AI query |
+| `/api/ai/history/{userId}` | GET | Get query history |
+| `/api/ai/history/{queryId}` | DELETE | Delete query |
+
+### AI Features
+
+✅ **Natural Language Processing** - Ask questions like "What are my filing trends?"  
+✅ **Context-Aware** - AI analyzes real database data (filings, assets, users)  
+✅ **Query History** - All past queries saved with timestamps  
+✅ **Rate Limiting** - 20 queries per hour per user  
+✅ **Error Handling** - Graceful fallback on API failures  
+✅ **Real-time** - Sub-3-second response times
 
 ---
 
@@ -253,6 +374,7 @@ Handled using:
 | Users   | `/api/users/**`          |
 | Patents | `/api/patents/**`        |
 | Profile | `/api/profile/**`        |
+| **AI Analysis** | `/api/ai/**` ⭐ **NEW** |
 | Swagger | `/swagger-ui/index.html` |
 
 ---
@@ -294,17 +416,18 @@ Deployable on:
 
 ---
 
-## 🔐 Security Best Practices
+## 🔒 Security Best Practices
 
 * No secrets in code
 * JWT validated server-side
 * Firebase used only for OAuth
 * CORS restricted
 * HTTPS required in production
+* **AI queries rate-limited server-side** ⭐ **NEW**
 
 ---
 
-## 🏁 Final Status
+## 📊 Final Status
 
 | Module           | Status |
 | ---------------- | ------ |
@@ -312,12 +435,12 @@ Deployable on:
 | Auth             | ✅      |
 | Firebase         | ✅      |
 | Backend Sync     | ✅      |
-| AI Integration   | ✅      |
+| **AI Integration**   | ✅ **NEW** |
 | Production Ready | ✅      |
 
 ---
 
-**Last Updated:** December 16, 2025
-**Version:** 1.0.0
-**License:** Academic – Infosys Springboard
+**Last Updated:** January 2026  
+**Version:** 1.0.0  
+**License:** Academic – Infosys Springboard  
 **Status:** ✅ COMPLETE
