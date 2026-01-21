@@ -10,6 +10,7 @@ import com.example.demo.service.UserService;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.service.UserService;
 import com.example.demo.filing.repository.PatentFilingRepository;
+import com.example.demo.filing.entity.PatentFiling;
 import com.example.demo.subscription.repository.SubscriptionHistoryRepository;
 import com.example.demo.notification.repository.NotificationRepository;
 
@@ -141,7 +142,10 @@ public class UserServiceImpl implements UserService {
         // 3. Delete Patent Filings
         // Note: Patent Filings might have drawings/inventors which should cascade via JPA if set up, 
         // but explicit delete is safer for clean sweep without relying on complex entity graphs.
-        filingRepository.deleteByUserId(id);
+        // 3. Delete Patent Filings
+        // Fetch and delete all to ensure JPA Cascades handle associated collections (Drawings, update fields, Inventor join table)
+        List<PatentFiling> filings = filingRepository.findByUserId(id);
+        filingRepository.deleteAll(filings);
 
         // 4. Delete the User
         repo.delete(user);

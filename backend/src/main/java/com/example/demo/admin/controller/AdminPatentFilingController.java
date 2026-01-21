@@ -3,6 +3,7 @@ package com.example.demo.admin.controller;
 import com.example.demo.filing.dto.PatentFilingResponse;
 import com.example.demo.filing.service.PatentFilingService;
 import com.example.demo.admin.dto.BulkActionRequest;
+import com.example.demo.admin.dto.FilingFeedbackRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -42,8 +43,8 @@ public class AdminPatentFilingController {
     @PutMapping("/{id}/feedback")
     public ResponseEntity<PatentFilingResponse> updateFilingFeedback(
             @PathVariable Long id, 
-            @RequestBody String feedback) {
-        return ResponseEntity.ok(filingService.updateFilingFeedbackAdmin(id, feedback));
+            @RequestBody FilingFeedbackRequest request) {
+        return ResponseEntity.ok(filingService.updateFilingFeedbackAdmin(id, request.getFeedback(), request.getRequestedFields()));
     }
 
     @PostMapping("/bulk-action")

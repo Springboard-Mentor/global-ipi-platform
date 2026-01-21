@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
 import { fetchAllMonitoringData } from '../../../api/monitoringApi';
+import GoogleMap from '../../../components/GoogleMap';
 
 const ActivityTrends = () => {
   const [timeRange, setTimeRange] = useState('7d');
@@ -208,14 +209,22 @@ const ActivityTrends = () => {
         </div>
 
         {/* Geographic Distribution */}
-        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6">
+        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 h-[400px] flex flex-col">
           <h3 className="text-xl font-semibold text-white mb-4">Geographic Distribution</h3>
-          <div className="h-64 bg-black/20 rounded-lg flex items-center justify-center">
-            <div className="text-center text-gray-400">
-              <div className="text-4xl mb-2">🌍</div>
-              <p>World Map View</p>
-              <p className="text-sm">Top region: Global</p>
-            </div>
+          <div className="flex-1 min-h-0 w-full">
+            <GoogleMap
+              zoom={2}
+              lat={20}
+              lng={0}
+              markers={[
+                { lat: 40.7128, lng: -74.0060, title: "North America (High Activity)", info: "Active Users: 1,200" },
+                { lat: 51.5074, lng: -0.1278, title: "Europe (Medium Activity)", info: "Active Users: 850" },
+                { lat: 35.6762, lng: 139.6503, title: "Asia (High Activity)", info: "Active Users: 950" },
+                { lat: 12.9716, lng: 77.5946, title: "India (Growth Region)", info: "Active Users: 600" },
+                { lat: -33.8688, lng: 151.2093, title: "Australia (Emerging)", info: "Active Users: 150" },
+                { lat: -23.5505, lng: -46.6333, title: "South America", info: "Active Users: 300" }
+              ]}
+            />
           </div>
         </div>
 

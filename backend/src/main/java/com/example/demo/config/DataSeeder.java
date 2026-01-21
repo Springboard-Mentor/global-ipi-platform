@@ -34,18 +34,26 @@ public class DataSeeder implements CommandLineRunner {
     private void migrateLegacyPlans() {
         System.out.println("Checking for legacy subscription plans (Basic/Premium)...");
         
-        // 1. Rename existing plan entities
+        // 1. Rename existing plan entities safely
         planRepository.findByName("Basic").ifPresent(plan -> {
-            System.out.println("Migrating plan: Basic -> Pro");
-            plan.setName("Pro");
-            planRepository.save(plan);
+            if (planRepository.findByName("Pro").isPresent()) {
+                planRepository.delete(plan);
+            } else {
+                System.out.println("Migrating plan: Basic -> Pro");
+                plan.setName("Pro");
+                planRepository.save(plan);
+            }
         });
 
         planRepository.findByName("Premium").ifPresent(plan -> {
-            System.out.println("Migrating plan: Premium -> Enterprise");
-            plan.setName("Enterprise");
-            plan.setPrice(99.0); // Align with new enterprise price
-            planRepository.save(plan);
+            if (planRepository.findByName("Enterprise").isPresent()) {
+                planRepository.delete(plan);
+            } else {
+                System.out.println("Migrating plan: Premium -> Enterprise");
+                plan.setName("Enterprise");
+                plan.setPrice(99.0);
+                planRepository.save(plan);
+            }
         });
 
         // 2. Update existing users who have "Basic" or "Premium" strings

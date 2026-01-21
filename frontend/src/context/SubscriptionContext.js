@@ -27,7 +27,7 @@ export const SubscriptionProvider = ({ children }) => {
       const response = await axios.get('http://localhost:8081/api/users/me', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       if (response.data.subscription) {
         setCurrentPlan(response.data.subscription.toLowerCase());
       }
@@ -48,12 +48,12 @@ export const SubscriptionProvider = ({ children }) => {
       // Normalize plan names to match backend seeding (Free, Pro, Premium, Enterprise)
       // Frontend uses: basic, pro, enterprise
       const normalizedPlan = plan.charAt(0).toUpperCase() + plan.slice(1);
-      
+
       await axios.put(`http://localhost:8081/api/users/upgrade-subscription?planName=${normalizedPlan}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
-      setCurrentPlan(normalizedPlan);
+
+      setCurrentPlan(normalizedPlan.toLowerCase());
       return true;
     } catch (error) {
       console.error('Upgrade failed:', error);

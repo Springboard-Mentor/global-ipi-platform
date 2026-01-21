@@ -9,7 +9,9 @@ const SubscriptionStatus = () => {
   const { currentPlan, usage } = useSubscription();
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const plan = subscriptionPlans[currentPlan];
+  // Ensure we lookup with lowercase key, defaulting to 'free' if undefined
+  const planKey = (currentPlan || 'free').toLowerCase();
+  const plan = subscriptionPlans[planKey] || subscriptionPlans.free;
 
   useEffect(() => {
     if (searchParams.get('success') === 'true') {
@@ -109,7 +111,7 @@ const SubscriptionStatus = () => {
           {/* Usage Statistics */}
           <div className="bg-white/10 backdrop-blur-xl rounded-xl p-6 border border-white/20">
             <h2 className="text-xl font-semibold mb-4">Usage This Month</h2>
-            
+
             <div className="space-y-6">
               <div>
                 <div className="flex justify-between mb-2">

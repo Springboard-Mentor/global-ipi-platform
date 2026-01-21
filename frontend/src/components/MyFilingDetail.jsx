@@ -206,6 +206,7 @@ const MyFilingDetail = () => {
   const [isEditingCorrection, setIsEditingCorrection] = useState(false);
   const [editedFields, setEditedFields] = useState({});
   const [isSaving, setIsSaving] = useState(false);
+  const [showSuccessBanner, setShowSuccessBanner] = useState(false);
 
   useEffect(() => {
     const fetchFiling = async () => {
@@ -276,7 +277,10 @@ const MyFilingDetail = () => {
       const updated = await updateFiling(parseInt(id), requestData);
       setFiling(updated);
       setIsEditingCorrection(false);
-      alert("Changes saved successfully!");
+      setFiling(updated);
+      setIsEditingCorrection(false);
+      setShowSuccessBanner(true);
+      setTimeout(() => setShowSuccessBanner(false), 5000);
     } catch (err) {
       console.error("Failed to save changes:", err);
       alert(`Failed to save changes: ${err.message || "Unknown error"}`);
@@ -297,6 +301,15 @@ const MyFilingDetail = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#2A1A4A] via-[#301B55] to-[#4B1F70] text-white p-6">
       <div className="max-w-6xl mx-auto space-y-6">
+
+        {/* Success Banner */}
+        {showSuccessBanner && (
+          <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 bg-green-500 text-white px-8 py-4 rounded-full shadow-[0_0_20px_rgba(34,197,94,0.5)] flex items-center gap-3 animate-bounce-in">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <span className="font-bold text-lg">Corrections Submitted Successfully! Status updated to Under Review.</span>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between bg-white/5 p-6 rounded-2xl border border-white/10 backdrop-blur-sm shadow-xl gap-4">
           <div>
