@@ -7,6 +7,12 @@ import com.example.demo.entity.User;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.service.UserService;
 
+import com.example.demo.repository.UserRepository;
+import com.example.demo.service.UserService;
+import com.example.demo.filing.repository.PatentFilingRepository;
+import com.example.demo.subscription.repository.SubscriptionHistoryRepository;
+import com.example.demo.notification.repository.NotificationRepository;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -23,7 +29,9 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final com.example.demo.notification.service.NotificationService notificationService;
     private final com.example.demo.subscription.repository.SubscriptionPlanRepository planRepository;
-    private final com.example.demo.subscription.repository.SubscriptionHistoryRepository historyRepository;
+    private final SubscriptionHistoryRepository historyRepository;
+    private final PatentFilingRepository filingRepository;
+    private final NotificationRepository notificationRepository;
 
     // -----------------------------
     // REGISTER
@@ -111,21 +119,31 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @org.springframework.transaction.annotation.Transactional
     public void deleteUser(Long id) {
         User user = repo.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (user.getDisabledAt() == null) {
-            throw new RuntimeException("User must be disabled before deletion.");
-        }
-
-        // Check 30-day window
-        Instant thirdyDaysAgo = Instant.now().minus(java.time.Duration.ofDays(30));
+        /* 
+           Cascade Deletion:
+           1. Notifications
+           2. Subscription History
+           3. Patent Filings
+           4. User Account
+        */
         
-        if (user.getDisabledAt().isAfter(thirdyDaysAgo)) {
-             throw new RuntimeException("Account can only be deleted 30 days after being disabled.");
-        }
+        // 1. Delete Notifications
+        notificationRepository.deleteByUserId(id);
 
+        // 2. Delete Subscription History
+        historyRepository.deleteByUserId(id);
+
+        // 3. Delete Patent Filings
+        // Note: Patent Filings might have drawings/inventors which should cascade via JPA if set up, 
+        // but explicit delete is safer for clean sweep without relying on complex entity graphs.
+        filingRepository.deleteByUserId(id);
+
+        // 4. Delete the User
         repo.delete(user);
     }
 

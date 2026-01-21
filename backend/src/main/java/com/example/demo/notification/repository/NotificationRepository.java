@@ -10,4 +10,5 @@ import org.springframework.stereotype.Repository;
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
     Page<Notification> findByUserIdOrderByTimestampDesc(Long userId, Pageable pageable);
     Page<Notification> findByUserIdAndReadFalseOrderByTimestampDesc(Long userId, Pageable pageable);
+    void deleteByUserId(Long userId);
 }

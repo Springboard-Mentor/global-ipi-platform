@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface SubscriptionHistoryRepository extends JpaRepository<SubscriptionHistory, Long> {
     List<SubscriptionHistory> findAllByOrderByCreatedAtDesc();
+    void deleteByUserId(Long userId);
 }

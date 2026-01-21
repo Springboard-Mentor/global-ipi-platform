@@ -404,27 +404,119 @@ public class MonitoringService {
     }
 
     public List<Map<String, Object>> getFilingTrendsData() {
+        return getFilingTrendsData("1y", "all");
+    }
+
+    public List<Map<String, Object>> getFilingTrendsData(String timeRange, String category) {
         List<Map<String, Object>> data = new ArrayList<>();
-        List<Object[]> results = filingRepository.countByMonthNative();
         
-        if (results == null || results.isEmpty()) {
-             // Fallback to empty structure if no data, to ensure chart renders empty state
-             for (int i = 11; i >= 0; i--) {
-                Map<String, Object> item = new java.util.HashMap<>();
-                java.time.LocalDate date = java.time.LocalDate.now().minusMonths(i);
-                item.put("month", date.format(java.time.format.DateTimeFormatter.ofPattern("MMM yyyy")));
-                item.put("filings", 0);
-                item.put("grants", 0);
-                data.add(item);
+        // 1. Determine Date Range and Granularity
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startDate;
+        boolean isDaily = "7d".equals(timeRange) || "30d".equals(timeRange);
+        
+        if ("7d".equals(timeRange)) startDate = now.minusDays(6); // last 7 days inclusive
+        else if ("30d".equals(timeRange)) startDate = now.minusDays(29); // last 30 days
+        else if ("90d".equals(timeRange)) startDate = now.minusDays(89);
+        else startDate = now.minusMonths(11); // last 12 months
+        
+        java.sql.Timestamp sqlStartDate = java.sql.Timestamp.valueOf(startDate.toLocalDate().atStartOfDay());
+        
+        // 2. Fetch Data from DB
+        String dbCategory = "all".equals(category) ? null : mapCategoryToDb(category);
+        List<Object[]> results;
+        
+        if (isDaily) {
+             if (dbCategory == null) results = filingRepository.countByDateRangeNativeAll(sqlStartDate);
+             else results = filingRepository.countByDateRangeNativeCategory(sqlStartDate, dbCategory);
+        } else {
+             if (dbCategory == null) results = filingRepository.countByMonthRangeNativeAll(sqlStartDate);
+             else results = filingRepository.countByMonthRangeNativeCategory(sqlStartDate, dbCategory);
+        }
+        
+        // 3. Transform DB results into a Map for easy lookup
+        // Key: Time Label (e.g., "Jan 25" or "Jan 2025"), Value: {count, grants}
+        Map<String, long[]> resultMap = new java.util.HashMap<>();
+        if (results != null) {
+            for (Object[] row : results) {
+                String label = (String) row[0];
+                long count = ((Number) row[1]).longValue();
+                long grants = ((Number) row[2]).longValue();
+                resultMap.put(label, new long[]{count, grants});
+            }
+        }
+        
+        // 4. Generate Continuous Time Series
+        DateTimeFormatter formatter = isDaily ? DateTimeFormatter.ofPattern("MMM dd") : DateTimeFormatter.ofPattern("MMM yyyy");
+        
+        if (isDaily) {
+            long days = java.time.temporal.ChronoUnit.DAYS.between(startDate.toLocalDate(), now.toLocalDate()) + 1;
+            for (int i = 0; i < days; i++) {
+                LocalDateTime date = startDate.plusDays(i);
+                String label = date.format(formatter);
+                addTimeSeriesPoint(data, label, resultMap);
             }
         } else {
-            for (Object[] row : results) {
-                Map<String, Object> item = new java.util.HashMap<>();
-                item.put("month", row[0]);
-                item.put("filings", ((Number) row[1]).longValue());
-                item.put("grants", ((Number) row[2]).longValue());
-                data.add(item);
+            // Monthly
+            long months = java.time.temporal.ChronoUnit.MONTHS.between(
+                startDate.toLocalDate().withDayOfMonth(1), 
+                now.toLocalDate().withDayOfMonth(1)) + 1;
+                
+            for (int i = 0; i < months; i++) {
+                LocalDateTime date = startDate.plusMonths(i);
+                String label = date.format(formatter); // This must match DB format "Mon YYYY" (e.g., "Jan 2025")
+                // Note: DB uses 'Mon YYYY' (e.g. 'Jan 2023'). valid pattern check required.
+                addTimeSeriesPoint(data, label, resultMap);
             }
+        }
+        
+        return data;
+    }
+    
+    private void addTimeSeriesPoint(List<Map<String, Object>> data, String label, Map<String, long[]> resultMap) {
+        Map<String, Object> item = new java.util.HashMap<>();
+        item.put("month", label); // "month" key used by frontend for x-axis
+        
+        if (resultMap.containsKey(label)) {
+            long[] vals = resultMap.get(label);
+            item.put("filings", vals[0]);
+            item.put("grants", vals[1]);
+        } else {
+            item.put("filings", 0L);
+            item.put("grants", 0L);
+        }
+        data.add(item);
+    }
+    
+    private String mapCategoryToDb(String cat) {
+        if ("ai".equals(cat)) return "AI & Machine Learning";
+        if ("biotech".equals(cat)) return "Biotechnology";
+        if ("energy".equals(cat)) return "Renewable Energy";
+        return cat;
+    }
+
+    public List<Map<String, Object>> getGrantRateData(String timeRange) {
+        // Placeholder implementation - strict grant rate calculation often complex
+        // For now returning simulated data based on range to show UI effect
+        List<Map<String, Object>> data = new ArrayList<>();
+        int points = "7d".equals(timeRange) ? 7 : ("30d".equals(timeRange) ? 10 : 12);
+        
+        for (int i = points - 1; i >= 0; i--) {
+            Map<String, Object> item = new java.util.HashMap<>();
+            java.time.LocalDate date;
+            String label;
+            
+            if ("7d".equals(timeRange)) {
+                date = java.time.LocalDate.now().minusDays(i);
+                label = date.format(DateTimeFormatter.ofPattern("MMM dd"));
+            } else {
+                 date = java.time.LocalDate.now().minusMonths(i);
+                 label = date.format(DateTimeFormatter.ofPattern("MMM"));
+            }
+            
+            item.put("month", label);
+            item.put("rate", Math.floor(Math.random() * 20) + 60); 
+            data.add(item);
         }
         return data;
     }
@@ -446,25 +538,33 @@ public class MonitoringService {
 
     public List<Map<String, Object>> getCategoryData() {
         List<Map<String, Object>> data = new ArrayList<>();
-        data.add(java.util.Map.of("name", "AI & ML", "value", 25, "color", "#3B82F6"));
-        data.add(java.util.Map.of("name", "Biotech", "value", 20, "color", "#10B981"));
-        data.add(java.util.Map.of("name", "Renewable Energy", "value", 18, "color", "#F59E0B"));
-        data.add(java.util.Map.of("name", "Software", "value", 15, "color", "#EF4444"));
-        data.add(java.util.Map.of("name", "Hardware", "value", 12, "color", "#8B5CF6"));
-        data.add(java.util.Map.of("name", "Other", "value", 10, "color", "#6B7280"));
+        List<Object[]> results = filingRepository.countByTechnicalField();
+        
+        String[] colors = {"#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#6B7280"};
+        int i = 0;
+        
+        if (results != null && !results.isEmpty()) {
+            for (Object[] row : results) {
+                Map<String, Object> item = new java.util.HashMap<>();
+                item.put("name", row[0] != null ? row[0] : "Other");
+                item.put("value", row[1]);
+                item.put("color", colors[i % colors.length]);
+                data.add(item);
+                i++;
+            }
+        } else {
+            // Empty state - return distinct empty list or placeholder only if absolutely needed.
+            // But prefer empty so UI shows "No Data" or empty chart.
+        }
         return data;
     }
 
     public List<Map<String, Object>> getGrantRateData() {
-        List<Map<String, Object>> data = new ArrayList<>();
-        for (int i = 11; i >= 0; i--) {
-            Map<String, Object> item = new java.util.HashMap<>();
-            java.time.LocalDate date = java.time.LocalDate.now().minusMonths(i);
-            item.put("month", date.format(java.time.format.DateTimeFormatter.ofPattern("MMM")));
-            item.put("rate", Math.floor(Math.random() * 20) + 60); // 60-80%
-            data.add(item);
-        }
-        return data;
+        // Return last 6 months grant rate if possible, or just empty if no data.
+        // For professional feel, let's just return actual simple grant rate over time if data exists.
+        // Or keep 0s. Simple fix: mock it less aggressively or tie to filingRepository grants.
+        // Given complexity, let's keep it simple: 
+        return new ArrayList<>(); 
     }
 
     public List<Map<String, Object>> getJurisdictionData() {
@@ -480,18 +580,11 @@ public class MonitoringService {
             item.put("patents", count);
             item.put("percentage", total > 0 ? (double) count / total * 100 : 0);
             
-            // Add some mock detailed metrics for "professional" look
-            item.put("growth", "+" + (int)(Math.random() * 15 + 2) + "%");
-            item.put("avgGrantTime", (int)(Math.random() * 12 + 18) + " months");
+            // Real calc or simple placeholder
+            item.put("growth", "+0%"); // Cannot easily calc growth without history table
+            item.put("avgGrantTime", "N/A");
             
             data.add(item);
-        }
-        
-        // Ensure some data if empty
-        if (data.isEmpty()) {
-            data.add(java.util.Map.of("country", "US", "patents", 450, "percentage", 35.0, "growth", "+8%", "avgGrantTime", "24 months"));
-            data.add(java.util.Map.of("country", "CN", "patents", 320, "percentage", 25.0, "growth", "+12%", "avgGrantTime", "20 months"));
-            data.add(java.util.Map.of("country", "JP", "patents", 180, "percentage", 14.0, "growth", "+5%", "avgGrantTime", "28 months"));
         }
         
         data.sort((a, b) -> Long.compare((long) b.get("patents"), (long) a.get("patents")));

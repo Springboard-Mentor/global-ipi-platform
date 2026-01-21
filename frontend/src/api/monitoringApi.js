@@ -9,9 +9,14 @@ const MONITORING_BASE = `${BASE_URL}/api/admin/monitoring`;
  * INTEGRATED MONITORING DATA - Similar to IP Assets integration
  * Fetches all monitoring data in a single request for efficient loading
  */
-export const fetchAllMonitoringData = () => {
+export const fetchAllMonitoringData = (params = {}) => {
   const token = localStorage.getItem("adminToken");
-  return axios.get(`${MONITORING_BASE}/all-data`, {
+  
+  // Convert object { timeRange: '7d', category: 'ai' } to query string ?timeRange=7d&category=ai
+  const queryString = new URLSearchParams(params).toString();
+  const url = `${MONITORING_BASE}/all-data${queryString ? `?${queryString}` : ''}`;
+  
+  return axios.get(url, {
     headers: { Authorization: `Bearer ${token}` }
   }).then((res) => res.data);
 };

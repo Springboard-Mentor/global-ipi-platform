@@ -15,8 +15,9 @@ const PatentActivityTrends = () => {
 
   React.useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       try {
-        const monitoringData = await fetchAllMonitoringData();
+        const monitoringData = await fetchAllMonitoringData({ timeRange, category });
 
         // Extract patent trends data from the integrated response
         setData(monitoringData.patentTrends || {});
