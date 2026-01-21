@@ -83,7 +83,7 @@ public interface PatentFilingRepository extends JpaRepository<PatentFiling, Long
 
 
     @org.springframework.data.jpa.repository.Query(nativeQuery = true,
-        value = "SELECT technical_field, AVG(EXTRACT(DAY FROM (grant_date - filing_date))) as avg_days " +
+        value = "SELECT technical_field, AVG(grant_date - filing_date) as avg_days " +
                 "FROM patent_filings " +
                 "WHERE status = 'GRANTED' AND grant_date IS NOT NULL AND filing_date IS NOT NULL " +
                 "GROUP BY technical_field")

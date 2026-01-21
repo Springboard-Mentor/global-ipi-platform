@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Locale;
 
 @Service
 @lombok.RequiredArgsConstructor
@@ -225,120 +226,103 @@ public class MonitoringService {
     }
     
     public PatentTrendsData getPatentTrends() {
-        PatentTrendsData data = new PatentTrendsData();
-        
-        // 1. Overall Stats
-        long total = filingRepository.count();
-        long newFilings = filingRepository.countByCreatedAtAfter(java.time.Instant.now().minus(30, java.time.temporal.ChronoUnit.DAYS));
-        
-        List<Object[]> statusCounts = filingRepository.countByStatus();
-        long granted = 0;
-        long pending = 0;
-        long rejected = 0;
-        
-        for (Object[] row : statusCounts) {
-            String status = (String) row[0];
-            Long count = (Long) row[1];
-            if (status == null) continue;
+        try {
+            PatentTrendsData data = new PatentTrendsData();
             
-            if (status.equalsIgnoreCase("GRANTED")) granted += count;
-            else if (status.equalsIgnoreCase("REJECTED") || status.equalsIgnoreCase("Withdrawn")) rejected += count;
-            else pending += count; // Default internal bucket
-        }
-        
-        PatentTrendsData.PatentStats stats = new PatentTrendsData.PatentStats();
-        stats.setTotalPatents(total);
-        stats.setNewFilings(newFilings);
-        stats.setGrantedPatents(granted);
-        stats.setPendingApplications(pending);
-        stats.setRejectedApplications(rejected);
-        data.setPatentStats(stats);
-        
-        // 2. Trending Categories
-        List<Object[]> fieldCounts = filingRepository.countByTechnicalField();
-        List<PatentTrendsData.CategoryTrend> categories = new java.util.ArrayList<>();
-        for (Object[] row : fieldCounts) {
-            PatentTrendsData.CategoryTrend c = new PatentTrendsData.CategoryTrend();
-            c.setCategory((String) row[0]);
-            c.setPatents((Long) row[1]);
-            // Mock growth for now as we don't have historical snapshots
-            c.setGrowth("+" + (int)(Math.random() * 20 + 5) + "%"); 
-            categories.add(c);
-        }
-        //Sort by count desc
-        categories.sort((a,b) -> Long.compare(b.getPatents(), a.getPatents()));
-        
-        if (categories.isEmpty()) {
-            PatentTrendsData.CategoryTrend c1 = new PatentTrendsData.CategoryTrend();
-            c1.setCategory("AI & Machine Learning"); c1.setPatents(42); c1.setGrowth("+18%");
-            categories.add(c1);
-            PatentTrendsData.CategoryTrend c2 = new PatentTrendsData.CategoryTrend();
-            c2.setCategory("Biotechnology"); c2.setPatents(35); c2.setGrowth("+12%");
-            categories.add(c2);
-            PatentTrendsData.CategoryTrend c3 = new PatentTrendsData.CategoryTrend();
-            c3.setCategory("Renewable Energy"); c3.setPatents(28); c3.setGrowth("+15%");
-            categories.add(c3);
-        }
+            // 1. Overall Stats
+            long total = filingRepository.count();
+            long newFilings = filingRepository.countByCreatedAtAfter(java.time.Instant.now().minus(30, java.time.temporal.ChronoUnit.DAYS));
+            
+            List<Object[]> statusCounts = filingRepository.countByStatus();
+            long granted = 0;
+            long pending = 0;
+            long rejected = 0;
+            
+            for (Object[] row : statusCounts) {
+                if (row[0] == null) continue;
+                String status = (String) row[0];
+                Long count = (Long) row[1];
+                
+                if (status.equalsIgnoreCase("GRANTED")) granted += count;
+                else if (status.equalsIgnoreCase("REJECTED") || status.equalsIgnoreCase("Withdrawn")) rejected += count;
+                else pending += count; // Default internal bucket
+            }
+            
+            PatentTrendsData.PatentStats stats = new PatentTrendsData.PatentStats();
+            stats.setTotalPatents(total);
+            stats.setNewFilings(newFilings);
+            stats.setGrantedPatents(granted);
+            stats.setPendingApplications(pending);
+            stats.setRejectedApplications(rejected);
+            data.setPatentStats(stats);
+            
+            // 2. Trending Categories
+            List<Object[]> fieldCounts = filingRepository.countByTechnicalField();
+            List<PatentTrendsData.CategoryTrend> categories = new java.util.ArrayList<>();
+            for (Object[] row : fieldCounts) {
+                if (row[0] == null) continue;
+                PatentTrendsData.CategoryTrend c = new PatentTrendsData.CategoryTrend();
+                c.setCategory((String) row[0]);
+                c.setPatents((Long) row[1]);
+                // Mock growth for now as we don't have historical snapshots
+                c.setGrowth("+" + (int)(Math.random() * 20 + 5) + "%"); 
+                categories.add(c);
+            }
+            //Sort by count desc
+            categories.sort((a,b) -> Long.compare(b.getPatents(), a.getPatents()));
+            
+            if (categories.isEmpty()) {
+                // Keep empty to reflect real data state
+            }
 
-        data.setTrendingCategories(categories.size() > 5 ? categories.subList(0, 5) : categories);
-        
-        // 3. Jurisdictions
-        List<Object[]> jurisdictionCounts = filingRepository.countByJurisdiction();
-        List<PatentTrendsData.JurisdictionStats> jurisdictions = new java.util.ArrayList<>();
-        for (Object[] row : jurisdictionCounts) {
-            PatentTrendsData.JurisdictionStats j = new PatentTrendsData.JurisdictionStats();
-            j.setCountry((String) row[0]);
-            long count = (Long) row[1];
-            j.setPatents(count);
-            j.setPercentage(total > 0 ? (double)count / total * 100 : 0);
-            jurisdictions.add(j);
-        }
-        jurisdictions.sort((a,b) -> Long.compare(b.getPatents(), a.getPatents()));
-        
-        if (jurisdictions.isEmpty()) {
-            PatentTrendsData.JurisdictionStats j1 = new PatentTrendsData.JurisdictionStats();
-            j1.setCountry("US"); j1.setPatents(150); j1.setPercentage(45.0);
-            jurisdictions.add(j1);
-            PatentTrendsData.JurisdictionStats j2 = new PatentTrendsData.JurisdictionStats();
-            j2.setCountry("CN"); j2.setPatents(100); j2.setPercentage(30.0);
-            jurisdictions.add(j2);
-            PatentTrendsData.JurisdictionStats j3 = new PatentTrendsData.JurisdictionStats();
-            j3.setCountry("EP"); j3.setPatents(50); j3.setPercentage(15.0);
-            jurisdictions.add(j3);
-        }
-        
-        data.setJurisdictions(jurisdictions);
-        
-        // 4. Filing Status Distribution (Detailed)
-        List<PatentTrendsData.StatusDistribution> statusDist = new java.util.ArrayList<>();
-        String[] colors = {"bg-blue-500", "bg-green-500", "bg-yellow-500", "bg-red-500", "bg-purple-500"};
-        int colorIdx = 0;
-        
-        for (Object[] row : statusCounts) {
-            if (row[0] == null) continue;
-            PatentTrendsData.StatusDistribution s = new PatentTrendsData.StatusDistribution();
-            s.setStatus((String) row[0]);
-            s.setCount((Long) row[1]);
-            s.setColor(colors[colorIdx % colors.length]);
-            statusDist.add(s);
-            colorIdx++;
-        }
+            data.setTrendingCategories(categories.size() > 5 ? categories.subList(0, 5) : categories);
+            
+            // 3. Jurisdictions
+            List<Object[]> jurisdictionCounts = filingRepository.countByJurisdiction();
+            List<PatentTrendsData.JurisdictionStats> jurisdictions = new java.util.ArrayList<>();
+            for (Object[] row : jurisdictionCounts) {
+                if (row[0] == null) continue;
+                PatentTrendsData.JurisdictionStats j = new PatentTrendsData.JurisdictionStats();
+                j.setCountry((String) row[0]);
+                long count = (Long) row[1];
+                j.setPatents(count);
+                j.setPercentage(total > 0 ? (double)count / total * 100 : 0);
+                jurisdictions.add(j);
+            }
+            jurisdictions.sort((a,b) -> Long.compare(b.getPatents(), a.getPatents()));
+            
+            if (jurisdictions.isEmpty()) {
+                // Keep empty unless data exists
+            }
+            
+            data.setJurisdictions(jurisdictions);
+            
+            // 4. Filing Status Distribution (Detailed)
+            List<PatentTrendsData.StatusDistribution> statusDist = new java.util.ArrayList<>();
+            String[] colors = {"bg-blue-500", "bg-green-500", "bg-yellow-500", "bg-red-500", "bg-purple-500"};
+            int colorIdx = 0;
+            
+            for (Object[] row : statusCounts) {
+                if (row[0] == null) continue;
+                PatentTrendsData.StatusDistribution s = new PatentTrendsData.StatusDistribution();
+                s.setStatus((String) row[0]);
+                s.setCount((Long) row[1]);
+                s.setColor(colors[colorIdx % colors.length]);
+                statusDist.add(s);
+                colorIdx++;
+            }
 
-        if (statusDist.isEmpty()) {
-            PatentTrendsData.StatusDistribution s1 = new PatentTrendsData.StatusDistribution();
-            s1.setStatus("GRANTED"); s1.setCount(120); s1.setColor("bg-green-500");
-            statusDist.add(s1);
-            PatentTrendsData.StatusDistribution s2 = new PatentTrendsData.StatusDistribution();
-            s2.setStatus("PENDING"); s2.setCount(85); s2.setColor("bg-blue-500");
-            statusDist.add(s2);
-            PatentTrendsData.StatusDistribution s3 = new PatentTrendsData.StatusDistribution();
-            s3.setStatus("REJECTED"); s3.setCount(25); s3.setColor("bg-red-500");
-            statusDist.add(s3);
+            if (statusDist.isEmpty()) {
+                // Keep empty
+            }
+            
+            data.setFilingStatus(statusDist);
+            
+            return data;
+        } catch (Exception e) {
+            // Return empty object on error
+            return new PatentTrendsData();
         }
-        
-        data.setFilingStatus(statusDist);
-        
-        return data;
     }
 
     // Chart data generation methods for frontend
@@ -408,69 +392,75 @@ public class MonitoringService {
     }
 
     public List<Map<String, Object>> getFilingTrendsData(String timeRange, String category) {
-        List<Map<String, Object>> data = new ArrayList<>();
-        
-        // 1. Determine Date Range and Granularity
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime startDate;
-        boolean isDaily = "7d".equals(timeRange) || "30d".equals(timeRange);
-        
-        if ("7d".equals(timeRange)) startDate = now.minusDays(6); // last 7 days inclusive
-        else if ("30d".equals(timeRange)) startDate = now.minusDays(29); // last 30 days
-        else if ("90d".equals(timeRange)) startDate = now.minusDays(89);
-        else startDate = now.minusMonths(11); // last 12 months
-        
-        java.sql.Timestamp sqlStartDate = java.sql.Timestamp.valueOf(startDate.toLocalDate().atStartOfDay());
-        
-        // 2. Fetch Data from DB
-        String dbCategory = "all".equals(category) ? null : mapCategoryToDb(category);
-        List<Object[]> results;
-        
-        if (isDaily) {
-             if (dbCategory == null) results = filingRepository.countByDateRangeNativeAll(sqlStartDate);
-             else results = filingRepository.countByDateRangeNativeCategory(sqlStartDate, dbCategory);
-        } else {
-             if (dbCategory == null) results = filingRepository.countByMonthRangeNativeAll(sqlStartDate);
-             else results = filingRepository.countByMonthRangeNativeCategory(sqlStartDate, dbCategory);
-        }
-        
-        // 3. Transform DB results into a Map for easy lookup
-        // Key: Time Label (e.g., "Jan 25" or "Jan 2025"), Value: {count, grants}
-        Map<String, long[]> resultMap = new java.util.HashMap<>();
-        if (results != null) {
-            for (Object[] row : results) {
-                String label = (String) row[0];
-                long count = ((Number) row[1]).longValue();
-                long grants = ((Number) row[2]).longValue();
-                resultMap.put(label, new long[]{count, grants});
+        try {
+            List<Map<String, Object>> data = new ArrayList<>();
+            
+            // 1. Determine Date Range and Granularity
+            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime startDate;
+            boolean isDaily = "7d".equals(timeRange) || "30d".equals(timeRange);
+            
+            if ("7d".equals(timeRange)) startDate = now.minusDays(6); // last 7 days inclusive
+            else if ("30d".equals(timeRange)) startDate = now.minusDays(29); // last 30 days
+            else if ("90d".equals(timeRange)) startDate = now.minusDays(89);
+            else startDate = now.minusMonths(11); // last 12 months
+            
+            java.sql.Timestamp sqlStartDate = java.sql.Timestamp.valueOf(startDate.toLocalDate().atStartOfDay());
+            
+            // 2. Fetch Data from DB
+            String dbCategory = "all".equals(category) ? null : mapCategoryToDb(category);
+            List<Object[]> results;
+            
+            if (isDaily) {
+                 if (dbCategory == null) results = filingRepository.countByDateRangeNativeAll(sqlStartDate);
+                 else results = filingRepository.countByDateRangeNativeCategory(sqlStartDate, dbCategory);
+            } else {
+                 if (dbCategory == null) results = filingRepository.countByMonthRangeNativeAll(sqlStartDate);
+                 else results = filingRepository.countByMonthRangeNativeCategory(sqlStartDate, dbCategory);
             }
-        }
-        
-        // 4. Generate Continuous Time Series
-        DateTimeFormatter formatter = isDaily ? DateTimeFormatter.ofPattern("MMM dd") : DateTimeFormatter.ofPattern("MMM yyyy");
-        
-        if (isDaily) {
-            long days = java.time.temporal.ChronoUnit.DAYS.between(startDate.toLocalDate(), now.toLocalDate()) + 1;
-            for (int i = 0; i < days; i++) {
-                LocalDateTime date = startDate.plusDays(i);
-                String label = date.format(formatter);
-                addTimeSeriesPoint(data, label, resultMap);
+            
+            // 3. Transform DB results into a Map for easy lookup
+            // Key: Time Label (e.g., "Jan 25" or "Jan 2025"), Value: {count, grants}
+            Map<String, long[]> resultMap = new java.util.HashMap<>();
+            if (results != null) {
+                for (Object[] row : results) {
+                    if (row[0] == null) continue;
+                    String label = ((String) row[0]).trim();
+                    long count = ((Number) row[1]).longValue();
+                    long grants = ((Number) row[2]).longValue();
+                    resultMap.put(label, new long[]{count, grants});
+                }
             }
-        } else {
-            // Monthly
-            long months = java.time.temporal.ChronoUnit.MONTHS.between(
-                startDate.toLocalDate().withDayOfMonth(1), 
-                now.toLocalDate().withDayOfMonth(1)) + 1;
-                
-            for (int i = 0; i < months; i++) {
-                LocalDateTime date = startDate.plusMonths(i);
-                String label = date.format(formatter); // This must match DB format "Mon YYYY" (e.g., "Jan 2025")
-                // Note: DB uses 'Mon YYYY' (e.g. 'Jan 2023'). valid pattern check required.
-                addTimeSeriesPoint(data, label, resultMap);
+            
+            // 4. Generate Continuous Time Series
+            DateTimeFormatter formatter = (isDaily ? DateTimeFormatter.ofPattern("MMM dd") : DateTimeFormatter.ofPattern("MMM yyyy")).withLocale(Locale.ENGLISH);
+            
+            if (isDaily) {
+                long days = java.time.temporal.ChronoUnit.DAYS.between(startDate.toLocalDate(), now.toLocalDate()) + 1;
+                for (int i = 0; i < days; i++) {
+                    LocalDateTime date = startDate.plusDays(i);
+                    String label = date.format(formatter);
+                    addTimeSeriesPoint(data, label, resultMap);
+                }
+            } else {
+                // Monthly
+                long months = java.time.temporal.ChronoUnit.MONTHS.between(
+                    startDate.toLocalDate().withDayOfMonth(1), 
+                    now.toLocalDate().withDayOfMonth(1)) + 1;
+                    
+                for (int i = 0; i < months; i++) {
+                    LocalDateTime date = startDate.plusMonths(i);
+                    String label = date.format(formatter); // This must match DB format "Mon YYYY" (e.g., "Jan 2025")
+                    addTimeSeriesPoint(data, label, resultMap);
+                }
             }
+            
+            return data;
+        } catch (Exception e) {
+            // Log error internally if logging available, otherwise just safely return empty to prevent dashboard crash
+            // System.err.println("Error generating filing trends: " + e.getMessage());
+            return new ArrayList<>();
         }
-        
-        return data;
     }
     
     private void addTimeSeriesPoint(List<Map<String, Object>> data, String label, Map<String, long[]> resultMap) {
@@ -496,67 +486,76 @@ public class MonitoringService {
     }
 
     public List<Map<String, Object>> getGrantRateData(String timeRange) {
-        // Placeholder implementation - strict grant rate calculation often complex
-        // For now returning simulated data based on range to show UI effect
-        List<Map<String, Object>> data = new ArrayList<>();
-        int points = "7d".equals(timeRange) ? 7 : ("30d".equals(timeRange) ? 10 : 12);
-        
-        for (int i = points - 1; i >= 0; i--) {
-            Map<String, Object> item = new java.util.HashMap<>();
-            java.time.LocalDate date;
-            String label;
+        try {
+            // Placeholder implementation - strict grant rate calculation often complex
+            // For now returning simulated data based on range to show UI effect
+            List<Map<String, Object>> data = new ArrayList<>();
+            int points = "7d".equals(timeRange) ? 7 : ("30d".equals(timeRange) ? 10 : 12);
             
-            if ("7d".equals(timeRange)) {
-                date = java.time.LocalDate.now().minusDays(i);
-                label = date.format(DateTimeFormatter.ofPattern("MMM dd"));
-            } else {
-                 date = java.time.LocalDate.now().minusMonths(i);
-                 label = date.format(DateTimeFormatter.ofPattern("MMM"));
+            for (int i = points - 1; i >= 0; i--) {
+                Map<String, Object> item = new java.util.HashMap<>();
+                java.time.LocalDate date;
+                String label;
+                
+                if ("7d".equals(timeRange)) {
+                    date = java.time.LocalDate.now().minusDays(i);
+                    label = date.format(DateTimeFormatter.ofPattern("MMM dd"));
+                } else {
+                     date = java.time.LocalDate.now().minusMonths(i);
+                     label = date.format(DateTimeFormatter.ofPattern("MMM"));
+                }
+                
+                item.put("month", label);
+                item.put("rate", Math.floor(Math.random() * 20) + 60); 
+                data.add(item);
             }
-            
-            item.put("month", label);
-            item.put("rate", Math.floor(Math.random() * 20) + 60); 
-            data.add(item);
+            return data;
+        } catch (Exception e) {
+            return new ArrayList<>();
         }
-        return data;
     }
 
     public List<Map<String, Object>> getProcessingTimeData() {
-        List<Map<String, Object>> data = new ArrayList<>();
-        List<Object[]> results = filingRepository.getAverageProcessingTimePerField();
-        
-        if (results != null) {
-            for (Object[] row : results) {
-                Map<String, Object> item = new java.util.HashMap<>();
-                item.put("field", row[0] != null ? row[0] : "Unknown");
-                item.put("avgDays", row[1] != null ? ((Number) row[1]).doubleValue() : 0.0);
-                data.add(item);
+        try {
+            List<Map<String, Object>> data = new ArrayList<>();
+            List<Object[]> results = filingRepository.getAverageProcessingTimePerField();
+            
+            if (results != null) {
+                for (Object[] row : results) {
+                    Map<String, Object> item = new java.util.HashMap<>();
+                    item.put("field", row[0] != null ? row[0] : "Unknown");
+                    item.put("avgDays", row[1] != null ? ((Number) row[1]).doubleValue() : 0.0);
+                    data.add(item);
+                }
             }
+            return data;
+        } catch (Exception e) {
+            return new ArrayList<>();
         }
-        return data;
     }
 
     public List<Map<String, Object>> getCategoryData() {
-        List<Map<String, Object>> data = new ArrayList<>();
-        List<Object[]> results = filingRepository.countByTechnicalField();
-        
-        String[] colors = {"#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#6B7280"};
-        int i = 0;
-        
-        if (results != null && !results.isEmpty()) {
-            for (Object[] row : results) {
-                Map<String, Object> item = new java.util.HashMap<>();
-                item.put("name", row[0] != null ? row[0] : "Other");
-                item.put("value", row[1]);
-                item.put("color", colors[i % colors.length]);
-                data.add(item);
-                i++;
+        try {
+            List<Map<String, Object>> data = new ArrayList<>();
+            List<Object[]> results = filingRepository.countByTechnicalField();
+            
+            String[] colors = {"#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#6B7280"};
+            int i = 0;
+            
+            if (results != null && !results.isEmpty()) {
+                for (Object[] row : results) {
+                    Map<String, Object> item = new java.util.HashMap<>();
+                    item.put("name", row[0] != null ? row[0] : "Other");
+                    item.put("value", row[1]);
+                    item.put("color", colors[i % colors.length]);
+                    data.add(item);
+                    i++;
+                }
             }
-        } else {
-            // Empty state - return distinct empty list or placeholder only if absolutely needed.
-            // But prefer empty so UI shows "No Data" or empty chart.
+            return data;
+        } catch (Exception e) {
+            return new ArrayList<>();
         }
-        return data;
     }
 
     public List<Map<String, Object>> getGrantRateData() {
@@ -568,26 +567,30 @@ public class MonitoringService {
     }
 
     public List<Map<String, Object>> getJurisdictionData() {
-        List<Map<String, Object>> data = new ArrayList<>();
-        List<Object[]> jurisdictionCounts = filingRepository.countByJurisdiction();
-        long total = filingRepository.count();
+        try {
+            List<Map<String, Object>> data = new ArrayList<>();
+            List<Object[]> jurisdictionCounts = filingRepository.countByJurisdiction();
+            long total = filingRepository.count();
 
-        for (Object[] row : jurisdictionCounts) {
-            Map<String, Object> item = new java.util.HashMap<>();
-            String country = (String) row[0];
-            long count = (Long) row[1];
-            item.put("country", country != null ? country : "Unknown");
-            item.put("patents", count);
-            item.put("percentage", total > 0 ? (double) count / total * 100 : 0);
+            for (Object[] row : jurisdictionCounts) {
+                Map<String, Object> item = new java.util.HashMap<>();
+                String country = (String) row[0];
+                long count = (Long) row[1];
+                item.put("country", country != null ? country : "Unknown");
+                item.put("patents", count);
+                item.put("percentage", total > 0 ? (double) count / total * 100 : 0);
+                
+                // Real calc or simple placeholder
+                item.put("growth", "+0%"); // Cannot easily calc growth without history table
+                item.put("avgGrantTime", "N/A");
+                
+                data.add(item);
+            }
             
-            // Real calc or simple placeholder
-            item.put("growth", "+0%"); // Cannot easily calc growth without history table
-            item.put("avgGrantTime", "N/A");
-            
-            data.add(item);
+            data.sort((a, b) -> Long.compare((long) b.get("patents"), (long) a.get("patents")));
+            return data;
+        } catch (Exception e) {
+            return new ArrayList<>();
         }
-        
-        data.sort((a, b) -> Long.compare((long) b.get("patents"), (long) a.get("patents")));
-        return data;
     }
 }
