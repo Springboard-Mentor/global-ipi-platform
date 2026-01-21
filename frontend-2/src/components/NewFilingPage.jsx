@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import client from "../api/client";
 import { PenTool, Lock, Info } from "lucide-react"; 
 
 const NewFilingPage = ({ user }) => {
   
-  // --- PLAN & LIMIT LOGIC ---
   const currentUser = user || JSON.parse(localStorage.getItem('user') || '{}');
   const userPlan = currentUser?.planType || 'STARTUP';
 
@@ -18,7 +17,6 @@ const NewFilingPage = ({ user }) => {
   const [currentUsage, setCurrentUsage] = useState(0);
   const [loadingUsage, setLoadingUsage] = useState(true);
 
-  // --- STATE ---
   const [formData, setFormData] = useState({
     title: "",
     category: "",
@@ -38,13 +36,10 @@ const NewFilingPage = ({ user }) => {
 
   const [alert, setAlert] = useState({ type: "", message: "" });
 
-  // --- 1. FETCH CURRENT USAGE ON MOUNT ---
   useEffect(() => {
     const checkUsage = async () => {
       try {
-        // We use the tracker endpoint to count how many filings exist
-        const res = await axios.get("http://localhost:5001/api/tracker/all");
-        // Filter specifically for this user if the API returns all
+        const res = await client.get("/tracker/all");
         const userFilings = Array.isArray(res.data) 
           ? res.data.filter(f => f.userId === currentUser.id || f.ownerId === currentUser.id) 
           : [];
@@ -69,7 +64,6 @@ const NewFilingPage = ({ user }) => {
     e.preventDefault();
     setAlert({});
 
-    // --- 2. ENFORCE LIMIT BEFORE SUBMISSION ---
     if (userPlan !== 'ENTERPRISE' && currentUsage >= limitMax) {
         setAlert({
             type: "error",
@@ -82,17 +76,12 @@ const NewFilingPage = ({ user }) => {
     console.log("Sending Data:", formData);
 
     try {
-      await axios.post(
-        "http://localhost:5001/api/filings",
-        formData
-      );
+      await client.post("/filings", formData);
 
       setAlert({ type: "success", message: "Patent Filing Submitted Successfully!" });
       
-      // Update local usage count immediately
       setCurrentUsage(prev => prev + 1);
 
-      // Reset form
       setFormData({
         title: "",
         category: "",
@@ -124,7 +113,6 @@ const NewFilingPage = ({ user }) => {
   return (
     <div className="max-w-5xl mx-auto mt-10 bg-white shadow-xl p-10 rounded-2xl border border-gray-100 relative">
       
-      {/* --- LIMIT INDICATOR --- */}
       <div className="absolute top-6 right-8 flex items-center gap-3 bg-slate-50 border border-slate-200 px-4 py-2 rounded-xl">
          <div className={`p-1.5 rounded-full ${currentUsage >= limitMax && userPlan !== 'ENTERPRISE' ? 'bg-red-100 text-red-600' : 'bg-indigo-100 text-indigo-600'}`}>
             {currentUsage >= limitMax && userPlan !== 'ENTERPRISE' ? <Lock size={14} /> : <Info size={14} />}
@@ -153,13 +141,11 @@ const NewFilingPage = ({ user }) => {
         </div>
       )}
 
-      {/* Disable form styling if limit reached */}
       <fieldset disabled={userPlan !== 'ENTERPRISE' && currentUsage >= limitMax} className={`space-y-6 transition-opacity ${userPlan !== 'ENTERPRISE' && currentUsage >= limitMax ? 'opacity-50' : 'opacity-100'}`}>
         
         <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             
-            {/* TITLE */}
             <div className="flex flex-col gap-1 md:col-span-2">
                 <label className="text-sm font-semibold text-gray-600">Patent Title</label>
                 <input
@@ -172,7 +158,6 @@ const NewFilingPage = ({ user }) => {
                 />
             </div>
             
-            {/* PATENT NUMBER */}
             <div className="flex flex-col gap-1 md:col-span-2">
                 <label className="text-sm font-semibold text-gray-600 flex items-center gap-1">
                     Official Patent Number <PenTool size={12} className="text-gray-400"/> 
@@ -188,7 +173,6 @@ const NewFilingPage = ({ user }) => {
                 />
             </div>
 
-            {/* CATEGORY */}
             <div className="flex flex-col gap-1">
                 <label className="text-sm font-semibold text-gray-600">Category</label>
                 <select
@@ -208,7 +192,6 @@ const NewFilingPage = ({ user }) => {
                 </select>
             </div>
 
-            {/* FILING TYPE */}
             <div className="flex flex-col gap-1">
                 <label className="text-sm font-semibold text-gray-600">Type of Filing</label>
                 <select
@@ -225,7 +208,6 @@ const NewFilingPage = ({ user }) => {
                 </select>
             </div>
 
-            {/* INVENTOR NAME */}
             <div className="flex flex-col gap-1">
                 <label className="text-sm font-semibold text-gray-600">Inventor Name</label>
                 <input
@@ -238,7 +220,6 @@ const NewFilingPage = ({ user }) => {
                 />
             </div>
 
-            {/* EMAIL */}
             <div className="flex flex-col gap-1">
                 <label className="text-sm font-semibold text-gray-600">Contact Email</label>
                 <input
@@ -252,7 +233,6 @@ const NewFilingPage = ({ user }) => {
                 />
             </div>
 
-            {/* ASSIGNEE */}
             <div className="flex flex-col gap-1">
                 <label className="text-sm font-semibold text-gray-600">Assignee (Owner)</label>
                 <input
@@ -266,7 +246,6 @@ const NewFilingPage = ({ user }) => {
                 />
             </div>
 
-            {/* JURISDICTION */}
             <div className="flex flex-col gap-1">
                 <label className="text-sm font-semibold text-gray-600">Jurisdiction</label>
                 <select
@@ -286,7 +265,6 @@ const NewFilingPage = ({ user }) => {
                 </select>
             </div>
 
-            {/* FILING DATE */}
             <div className="flex flex-col gap-1">
                 <label className="text-sm font-semibold text-gray-600">Filing Date</label>
                 <input
@@ -299,7 +277,6 @@ const NewFilingPage = ({ user }) => {
                 />
             </div>
 
-            {/* EXPIRATION DATE */}
             <div className="flex flex-col gap-1">
                 <label className="text-sm font-semibold text-gray-600">Est. Expiration Date</label>
                 <input
@@ -311,7 +288,6 @@ const NewFilingPage = ({ user }) => {
                 />
             </div>
 
-            {/* APPLICATION NUMBER */}
             <div className="flex flex-col gap-1">
                 <label className="text-sm font-semibold text-gray-600">Application No.</label>
                 <input
@@ -324,7 +300,6 @@ const NewFilingPage = ({ user }) => {
                 />
             </div>
 
-            {/* STATUS */}
             <div className="flex flex-col gap-1">
                 <label className="text-sm font-semibold text-gray-600">Current Status</label>
                 <select
@@ -342,7 +317,6 @@ const NewFilingPage = ({ user }) => {
 
             </div>
 
-            {/* DESCRIPTION */}
             <div className="flex flex-col gap-1 mt-4">
             <label className="text-sm font-semibold text-gray-600">Abstract / Description</label>
             <textarea
@@ -355,7 +329,6 @@ const NewFilingPage = ({ user }) => {
             ></textarea>
             </div>
 
-            {/* TAGS */}
             <div className="flex flex-col gap-1">
             <label className="text-sm font-semibold text-gray-600">Tags</label>
             <input

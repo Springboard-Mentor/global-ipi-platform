@@ -1,109 +1,81 @@
 import React, { useState } from 'react';
-import { BrainCircuit, Globe, ShieldCheck, TrendingUp, Search, Zap, ArrowRight, X, Mail, MapPin } from 'lucide-react';
+import { 
+  BrainCircuit, Globe, ShieldCheck, TrendingUp, Search, Zap, 
+  ArrowRight, X, Mail, MapPin, ChevronDown, 
+  Layers, Sparkles, Building2
+} from 'lucide-react';
 
 const LandingPage = ({ onNavigate }) => {
   const [showModal, setShowModal] = useState(null);
+  const [activeFaq, setActiveFaq] = useState(null);
 
+  const toggleFaq = (index) => {
+    setActiveFaq(activeFaq === index ? null : index);
+  };
+
+  // --- Modal Component ---
   const ModalContent = () => {
     if (showModal === 'privacy') {
       return (
         <div className="space-y-4">
           <h2 className="text-2xl font-bold text-slate-900">Privacy Policy</h2>
-          <div className="space-y-3 text-sm text-slate-600 max-h-96 overflow-y-auto">
+          <div className="space-y-3 text-sm text-slate-600 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
             <p><strong>Last Updated:</strong> December 26, 2025</p>
             <h3 className="text-lg font-semibold text-slate-900 mt-4">1. Information We Collect</h3>
-            <p>We collect information you provide directly to us, including:</p>
-            <ul className="list-disc pl-6 space-y-1">
-              <li>Name, email address, and contact information</li>
-              <li>Company/organization details</li>
-              <li>Patent and trademark information you submit</li>
-              <li>Usage data and analytics</li>
-            </ul>
-            <h3 className="text-lg font-semibold text-slate-900 mt-4">2. How We Use Your Information</h3>
-            <p>We use the information we collect to:</p>
-            <ul className="list-disc pl-6 space-y-1">
-              <li>Provide, maintain, and improve our services</li>
-              <li>Process your IP filings and monitoring requests</li>
-              <li>Send you technical notices and support messages</li>
-              <li>Respond to your comments and questions</li>
-              <li>Detect and prevent fraud and abuse</li>
-            </ul>
-            <h3 className="text-lg font-semibold text-slate-900 mt-4">3. Data Security</h3>
-            <p>We implement industry-standard security measures to protect your data, including encryption, secure servers, and regular security audits.</p>
-            <h3 className="text-lg font-semibold text-slate-900 mt-4">4. Data Sharing</h3>
-            <p>We do not sell your personal information. We may share data with service providers, government IP offices, and legal authorities when required.</p>
-            <h3 className="text-lg font-semibold text-slate-900 mt-4">5. Your Rights</h3>
-            <p>You have the right to access, correct, or delete your personal data. Contact us at bhargavabhay182@gmail.com for any privacy requests.</p>
-            <h3 className="text-lg font-semibold text-slate-900 mt-4">6. Contact</h3>
-            <p>Email: <a href="mailto:bhargavabhay182@gmail.com" className="text-indigo-600 hover:underline">bhargavabhay182@gmail.com</a></p>
+            <p>We collect information you provide directly to us, including Name, Email, Organization details, and IP data.</p>
+            <h3 className="text-lg font-semibold text-slate-900 mt-4">2. Usage</h3>
+            <p>To provide services, process filings, and improve AI models. We do not sell your data.</p>
+            <h3 className="text-lg font-semibold text-slate-900 mt-4">3. Security</h3>
+            <p>We use banking-grade encryption (AES-256) for all stored data.</p>
+            <h3 className="text-lg font-semibold text-slate-900 mt-4">4. Contact</h3>
+            <p>Email: <a href="mailto:bhuvananagarajan0728@gmail.com" className="text-indigo-600 hover:underline">bhuvananagarajan0728@gmail.com</a></p>
           </div>
         </div>
       );
     }
-
     if (showModal === 'terms') {
       return (
         <div className="space-y-4">
           <h2 className="text-2xl font-bold text-slate-900">Terms of Service</h2>
-          <div className="space-y-3 text-sm text-slate-600 max-h-96 overflow-y-auto">
+          <div className="space-y-3 text-sm text-slate-600 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
             <p><strong>Last Updated:</strong> December 26, 2025</p>
-            <h3 className="text-lg font-semibold text-slate-900 mt-4">1. Acceptance of Terms</h3>
-            <p>By accessing Global IP Intelligence Platform, you agree to be bound by these Terms of Service and all applicable laws and regulations.</p>
-            <h3 className="text-lg font-semibold text-slate-900 mt-4">2. Use License</h3>
-            <p>Permission is granted to use the platform for managing your intellectual property portfolio, searching databases, monitoring IP assets, and filing new applications.</p>
-            <h3 className="text-lg font-semibold text-slate-900 mt-4">3. User Responsibilities</h3>
-            <p>You agree to:</p>
-            <ul className="list-disc pl-6 space-y-1">
-              <li>Provide accurate and complete information</li>
-              <li>Maintain the security of your account credentials</li>
-              <li>Not use the platform for illegal purposes</li>
-              <li>Not attempt to breach security measures</li>
-              <li>Respect intellectual property rights of others</li>
-            </ul>
-            <h3 className="text-lg font-semibold text-slate-900 mt-4">4. Service Availability</h3>
-            <p>We strive for 99.9% uptime but do not guarantee uninterrupted service. Maintenance and updates may cause temporary unavailability.</p>
-            <h3 className="text-lg font-semibold text-slate-900 mt-4">5. Intellectual Property</h3>
-            <p>All platform content, features, and functionality are owned by Global IP Intelligence Inc. and protected by international copyright laws.</p>
-            <h3 className="text-lg font-semibold text-slate-900 mt-4">6. Limitation of Liability</h3>
-            <p>We are not liable for any indirect, incidental, or consequential damages arising from use of our platform. This is an academic project.</p>
-            <h3 className="text-lg font-semibold text-slate-900 mt-4">7. Contact</h3>
-            <p>Email: <a href="mailto:bhargavabhay182@gmail.com" className="text-indigo-600 hover:underline">bhargavabhay182@gmail.com</a></p>
+            <h3 className="text-lg font-semibold text-slate-900 mt-4">1. License</h3>
+            <p>Permission granted to use the platform for IP management. Redistribution is prohibited.</p>
+            <h3 className="text-lg font-semibold text-slate-900 mt-4">2. Liability</h3>
+            <p>This is an academic project. We are not liable for legal outcomes regarding your patents.</p>
+            <h3 className="text-lg font-semibold text-slate-900 mt-4">3. Contact</h3>
+            <p>Email: <a href="mailto:bhuvananagarajan0728@gmail.com" className="text-indigo-600 hover:underline">bhuvananagarajan0728@gmail.com</a></p>
           </div>
         </div>
       );
     }
-
     if (showModal === 'contact') {
       return (
         <div className="space-y-6">
-          <h2 className="text-2xl font-bold text-slate-900">Contact Us</h2>
+          <h2 className="text-2xl font-bold text-slate-900">Contact Support</h2>
           <div className="space-y-4">
-            <div className="flex items-start gap-4 p-4 bg-indigo-50 rounded-lg border border-indigo-100">
+            <div className="flex items-start gap-4 p-4 bg-indigo-50 rounded-xl border border-indigo-100">
               <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center">
                 <Mail className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h3 className="font-semibold text-slate-900 mb-1">Email</h3>
-                <a href="mailto:bhargavabhay182@gmail.com" className="text-indigo-600 hover:underline">
-                  bhargavabhay182@gmail.com
+                <h3 className="font-semibold text-slate-900 mb-1">Email Support</h3>
+                {/* 🟢 CLICKABLE EMAIL */}
+                <a href="mailto:bhuvananagarajan0728@gmail.com" className="text-indigo-600 font-medium hover:underline block break-all">
+                  bhuvananagarajan0728@gmail.com
                 </a>
-                <p className="text-sm text-slate-600 mt-1">We typically respond within 24 hours</p>
+                <p className="text-xs text-slate-500 mt-1">Response time: ~24 hours</p>
               </div>
             </div>
-            <div className="flex items-start gap-4 p-4 bg-purple-50 rounded-lg border border-purple-100">
+            <div className="flex items-start gap-4 p-4 bg-purple-50 rounded-xl border border-purple-100">
               <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-purple-600 flex items-center justify-center">
                 <MapPin className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h3 className="font-semibold text-slate-900 mb-1">Global Operations</h3>
-                <p className="text-slate-600">Serving 150+ countries worldwide</p>
-                <p className="text-sm text-slate-500 mt-1">Academic Project - Infosys Springboard</p>
+                <h3 className="font-semibold text-slate-900 mb-1">HQ Location</h3>
+                <p className="text-slate-600 text-sm">Infosys Springboard Tech Hub</p>
+                <p className="text-slate-600 text-sm">India</p>
               </div>
-            </div>
-            <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
-              <h3 className="font-semibold text-slate-900 mb-2">Business Hours</h3>
-              <p className="text-sm text-slate-600">Support: Monday - Friday, 9:00 AM - 6:00 PM (IST)</p>
-              <p className="text-sm text-slate-600">Emergency Support: 24/7 for critical issues</p>
             </div>
           </div>
         </div>
@@ -113,24 +85,26 @@ const LandingPage = ({ onNavigate }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-slate-50">
+    <div className="min-h-screen bg-white font-sans selection:bg-indigo-100 selection:text-indigo-900">
+      
+      {/* --- MODAL WRAPPER --- */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
-            <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <Globe className="h-5 w-5 text-indigo-600" />
-                <span className="font-semibold text-slate-900">Global IP Intelligence</span>
+                <span className="font-bold text-slate-900 tracking-tight">Global IP</span>
               </div>
-              <button onClick={() => setShowModal(null)} className="p-2 hover:bg-slate-100 rounded-lg transition-colors">
-                <X className="w-5 h-5 text-slate-600" />
+              <button onClick={() => setShowModal(null)} className="p-2 hover:bg-slate-50 rounded-full transition-colors">
+                <X className="w-5 h-5 text-slate-500" />
               </button>
             </div>
-            <div className="p-6">
+            <div className="p-6 overflow-y-auto">
               <ModalContent />
             </div>
-            <div className="sticky bottom-0 bg-slate-50 border-t border-slate-200 px-6 py-4">
-              <button onClick={() => setShowModal(null)} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-lg transition-colors">
+            <div className="p-4 bg-slate-50 border-t border-slate-100 text-right">
+              <button onClick={() => setShowModal(null)} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-colors shadow-sm">
                 Close
               </button>
             </div>
@@ -138,211 +112,338 @@ const LandingPage = ({ onNavigate }) => {
         </div>
       )}
 
-      <div className="flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 pt-20 pb-16">
-        <div className="w-full max-w-6xl space-y-12 text-center">
-          <div className="flex flex-col items-center justify-center">
-            <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-2xl mb-8 animate-pulse">
-              <Globe size={56} />
+      {/* --- NAVIGATION --- */}
+      <nav className="fixed w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-20">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-600/20">
+                <Globe className="h-6 w-6 text-white" />
+              </div>
+              <span className="font-bold text-xl text-slate-900 tracking-tight">Global IP <span className="text-indigo-600">Intelligence</span></span>
             </div>
-            <h1 className="text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl md:text-6xl lg:text-7xl leading-tight">
-              Global Intellectual Property <br className="hidden sm:block" /> Intelligence Platform
-            </h1>
-            <p className="mt-6 text-xl sm:text-2xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
-              Secure, monitor, and analyze your worldwide innovation portfolio. From patent filing to infringement detection, manage your IP assets with AI-driven precision.
-            </p>
+            <div className="hidden md:flex items-center gap-8">
+              <a href="#features" className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">Features</a>
+              <a href="#how-it-works" className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">How it Works</a>
+              <a href="#testimonials" className="text-sm font-medium text-slate-600 hover:text-indigo-600 transition-colors">Testimonials</a>
+            </div>
+            <div className="flex items-center gap-4">
+              <button onClick={() => onNavigate('login')} className="hidden sm:block text-sm font-semibold text-slate-600 hover:text-indigo-600 transition-colors">
+                Log in
+              </button>
+              <button onClick={() => onNavigate('register')} className="px-5 py-2.5 bg-indigo-600 text-white font-bold text-sm rounded-lg hover:bg-indigo-700 transition-all shadow-lg hover:shadow-indigo-600/20">
+                Get Started
+              </button>
+            </div>
           </div>
+        </div>
+      </nav>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-12">
-            <button 
-              onClick={() => onNavigate('login')}
-              className="group w-full sm:w-auto min-w-[180px] rounded-lg bg-indigo-600 px-8 py-4 text-base font-semibold text-white shadow-lg hover:bg-indigo-500 hover:shadow-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-all duration-200 transform hover:scale-105"
-            >
-              <span className="flex items-center justify-center gap-2">
-                Access Platform
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </span>
-            </button>
+      {/* --- HERO SECTION --- */}
+      <div className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 bg-white overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-indigo-50/80 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-purple-50/80 rounded-full blur-[100px] pointer-events-none" />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-700 text-sm font-bold mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <Sparkles className="w-4 h-4 fill-indigo-200" />
+            <span>New: AI-Powered Infringement Detection 2.0</span>
+          </div>
+          
+          <h1 className="text-5xl md:text-7xl font-extrabold text-slate-900 tracking-tight mb-8 leading-tight animate-in fade-in slide-in-from-bottom-6 duration-700 delay-100">
+            Secure Your Genius <br />
+            <span className="text-indigo-600">
+              Global IP Intelligence
+            </span>
+          </h1>
+          
+          <p className="mt-4 text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed mb-10 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
+            The world's most advanced platform for managing, protecting, and monetizing your intellectual property. 
+            From patent filing to AI-driven infringement watch, we cover it all.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-10 duration-700 delay-300">
             <button 
               onClick={() => onNavigate('register')}
-              className="w-full sm:w-auto min-w-[180px] rounded-lg bg-white px-8 py-4 text-base font-semibold text-indigo-600 shadow-md ring-2 ring-inset ring-indigo-200 hover:bg-indigo-50 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-all duration-200 transform hover:scale-105"
+              className="w-full sm:w-auto px-8 py-4 bg-indigo-600 text-white font-bold rounded-xl shadow-xl shadow-indigo-600/20 hover:bg-indigo-700 hover:-translate-y-1 transition-all flex items-center justify-center gap-2"
+            >
+              Access Platform <ArrowRight className="w-5 h-5" />
+            </button>
+            <button 
+              onClick={() => onNavigate('login')}
+              className="w-full sm:w-auto px-8 py-4 bg-white text-indigo-600 font-bold rounded-xl border-2 border-indigo-100 hover:border-indigo-200 hover:bg-indigo-50 transition-all"
             >
               Register Firm
             </button>
           </div>
+
+          <div className="mt-16 pt-8 border-t border-slate-100 animate-in fade-in duration-1000 delay-500">
+            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6">Trusted by Innovators at</p>
+            <div className="flex flex-wrap justify-center gap-8 md:gap-16 opacity-60 grayscale hover:grayscale-0 transition-all duration-500 text-slate-600">
+               <div className="flex items-center gap-2 text-xl font-bold"><Building2 className="w-6 h-6"/> TechCorp</div>
+               <div className="flex items-center gap-2 text-xl font-bold"><Globe className="w-6 h-6"/> GlobalNet</div>
+               <div className="flex items-center gap-2 text-xl font-bold"><Zap className="w-6 h-6"/> FutureEnergy</div>
+               <div className="flex items-center gap-2 text-xl font-bold"><ShieldCheck className="w-6 h-6"/> SecureIT</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* --- FEATURES GRID --- */}
+      <div id="features" className="py-24 bg-slate-50 border-t border-slate-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-indigo-600 font-bold tracking-wide uppercase text-sm mb-3">Powerful Capabilities</h2>
+            <h3 className="text-3xl md:text-4xl font-black text-slate-900">Everything you need to manage IP</h3>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="md:col-span-2 p-8 rounded-3xl bg-white border border-slate-100 shadow-xl shadow-slate-200/50 hover:shadow-2xl transition-all group overflow-hidden relative">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-50 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-indigo-100 transition-colors"></div>
+              <div className="relative z-10">
+                <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-indigo-600/20">
+                  <Search className="w-7 h-7 text-white" />
+                </div>
+                <h4 className="text-2xl font-bold text-slate-900 mb-3">Smart Semantic Search</h4>
+                <p className="text-slate-600 text-lg leading-relaxed max-w-lg">
+                  Don't just search for keywords. Our AI understands the *concept* of your invention and finds prior art, competing patents, and white spaces in the market with 99.9% accuracy.
+                </p>
+                <div className="mt-8 flex gap-3">
+                  <div className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold text-slate-600">Prior Art</div>
+                  <div className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold text-slate-600">Freedom to Operate</div>
+                  <div className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-lg text-xs font-bold text-slate-600">Invalidity Search</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-8 rounded-3xl bg-white border border-slate-100 shadow-xl shadow-slate-200/50 hover:shadow-2xl transition-all group">
+              <div className="w-14 h-14 bg-purple-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-purple-600/20">
+                <BrainCircuit className="w-7 h-7 text-white" />
+              </div>
+              <h4 className="text-xl font-bold text-slate-900 mb-3">AI Analysis</h4>
+              <p className="text-slate-600 leading-relaxed">
+                Get instant predictions on patentability scores, potential infringement risks, and portfolio valuation using machine learning models.
+              </p>
+            </div>
+
+            <div className="p-8 rounded-3xl bg-white border border-slate-100 shadow-xl shadow-slate-200/50 hover:shadow-2xl transition-all group">
+              <div className="w-14 h-14 bg-emerald-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-emerald-600/20">
+                <Globe className="w-7 h-7 text-white" />
+              </div>
+              <h4 className="text-xl font-bold text-slate-900 mb-3">Global Watch</h4>
+              <p className="text-slate-600 leading-relaxed">
+                Monitor filings in 150+ jurisdictions. Receive real-time alerts when competitors file patents similar to yours.
+              </p>
+            </div>
+
+            <div className="md:col-span-2 p-8 rounded-3xl bg-indigo-900 text-white shadow-xl hover:shadow-2xl transition-all group relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl -mr-20 -mt-20"></div>
+              <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
+                <div className="flex-1">
+                  <div className="w-14 h-14 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6 border border-white/10">
+                    <TrendingUp className="w-7 h-7 text-white" />
+                  </div>
+                  <h4 className="text-2xl font-bold mb-3">Portfolio Analytics</h4>
+                  <p className="text-indigo-100 text-lg leading-relaxed">
+                    Visualize your IP assets like never before. Track filing trends, grant rates, and geographic distribution with interactive dashboards exportable for board meetings.
+                  </p>
+                </div>
+                <div className="w-full md:w-1/3 bg-white/10 rounded-xl border border-white/10 p-4 backdrop-blur-sm">
+                   <div className="space-y-3">
+                      <div className="h-2 bg-white/20 rounded w-3/4"></div>
+                      <div className="h-2 bg-white/10 rounded w-1/2"></div>
+                      <div className="h-2 bg-white/10 rounded w-full"></div>
+                      <div className="h-32 bg-indigo-500/30 rounded mt-4 flex items-end justify-between p-2">
+                         <div className="w-2 h-10 bg-indigo-300 rounded-t"></div>
+                         <div className="w-2 h-16 bg-indigo-300 rounded-t"></div>
+                         <div className="w-2 h-12 bg-indigo-300 rounded-t"></div>
+                         <div className="w-2 h-20 bg-indigo-300 rounded-t"></div>
+                         <div className="w-2 h-14 bg-indigo-300 rounded-t"></div>
+                      </div>
+                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* --- HOW IT WORKS --- */}
+      <div id="how-it-works" className="py-24 bg-white border-y border-slate-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h3 className="text-3xl md:text-4xl font-black text-slate-900">From Idea to Asset in 3 Steps</h3>
+          </div>
           
-          <div className="mt-20 grid grid-cols-1 gap-8 sm:grid-cols-3 text-slate-600">
-            <div className="flex flex-col items-center p-6 bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-              <div className="p-4 bg-indigo-100 rounded-xl mb-4">
-                <ShieldCheck className="h-8 w-8 text-indigo-600" />
-              </div>
-              <span className="text-base font-semibold text-slate-900">Asset Protection</span>
-              <p className="mt-2 text-sm text-slate-600 text-center">Secure your innovations globally</p>
-            </div>
-            <div className="flex flex-col items-center p-6 bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-              <div className="p-4 bg-purple-100 rounded-xl mb-4">
-                <BrainCircuit className="h-8 w-8 text-purple-600" />
-              </div>
-              <span className="text-base font-semibold text-slate-900">AI Analysis</span>
-              <p className="mt-2 text-sm text-slate-600 text-center">Intelligent patent insights</p>
-            </div>
-            <div className="flex flex-col items-center p-6 bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-              <div className="p-4 bg-blue-100 rounded-xl mb-4">
-                <Globe className="h-8 w-8 text-blue-600" />
-              </div>
-              <span className="text-base font-semibold text-slate-900">Global Watch</span>
-              <p className="mt-2 text-sm text-slate-600 text-center">Monitor 150+ countries</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white py-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold text-center text-slate-900 mb-12">
-            Everything You Need to Manage IP Assets
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 p-3 bg-green-100 rounded-lg">
-                <Search className="w-6 h-6 text-green-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-slate-900 mb-2">Smart Patent Search</h3>
-                <p className="text-sm text-slate-600">Find prior art and similar patents instantly with semantic search technology.</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 p-3 bg-orange-100 rounded-lg">
-                <TrendingUp className="w-6 h-6 text-orange-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-slate-900 mb-2">Portfolio Analytics</h3>
-                <p className="text-sm text-slate-600">Track performance with comprehensive analytics and competitive intelligence.</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 p-3 bg-red-100 rounded-lg">
-                <Zap className="w-6 h-6 text-red-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-slate-900 mb-2">Real-Time Alerts</h3>
-                <p className="text-sm text-slate-600">Get instant notifications for infringements, deadlines, and filings.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 py-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center text-white">
-            <div>
-              <div className="text-4xl font-bold mb-2">500K+</div>
-              <div className="text-indigo-100">Patents Monitored</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold mb-2">12K+</div>
-              <div className="text-indigo-100">Active Users</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold mb-2">150+</div>
-              <div className="text-indigo-100">Countries Covered</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold mb-2">99.9%</div>
-              <div className="text-indigo-100">Uptime SLA</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-slate-50 py-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl font-bold text-slate-900 mb-4">
-            Ready to Secure Your Innovations?
-          </h2>
-          <p className="text-lg text-slate-600 mb-8">
-            Join thousands of innovators, law firms, and enterprises protecting their IP worldwide.
-          </p>
-          <button 
-            onClick={() => onNavigate('register')}
-            className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-8 py-4 text-base font-semibold text-white shadow-lg hover:bg-indigo-500 hover:shadow-xl transition-all duration-200 transform hover:scale-105"
-          >
-            Get Started Today
-            <ArrowRight className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-
-      <footer className="bg-slate-900 text-slate-400 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <Globe className="h-6 w-6 text-indigo-400" />
-                <span className="text-white font-semibold text-lg">Global IP Intelligence</span>
-              </div>
-              <p className="text-sm text-slate-400 leading-relaxed">
-                Empowering innovators worldwide with intelligent intellectual property management and protection solutions.
-              </p>
-            </div>
-
-            <div>
-              <h3 className="text-white font-semibold mb-4">Legal</h3>
-              <div className="space-y-2">
-                <button 
-                  onClick={() => setShowModal('privacy')}
-                  className="block text-sm hover:text-white transition-colors"
-                >
-                  Privacy Policy
-                </button>
-                <button 
-                  onClick={() => setShowModal('terms')}
-                  className="block text-sm hover:text-white transition-colors"
-                >
-                  Terms of Service
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="text-white font-semibold mb-4">Contact Us</h3>
-              <div className="space-y-3">
-                <a 
-                  href="mailto:bhargavabhay182@gmail.com"
-                  className="flex items-center gap-2 text-sm hover:text-white transition-colors group"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center group-hover:bg-indigo-600 transition-colors">
-                    <Mail className="w-4 h-4" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 relative">
+            <div className="hidden md:block absolute top-12 left-1/6 right-1/6 h-0.5 bg-gradient-to-r from-indigo-100 via-purple-100 to-indigo-100 -z-10"></div>
+            
+            {[
+              { icon: Search, title: "1. Search & Validate", desc: "Run a comprehensive search to ensure your idea is unique." },
+              { icon: Layers, title: "2. Analyze & File", desc: "Use AI to draft claims and file directly through our secure portal." },
+              { icon: ShieldCheck, title: "3. Monitor & Monetize", desc: "Track grant status and enforce your rights globally." }
+            ].map((step, idx) => (
+              <div key={idx} className="flex flex-col items-center text-center group">
+                <div className="w-24 h-24 bg-white rounded-full border-4 border-slate-50 shadow-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 relative z-10">
+                  <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center">
+                    <step.icon className="w-8 h-8 text-indigo-600" />
                   </div>
-                  <span>bhuvananagarajan0728@gmail.com</span>
-                </a>
-                <button
-                  onClick={() => setShowModal('contact')}
-                  className="flex items-center gap-2 text-sm hover:text-white transition-colors group"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center group-hover:bg-indigo-600 transition-colors">
-                    <MapPin className="w-4 h-4" />
-                  </div>
-                  <span>View Contact Details</span>
-                </button>
+                </div>
+                <h4 className="text-xl font-bold text-slate-900 mb-2">{step.title}</h4>
+                <p className="text-slate-600 max-w-xs">{step.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* --- TESTIMONIALS --- */}
+      <div id="testimonials" className="py-24 bg-slate-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="bg-white p-10 rounded-3xl shadow-lg border border-slate-100">
+              <div className="flex gap-1 text-amber-400 mb-4">
+                {[...Array(5)].map((_, i) => <Sparkles key={i} className="w-4 h-4 fill-current" />)}
+              </div>
+              <p className="text-xl text-slate-700 font-medium italic mb-6">
+                "Global IP Intelligence revolutionized our patent strategy. The AI analysis caught an infringement risk that traditional searches missed, saving us millions."
+              </p>
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-slate-200 rounded-full"></div>
+                <div>
+                  <p className="font-bold text-slate-900">Dr. Sarah Chen</p>
+                  <p className="text-sm text-slate-500">CTO, FutureEnergy</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white p-10 rounded-3xl shadow-lg border border-slate-100">
+              <div className="flex gap-1 text-amber-400 mb-4">
+                {[...Array(5)].map((_, i) => <Sparkles key={i} className="w-4 h-4 fill-current" />)}
+              </div>
+              <p className="text-xl text-slate-700 font-medium italic mb-6">
+                "The dashboard is incredible. I can see our entire global portfolio status at a glance. It's the command center every IP law firm needs."
+              </p>
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-slate-200 rounded-full"></div>
+                <div>
+                  <p className="font-bold text-slate-900">James Sterling</p>
+                  <p className="text-sm text-slate-500">Partner, Sterling & Co.</p>
+                </div>
               </div>
             </div>
           </div>
+        </div>
+      </div>
 
-          <div className="pt-8 border-t border-slate-800">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-              <p className="text-sm text-center md:text-left">
-                &copy; 2025 Global IP Intelligence Inc. All rights reserved.
-              </p>
-              <div className="flex items-center gap-4 text-xs">
-                <span className="text-slate-500">Academic Project</span>
-                <span className="text-slate-600">•</span>
-                <span className="text-slate-500">Infosys Springboard</span>
+      {/* --- FAQ SECTION --- */}
+      <div className="py-24 bg-white">
+        <div className="max-w-3xl mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center text-slate-900 mb-12">Frequently Asked Questions</h2>
+          <div className="space-y-4">
+            {[
+              { q: "Is my data secure?", a: "Absolutely. We use enterprise-grade encryption for data at rest and in transit. Your inventions are safe with us." },
+              { q: "Can I file patents directly?", a: "Yes, our Filing Tracker allows you to prepare and submit applications to major patent offices (USPTO, EPO, WIPO)." },
+              { q: "Do you offer a free trial?", a: "Yes! Sign up today for a 14-day free trial of our Pro plan features." },
+              { q: "What is AI Analysis?", a: "Our AI reads your patent draft and compares it against millions of documents to predict success rates and suggest improvements." }
+            ].map((faq, idx) => (
+              <div key={idx} className="border border-slate-200 rounded-xl overflow-hidden">
+                <button 
+                  onClick={() => toggleFaq(idx)}
+                  className="w-full px-6 py-4 text-left flex justify-between items-center bg-slate-50 hover:bg-slate-100 transition-colors"
+                >
+                  <span className="font-bold text-slate-900">{faq.q}</span>
+                  <ChevronDown className={`w-5 h-5 text-slate-500 transition-transform ${activeFaq === idx ? 'rotate-180' : ''}`} />
+                </button>
+                {activeFaq === idx && (
+                  <div className="px-6 py-4 bg-white text-slate-600 animate-in slide-in-from-top-2">
+                    {faq.a}
+                  </div>
+                )}
               </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* --- CTA SECTION (Light Theme) --- */}
+      <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 py-24 px-4 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '40px 40px' }}></div>
+        
+        <div className="max-w-4xl mx-auto text-center relative z-10">
+          <h2 className="text-4xl font-extrabold text-white mb-6">Ready to Transform Your IP Strategy?</h2>
+          <p className="text-xl text-indigo-100 mb-10 font-medium">Join 12,000+ innovators protecting their ideas with Global IP Intelligence.</p>
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <button 
+              onClick={() => onNavigate('register')}
+              className="px-10 py-4 bg-white text-indigo-700 font-bold rounded-xl shadow-xl hover:bg-indigo-50 hover:scale-105 transition-all"
+            >
+              Get Started Now
+            </button>
+            <button 
+              onClick={() => setShowModal('contact')}
+              className="px-10 py-4 bg-transparent border-2 border-indigo-300 text-white font-bold rounded-xl hover:bg-white/10 transition-all"
+            >
+              Contact Sales
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* --- FOOTER (Standard Dark for Contrast) --- */}
+      <footer className="bg-slate-950 text-slate-400 py-16 px-4">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+          <div className="col-span-1 md:col-span-1">
+            <div className="flex items-center gap-2 mb-6">
+              <Globe className="h-6 w-6 text-indigo-500" />
+              <span className="text-white font-bold text-xl">Global IP</span>
             </div>
+            <p className="text-sm leading-relaxed mb-6">
+              Empowering the world's innovators with intelligent, secure, and data-driven intellectual property management.
+            </p>
+            <div className="flex gap-4">
+              {/* 🟢 CLICKABLE EMAIL IN FOOTER */}
+              <a href="mailto:bhuvananagarajan0728@gmail.com" className="w-8 h-8 bg-slate-900 rounded flex items-center justify-center hover:bg-indigo-600 transition-colors cursor-pointer group" title="Email Us">
+                <Mail size={16} className="text-slate-400 group-hover:text-white"/>
+              </a>
+              <div className="w-8 h-8 bg-slate-900 rounded flex items-center justify-center hover:bg-indigo-600 transition-colors cursor-pointer"><Globe size={16}/></div>
+            </div>
+          </div>
+          
+          <div>
+            <h4 className="text-white font-bold mb-6">Platform</h4>
+            <ul className="space-y-3 text-sm">
+              <li><a href="#" className="hover:text-indigo-400 transition-colors">Patent Search</a></li>
+              <li><a href="#" className="hover:text-indigo-400 transition-colors">Analytics Dashboard</a></li>
+              <li><a href="#" className="hover:text-indigo-400 transition-colors">Filing Tracker</a></li>
+              <li><a href="#" className="hover:text-indigo-400 transition-colors">Global Watch</a></li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="text-white font-bold mb-6">Company</h4>
+            <ul className="space-y-3 text-sm">
+              <li><a href="#" className="hover:text-indigo-400 transition-colors">About Us</a></li>
+              <li><a href="#" className="hover:text-indigo-400 transition-colors">Careers</a></li>
+              <li><a href="#" className="hover:text-indigo-400 transition-colors">Blog</a></li>
+              <li><button onClick={() => setShowModal('contact')} className="hover:text-indigo-400 transition-colors">Contact</button></li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="text-white font-bold mb-6">Legal</h4>
+            <ul className="space-y-3 text-sm">
+              <li><button onClick={() => setShowModal('privacy')} className="hover:text-indigo-400 transition-colors">Privacy Policy</button></li>
+              <li><button onClick={() => setShowModal('terms')} className="hover:text-indigo-400 transition-colors">Terms of Service</button></li>
+              <li><a href="#" className="hover:text-indigo-400 transition-colors">Security</a></li>
+            </ul>
+          </div>
+        </div>
+        
+        <div className="max-w-7xl mx-auto pt-8 border-t border-slate-900 flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-xs">&copy; 2026 Global IP Intelligence Inc. All rights reserved.</p>
+          <div className="flex items-center gap-2 text-xs text-slate-600">
+            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+            All Systems Operational
           </div>
         </div>
       </footer>

@@ -1,11 +1,14 @@
-import axios from 'axios';
-
-const API_BASE = "http://192.168.43.45:5001/api/notifications";
+import client from '../api/client';
 
 export const notificationAPI = {
-    // Fetches real-time alerts from NotificationService
+    // Fetches real-time alerts using the authenticated client
     getLatest: async (userId) => {
-        const response = await axios.get(`${API_BASE}/user/${userId}`);
+        // client.js automatically adds Base URL and Token
+        const response = await client.get(`/notifications/user/${userId}`);
         return response.data;
+    },
+    
+    markAsRead: async (id) => {
+        await client.put(`/notifications/read/${id}`);
     }
 };

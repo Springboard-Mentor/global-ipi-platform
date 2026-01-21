@@ -40,14 +40,6 @@ public class IPAssetService {
         this.externalIPService = externalIPService;
     }
 
-    // ===========================
-    // ⭐ API SYNCHRONIZATION LOGIC
-    // ===========================
-
-    /**
-     * Handles bulk saving of IP Assets from an external API (from the /sync endpoint),
-     * checking for duplicates using the assetNumber before saving or updating.
-     */
     @Transactional
     public List<IPAsset> saveOrUpdateAll(List<IPAsset> apiAssets) {
         List<IPAsset> savedAssets = new ArrayList<>();
@@ -56,14 +48,12 @@ public class IPAssetService {
             String assetNumber = newAsset.getAssetNumber();
 
             if (assetNumber == null || assetNumber.trim().isEmpty()) {
-                System.err.println("Skipping asset with empty assetNumber during sync.");
                 continue;
             }
 
             Optional<IPAsset> existingAssetOpt = ipAssetRepository.findByAssetNumber(assetNumber);
 
             if (existingAssetOpt.isPresent()) {
-                // UPDATE: Asset exists, update fields with new API data
                 IPAsset existingAsset = existingAssetOpt.get();
                 existingAsset.setTitle(truncate(newAsset.getTitle(), 255));
                 existingAsset.setStatus(newAsset.getStatus());
@@ -76,7 +66,6 @@ public class IPAssetService {
 
                 savedAssets.add(ipAssetRepository.save(existingAsset));
             } else {
-                // CREATE: Asset does not exist, save the new one
                 newAsset.setAssetClass(newAsset.getAssetClass() != null ? newAsset.getAssetClass() : "Unknown");
                 newAsset.setApiSource("api");
                 newAsset.setLastUpdated(LocalDateTime.now());
@@ -86,14 +75,6 @@ public class IPAssetService {
         return savedAssets;
     }
 
-    // ===========================
-    // 🛰️ FILING TRACKER CORE LOGIC
-    // ===========================
-
-    /**
-     * Logic triggered when "Track" is clicked in Search Analysis.
-     * Persists to filing_tracker and sends a notification alert.
-     */
     @Transactional
     public void trackAsset(Integer userId, Integer assetId) {
         User user = userRepository.findById(Long.valueOf(userId))
@@ -102,7 +83,7 @@ public class IPAssetService {
         IPAsset asset = ipAssetRepository.findById(assetId)
                 .orElseThrow(() -> new RuntimeException("Asset not found"));
 
-        Optional<FilingTracker> existing = filingTrackerRepository.findByUserIdAndIpAssetId(userId, assetId);
+        Optional<FilingTracker> existing = filingTrackerRepository.findByUserIdAndIpAssetId(Long.valueOf(userId), assetId);
         if (existing.isPresent()) {
             throw new RuntimeException("Asset is already being tracked.");
         }
@@ -117,10 +98,6 @@ public class IPAssetService {
         String message = "Filing Tracker: Now monitoring " + asset.getAssetNumber();
         notificationService.sendAlert(userId, assetId, message, "TRACKING_START");
     }
-
-    // ===========================
-    // 📊 ANALYTICS
-    // ===========================
 
     public List<IPAsset> getAllAssetsForAnalysis() {
         return ipAssetRepository.findAll();
@@ -145,11 +122,7 @@ public class IPAssetService {
         return distribution;
     }
 
-    // ===========================
-    // 🔍 SEARCH LOGIC
-    // ===========================
-
-    public Page<IPAsset> search(String keyword, String type, String source, 
+    public Page<IPAsset> search(String keyword, String type, String jurisdictions, String status, String source, 
                                  int page, int size, String sortBy, String sortDirection) {
 
         if (keyword != null && keyword.trim().isEmpty()) {
@@ -167,15 +140,11 @@ public class IPAssetService {
             System.out.println("Calling External API for: " + keyword);
             List<PatentDTO> apiResults = externalIPService.searchSerpApi(keyword);
             saveApiResultsToDatabase(apiResults);
-            return ipAssetRepository.searchAssets(keyword, type, "api", pageable);
+            return ipAssetRepository.searchAssets(keyword, type, jurisdictions, status, "api", pageable);
         }
 
-        return ipAssetRepository.searchAssets(keyword, type, source, pageable);
+        return ipAssetRepository.searchAssets(keyword, type, jurisdictions, status, source, pageable);
     }
-
-    // ===========================
-    // ✨ CRUD OPERATIONS
-    // ===========================
 
     @Transactional
     public IPAsset saveAsset(IPAsset asset) {
@@ -224,10 +193,6 @@ public class IPAssetService {
         ipAssetRepository.deleteById(id);
     }
 
-    // ===========================
-    // 💾 API HELPERS
-    // ===========================
-
     @Transactional
     public void saveApiResultsToDatabase(List<PatentDTO> dtos) {
         if (dtos == null || dtos.isEmpty()) return;
@@ -255,7 +220,7 @@ public class IPAssetService {
                     saved++;
                 }
             } catch (Exception e) {
-                System.err.println("❌ Error saving asset: " + e.getMessage());
+                System.err.println("Error saving asset: " + e.getMessage());
             }
         }
         System.out.println("Saved " + saved + " new API records");

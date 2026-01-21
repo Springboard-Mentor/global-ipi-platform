@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 
-// Component Imports
 import LandingPage from './components/LandingPage.jsx';
 import LoginPage from './components/LoginPage.jsx';
 import RegisterPage from './components/RegisterPage.jsx';
@@ -18,13 +17,10 @@ import LegalDashboardPage from './components/LegalDashboardPage.jsx';
 import LandscapeVisualizationPage from './components/LandscapeVisualizationPage.jsx';
 import FilingTrackerPage from './components/FilingTrackerPage.jsx';
 import PricingPage from './components/PricingPage.jsx';
+import AdminMonitoringDashboard from './components/AdminMonitoringDashboard.jsx';
 
-
-// Services & Styles
 import { authAPI } from './services/ai.js';
 import 'leaflet/dist/leaflet.css';
-
-// --- HELPER: NAVIGATION WRAPPERS ---
 
 const LoginWithNav = ({ onLogin }) => {
   const navigate = useNavigate();
@@ -40,8 +36,6 @@ const LandingWithNav = () => {
   const navigate = useNavigate();
   return <LandingPage onNavigate={(path) => navigate(path)} />;
 };
-
-// --- MAIN DASHBOARD ROUTING LOGIC ---
 
 const DashboardWithRouter = ({ user, handleLogout, handleUpdateUser }) => {
   const navigate = useNavigate();
@@ -62,6 +56,10 @@ const DashboardWithRouter = ({ user, handleLogout, handleUpdateUser }) => {
     return path.split('/')[0] || 'dashboard';
   };
 
+  // ✅ ADMIN CHECK LOGIC ADDED HERE
+  const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL;
+  const isSuperAdmin = user?.role === 'ADMIN' || user?.email === ADMIN_EMAIL;
+
   return (
     <DashboardLayout
       user={user}
@@ -74,24 +72,24 @@ const DashboardWithRouter = ({ user, handleLogout, handleUpdateUser }) => {
         <Route path="profile" element={<ProfilePage user={user} onUpdateUser={handleUpdateUser} onBack={() => navigate('/overview')} />} />
         <Route path="patents" element={<PatentsWithNav />} />
         <Route path="new-filing" element={<NewFilingPage />} />
-        
-        {/* AI ANALYSIS ROUTE */}
         <Route path="ai-analysis" element={<AnalysisPage />} />
-        
-        {/* 🟢 CRITICAL FIX: Pass the user prop here */}
         <Route path="settings" element={<SettingsPage user={user} />} />
-        
         <Route path="search" element={<SearchWithNav />} />
         <Route path="patent-details" element={<DetailsWithNav />} />
-        
-        {/* ANALYTICS ROUTES */}
         <Route path="legal-dashboard" element={<LegalDashboardPage />} />
         <Route path="landscape" element={<LandscapeVisualizationPage />} />
-        
         <Route path="filing-tracker" element={<FilingTrackerPage user={user} onNavigate={handleNavigate} />} />
         <Route path="pricing" element={<PricingPage onNavigate={handleNavigate} onUpdateUser={handleUpdateUser} />} />
+        
+        {/* ✅ FIXED ROUTE GUARD */}
+        <Route path="admin-monitoring" element={
+          isSuperAdmin ? (
+            <AdminMonitoringDashboard />
+          ) : (
+            <Navigate to="/overview" replace />
+          )
+        } />
 
-        {/* Catch-all */}
         <Route path="*" element={<Navigate to="/overview" replace />} />
       </Routes>
     </DashboardLayout>
@@ -117,8 +115,6 @@ const DetailsWithNav = () => {
   if (!patent) return <Navigate to="/search" />;
   return <PatentDetailsPage patent={patent} onBack={() => navigate(-1)} />;
 };
-
-// --- MAIN APP COMPONENT ---
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -179,10 +175,7 @@ const App = () => {
   return (
     <div className="min-h-screen font-sans text-slate-900 bg-white">
       <Routes>
-        {/* Public Routes */}
         <Route path="/" element={<LandingWithNav />} />
-        
-        {/* Auth Routes */}
         <Route 
           path="/login" 
           element={!user ? <LoginWithNav onLogin={handleLogin} /> : <Navigate to="/overview" />} 
@@ -191,8 +184,6 @@ const App = () => {
           path="/register" 
           element={!user ? <RegisterWithNav onLogin={handleLogin} /> : <Navigate to="/overview" />} 
         />
-
-        {/* Protected Dashboard Routes */}
         <Route 
           path="/*" 
           element={

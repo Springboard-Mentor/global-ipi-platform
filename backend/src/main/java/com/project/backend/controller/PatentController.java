@@ -10,7 +10,6 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api") // Base mapping is /api
-@CrossOrigin(origins = "*") 
 public class PatentController {
 
     // --- 1. Internal Data Structure (Record is clean and simple) ---

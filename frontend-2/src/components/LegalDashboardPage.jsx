@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, 
   Tooltip, Legend, ResponsiveContainer, AreaChart, Area
@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import analyticsAPI from '../api/analytics';
 import {
-  STATUS_COLORS, formatNumber, DATE_RANGES
+  STATUS_COLORS, formatNumber
 } from '../utils/chartHelpers';
 import { exportToJSON } from '../utils/exportHelpers';
 
@@ -18,11 +18,12 @@ const LegalDashboardPage = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
-  const [dateRange, setDateRange] = useState('year');
+  // Default to 'all'
+  const [dateRange, setDateRange] = useState('all'); 
   const [selectedType, setSelectedType] = useState('all');
   const [selectedJurisdiction, setSelectedJurisdiction] = useState('all');
 
-  const [dashboardData, setDashboardData] = useState({
+  const [rawData, setRawData] = useState({
     summary: { totalFilings: 0, activePatents: 0, pendingApplications: 0, expiringSoon: 0 },
     statusDistribution: [],
     filingsTrend: [],
@@ -35,13 +36,14 @@ const LegalDashboardPage = () => {
   const [drillDownData, setDrillDownData] = useState([]);
   const [loadingModal, setLoadingModal] = useState(false);
 
+  // 1. Fetch Data (Always fetch 'all' to get full history for local filtering)
   const fetchDashboardData = async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true); else setLoading(true);
     setError(null);
     
     try {
       const params = { 
-        dateRange, 
+        dateRange: 'all', 
         type: selectedType, 
         jurisdiction: selectedJurisdiction,
         t: new Date().getTime()
@@ -56,7 +58,7 @@ const LegalDashboardPage = () => {
         analyticsAPI.getStatusTimeline(params)
       ]);
       
-      setDashboardData({ 
+      setRawData({ 
         summary: summary || { totalFilings: 0, activePatents: 0, pendingApplications: 0, expiringSoon: 0 }, 
         statusDistribution: statusDist?.data || [], 
         filingsTrend: filingsTrend?.data || [], 
@@ -75,13 +77,61 @@ const LegalDashboardPage = () => {
 
   useEffect(() => { 
     fetchDashboardData(); 
+  }, []); 
 
-    const interval = setInterval(() => {
-      fetchDashboardData(true); 
-    }, 30000);
+  // 2. CLIENT-SIDE FILTERING LOGIC (Ranges Added)
+  const filteredData = useMemo(() => {
+    const currentYear = new Date().getFullYear(); // 2026
+    let startYear = null;
+    let endYear = currentYear;
 
-    return () => clearInterval(interval);
-  }, [dateRange, selectedType, selectedJurisdiction]);
+    // Define Logic for Dropdown Options
+    if (dateRange === 'year') {
+        startYear = currentYear;
+    } 
+    else if (dateRange === 'last_year') {
+        startYear = currentYear - 1;
+        endYear = currentYear - 1;
+    }
+    else if (dateRange === 'last_3_years') {
+        startYear = currentYear - 2; // 2024, 2025, 2026
+    }
+    else if (dateRange === 'last_5_years') {
+        startYear = currentYear - 4; // 2022 to 2026
+    }
+    else if (dateRange === 'last_10_years') {
+        startYear = currentYear - 9; 
+    }
+
+    // If "All Time", return raw data
+    if (dateRange === 'all') return rawData;
+
+    // Filter the Graph Data
+    const visibleTrend = rawData.filingsTrend.filter(item => {
+        const itemYear = parseInt(item.year || item.month?.split('-')[0] || 0);
+        
+        // Safety check if date parsing failed
+        if (!itemYear) return false;
+
+        if (startYear && endYear) {
+            return itemYear >= startYear && itemYear <= endYear;
+        }
+        return true;
+    });
+
+    // Recalculate Total Filings count based on the filtered graph
+    const newTotalFilings = visibleTrend.reduce((acc, curr) => acc + (Number(curr.patents) || 0), 0);
+
+    return {
+      ...rawData,
+      summary: {
+        ...rawData.summary,
+        totalFilings: newTotalFilings 
+      },
+      filingsTrend: visibleTrend 
+    };
+
+  }, [dateRange, rawData]);
 
   const handleCardClick = async (type, statusFilter) => {
     setModalTitle(type);
@@ -90,10 +140,7 @@ const LegalDashboardPage = () => {
 
     try {
       const response = await analyticsAPI.getAssetsByCategory(
-        statusFilter, 
-        dateRange, 
-        selectedType, 
-        selectedJurisdiction
+        statusFilter, dateRange === 'all' ? 'all' : 'year', selectedType, selectedJurisdiction
       );
       setDrillDownData(response?.data || []);
     } catch (error) {
@@ -118,7 +165,7 @@ const LegalDashboardPage = () => {
     </div>
   );
 
-  const { summary, statusDistribution, filingsTrend, jurisdictionBreakdown, statusTimeline } = dashboardData;
+  const { summary, statusDistribution, filingsTrend, jurisdictionBreakdown, statusTimeline } = filteredData;
 
   return (
     <div className="w-full min-h-screen bg-gray-50 p-6 md:p-10 font-sans text-gray-900">
@@ -132,16 +179,23 @@ const LegalDashboardPage = () => {
         <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm">
                 <Calendar className="w-4 h-4 text-gray-400" />
+                
+                {/* 🟢 NEW DROPDOWN OPTIONS ADDED HERE */}
                 <select 
                     value={dateRange} 
                     onChange={(e) => setDateRange(e.target.value)} 
                     className="text-sm bg-transparent outline-none text-gray-700 font-medium cursor-pointer"
                 >
-                    {DATE_RANGES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                    <option value="all">All Time</option>
+                    <option value="year">This Year (2026)</option>
+                    <option value="last_year">Last Year (2025)</option>
+                    <option value="last_3_years">Last 3 Years</option>
+                    <option value="last_5_years">Last 5 Years</option>
+                    <option value="last_10_years">Last 10 Years</option>
                 </select>
             </div>
 
-            <button onClick={() => exportToJSON(dashboardData, 'legal_report')} className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-semibold flex items-center gap-2 transition-all shadow-sm">
+            <button onClick={() => exportToJSON(filteredData, 'legal_report')} className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-semibold flex items-center gap-2 transition-all shadow-sm">
                 <Download className="w-4 h-4" /> Export
             </button>
             
@@ -232,7 +286,7 @@ const LegalDashboardPage = () => {
 
         <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-sm">
            <div className="flex justify-between items-center mb-6">
-             <h3 className="font-bold text-gray-900">Filing Trends</h3>
+             <h3 className="font-bold text-gray-900">Filing Trends ({dateRange === 'all' ? 'All Time' : dateRange.replace(/_/g, ' ')})</h3>
              <TrendingUp className="text-green-500 w-5 h-5"/>
            </div>
             <ResponsiveContainer width="100%" height={300}>
@@ -244,7 +298,7 @@ const LegalDashboardPage = () => {
                     </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} dy={10} />
+                <XAxis dataKey={filingsTrend.length > 0 && filingsTrend[0].month ? "month" : "year"} axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} />
                 <Tooltip 
                     contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}

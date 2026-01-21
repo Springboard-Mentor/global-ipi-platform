@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import {
   Zap, Users, Award, Lightbulb, GitBranch, Download, RefreshCw, 
-  X, Layers, Target, Globe, ChevronDown, ChevronUp
+  X, Layers, Target, ChevronDown, ChevronUp
 } from 'lucide-react';
 
 import analyticsAPI from '../api/analytics';
@@ -391,7 +391,7 @@ const LandscapeVisualizationPage = () => {
             <h4 className="text-md font-semibold text-gray-700 mb-3">Convergence Details</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {convergenceMap.slice(0, 8).map((conv, index) => (
-                <div key={index} onClick={() => handleDrillDown(conv.field1)} className="p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 transition-all cursor-pointer">
+                <div key={index} onClick={() => handleDrillDown(conv.field1 + ' & ' + conv.field2)} className="p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 transition-all cursor-pointer">
                   <div className="flex items-center justify-between mb-2">
                     <GitBranch className="w-5 h-5 text-indigo-600" />
                     <span className="text-xs font-semibold text-gray-500">Strength: {Math.round(conv.strength)}%</span>

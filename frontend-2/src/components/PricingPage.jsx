@@ -3,12 +3,10 @@ import {
   Check, ArrowLeft, Zap, Shield, Crown, 
   Clock, AlertTriangle, X, RefreshCw 
 } from 'lucide-react';
-import axios from 'axios';
+import client from '../api/client';
 import confetti from 'canvas-confetti';
 
-// --- CONFIGURATION ---
-const RAZORPAY_KEY_ID = "rzp_test_1DP5mmOlF5G5ag"; 
-const API_BASE = "http://localhost:5001/api"; 
+const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID; 
 
 const PricingPage = ({ onNavigate, onUpdateUser }) => {
   const [user, setUser] = useState(null);
@@ -16,20 +14,19 @@ const PricingPage = ({ onNavigate, onUpdateUser }) => {
   const [loading, setLoading] = useState(false);
   const [refundAmount, setRefundAmount] = useState(0);
 
-  // --- 1. LOAD USER DATA ---
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
-      console.log("👤 Pricing Page Loaded. Current User Plan:", parsedUser.planType); // DEBUG LOG
-      setUser(parsedUser);
-      if (parsedUser.subscriptionDate) calculateRefundValue(parsedUser);
-    } else {
-        console.warn("⚠️ No user found in LocalStorage!");
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+        if (parsedUser.subscriptionDate) calculateRefundValue(parsedUser);
+      } catch (e) {
+        console.error("User data parse error", e);
+      }
     }
   }, []);
 
-  // --- 2. REFUND CALCULATOR ---
   useEffect(() => {
     let interval;
     if (user?.planType && user.planType !== 'STARTUP') {
@@ -53,7 +50,6 @@ const PricingPage = ({ onNavigate, onUpdateUser }) => {
     setRefundAmount(Math.max(0, Math.floor(refund)));
   };
 
-  // --- 3. RAZORPAY PAYMENT LOGIC ---
   const loadRazorpay = () => {
     return new Promise((resolve) => {
       const script = document.createElement('script');
@@ -66,6 +62,11 @@ const PricingPage = ({ onNavigate, onUpdateUser }) => {
 
   const handleSubscribe = async (plan) => {
     if (plan.monthlyPrice === 0) return;
+
+    if (!user || !user.id) {
+        alert("Please log in again to subscribe.");
+        return;
+    }
 
     setLoading(true);
     const res = await loadRazorpay();
@@ -86,7 +87,6 @@ const PricingPage = ({ onNavigate, onUpdateUser }) => {
       description: `${plan.name} - ${billingCycle}`,
       image: "https://cdn-icons-png.flaticon.com/512/2038/2038022.png",
       handler: function (response) {
-        console.log("💰 Payment Success ID:", response.razorpay_payment_id);
         updateUserPlan(plan, amount, response.razorpay_payment_id);
       },
       prefill: {
@@ -102,73 +102,59 @@ const PricingPage = ({ onNavigate, onUpdateUser }) => {
     setLoading(false);
   };
 
-  // --- 4. SUBSCRIBE UPDATE LOGIC ---
   const updateUserPlan = async (plan, amountPaid = 0, paymentId = 'free_tier') => {
     const startDate = new Date();
     const durationDays = billingCycle === 'monthly' ? 30 : 365;
     const renewalDate = new Date();
     renewalDate.setDate(renewalDate.getDate() + durationDays);
 
-    const updatedUser = {
-      ...user,
-      planType: plan.id, 
-      plan: plan.id,          
-      planName: plan.name,    
-      billingCycle,
-      subscriptionDate: startDate.toISOString(),
-      renewalDate: renewalDate.toDateString(), 
-      amountPaid: amountPaid,
-      durationDays: durationDays
+    const payload = {
+        userId: user.id,
+        planName: plan.id, 
+        billingCycle: billingCycle.toUpperCase(),
+        amount: amountPaid,
+        paymentId: paymentId 
     };
 
     try {
-        console.log("🚀 Syncing Subscription to Backend...");
-        await axios.post(`${API_BASE}/subscriptions/subscribe`, {
-            userId: user.id,
-            planName: plan.id, 
-            billingCycle: billingCycle,
-            amount: amountPaid,
-            paymentId: paymentId 
-        });
-        console.log("✅ Backend Sync Success!");
+        await client.post('/subscriptions/subscribe', payload);
+
+        const updatedUser = {
+            ...user,
+            planType: plan.id, 
+            plan: plan.id,          
+            planName: plan.name,    
+            billingCycle,
+            subscriptionDate: startDate.toISOString(),
+            renewalDate: renewalDate.toDateString(), 
+            amountPaid: amountPaid,
+            durationDays: durationDays
+        };
+
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        setUser(updatedUser);
+        if (onUpdateUser) onUpdateUser(updatedUser);
+
+        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+
     } catch (error) {
-        console.error("❌ Backend Sync Failed:", error);
-        alert("Payment successful, but server sync failed. Please contact support.");
+        console.error("Backend Sync Failed:", error);
+        alert("Subscription payment successful but failed to update status. Please contact support.");
     }
-
-    localStorage.setItem('user', JSON.stringify(updatedUser));
-    setUser(updatedUser);
-    if (onUpdateUser) onUpdateUser(updatedUser);
-
-    confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
   };
 
-  // --- 5. 🛑 DEBUGGED CANCEL LOGIC 🛑 ---
   const handleCancel = async () => {
-    // 🛑 LOG 1: Start
-    console.log("🖱️ Cancel Button Clicked");
-
     if (!user || !user.id) {
-        console.error("❌ User ID missing in state:", user);
-        alert("Error: User ID missing. Try logging in again.");
+        alert("User session missing.");
         return;
     }
 
     if (window.confirm(`Are you sure you want to cancel? Refund value: ₹${refundAmount}`)) {
-      
-      // 🛑 LOG 2: Sending Request
-      console.log(`🚀 Sending POST request to: ${API_BASE}/subscriptions/cancel`);
-      console.log("📦 Payload:", { userId: user.id });
-
       try {
-          const response = await axios.post(`${API_BASE}/subscriptions/cancel`, { 
+          await client.post('/subscriptions/cancel', { 
               userId: user.id 
           });
 
-          // 🛑 LOG 3: Success
-          console.log("✅ Backend Response:", response.data);
-
-          // Update Local State to Free Tier
           const updatedUser = {
             ...user,
             planType: 'STARTUP',
@@ -179,35 +165,19 @@ const PricingPage = ({ onNavigate, onUpdateUser }) => {
             amountPaid: 0
           };
           
-          console.log("🔄 Updating Local Storage...");
           localStorage.setItem('user', JSON.stringify(updatedUser));
           setUser(updatedUser);
           if (onUpdateUser) onUpdateUser(updatedUser);
           
           alert("Subscription Cancelled Successfully.");
-          
-          // Optional: Force reload to clear any cached UI states
-          // window.location.reload(); 
 
       } catch (error) {
-          // 🛑 LOG 4: Error Handling
-          console.error("❌ CANCEL REQUEST FAILED:", error);
-          
-          if (error.response) {
-              console.error("   Server Error Data:", error.response.data);
-              console.error("   Server Status:", error.response.status);
-              alert(`Server Error: ${error.response.data.error || "Failed to cancel"}`);
-          } else if (error.request) {
-              console.error("   No response received from backend.");
-              alert("Network Error: Backend is not reachable.");
-          } else {
-              alert("Error: " + error.message);
-          }
+          console.error("Cancel Failed:", error);
+          alert("Failed to cancel subscription.");
       }
     }
   };
 
-  // --- PLANS DATA ---
   const plans = [
     {
       id: 'STARTUP',
@@ -244,14 +214,12 @@ const PricingPage = ({ onNavigate, onUpdateUser }) => {
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans pb-20">
-      {/* HEADER */}
       <div className="bg-[#0f172a] text-white px-6 py-4 shadow-xl sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <button onClick={() => onNavigate('dashboard')} className="flex items-center gap-2 text-slate-300 hover:text-white transition font-semibold">
             <ArrowLeft size={20} /> Back to Dashboard
           </button>
 
-          {/* Show Active Plan Details if NOT Startup */}
           {user?.planType && user.planType !== 'STARTUP' && (
             <div className="flex items-center gap-4 bg-slate-800 p-2 pr-4 rounded-xl border border-slate-700 animate-in fade-in slide-in-from-top-2">
               <div className="bg-emerald-500/20 text-emerald-400 p-2 rounded-lg"><Crown size={20} /></div>
@@ -275,7 +243,6 @@ const PricingPage = ({ onNavigate, onUpdateUser }) => {
           <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-4 tracking-tight">Accessible Innovation Pricing</h1>
           <p className="text-lg text-slate-600 max-w-2xl mx-auto">Get started for as low as ₹199. Cancel anytime.</p>
           
-          {/* Billing Cycle Toggle */}
           <div className="flex justify-center items-center mt-8 gap-4 select-none">
             <span className={`text-sm font-bold ${billingCycle === 'monthly' ? 'text-slate-900' : 'text-slate-400'}`}>Monthly</span>
             <button onClick={() => setBillingCycle(prev => prev === 'monthly' ? 'yearly' : 'monthly')} className="relative w-14 h-7 bg-indigo-600 rounded-full p-1 transition-all cursor-pointer">
@@ -285,7 +252,6 @@ const PricingPage = ({ onNavigate, onUpdateUser }) => {
           </div>
         </div>
 
-        {/* Pricing Cards */}
         <div className="grid md:grid-cols-3 gap-8 items-start">
           {plans.map((plan) => {
             const isCurrent = user?.planType === plan.id; 

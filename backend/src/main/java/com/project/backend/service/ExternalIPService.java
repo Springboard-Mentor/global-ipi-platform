@@ -1,6 +1,7 @@
 package com.project.backend.service;
 
 import com.project.backend.dto.PatentDTO;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -12,8 +13,9 @@ public class ExternalIPService {
 
     private final RestTemplate restTemplate;
 
-    // 🔴 PUT YOUR REAL KEY
-    private static final String SERP_API_KEY = "160167623ca6bfff2d29a170af684229227f0be40b0bec125fa172af62445744";
+    // ✅ READ KEY FROM application.properties (Secure)
+    @Value("${app.serpapi.key}")
+    private String serpApiKey;
 
     public ExternalIPService(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
@@ -29,7 +31,7 @@ public class ExternalIPService {
                     .fromHttpUrl("https://serpapi.com/search.json")
                     .queryParam("engine", "google_patents")
                     .queryParam("q", query)
-                    .queryParam("api_key", SERP_API_KEY)
+                    .queryParam("api_key", serpApiKey) // Using injected key
                     .build()
                     .toUriString();
 
@@ -102,5 +104,3 @@ public class ExternalIPService {
         return results;
     }
 }
-
-

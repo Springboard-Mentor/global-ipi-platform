@@ -1,26 +1,16 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import client from '../api/client';
 import { Search, Download, Plus, FileText, Calendar, MapPin, Eye, User, Building, Loader2, Copy, Check, Filter } from 'lucide-react';
 
 const PatentsPage = ({ onViewPatent }) => {
     const navigate = useNavigate();
     
-    // ==========================================
-    // 1. CONFIGURATION & STATE
-    // ==========================================
-    
-    // API Base URL from Environment Variables
-    const API_BASE = import.meta.env.VITE_API_BASE_URL;
-
     const [patents, setPatents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
     const [copyMessage, setCopyMessage] = useState({ visible: false, text: '' });
-
-    // ==========================================
-    // 2. DATA FETCHING
-    // ==========================================
 
     useEffect(() => {
         fetchPatents();
@@ -29,14 +19,9 @@ const PatentsPage = ({ onViewPatent }) => {
     const fetchPatents = async () => {
         setLoading(true);
         try {
-            // Fetch filings from backend using dynamic URL
-            const response = await fetch(`${API_BASE}/filings`); 
-            
-            if (!response.ok) throw new Error('Failed to fetch data');
+            const response = await client.get('/filings');
+            const data = response.data;
 
-            const data = await response.json();
-
-            // Normalize data structure for UI
             const formattedData = data.map(item => ({
                 id: item.id,
                 patentNumber: item.patentNumber || item.applicationNumber || `APP-${String(item.id).padStart(5, '0')}`,
@@ -60,10 +45,6 @@ const PatentsPage = ({ onViewPatent }) => {
         }
     };
 
-    // ==========================================
-    // 3. HELPER FUNCTIONS
-    // ==========================================
-
     const getRegionName = (code) => {
         const regions = { 
             'US': 'United States', 'IN': 'India', 'EP': 'Europe', 
@@ -72,7 +53,6 @@ const PatentsPage = ({ onViewPatent }) => {
         return regions[code] || code || 'Global';
     };
 
-    // Fallback copy mechanism for non-secure contexts (HTTP)
     const fallbackCopy = (text) => {
         try {
             const textArea = document.createElement("textarea");
@@ -95,7 +75,6 @@ const PatentsPage = ({ onViewPatent }) => {
         }
     };
 
-    // Primary Copy Handler
     const handleCopy = (e, text) => {
         if (e && e.stopPropagation) e.stopPropagation();
 
@@ -106,7 +85,6 @@ const PatentsPage = ({ onViewPatent }) => {
                     setTimeout(() => setCopyMessage({ visible: false, text: '' }), 2000);
                 })
                 .catch((err) => {
-                    console.error("Async copy failed, trying fallback", err);
                     fallbackCopy(text);
                 });
         } else {
@@ -140,7 +118,6 @@ const PatentsPage = ({ onViewPatent }) => {
         document.body.removeChild(link);
     };
 
-    // Filter Logic
     const filteredPatents = useMemo(() => {
         let filtered = patents;
         if (searchTerm) {
@@ -175,10 +152,6 @@ const PatentsPage = ({ onViewPatent }) => {
         return ['All', ...new Set(formattedStatuses)];
     }, [patents]);
 
-    // ==========================================
-    // 4. RENDER UI
-    // ==========================================
-
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center h-96 text-slate-400">
@@ -191,14 +164,12 @@ const PatentsPage = ({ onViewPatent }) => {
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
             
-            {/* Toast Notification */}
             {copyMessage.visible && (
                 <div className="fixed top-4 right-4 z-50 p-3 bg-green-500 text-white rounded-lg shadow-xl animate-in slide-in-from-right flex items-center gap-2">
                     <Check className="w-4 h-4" /> {copyMessage.text}
                 </div>
             )}
             
-            {/* Page Header */}
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-2xl font-bold text-slate-900">My Patent Filings</h2>
@@ -213,7 +184,6 @@ const PatentsPage = ({ onViewPatent }) => {
                 </button>
             </div>
 
-            {/* Filter & Search Bar */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
                 <div className="flex flex-col sm:flex-row gap-4">
                     <div className="flex-1 relative">
@@ -250,7 +220,6 @@ const PatentsPage = ({ onViewPatent }) => {
                 </div>
             </div>
 
-            {/* Main Content Table */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 {filteredPatents.length === 0 ? (
                     <div className="p-16 text-center flex flex-col items-center">
@@ -273,7 +242,6 @@ const PatentsPage = ({ onViewPatent }) => {
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-3 mb-2">
-                                            {/* Patent Number Badge with Copy */}
                                             <div className="flex items-center bg-indigo-50 rounded border border-indigo-100 pr-1">
                                                 <span className="text-xs font-mono font-bold text-indigo-600 px-2 py-1" title="Application/Patent Number">
                                                     {patent.patentNumber}

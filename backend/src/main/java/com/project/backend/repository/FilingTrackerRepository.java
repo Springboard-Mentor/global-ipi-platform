@@ -9,9 +9,9 @@ import java.util.Optional;
 @Repository
 public interface FilingTrackerRepository extends JpaRepository<FilingTracker, Long> {
     
-    // ✅ FIX: Define the missing method to resolve Java(67108964)
-    Optional<FilingTracker> findByUserIdAndIpAssetId(Integer userId, Integer ipAssetId);
+    // 🔴 Change 1: Integer userId -> Long userId
+    Optional<FilingTracker> findByUserIdAndIpAssetId(Long userId, Integer ipAssetId);
 
-    // Fetches all tracked assets for the Filing Tracker page
-    List<FilingTracker> findByUserIdOrderByTrackedAtDesc(Integer userId);
+    // 🔴 Change 2: Integer userId -> Long userId
+    List<FilingTracker> findByUserIdOrderByTrackedAtDesc(Long userId);
 }

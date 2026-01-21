@@ -11,7 +11,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/geo")
-@CrossOrigin(origins = "*")
+
 public class GeoController {
 
     @Autowired

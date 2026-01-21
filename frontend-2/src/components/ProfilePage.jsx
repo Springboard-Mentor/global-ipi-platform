@@ -1,16 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios'; 
+import client from "../api/client"; 
 import { 
   Camera, User, Mail, Briefcase, MapPin, Phone, 
   Building, Save, CheckCircle, AlertCircle, Shield,
-  Globe, Linkedin, CreditCard, Calendar, Trash2 // Added Trash2 Icon
+  Globe, Linkedin, CreditCard, Calendar, Trash2 
 } from 'lucide-react';
-
-const API_BASE = "http://localhost:5001/api"; 
 
 const ProfilePage = ({ user, onUpdateUser, onBack }) => {
   
-  // --- 1. STATE MANAGEMENT ---
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -28,7 +25,6 @@ const ProfilePage = ({ user, onUpdateUser, onBack }) => {
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
-  // --- 2. INITIALIZE DATA ---
   useEffect(() => {
     if (user) {
       setFormData({
@@ -46,13 +42,11 @@ const ProfilePage = ({ user, onUpdateUser, onBack }) => {
     }
   }, [user]);
 
-  // --- 3. HANDLERS ---
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // ✅ UPLOAD AVATAR
   const handleAvatarChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -75,7 +69,7 @@ const ProfilePage = ({ user, onUpdateUser, onBack }) => {
 
     try {
       setIsLoading(true);
-      const res = await axios.post(`${API_BASE}/users/upload-avatar`, uploadData, {
+      const res = await client.post('/users/upload-avatar', uploadData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       
@@ -91,17 +85,15 @@ const ProfilePage = ({ user, onUpdateUser, onBack }) => {
     }
   };
 
-  // ✅ NEW: REMOVE AVATAR
   const handleRemoveAvatar = async () => {
     if (!window.confirm("Are you sure you want to remove your profile picture?")) return;
 
     try {
       setIsLoading(true);
-      // Call Backend Delete Endpoint
-      await axios.delete(`${API_BASE}/users/${user.id}/avatar`);
+      await client.delete(`/users/${user.id}/avatar`);
       
       setAvatarPreview(null);
-      onUpdateUser({ ...user, avatar: null }); // Update global state
+      onUpdateUser({ ...user, avatar: null }); 
       setSuccessMsg('Profile picture removed.');
     } catch (err) {
       console.error("Remove Avatar Error:", err);
@@ -112,7 +104,6 @@ const ProfilePage = ({ user, onUpdateUser, onBack }) => {
     }
   };
 
-  // UPDATE PROFILE TEXT
   const handleSave = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -120,7 +111,7 @@ const ProfilePage = ({ user, onUpdateUser, onBack }) => {
     setSuccessMsg('');
 
     try {
-      const res = await axios.put(`${API_BASE}/users/${user.id}`, formData);
+      const res = await client.put(`/users/${user.id}`, formData);
       onUpdateUser(res.data);
       setSuccessMsg('Profile details saved successfully.');
     } catch (err) {
@@ -135,7 +126,6 @@ const ProfilePage = ({ user, onUpdateUser, onBack }) => {
   return (
     <div className="min-h-screen bg-slate-50/50 pb-12">
       
-      {/* HEADER BANNER */}
       <div className="h-48 bg-gradient-to-r from-slate-800 to-slate-900 relative w-full rounded-b-[2.5rem] shadow-lg">
         <button onClick={onBack} className="absolute top-6 left-6 text-white/80 hover:text-white text-sm font-bold uppercase tracking-widest bg-black/20 px-4 py-2 rounded-xl backdrop-blur-sm transition-all hover:bg-black/40">
           ← Back to Dashboard
@@ -144,10 +134,8 @@ const ProfilePage = ({ user, onUpdateUser, onBack }) => {
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 relative z-10">
         
-        {/* PROFILE HEADER CARD */}
         <div className="bg-white rounded-3xl shadow-xl p-6 mb-8 border border-slate-100 flex flex-col sm:flex-row items-center sm:items-end gap-6">
           
-          {/* Avatar Area */}
           <div className="relative group">
             <div className="h-32 w-32 rounded-full border-4 border-white shadow-lg bg-slate-100 flex items-center justify-center overflow-hidden relative">
               {avatarPreview ? (
@@ -157,7 +145,6 @@ const ProfilePage = ({ user, onUpdateUser, onBack }) => {
               )}
             </div>
             
-            {/* 1. Upload Button (Overlay) */}
             <label className="absolute inset-0 flex items-center justify-center bg-black/40 text-white opacity-0 group-hover:opacity-100 rounded-full cursor-pointer transition-all duration-200 z-10">
               <div className="flex flex-col items-center gap-1">
                 <Camera className="w-6 h-6 drop-shadow-md" />
@@ -166,12 +153,10 @@ const ProfilePage = ({ user, onUpdateUser, onBack }) => {
               <input type="file" className="hidden" accept="image/*" onChange={handleAvatarChange} />
             </label>
 
-            {/* 2. Upload Icon Indicator (Bottom Right) */}
             <div className="absolute bottom-1 right-1 bg-white p-1.5 rounded-full shadow-md border border-slate-100 text-indigo-600 z-20">
                <Camera size={14} />
             </div>
 
-            {/* 3. ✅ DELETE BUTTON (Top Right - Only shows if avatar exists) */}
             {avatarPreview && (
                 <button 
                     onClick={handleRemoveAvatar}
@@ -183,7 +168,6 @@ const ProfilePage = ({ user, onUpdateUser, onBack }) => {
             )}
           </div>
 
-          {/* User Info Display */}
           <div className="flex-1 text-center sm:text-left mb-2">
             <h1 className="text-3xl font-black text-slate-900 tracking-tight">{formData.name || 'User Name'}</h1>
             <p className="text-slate-500 font-medium flex items-center justify-center sm:justify-start gap-2 mt-1">
@@ -202,7 +186,6 @@ const ProfilePage = ({ user, onUpdateUser, onBack }) => {
           </div>
         </div>
 
-        {/* FEEDBACK MESSAGES */}
         {successMsg && (
           <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-3 text-emerald-700 shadow-sm animate-in fade-in slide-in-from-top-2">
             <CheckCircle className="w-5 h-5 flex-shrink-0" />
@@ -216,10 +199,8 @@ const ProfilePage = ({ user, onUpdateUser, onBack }) => {
           </div>
         )}
 
-        {/* FORM GRID */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* LEFT COLUMN: Edit Form */}
           <div className="lg:col-span-2 space-y-6">
             <form onSubmit={handleSave} className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
               <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/50">
@@ -228,7 +209,6 @@ const ProfilePage = ({ user, onUpdateUser, onBack }) => {
               
               <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
                 
-                {/* Name */}
                 <div className="col-span-2">
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Full Name</label>
                   <div className="relative">
@@ -243,7 +223,6 @@ const ProfilePage = ({ user, onUpdateUser, onBack }) => {
                   </div>
                 </div>
 
-                {/* Job Title */}
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Job Title</label>
                   <div className="relative">
@@ -258,7 +237,6 @@ const ProfilePage = ({ user, onUpdateUser, onBack }) => {
                   </div>
                 </div>
 
-                {/* Company */}
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Company</label>
                   <div className="relative">
@@ -273,7 +251,6 @@ const ProfilePage = ({ user, onUpdateUser, onBack }) => {
                   </div>
                 </div>
 
-                {/* Contact Info */}
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Email (Read Only)</label>
                   <div className="relative">
@@ -301,7 +278,6 @@ const ProfilePage = ({ user, onUpdateUser, onBack }) => {
                   </div>
                 </div>
 
-                {/* Location */}
                 <div className="col-span-2">
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Location</label>
                   <div className="relative">
@@ -316,7 +292,6 @@ const ProfilePage = ({ user, onUpdateUser, onBack }) => {
                   </div>
                 </div>
 
-                {/* Socials */}
                 <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">LinkedIn</label>
                   <div className="relative">
@@ -345,7 +320,6 @@ const ProfilePage = ({ user, onUpdateUser, onBack }) => {
                   </div>
                 </div>
 
-                {/* Bio */}
                 <div className="col-span-2">
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Bio</label>
                   <textarea 
@@ -372,10 +346,8 @@ const ProfilePage = ({ user, onUpdateUser, onBack }) => {
             </form>
           </div>
 
-          {/* RIGHT COLUMN: Subscription & Status */}
           <div className="space-y-6">
             
-            {/* Subscription Card - Based on User.java fields */}
             <div className="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-3xl shadow-xl p-8 text-white relative overflow-hidden">
                <div className="absolute -top-12 -right-12 w-48 h-48 bg-white/5 rounded-full blur-3xl"></div>
                <div className="absolute bottom-0 left-0 w-32 h-32 bg-indigo-500/20 rounded-full blur-2xl"></div>
@@ -409,23 +381,23 @@ const ProfilePage = ({ user, onUpdateUser, onBack }) => {
                  </div>
 
                  <button className="w-full mt-8 py-3 bg-white text-indigo-900 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-indigo-50 transition-colors shadow-lg">
-                    Upgrade Plan
+                   Upgrade Plan
                  </button>
                </div>
             </div>
 
-            {/* Account Status */}
             <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6">
                <h4 className="text-sm font-bold text-slate-900 mb-4">Account Status</h4>
                <div className="flex items-center gap-3 p-3 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-100">
                   <CheckCircle size={18} />
                   <div>
                       <p className="text-xs font-black uppercase tracking-wide">Active</p>
-                      <p className="text-[10px] opacity-80">Your account is in good standing.</p>
+                      <p className="text--[10px] opacity-80">Your account is in good standing.</p>
                   </div>
                </div>
                <div className="mt-4 text-xs text-slate-400 text-center">
-                  Member since {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+                  {/* 🟢 FIX: Shows Year if date exists, otherwise defaults to current year */}
+                  Member since {user.createdAt ? new Date(user.createdAt).getFullYear() : new Date().getFullYear()}
                </div>
             </div>
 

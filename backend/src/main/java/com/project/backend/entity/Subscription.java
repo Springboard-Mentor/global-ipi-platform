@@ -15,20 +15,25 @@ public class Subscription {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    // ✅ FIX: Added this field to handle database mapping, set nullable=true
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ip_asset_id", nullable = true)
+    private IPAsset ipAsset;
+
     @Column(name = "plan_name", nullable = false)
-    private String planName; // "PRO", "ENTERPRISE"
+    private String planName;
 
     @Column(name = "billing_cycle")
-    private String billingCycle; 
+    private String billingCycle;
 
     @Column(name = "amount_paid")
     private Double amountPaid;
 
     @Column(name = "payment_id")
-    private String paymentId; 
+    private String paymentId;
 
     @Column(name = "status")
-    private String status; // "ACTIVE"
+    private String status;
 
     @Column(name = "start_date")
     private LocalDateTime startDate;
@@ -43,13 +48,17 @@ public class Subscription {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         if (this.startDate == null) this.startDate = LocalDateTime.now();
+        if (this.status == null) this.status = "ACTIVE";
     }
 
-    // Getters and Setters
+    public Subscription() {}
+
     public Integer getId() { return id; }
     public void setId(Integer id) { this.id = id; }
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
+    public IPAsset getIpAsset() { return ipAsset; }
+    public void setIpAsset(IPAsset ipAsset) { this.ipAsset = ipAsset; }
     public String getPlanName() { return planName; }
     public void setPlanName(String planName) { this.planName = planName; }
     public String getBillingCycle() { return billingCycle; }
@@ -64,4 +73,6 @@ public class Subscription {
     public void setStartDate(LocalDateTime startDate) { this.startDate = startDate; }
     public LocalDateTime getEndDate() { return endDate; }
     public void setEndDate(LocalDateTime endDate) { this.endDate = endDate; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

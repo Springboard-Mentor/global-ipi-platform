@@ -1,20 +1,93 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
     Search, Filter, Grid, List, ChevronLeft, ChevronRight, 
-    Check, Database, Globe, User, Calendar, Loader2, 
-    RefreshCcw, Zap, Cpu, Map as MapIcon, Layers, ArrowUpRight
+    Check, Database, Globe, User, Calendar, MapPin, Loader2, 
+    RefreshCcw, Zap, Cpu, Map as MapIcon, Layers, AlertCircle,
+    ArrowUpRight, Lock, Crown, AlertTriangle, Info
 } from 'lucide-react';
-import axios from 'axios';
+import client from '../api/client';
 import { searchAPI } from '../api/searchAPI';
 import MapViewPage from './MapViewPage';
 
-const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
+const SearchResultsPage = ({ initialKeyword = '', onViewPatent, user: propUser }) => {
     
-    const API_BASE = import.meta.env.VITE_API_BASE_URL;
-
     const isInitialMount = useRef(true);
     const searchInProgress = useRef(false);
     const isSyncingRef = useRef(false);
+
+    const getUserData = () => {
+        if (propUser) return propUser;
+        try {
+            return JSON.parse(localStorage.getItem('user')) || {};
+        } catch (e) { return {}; }
+    };
+    const currentUser = getUserData();
+
+    const PLAN_LEVELS = { 'STARTUP': 1, 'PRO': 2, 'ENTERPRISE': 3 };
+    const SEARCH_LIMITS = { 'STARTUP': 5, 'PRO': 10, 'ENTERPRISE': Infinity };
+    const CYCLE_DAYS = 15;
+
+    const userPlan = currentUser?.planType || 'STARTUP';
+    const userLevel = PLAN_LEVELS[userPlan] || 1;
+    const limitMax = SEARCH_LIMITS[userPlan] || 5;
+
+    const hasAccess = (requiredLevel) => userLevel >= PLAN_LEVELS[requiredLevel];
+
+    const [quotaInfo, setQuotaInfo] = useState({ count: 0, resetDate: null });
+
+    const getStorageKey = () => `search_quota_${currentUser.id || 'guest'}`;
+
+    const loadQuota = () => {
+        try {
+            const data = JSON.parse(localStorage.getItem(getStorageKey()));
+            if (!data) return { count: 0, cycleStart: Date.now(), lastKeyword: '' };
+
+            const now = Date.now();
+            const cycleStart = new Date(data.cycleStart).getTime();
+            const daysPassed = (now - cycleStart) / (1000 * 60 * 60 * 24);
+
+            if (daysPassed >= CYCLE_DAYS) {
+                const newCycle = { count: 0, cycleStart: now, lastKeyword: '' };
+                localStorage.setItem(getStorageKey(), JSON.stringify(newCycle));
+                return newCycle;
+            }
+            return data;
+        } catch (e) {
+            return { count: 0, cycleStart: Date.now(), lastKeyword: '' };
+        }
+    };
+
+    useEffect(() => {
+        const data = loadQuota();
+        const resetDate = new Date(data.cycleStart);
+        resetDate.setDate(resetDate.getDate() + CYCLE_DAYS);
+        setQuotaInfo({ count: data.count, resetDate });
+    }, [currentUser.id]);
+
+    const consumeSearchQuota = (newKeyword) => {
+        if (userPlan === 'ENTERPRISE') return true;
+
+        const data = loadQuota();
+        const cleanKeyword = newKeyword.trim().toLowerCase();
+
+        if (data.lastKeyword === cleanKeyword) return true;
+
+        if (data.count >= limitMax) {
+            const resetStr = new Date(quotaInfo.resetDate).toLocaleDateString();
+            alert(`🚫 Search Limit Reached!\n\nYou have used ${data.count}/${limitMax} keywords for your ${userPlan} plan.\n\nYour quota resets on ${resetStr}.\nUpgrade to Enterprise for unlimited access.`);
+            return false;
+        }
+
+        data.count += 1;
+        data.lastKeyword = cleanKeyword;
+        localStorage.setItem(getStorageKey(), JSON.stringify(data));
+        
+        const resetDate = new Date(data.cycleStart);
+        resetDate.setDate(resetDate.getDate() + CYCLE_DAYS);
+        setQuotaInfo({ count: data.count, resetDate });
+        
+        return true;
+    };
 
     const loadSavedState = () => {
         try {
@@ -63,6 +136,9 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
         const hasActiveFilters = (filters.jurisdictions?.length > 0) || (filters.statuses?.length > 0);
 
         if (!query && !hasActiveFilters) return;
+        
+        if (query && !consumeSearchQuota(query)) return;
+
         if (searchInProgress.current) return;
         
         searchInProgress.current = true;
@@ -73,13 +149,12 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
                 keyword: query || null,
                 q: query || null,
                 ipType: filters.ipType === 'both' ? null : filters.ipType.toUpperCase(),
-                jurisdictions: filters.jurisdictions?.length > 0 ? filters.jurisdictions.join(',') : null,
-                statuses: filters.statuses?.length > 0 ? filters.statuses.join(',') : null,
+                jurisdictions: filters.jurisdictions?.length > 0 ? filters.jurisdictions : null,
+                statuses: filters.statuses?.length > 0 ? filters.statuses : null,
                 page: currentPage - 1,
                 size: itemsPerPage,
             };
 
-            console.log("Checking Local DB...");
             const localRes = await searchAPI.searchAll({ ...params, source: 'local' });
             
             let content = localRes?.content || [];
@@ -91,8 +166,6 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
                 setTotalPages(localRes?.totalPages || 0);
                 setActiveSource('local');
             } else {
-                console.log("Local empty. Fetching from External API...");
-                
                 const apiRes = await searchAPI.searchAll({ ...params, source: 'api' });
                 const apiContent = apiRes?.content || [];
                 
@@ -104,7 +177,7 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
 
                     if (!isSyncingRef.current) {
                         isSyncingRef.current = true;
-                        axios.post(`${API_BASE}/ipassets/sync`, apiContent)
+                        client.post(`/ipassets/sync`, apiContent)
                             .then(res => console.log("Sync Response:", res.data))
                             .catch(e => console.error("Sync Error:", e))
                             .finally(() => { isSyncingRef.current = false; });
@@ -123,7 +196,7 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
             setLoading(false);
             setTimeout(() => { searchInProgress.current = false; }, 500);
         }
-    }, [filters, currentPage, itemsPerPage]);
+    }, [filters, currentPage, itemsPerPage]); 
 
     useEffect(() => {
         if (isInitialMount.current) {
@@ -135,7 +208,7 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
 
     useEffect(() => {
         if (searchTrigger > 0) fetchResults();
-    }, [searchTrigger, currentPage, itemsPerPage]);
+    }, [searchTrigger]);
 
     const handleManualSearch = () => {
         setFilters(prev => ({ ...prev, keyword: keywordInput }));
@@ -146,7 +219,12 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
     const handleCheckboxFilter = (type, value, checked) => {
         setFilters(prev => {
             const current = prev[type] || [];
-            const next = checked ? [...current, value] : current.filter(item => item !== value);
+            let next;
+            if (checked) {
+                next = current.includes(value) ? current : [...current, value];
+            } else {
+                next = current.filter(item => item !== value);
+            }
             return { ...prev, [type]: next };
         });
         setCurrentPage(1);
@@ -166,30 +244,33 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
 
     const handleTrack = async (e, id) => {
         e.stopPropagation();
-        if (trackedIds[id]) return;
-
-        const storedUser = localStorage.getItem('user');
-        if (!storedUser) {
-            alert("Please log in to sync assets to your dashboard.");
+        
+        if (!hasAccess('PRO')) {
+            alert("🔒 Access Denied: Asset Tracking requires an IP Professional plan. Please upgrade.");
             return;
         }
-        
-        let userEmail = "";
-        try {
-            userEmail = JSON.parse(storedUser).email;
-        } catch (err) { return; }
+
+        if (trackedIds[id]) return;
 
         setTrackingLoading(id);
         
         try {
-            await axios.post(`${API_BASE}/tracker/add/${id}`, { email: userEmail });
+            await client.post(`/tracker/add/${id}`, { email: currentUser.email });
             setTrackedIds(prev => ({ ...prev, [id]: true }));
         } catch (err) { 
             console.error("Tracking Error:", err);
-            alert("Failed to sync asset. Please try again.");
+            alert("Failed to sync asset.");
         } finally { 
             setTrackingLoading(null); 
         }
+    };
+
+    const toggleMapView = () => {
+        if (!hasAccess('PRO')) {
+            alert("🔒 Access Denied: Map Visualization requires an IP Professional plan or higher.");
+            return;
+        }
+        setViewMode('map');
     };
 
     const getPageNumbers = () => {
@@ -243,8 +324,17 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
                         </div>
 
                         <div className="flex items-center gap-3">
-                            <button onClick={() => setViewMode('map')} className="group flex items-center gap-2.5 pl-3 pr-4 py-2 bg-slate-900 hover:bg-indigo-600 text-white rounded-lg text-xs font-bold transition-all shadow-lg shadow-slate-900/20">
-                                <div className="p-1 bg-white/10 rounded-md"><MapIcon size={14} className="text-white" /></div>
+                            <button 
+                                onClick={toggleMapView}
+                                className={`group flex items-center gap-2.5 pl-3 pr-4 py-2 rounded-lg text-xs font-bold transition-all shadow-lg active:scale-95 ${
+                                    hasAccess('PRO') 
+                                    ? 'bg-slate-900 hover:bg-indigo-600 text-white shadow-slate-900/20 hover:shadow-indigo-500/30' 
+                                    : 'bg-slate-200 text-slate-500 cursor-not-allowed'
+                                }`}
+                            >
+                                <div className="p-1 bg-white/10 rounded-md">
+                                    {hasAccess('PRO') ? <MapIcon size={14} className="text-white" /> : <Lock size={14} />}
+                                </div>
                                 <span className="uppercase tracking-wide">Map View</span>
                             </button>
                             <div className="flex bg-slate-100/80 p-1 rounded-lg border border-slate-200/60">
@@ -259,6 +349,29 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
             <div className="relative z-10 max-w-[1600px] mx-auto px-4 md:px-6 py-8">
                 
                 <div className="max-w-4xl mx-auto mb-12">
+                    
+                    {userPlan !== 'ENTERPRISE' && (
+                        <div className="mb-4 bg-white/80 backdrop-blur-sm border border-slate-100 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                                    <Info size={16} />
+                                </div>
+                                <div>
+                                    <p className="text-xs font-bold text-slate-900 uppercase tracking-wide">Search Quota (15-Day Cycle)</p>
+                                    <p className="text-[10px] text-slate-500 font-medium">
+                                        Resets on: {quotaInfo.resetDate ? new Date(quotaInfo.resetDate).toLocaleDateString() : 'Calculating...'}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <span className={`text-xl font-black ${quotaInfo.count >= limitMax ? 'text-red-500' : 'text-indigo-600'}`}>
+                                    {quotaInfo.count}
+                                </span>
+                                <span className="text-xs font-bold text-slate-400"> / {limitMax}</span>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="relative group">
                         <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 rounded-[2rem] opacity-20 group-hover:opacity-40 blur transition duration-500"></div>
                         <div className="relative flex items-center bg-white rounded-[1.8rem] shadow-xl shadow-indigo-500/10 ring-1 ring-slate-900/5">
@@ -303,16 +416,15 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
                                         <div className="grid grid-cols-2 gap-2">
                                             {['US', 'EP', 'CN', 'IN', 'JP', 'KR', 'GB', 'DE'].map(code => (
                                                 <Checkbox 
-                                                    key={code} label={code} 
-                                                    checked={filters.jurisdictions.includes(code)}
-                                                    onChange={(e) => handleCheckboxFilter('jurisdictions', code, e.target.checked)}
+                                                    key={code} 
+                                                    label={code} 
+                                                    checked={filters.jurisdictions.includes(code)} 
+                                                    onChange={(e) => handleCheckboxFilter('jurisdictions', code, e.target.checked)} 
                                                 />
                                             ))}
                                         </div>
                                     </FilterGroup>
-
                                     <div className="h-px bg-slate-100" />
-
                                     <FilterGroup label="Asset Type">
                                         <div className="space-y-1">
                                             {['both', 'patent', 'trademark'].map(type => (
@@ -326,17 +438,18 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
                                             ))}
                                         </div>
                                     </FilterGroup>
-
                                     <div className="h-px bg-slate-100" />
-                                    
                                     <FilterGroup label="Status">
                                         <div className="space-y-1">
                                             {['ACTIVE', 'PENDING', 'EXPIRED', 'GRANTED'].map(status => (
-                                                <Checkbox 
-                                                    key={status} label={status} fullWidth
-                                                    checked={filters.statuses.includes(status)}
-                                                    onChange={(e) => handleCheckboxFilter('statuses', status, e.target.checked)}
-                                                />
+                                                <div key={status} className="flex items-center">
+                                                    <Checkbox 
+                                                        label={status} 
+                                                        checked={filters.statuses.includes(status)} 
+                                                        onChange={(e) => handleCheckboxFilter('statuses', status, e.target.checked)} 
+                                                        fullWidth 
+                                                    />
+                                                </div>
                                             ))}
                                         </div>
                                     </FilterGroup>
@@ -412,11 +525,16 @@ const SearchResultsPage = ({ initialKeyword = '', onViewPatent }) => {
                                                                 className={`px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wide transition-all border flex items-center gap-2 ${
                                                                     trackedIds[item.id] 
                                                                         ? 'bg-emerald-55 text-emerald-600 border-emerald-100' 
-                                                                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                                                                        : hasAccess('PRO') 
+                                                                            ? 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                                                                            : 'bg-slate-100 text-slate-400 cursor-not-allowed border-slate-100'
                                                                 }`}
                                                             >
-                                                                {trackingLoading === item.id ? <Loader2 className="animate-spin" size={12}/> : trackedIds[item.id] ? <Check size={12} strokeWidth={3}/> : <RefreshCcw size={12}/>}
-                                                                {trackedIds[item.id] ? 'Synced' : 'Sync'}
+                                                                {trackingLoading === item.id ? <Loader2 className="animate-spin" size={12}/> : 
+                                                                 trackedIds[item.id] ? <Check size={12} strokeWidth={3}/> : 
+                                                                 hasAccess('PRO') ? <RefreshCcw size={12}/> : <Lock size={12}/>}
+                                                                
+                                                                {trackedIds[item.id] ? 'Synced' : hasAccess('PRO') ? 'Sync' : 'Locked'}
                                                             </button>
                                                             
                                                             <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0 shadow-lg">

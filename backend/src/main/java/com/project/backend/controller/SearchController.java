@@ -11,10 +11,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/search")
-@CrossOrigin(origins = {
-        "http://localhost:5173",
-        "http://192.168.43.45:5173" // Matches your mobile/LAN config
-})
 @Tag(name = "Search API", description = "Search Patents & Trademarks with Analytics")
 public class SearchController {
 
@@ -24,17 +20,14 @@ public class SearchController {
         this.ipAssetService = ipAssetService;
     }
 
-    // ===========================
-    // 🔍 MAIN SEARCH API
-    // ===========================
     @GetMapping
     @Operation(summary = "Unified Search with API + DB Persistence")
     public Page<IPAsset> search(
             @RequestParam(name = "q", required = false, defaultValue = "") String keyword,
             @RequestParam(name = "source", required = false, defaultValue = "local") String source,
             @RequestParam(name = "type", required = false, defaultValue = "ALL") String type,
-
-            // Pagination & Sorting
+            @RequestParam(name = "jurisdictions", required = false) String jurisdictions,
+            @RequestParam(name = "status", required = false) String status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "filingDate") String sortBy,
@@ -42,18 +35,20 @@ public class SearchController {
     ) {
 
         System.out.println(
-                ">>> 🟢 SEARCH REQUEST | q=" + keyword +
+                ">>> SEARCH REQUEST | q=" + keyword +
                 " | source=" + source +
                 " | type=" + type +
+                " | jurisdictions=" + jurisdictions +
+                " | status=" + status +
                 " | page=" + page +
                 " | size=" + size
         );
 
-        // Fetch API → Save to DB → Return paginated result
-        // This matches the IPAssetService we just saved
         return ipAssetService.search(
                 keyword,
                 type,
+                jurisdictions,
+                status,
                 source,
                 page,
                 size,
@@ -62,13 +57,9 @@ public class SearchController {
         );
     }
 
-    // ===========================
-    // 📊 ANALYTICS API
-    // ===========================
     @GetMapping("/analysis")
     @Operation(summary = "Fetch all IP assets for analytics dashboards")
     public List<IPAsset> getAnalysisData() {
-        // Returns all stored IP assets for charts & analytics
         return ipAssetService.getAllAssetsForAnalysis();
     }
 }

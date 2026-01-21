@@ -2,65 +2,49 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
     Search, Shield, FileText, Clock, AlertCircle, 
     Database, Loader2, X, Edit3, Lock, CheckCircle2, 
-    Trash2, CheckSquare, Save, BellRing, Mail, Send, Globe,
-    ChevronRight
+    Trash2, CheckSquare, BellRing, Mail, Send, Globe,
+    ChevronRight, Crown
 } from 'lucide-react';
-import axios from 'axios';
+import client from '../api/client';
 
-// ==========================================
-// 1. CONFIGURATION
-// ==========================================
-
-// API Base URL from .env
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
-
-// Admin Email for Role-Based Access Control
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL;
 
-const FilingTrackerPage = () => {
+const FilingTrackerPage = ({ user, onNavigate }) => {
     
-    // --- STATE MANAGEMENT ---
-    const [currentUser, setCurrentUser] = useState(null);
+    const [currentUser, setCurrentUser] = useState(user || null);
+    
+    useEffect(() => {
+        if (!currentUser) {
+            const storedUser = localStorage.getItem("user");
+            if (storedUser) {
+                try {
+                    setCurrentUser(JSON.parse(storedUser));
+                } catch (e) { console.error("User Parse Error", e); }
+            }
+        }
+    }, [currentUser]);
+
+    const userPlan = currentUser?.planType || 'STARTUP';
+    const isSuperAdmin = currentUser?.email === ADMIN_EMAIL;
+    
+    const hasAccess = userPlan === 'PRO' || userPlan === 'ENTERPRISE' || isSuperAdmin;
+
     const [filings, setFilings] = useState([]);
     const [loading, setLoading] = useState(false);
     const [actionLoading, setActionLoading] = useState(false);
 
-    // --- MODAL STATES ---
     const [selectedFiling, setSelectedFiling] = useState(null); 
     const [statusFiling, setStatusFiling] = useState(null);      
     const [detailsFiling, setDetailsFiling] = useState(null);    
     const [alertFiling, setAlertFiling] = useState(null);        
     const [remarksFiling, setRemarksFiling] = useState(null);    
 
-    // --- FILTERS & STATS ---
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('ALL');
     const [itemsPerPage] = useState(10);
     const [currentPage, setCurrentPage] = useState(1);
     const [stats, setStats] = useState({ total: 0, granted: 0, pending: 0, expired: 0 });
 
-    // ==========================================
-    // 2. INITIALIZATION
-    // ==========================================
-    useEffect(() => {
-        const storedUser = localStorage.getItem("user");
-        if (storedUser) {
-            try {
-                const parsedUser = JSON.parse(storedUser);
-                setCurrentUser(parsedUser);
-            } catch (error) {
-                console.error("Failed to parse user data", error);
-            }
-        }
-    }, []);
-
-    // Check if current user is Admin
-    const isSuperAdmin = currentUser?.email === ADMIN_EMAIL;
-
-    // ==========================================
-    // 3. DATA FETCHING & NORMALIZATION
-    // ==========================================
-    
     const normalizeData = (item) => {
         const rawType = item.filingType || item.type || 'PATENT';
         const type = rawType.toUpperCase(); 
@@ -86,15 +70,16 @@ const FilingTrackerPage = () => {
     };
 
     const fetchData = useCallback(async () => {
+        if (!hasAccess) return;
+
         setLoading(true);
         try {
-            const dataRes = await axios.get(`${API_BASE}/tracker/all`);
+            const dataRes = await client.get('/tracker/all');
             const rawData = Array.isArray(dataRes.data) ? dataRes.data : [];
             const cleanData = rawData.map(normalizeData);
 
             setFilings(cleanData);
 
-            // Compute KPI Stats
             setStats({
                 total: cleanData.length,
                 granted: cleanData.filter(f => f.status?.toUpperCase().includes('GRANTED')).length,
@@ -108,23 +93,18 @@ const FilingTrackerPage = () => {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [hasAccess]);
 
-    useEffect(() => { fetchData(); }, [fetchData]);
+    useEffect(() => { if (hasAccess) fetchData(); }, [fetchData, hasAccess]);
 
-    // ==========================================
-    // 4. ACTION HANDLERS
-    // ==========================================
-
-    // --- Admin: Update Status ---
     const handleStatusUpdate = async (newStatus) => {
         if(!statusFiling || actionLoading) return;
         
         setActionLoading(true);
         try {
-            await axios.put(`${API_BASE}/tracker/update/${statusFiling.id}`, { 
+            await client.put(`/tracker/update/${statusFiling.id}`, { 
                 status: newStatus,
-                remarks: "" // Empty remarks triggers default notification template
+                remarks: "" 
             });
             setStatusFiling(null);
             fetchData(); 
@@ -137,11 +117,10 @@ const FilingTrackerPage = () => {
         }
     };
 
-    // --- User: Edit Asset Details ---
     const handleDetailsUpdate = async (formData) => {
         if(!detailsFiling) return;
         try {
-            await axios.put(`${API_BASE}/tracker/update/${detailsFiling.id}`, formData);
+            await client.put(`/tracker/update/${detailsFiling.id}`, formData);
             setDetailsFiling(null);
             fetchData();
             alert("Details updated successfully.");
@@ -150,7 +129,6 @@ const FilingTrackerPage = () => {
         }
     };
 
-    // --- Admin: Delete Asset ---
     const handleDelete = async (e, id) => {
         e.stopPropagation(); 
         if (!isSuperAdmin) {
@@ -160,7 +138,7 @@ const FilingTrackerPage = () => {
         if (!window.confirm("⚠️ ADMIN ACTION: Permanently delete this filing?")) return;
 
         try {
-            await axios.delete(`${API_BASE}/tracker/delete/${id}`);
+            await client.delete(`/tracker/delete/${id}`);
             fetchData(); 
             alert("Filing deleted successfully.");
         } catch (err) {
@@ -168,13 +146,12 @@ const FilingTrackerPage = () => {
         }
     };
 
-    // --- Admin: Send Custom Remarks ---
     const handleSendRemarks = async (remarks) => {
         if(!remarksFiling || actionLoading) return;
         
         setActionLoading(true);
         try {
-            await axios.put(`${API_BASE}/tracker/update/${remarksFiling.id}`, { 
+            await client.put(`/tracker/update/${remarksFiling.id}`, { 
                 status: remarksFiling.status,
                 remarks: remarks
             });
@@ -188,7 +165,6 @@ const FilingTrackerPage = () => {
         }
     };
 
-    // --- User: Configure Alerts ---
     const handleSaveAlerts = async (types) => {
         if(!alertFiling || actionLoading) return;
         
@@ -203,7 +179,7 @@ const FilingTrackerPage = () => {
                 timestamp: new Date().toISOString()
             };
             
-            await axios.post(`${API_BASE}/notifications/notify-admin`, payload);
+            await client.post('/notifications/notify-admin', payload);
             
             alert(`Alerts configured! Request sent to Admin for ${alertFiling.displayId}.`);
             setAlertFiling(null);
@@ -216,9 +192,27 @@ const FilingTrackerPage = () => {
         }
     };
 
-    // ==========================================
-    // 5. RENDER UI
-    // ==========================================
+    if (!hasAccess) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
+                <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-10 text-center border border-slate-100">
+                    <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <Lock size={32} className="text-slate-400" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-slate-900 mb-2">Feature Locked</h2>
+                    <p className="text-slate-500 mb-8">
+                        The Filing Tracker is available exclusively for <strong>Pro</strong> and <strong>Enterprise</strong> plans.
+                    </p>
+                    <button 
+                        onClick={() => onNavigate('pricing')}
+                        className="w-full py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all shadow-md"
+                    >
+                        Upgrade to Pro
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     const getStatusStyle = (s) => {
         const val = (s || '').toUpperCase();
@@ -239,34 +233,32 @@ const FilingTrackerPage = () => {
     return (
         <div className="min-h-screen bg-slate-50 p-6 md:p-12 font-sans text-left">
             
-            {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
                 <div className="flex items-center gap-5">
-                    <div className="bg-white p-4 rounded-3xl shadow-xl shadow-indigo-100 border border-slate-100">
+                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
                         <Shield size={32} className="text-indigo-600" />
                     </div>
                     <div>
-                        <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Filing Tracker</h1>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Global IP Intelligence • {filings.length} Assets</p>
+                        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Filing Tracker</h1>
+                        <p className="text-sm font-medium text-slate-500 mt-1">Global IP Intelligence • {filings.length} Assets</p>
                     </div>
                 </div>
 
                 {currentUser && (
                     <div className="flex items-center gap-4 bg-white pl-2 pr-6 py-2 rounded-full border border-slate-200 shadow-sm">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white shadow-md ${isSuperAdmin ? 'bg-gradient-to-br from-rose-500 to-pink-600' : 'bg-gradient-to-br from-indigo-500 to-purple-600'}`}>
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white shadow-sm ${isSuperAdmin ? 'bg-rose-500' : 'bg-indigo-600'}`}>
                             {currentUser.name ? currentUser.name.charAt(0).toUpperCase() : "U"}
                         </div>
                         <div className="flex flex-col">
-                            <span className={`text-[9px] font-black uppercase tracking-widest ${isSuperAdmin ? 'text-rose-600' : 'text-indigo-600'}`}>
+                            <span className={`text-xs font-bold uppercase tracking-wide ${isSuperAdmin ? 'text-rose-600' : 'text-indigo-600'}`}>
                                 {isSuperAdmin ? "Super Admin" : "User Account"}
                             </span>
-                            <span className="text-xs font-bold text-slate-700">{currentUser.email}</span>
+                            <span className="text-xs text-slate-600">{currentUser.email}</span>
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* Stats Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
                 <StatCard label="Total Tracked" value={stats.total} icon={FileText} color="blue" onClick={() => setStatusFilter('ALL')} active={statusFilter === 'ALL'} />
                 <StatCard label="Granted" value={stats.granted} icon={CheckCircle2} color="emerald" onClick={() => setStatusFilter('GRANTED')} active={statusFilter === 'GRANTED'} />
@@ -274,35 +266,34 @@ const FilingTrackerPage = () => {
                 <StatCard label="Expired" value={stats.expired} icon={AlertCircle} color="rose" onClick={() => setStatusFilter('EXPIRED')} active={statusFilter === 'EXPIRED'} />
             </div>
 
-            {/* Asset Table */}
-            <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-2xl shadow-slate-200/50 overflow-hidden min-h-[600px]">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden min-h-[600px]">
                 
-                <div className="p-8 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center gap-6">
-                    <h2 className="text-lg font-black text-slate-800 uppercase tracking-widest flex items-center gap-3">
+                <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center gap-6 bg-slate-50/50">
+                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-3">
                         <Database size={20} className="text-slate-400"/> Portfolio Assets
                     </h2>
                     <div className="relative w-full md:w-96 group">
-                        <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={20} />
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                         <input 
                             type="text" 
                             placeholder="Search patents, application IDs..." 
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 focus:bg-white transition-all focus:ring-4 focus:ring-indigo-500/10"
+                            className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all shadow-sm"
                         />
                     </div>
                 </div>
 
-                <div className="p-6 md:p-8 space-y-4">
+                <div className="p-6 space-y-4">
                     {loading ? (
                         <div className="py-32 text-center flex flex-col items-center">
-                            <Loader2 className="animate-spin text-indigo-600 w-12 h-12 mb-4" />
-                            <p className="text-xs text-slate-400 font-black uppercase tracking-[0.3em]">Syncing Intelligence...</p>
+                            <Loader2 className="animate-spin text-indigo-600 w-10 h-10 mb-4" />
+                            <p className="text-sm font-medium text-slate-500">Syncing Intelligence...</p>
                         </div>
                     ) : paginatedDisplay.length === 0 ? (
-                        <div className="py-32 text-center opacity-50 flex flex-col items-center">
-                            <div className="p-6 bg-slate-50 rounded-full mb-4"><Database size={48} className="text-slate-300" /></div>
-                            <p className="text-slate-400 font-bold text-lg">No filings found matching your criteria.</p>
+                        <div className="py-32 text-center opacity-75 flex flex-col items-center">
+                            <div className="p-4 bg-slate-100 rounded-full mb-4"><Database size={32} className="text-slate-400" /></div>
+                            <p className="text-slate-500 font-medium">No filings found matching your criteria.</p>
                         </div>
                     ) : (
                         paginatedDisplay.map((item) => {
@@ -318,25 +309,25 @@ const FilingTrackerPage = () => {
                             const isPatent = item.type === 'PATENT';
 
                             return (
-                                <div key={item.id} className="group flex flex-col md:flex-row items-center justify-between p-6 rounded-[2rem] border border-slate-100 bg-white hover:border-indigo-200 hover:shadow-xl hover:shadow-indigo-100/40 transition-all duration-300 cursor-pointer transform hover:-translate-y-1" onClick={() => setSelectedFiling(item)}>
+                                <div key={item.id} className="group flex flex-col md:flex-row items-center justify-between p-5 rounded-xl border border-slate-100 bg-white hover:border-indigo-200 hover:shadow-md transition-all duration-200 cursor-pointer" onClick={() => setSelectedFiling(item)}>
                                     
-                                    <div className="flex items-center gap-6 w-full md:w-auto">
-                                        <div className={`w-16 h-16 rounded-2xl flex flex-col items-center justify-center shadow-inner ${isPatent ? 'bg-indigo-50 text-indigo-600' : 'bg-cyan-50 text-cyan-600'}`}>
-                                            <span className="text-[10px] font-black uppercase tracking-widest">{isPatent ? 'PAT' : 'TM'}</span>
-                                            {isPatent ? <Shield size={18} className="mt-1"/> : <Globe size={18} className="mt-1"/>}
+                                    <div className="flex items-center gap-5 w-full md:w-auto">
+                                        <div className={`w-14 h-14 rounded-xl flex flex-col items-center justify-center shadow-sm ${isPatent ? 'bg-indigo-50 text-indigo-600' : 'bg-cyan-50 text-cyan-600'}`}>
+                                            <span className="text-[10px] font-bold uppercase tracking-wider mb-0.5">{isPatent ? 'PAT' : 'TM'}</span>
+                                            {isPatent ? <Shield size={16} /> : <Globe size={16} />}
                                         </div>
                                         
                                         <div className="flex-1">
                                             <div className="flex items-center gap-3 mb-1">
-                                                <h4 className="font-black text-slate-900 text-lg line-clamp-1">{item.title}</h4>
+                                                <h4 className="font-bold text-slate-900 text-base line-clamp-1">{item.title}</h4>
                                                 {isOwner ? (
-                                                    <span className="text-[8px] font-black px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-700 uppercase tracking-wider">Owner</span>
+                                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 uppercase tracking-wide">Owner</span>
                                                 ) : (
-                                                    <span className="text-[8px] font-black px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 uppercase tracking-wider">Synced</span>
+                                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-500 uppercase tracking-wide">Synced</span>
                                                 )}
                                             </div>
-                                            <div className="flex items-center gap-4 text-xs font-bold text-slate-400">
-                                                <span className="bg-slate-50 px-2 py-1 rounded border border-slate-100 font-mono text-slate-500">{item.displayId}</span>
+                                            <div className="flex items-center gap-4 text-xs font-medium text-slate-500">
+                                                <span className="bg-slate-50 px-2 py-1 rounded border border-slate-200 font-mono text-slate-600">{item.displayId}</span>
                                                 <span className="flex items-center gap-1"><Globe size={12}/> {item.jurisdiction}</span>
                                                 <span className="hidden md:inline text-slate-300">|</span>
                                                 <span className="hidden md:inline">{item.filingDate || 'No Date'}</span>
@@ -346,9 +337,9 @@ const FilingTrackerPage = () => {
 
                                     <div className="flex items-center gap-4 mt-4 md:mt-0 w-full md:w-auto justify-between md:justify-end">
                                         
-                                        <div className={`px-4 py-2 rounded-xl flex items-center gap-2 border ${style.bg} ${style.text} border-transparent`}>
-                                            <div className={`w-2 h-2 rounded-full ${style.dot} animate-pulse`}></div>
-                                            <span className="text-[10px] font-black uppercase tracking-widest">{item.status}</span>
+                                        <div className={`px-3 py-1.5 rounded-lg flex items-center gap-2 border ${style.bg} ${style.text} border-transparent`}>
+                                            <div className={`w-1.5 h-1.5 rounded-full ${style.dot} animate-pulse`}></div>
+                                            <span className="text-[10px] font-bold uppercase tracking-wide">{item.status}</span>
                                         </div>
 
                                         <div className="flex items-center gap-2">
@@ -372,13 +363,13 @@ const FilingTrackerPage = () => {
                                             {canDelete ? (
                                                 <button 
                                                     onClick={(e) => handleDelete(e, item.id)}
-                                                    className="p-3 rounded-2xl transition-all text-rose-600 bg-rose-50 hover:bg-rose-100 border border-transparent hover:border-rose-200 hover:shadow-lg hover:-translate-y-1 active:scale-95"
+                                                    className="p-2 rounded-lg transition-all text-rose-600 bg-rose-50 hover:bg-rose-100 border border-transparent hover:border-rose-200 hover:shadow-sm"
                                                     title="Delete Asset"
                                                 >
-                                                    <Trash2 size={20} />
+                                                    <Trash2 size={18} />
                                                 </button>
                                             ) : (
-                                                <div className="p-3 text-slate-400 bg-slate-50 rounded-2xl cursor-not-allowed border border-transparent" title="Delete Locked"><Lock size={18}/></div>
+                                                <div className="p-2 text-slate-400 bg-slate-50 rounded-lg cursor-not-allowed border border-transparent" title="Delete Locked"><Lock size={16}/></div>
                                             )}
                                             
                                             <ChevronRight size={16} className="text-slate-300 ml-2" />
@@ -391,8 +382,6 @@ const FilingTrackerPage = () => {
                 </div>
             </div>
 
-            {/* ================= MODALS ================= */}
-
             {selectedFiling && (
                 <Modal onClose={() => setSelectedFiling(null)} title={selectedFiling.title} subtitle={selectedFiling.displayId}>
                     <div className="grid grid-cols-2 gap-6 mb-8">
@@ -403,11 +392,11 @@ const FilingTrackerPage = () => {
                         <InfoItem label="Assignee" value={selectedFiling.assignee} />
                         <InfoItem label="Contact Email" value={selectedFiling.contactEmail} />
                     </div>
-                    <div className="bg-slate-50 p-8 rounded-[2rem] border border-slate-100 mb-8 max-h-60 overflow-y-auto">
-                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Abstract / Description</h4>
-                        <p className="text-sm text-slate-600 leading-relaxed font-medium">{selectedFiling.description}</p>
+                    <div className="bg-slate-50 p-6 rounded-xl border border-slate-100 mb-8 max-h-60 overflow-y-auto">
+                        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Description</h4>
+                        <p className="text-sm text-slate-600 leading-relaxed">{selectedFiling.description}</p>
                     </div>
-                    <a href={selectedFiling.sourceLink} target="_blank" rel="noreferrer" className="block w-full py-5 bg-slate-900 text-white text-center rounded-2xl font-black uppercase text-xs tracking-[0.3em] hover:bg-indigo-600 hover:shadow-xl hover:shadow-indigo-200 transition-all transform hover:-translate-y-1">View Official Source</a>
+                    <a href={selectedFiling.sourceLink} target="_blank" rel="noreferrer" className="block w-full py-3 bg-slate-900 text-white text-center rounded-xl font-bold text-sm hover:bg-indigo-600 transition-colors">View Official Source</a>
                 </Modal>
             )}
 
@@ -419,23 +408,23 @@ const FilingTrackerPage = () => {
                                 key={status} 
                                 onClick={() => handleStatusUpdate(status)} 
                                 disabled={actionLoading} 
-                                className="w-full py-4 text-xs font-black rounded-2xl border-2 border-slate-100 hover:border-indigo-600 hover:text-indigo-600 hover:bg-indigo-50 transition-all uppercase tracking-[0.1em] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                className="w-full py-3 text-sm font-bold rounded-xl border border-slate-200 hover:border-indigo-600 hover:text-indigo-600 hover:bg-indigo-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
                                 {actionLoading ? <Loader2 className="animate-spin" size={16} /> : status}
                             </button>
                         ))}
                     </div>
-                    <button onClick={() => setStatusFiling(null)} className="w-full py-4 text-xs font-black text-slate-400 bg-slate-50 rounded-2xl hover:bg-slate-100 transition-colors">Cancel</button>
+                    <button onClick={() => setStatusFiling(null)} className="w-full py-3 text-sm font-bold text-slate-500 hover:text-slate-800 transition-colors">Cancel</button>
                 </Modal>
             )}
 
             {remarksFiling && (
                 <Modal onClose={() => setRemarksFiling(null)} title="Send Remarks" subtitle={`To: ${remarksFiling.contactEmail}`} small>
                     <form onSubmit={(e) => { e.preventDefault(); handleSendRemarks(e.target.remarks.value); }}>
-                        <textarea name="remarks" className="w-full p-6 bg-slate-50 border-2 border-slate-100 rounded-[1.5rem] text-sm font-medium focus:border-blue-500 focus:bg-white outline-none h-48 resize-none transition-all placeholder:text-slate-300 shadow-inner" placeholder="Type instructions..." required></textarea>
-                        <div className="flex gap-4 mt-8">
-                            <button type="button" onClick={() => setRemarksFiling(null)} className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-200">Cancel</button>
-                            <button type="submit" disabled={actionLoading} className="flex-1 py-4 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-blue-700 shadow-xl shadow-blue-200 transition-all transform active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed">
+                        <textarea name="remarks" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:border-indigo-500 focus:bg-white outline-none h-32 resize-none transition-all placeholder:text-slate-400" placeholder="Type instructions..." required></textarea>
+                        <div className="flex gap-4 mt-6">
+                            <button type="button" onClick={() => setRemarksFiling(null)} className="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-200 transition-colors">Cancel</button>
+                            <button type="submit" disabled={actionLoading} className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-70">
                                 {actionLoading ? <Loader2 className="animate-spin" size={16} /> : <><Send size={16}/> Send</>}
                             </button>
                         </div>
@@ -454,17 +443,15 @@ const FilingTrackerPage = () => {
     );
 };
 
-/* --- SUB-COMPONENTS --- */
-
 const Modal = ({ children, onClose, title, subtitle, small }) => (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in zoom-in-95 duration-200">
-        <div className={`bg-white rounded-[3rem] ${small ? 'w-[450px]' : 'max-w-3xl w-full'} p-10 shadow-2xl border border-white/20 ring-1 ring-black/5`}>
-            <div className="flex justify-between items-start mb-8">
+    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in zoom-in-95 duration-200">
+        <div className={`bg-white rounded-2xl ${small ? 'w-[450px]' : 'max-w-2xl w-full'} p-8 shadow-2xl border border-white/20`}>
+            <div className="flex justify-between items-start mb-6">
                 <div>
-                    <h2 className="text-3xl font-black text-slate-900 uppercase leading-tight tracking-tight">{title}</h2>
-                    {subtitle && <p className="text-sm text-slate-400 font-bold mt-2 font-mono tracking-widest">{subtitle}</p>}
+                    <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{title}</h2>
+                    {subtitle && <p className="text-sm text-slate-500 mt-1 font-medium">{subtitle}</p>}
                 </div>
-                <button onClick={onClose} className="p-3 bg-slate-50 rounded-2xl hover:bg-rose-50 hover:text-rose-600 transition-all shadow-sm"><X size={24} /></button>
+                <button onClick={onClose} className="p-2 bg-slate-100 rounded-lg hover:bg-rose-50 hover:text-rose-600 transition-colors"><X size={20} /></button>
             </div>
             {children}
         </div>
@@ -474,55 +461,53 @@ const Modal = ({ children, onClose, title, subtitle, small }) => (
 const ActionButton = ({ icon: Icon, onClick, color, tooltip }) => (
     <button 
         onClick={onClick}
-        className={`p-3 rounded-2xl transition-all text-slate-400 hover:text-${color}-600 hover:bg-${color}-50 border border-transparent hover:border-${color}-100 hover:shadow-lg hover:-translate-y-1 active:scale-95`}
+        className={`p-2 rounded-lg transition-all text-slate-400 hover:text-${color}-600 hover:bg-${color}-50 border border-transparent hover:border-${color}-100 hover:shadow-sm`}
         title={tooltip}
     >
-        <Icon size={20} />
+        <Icon size={18} />
     </button>
 );
 
 const StatCard = ({ label, value, icon: Icon, onClick, active, color }) => (
-    <div onClick={onClick} className={`p-6 rounded-[2.5rem] border-2 flex justify-between items-center cursor-pointer transition-all duration-300 hover:-translate-y-1 ${active ? `bg-${color}-600 border-${color}-600 shadow-2xl shadow-${color}-200 scale-105` : 'bg-white border-slate-100 hover:shadow-xl hover:border-indigo-100 shadow-sm'}`}>
+    <div onClick={onClick} className={`p-6 rounded-2xl border flex justify-between items-center cursor-pointer transition-all duration-200 hover:-translate-y-1 ${active ? `bg-${color}-600 border-${color}-600 shadow-xl shadow-${color}-200` : 'bg-white border-slate-200 hover:shadow-md hover:border-indigo-200'}`}>
         <div>
-            <p className={`text-[10px] font-black uppercase tracking-[0.2em] mb-2 ${active ? 'text-white/70' : 'text-slate-400'}`}>{label}</p>
-            <p className={`text-4xl font-black ${active ? 'text-white' : 'text-slate-900'}`}>{value}</p>
+            <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${active ? 'text-white/80' : 'text-slate-500'}`}>{label}</p>
+            <p className={`text-3xl font-bold ${active ? 'text-white' : 'text-slate-900'}`}>{value}</p>
         </div>
-        <div className={`p-4 rounded-2xl ${active ? 'bg-white/20 text-white' : `bg-${color}-50 text-${color}-500`}`}>
+        <div className={`p-3 rounded-xl ${active ? 'bg-white/20 text-white' : `bg-${color}-50 text-${color}-500`}`}>
             <Icon className="size-6" />
         </div>
     </div>
 );
 
 const InfoItem = ({ label, value }) => (
-    <div className="border border-slate-100 p-6 rounded-[1.5rem] bg-slate-50/50 hover:bg-white hover:shadow-lg transition-all hover:border-indigo-100 hover:-translate-y-1 group">
-        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 group-hover:text-indigo-500 transition-colors">{label}</p>
-        <p className="text-sm font-bold text-slate-800 truncate">{value || 'N/A'}</p>
+    <div className="border border-slate-100 p-4 rounded-xl bg-slate-50 hover:bg-white hover:shadow-sm transition-all hover:border-indigo-100">
+        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">{label}</p>
+        <p className="text-sm font-semibold text-slate-900 truncate">{value || 'N/A'}</p>
     </div>
 );
 
-// Form Components
 const EditDetailsModal = ({ filing, onClose, onSave }) => {
     const [form, setForm] = useState({ title: filing.title, applicationNumber: filing.applicationNumber, filingDate: filing.filingDate });
     const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
     return (
         <Modal onClose={onClose} title="Edit Details" small>
-            <div className="space-y-6">
+            <div className="space-y-4">
                 {['title', 'applicationNumber', 'filingDate'].map(field => (
                     <div key={field}>
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">{field.replace(/([A-Z])/g, ' $1').trim()}</label>
-                        <input type={field.includes('Date') ? 'date' : 'text'} name={field} value={form[field]} onChange={handleChange} className="w-full p-4 bg-slate-50 rounded-2xl border-2 border-slate-100 text-sm font-bold focus:border-emerald-500 focus:bg-white outline-none transition-all" />
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5 block">{field.replace(/([A-Z])/g, ' $1').trim()}</label>
+                        <input type={field.includes('Date') ? 'date' : 'text'} name={field} value={form[field]} onChange={handleChange} className="w-full p-3 bg-slate-50 rounded-xl border border-slate-200 text-sm font-medium focus:border-indigo-500 focus:bg-white outline-none transition-all" />
                     </div>
                 ))}
             </div>
-            <div className="flex gap-4 mt-10">
-                <button onClick={onClose} className="flex-1 py-4 text-xs font-black text-slate-400 bg-slate-100 rounded-2xl uppercase tracking-widest hover:bg-slate-200 transition-colors">Cancel</button>
-                <button onClick={() => onSave(form)} className="flex-1 py-4 text-xs font-black text-white bg-emerald-600 rounded-2xl uppercase tracking-widest hover:bg-emerald-700 shadow-xl shadow-emerald-200 transition-all transform active:scale-95">Save</button>
+            <div className="flex gap-4 mt-8">
+                <button onClick={onClose} className="flex-1 py-3 text-sm font-bold text-slate-500 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors">Cancel</button>
+                <button onClick={() => onSave(form)} className="flex-1 py-3 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all">Save Changes</button>
             </div>
         </Modal>
     );
 };
 
-// Alert Configuration Modal
 const AlertConfigModal = ({ filing, onClose, onSave, loading }) => {
     const [selectedTypes, setSelectedTypes] = useState([]);
     const toggleType = (type) => {
@@ -530,23 +515,23 @@ const AlertConfigModal = ({ filing, onClose, onSave, loading }) => {
         else setSelectedTypes(prev => [...prev, type]);
     };
     return (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-50 animate-in zoom-in-95">
-            <div className="bg-white rounded-[2.5rem] w-96 shadow-2xl transform transition-all scale-100 overflow-hidden">
-                <div className="bg-indigo-600 p-8 flex justify-between items-center bg-gradient-to-r from-indigo-600 to-indigo-700">
-                    <h3 className="text-lg font-black text-white uppercase tracking-widest">Configure Alerts</h3>
-                    <button onClick={onClose} className="text-indigo-200 hover:text-white transition-colors"><X size={24}/></button>
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 animate-in zoom-in-95">
+            <div className="bg-white rounded-2xl w-96 shadow-2xl transform transition-all scale-100 overflow-hidden">
+                <div className="bg-indigo-600 p-6 flex justify-between items-center">
+                    <h3 className="text-lg font-bold text-white">Configure Alerts</h3>
+                    <button onClick={onClose} className="text-indigo-200 hover:text-white transition-colors"><X size={20}/></button>
                 </div>
-                <div className="p-8">
-                    <p className="text-xs text-slate-500 mb-8 font-bold uppercase tracking-wide border-b border-slate-100 pb-4">Target: <br/><span className="text-slate-900 text-sm block mt-1">{filing.displayId}</span></p>
-                    <div className="space-y-4 mb-8">
+                <div className="p-6">
+                    <p className="text-xs text-slate-500 mb-6 font-bold uppercase tracking-wide border-b border-slate-100 pb-4">Target: <br/><span className="text-slate-900 text-sm block mt-1">{filing.displayId}</span></p>
+                    <div className="space-y-3 mb-6">
                         {[{ id: 'RENEWAL', label: 'Renewal Due' }, { id: 'APPROVAL', label: 'Get Approval / Grant' }, { id: 'STATUS_CHANGE', label: 'Any Status Change' }].map((opt) => {
                             const isSelected = selectedTypes.includes(opt.id);
                             return (
-                                <div key={opt.id} onClick={() => toggleType(opt.id)} className={`flex items-center gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all ${isSelected ? 'bg-indigo-50 border-indigo-600 shadow-md scale-[1.02]' : 'bg-white border-slate-100 hover:border-indigo-200 hover:bg-slate-50'}`}>
-                                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center border-2 transition-all ${isSelected ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300 bg-slate-50'}`}>
-                                        {isSelected && <CheckSquare size={14} className="text-white"/>}
+                                <div key={opt.id} onClick={() => toggleType(opt.id)} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${isSelected ? 'bg-indigo-50 border-indigo-500 shadow-sm' : 'bg-white border-slate-200 hover:border-indigo-300 hover:bg-slate-50'}`}>
+                                    <div className={`w-5 h-5 rounded-md flex items-center justify-center border transition-all ${isSelected ? 'bg-indigo-600 border-indigo-600' : 'border-slate-300 bg-white'}`}>
+                                        {isSelected && <CheckSquare size={12} className="text-white"/>}
                                     </div>
-                                    <span className={`text-xs font-black uppercase tracking-wide ${isSelected ? 'text-indigo-900' : 'text-slate-500'}`}>{opt.label}</span>
+                                    <span className={`text-xs font-bold uppercase tracking-wide ${isSelected ? 'text-indigo-900' : 'text-slate-500'}`}>{opt.label}</span>
                                 </div>
                             );
                         })}
@@ -554,7 +539,7 @@ const AlertConfigModal = ({ filing, onClose, onSave, loading }) => {
                     <button 
                         onClick={() => onSave(selectedTypes)} 
                         disabled={selectedTypes.length === 0 || loading} 
-                        className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase text-xs tracking-[0.2em] hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-xl shadow-indigo-200 transform active:scale-95 flex justify-center items-center gap-2"
+                        className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md flex justify-center items-center gap-2"
                     >
                         {loading ? <Loader2 className="animate-spin" size={16} /> : "Save Alerts"}
                     </button>

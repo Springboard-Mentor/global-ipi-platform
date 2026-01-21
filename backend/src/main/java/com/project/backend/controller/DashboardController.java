@@ -11,7 +11,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api")
 // ✅ Combined CORS to allow both localhost and your specific Network IP (Mobile Support)
-@CrossOrigin(origins = {"http://localhost:5173", "http://192.168.43.45:5173"}) 
 @RequiredArgsConstructor
 public class DashboardController {
 
