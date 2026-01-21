@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Choose Your Plan - Global IP Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            color: white;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .plans {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .plan-card {
+            background: white;
+            border-radius: 16px;
+            padding: 2.5rem 2rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            text-align: center;
+        }
+        
+        .plan-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.15);
+        }
+        
+        .plan-card.popular {
+            border: 2px solid #667eea;
+            transform: scale(1.05);
+        }
+        
+        .popular-badge {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #667eea;
+            color: white;
+            padding: 6px 24px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        
+        .plan-name {
+            font-size: 1.8rem;
+            color: #333;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        
+        .plan-price {
+            font-size: 3rem;
+            color: #667eea;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .plan-period {
+            color: #666;
+            margin-bottom: 2rem;
+        }
+        
+        .plan-features {
+            list-style: none;
+            margin-bottom: 2.5rem;
+            text-align: left;
+        }
+        
+        .plan-features li {
+            padding: 0.75rem 0;
+            color: #555;
+            position: relative;
+            padding-left: 30px;
+            font-size: 0.95rem;
+        }
+        
+        .plan-features li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #4CAF50;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .subscribe-btn {
+            width: 100%;
+            padding: 1rem 2rem;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 0.5px;
+        }
+        
+        .subscribe-btn:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .plan-card.popular .subscribe-btn {
+            background: #667eea;
+        }
+        
+        @media (max-width: 768px) {
+            .plans {
+                grid-template-columns: 1fr;
+            }
+            
+            .plan-card.popular {
+                transform: scale(1);
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Choose Your Subscription Plan</h1>
+            <p>Select the perfect plan for your IP management needs</p>
+        </div>
+        
+        <div class="plans">
+            <% plans.forEach(plan => { %>
+                <div class="plan-card <%= plan.popular ? 'popular' : '' %>">
+                    <% if (plan.popular) { %>
+                        <div class="popular-badge">MOST POPULAR</div>
+                    <% } %>
+                    
+                    <h2 class="plan-name"><%= plan.name %></h2>
+                    <div class="plan-price"><%= plan.price %></div>
+                    <div class="plan-period"><%= plan.period %></div>
+                    
+                    <ul class="plan-features">
+                        <% plan.features.forEach(feature => { %>
+                            <li><%= feature %></li>
+                        <% }); %>
+                    </ul>
+                    
+                    <button class="subscribe-btn" onclick="selectPlan('<%= plan.id %>', '<%= plan.name %>', '<%= plan.price %>')">
+                        Subscribe
+                    </button>
+                </div>
+            <% }); %>
+        </div>
+    </div>
+    
+    <script>
+        function selectPlan(planId, planName, planPrice) {
+            window.location.href = `/payment?plan=${planId}&name=${encodeURIComponent(planName)}&price=${encodeURIComponent(planPrice)}`;
+        }
+    </script>
+</body>
+</html>

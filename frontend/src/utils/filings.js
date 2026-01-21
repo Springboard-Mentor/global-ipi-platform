@@ -111,6 +111,27 @@ export async function createFiling(formData) {
   }
 }
 
+export async function updateFiling(id, data) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Failed to update filing' }));
+      throw new Error(error.message || 'Failed to update filing');
+    }
+
+    const filing = await response.json();
+    return mapBackendToFrontend(filing);
+  } catch (error) {
+    console.error('Error updating filing:', error);
+    throw error;
+  }
+}
+
 export async function loadFilings() {
   try {
     const response = await fetch(API_BASE_URL, {

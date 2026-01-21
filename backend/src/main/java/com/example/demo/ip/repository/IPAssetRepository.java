@@ -41,4 +41,7 @@ public interface IPAssetRepository extends JpaRepository<IPAsset, Long> {
         boolean existsByApplicationNumber(String applicationNumber);
         
         Optional<IPAsset> findByApplicationNumber(String applicationNumber);
+
+        @Query("SELECT i.country, COUNT(i) FROM IPAsset i GROUP BY i.country")
+        List<Object[]> countByJurisdiction();
 }

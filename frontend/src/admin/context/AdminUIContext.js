@@ -20,22 +20,14 @@ export const AdminUIProvider = ({ children }) => {
 
     const fetchSettings = async () => {
         try {
-            const token = localStorage.getItem('token');
-            if (!token) return;
-
-            // If token handling is different for admin (e.g. adminToken vs token), verify.
-            // AdminLayout uses 'adminToken' (line 19 of AdminLayout.js).
-            // AdminSettings uses 'token'. 
-            // I should probably check which one is correct.
-            // AdminDetails/Admin pages usually use the token stored during login.
-            // AdminLogin stores 'adminToken' I believe?
-
-            // Checking AdminLogin.js would confirm.
-            // For now, I'll check if 'adminToken' exists, if not use 'token'.
-
             const adminToken = localStorage.getItem('adminToken') || localStorage.getItem('token');
+            if (!adminToken) {
+                setLoading(false);
+                return;
+            }
 
-            const res = await fetch('http://localhost:8081/api/admin/ui/settings', {
+            const BASE_URL = process.env.REACT_APP_API_BASE_URL || "http://localhost:8081";
+            const res = await fetch(`${BASE_URL}/api/admin/ui/settings`, {
                 headers: { 'Authorization': `Bearer ${adminToken}` }
             });
             if (res.ok) {

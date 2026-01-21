@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from "react";
 import AdminLayout from "../layout/AdminLayout";
 import axios from "axios";
+import { 
+  LineChart, Line, AreaChart, Area, BarChart, Bar, 
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend 
+} from 'recharts';
 
 const API_URL = "http://localhost:8081/api/admin/patent-filings";
+const BASE_URL = "http://localhost:8081";
 
 const AdminFilingsManagement = () => {
   const [activeTab, setActiveTab] = useState("filings");
@@ -15,6 +20,8 @@ const AdminFilingsManagement = () => {
   // Modals
   const [selectedFiling, setSelectedFiling] = useState(null); // For View/Feedback modal
   const [feedbackText, setFeedbackText] = useState("");
+  const [requestedFields, setRequestedFields] = useState([]);
+  const [analyticsData, setAnalyticsData] = useState(null);
 
   const [filterStatus, setFilterStatus] = useState("All Status");
   const [searchTerm, setSearchTerm] = useState("");
@@ -33,20 +40,32 @@ const AdminFilingsManagement = () => {
   ];
 
   const statusBadge = {
-    APPROVED: "bg-green-900 text-green-300",
-    GRANTED: "bg-green-900 text-green-300",
-    FILED: "bg-blue-900 text-blue-300",
-    "Under Review": "bg-blue-800 text-blue-200",
-    "Under Examination": "bg-indigo-800 text-indigo-200",
-    "Pending Response": "bg-yellow-900 text-yellow-300",
-    REJECTED: "bg-red-900 text-red-300",
-    Withdrawn: "bg-gray-700 text-gray-300",
-    EXPIRED: "bg-gray-600 text-gray-400",
-    "EXPIRING SOON": "bg-orange-800 text-orange-200"
+    APPROVED: "bg-green-500 text-white",
+    GRANTED: "bg-green-500 text-white",
+    FILED: "bg-blue-500 text-white",
+    "Under Review": "bg-blue-500 text-white",
+    "Under Examination": "bg-yellow-500 text-black",
+    "Pending Response": "bg-orange-500 text-white",
+    REJECTED: "bg-red-500 text-white",
+    Withdrawn: "bg-gray-500 text-white",
+    EXPIRED: "bg-gray-500 text-white",
+    "EXPIRING SOON": "bg-orange-500 text-white"
+  };
+
+  const fetchAnalytics = async () => {
+    try {
+      const response = await axios.get(`${BASE_URL}/api/admin/monitoring/all-data`, getAuthHeaders());
+      if (response.data && response.data.chartData) {
+        setAnalyticsData(response.data.chartData);
+      }
+    } catch (error) {
+      console.error("Failed to fetch analytics", error);
+    }
   };
 
   useEffect(() => {
     fetchFilings();
+    fetchAnalytics();
   }, []);
 
   const getAuthHeaders = () => {
@@ -126,14 +145,14 @@ const AdminFilingsManagement = () => {
   const handleSendFeedback = async () => {
     if (!selectedFiling) return;
     try {
-      await axios.put(`${API_URL}/${selectedFiling.id}/feedback`, feedbackText, {
-        headers: {
-          ...getAuthHeaders().headers,
-          "Content-Type": "text/plain"
-        }
-      });
+      const payload = {
+        feedback: feedbackText,
+        requestedFields: requestedFields
+      };
+      await axios.put(`${API_URL}/${selectedFiling.id}/feedback`, payload, getAuthHeaders());
       alert("Feedback sent!");
       setFeedbackText("");
+      setRequestedFields([]);
       setSelectedFiling(null); // close modal
       fetchFilings();
     } catch (error) {
@@ -145,6 +164,7 @@ const AdminFilingsManagement = () => {
   const openModal = (filing) => {
     setSelectedFiling(filing);
     setFeedbackText(filing.adminFeedback || "");
+    setRequestedFields(filing.requestedUpdateFields || []);
   };
 
   // Filter logic
@@ -374,19 +394,51 @@ const AdminFilingsManagement = () => {
         {/* ANALYTICS TAB */}
         {activeTab === "analytics" && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {["Filing Trends", "Processing Times"].map((title) => (
-              <div
-                key={title}
-                className="bg-[#161b22] border border-[#30363d] rounded-lg p-6"
-              >
-                <h3 className="text-xl font-semibold text-white mb-4">
-                  {title}
-                </h3>
-                <div className="h-64 bg-[#0d1117] border border-[#30363d] rounded flex items-center justify-center text-gray-400">
-                  Chart Placeholder (Real data integration pending)
-                </div>
+            {/* Filing Trends Chart */}
+            <div className="bg-[#161b22] border border-[#30363d] rounded-lg p-6">
+              <h3 className="text-xl font-semibold text-white mb-4">Filing Trends (Last 12 Months)</h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={analyticsData?.filingTrends || []}>
+                    <defs>
+                      <linearGradient id="colorFilings" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#30363d" vertical={false} />
+                    <XAxis dataKey="month" stroke="#8b949e" fontSize={12} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#8b949e" fontSize={12} tickLine={false} axisLine={false} />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#0d1117', border: '1px solid #30363d', borderRadius: '8px' }}
+                      itemStyle={{ color: '#c9d1d9' }}
+                    />
+                    <Legend verticalAlign="top" height={36}/>
+                    <Area type="monotone" dataKey="filings" name="Total Filings" stroke="#3b82f6" fillOpacity={1} fill="url(#colorFilings)" />
+                    <Area type="monotone" dataKey="grants" name="Grants" stroke="#10b981" fillOpacity={0.3} fill="#10b981" />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
-            ))}
+            </div>
+
+            {/* Processing Times Chart */}
+            <div className="bg-[#161b22] border border-[#30363d] rounded-lg p-6">
+              <h3 className="text-xl font-semibold text-white mb-4">Avg. Processing Days by Field</h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={analyticsData?.processingTimes || []}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#30363d" vertical={false} />
+                    <XAxis dataKey="field" stroke="#8b949e" fontSize={12} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#8b949e" fontSize={12} tickLine={false} axisLine={false} />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#0d1117', border: '1px solid #30363d', borderRadius: '8px' }}
+                      itemStyle={{ color: '#c9d1d9' }}
+                    />
+                    <Bar dataKey="avgDays" name="Avg. Days to Grant" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={40} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           </div>
         )}
 
@@ -442,7 +494,34 @@ const AdminFilingsManagement = () => {
                   onChange={(e) => setFeedbackText(e.target.value)}
                 />
 
-                <div className="flex gap-3 mt-4">
+                <div className="mt-4">
+                  <h5 className="text-white text-sm font-medium mb-2 text-blue-300">Request Field Corrections:</h5>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { id: "title", label: "Title" },
+                      { id: "abstract", label: "Abstract" },
+                      { id: "technicalField", label: "Tech Field" },
+                      { id: "novelty", label: "Novelty" },
+                      { id: "applicantName", label: "Applicant Name" },
+                      { id: "inventors", label: "Inventors" },
+                    ].map(field => (
+                      <label key={field.id} className="flex items-center gap-2 text-gray-400 hover:text-white cursor-pointer transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={requestedFields.includes(field.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) setRequestedFields([...requestedFields, field.id]);
+                            else setRequestedFields(requestedFields.filter(f => f !== field.id));
+                          }}
+                          className="rounded border-[#30363d] bg-[#0d1117]"
+                        />
+                        <span className="text-sm">{field.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex gap-3 mt-6">
                   <button
                     onClick={() => setSelectedFiling(null)}
                     className="flex-1 bg-gray-600 hover:bg-gray-700 rounded-lg text-white py-2"

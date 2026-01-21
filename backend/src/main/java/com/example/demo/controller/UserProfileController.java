@@ -39,6 +39,7 @@ public class UserProfileController {
                 user.getPhone(),
                 user.getCountryCode(),
                 user.getStatus(),
+                user.getSubscription(),
                 user.getDisabledAt()
         );
 
@@ -64,6 +65,7 @@ public class UserProfileController {
                     updatedUser.getPhone(),
                     updatedUser.getCountryCode(),
                     updatedUser.getStatus(),
+                    updatedUser.getSubscription(),
                     updatedUser.getDisabledAt()
             );
 
@@ -94,6 +96,20 @@ public class UserProfileController {
             return ResponseEntity.badRequest().body(
                     "Password update failed: " + ex.getMessage()
             );
+        }
+    }
+
+    @PutMapping("/upgrade-subscription")
+    public ResponseEntity<?> upgradeSubscription(
+            @RequestParam String planName,
+            Authentication auth
+    ) {
+        try {
+            String email = auth.getName();
+            userService.upgradeSubscription(email, planName);
+            return ResponseEntity.ok("Subscription upgraded to " + planName);
+        } catch (Exception ex) {
+            return ResponseEntity.badRequest().body("Upgrade failed: " + ex.getMessage());
         }
     }
 }

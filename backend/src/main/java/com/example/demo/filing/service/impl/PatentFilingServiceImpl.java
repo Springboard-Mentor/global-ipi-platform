@@ -195,9 +195,15 @@ public class PatentFilingServiceImpl implements PatentFilingService {
             filing.setTotalFee(request.getTotalFee());
         }
         
-        filing.setStatus(computeStatus(filing));
-        PatentFiling updatedFiling = filingRepository.save(filing);
+        // If it was Pending Response, it's now back to Under Review after user update
+        if ("Pending Response".equalsIgnoreCase(filing.getStatus())) {
+            filing.setStatus("Under Review");
+            filing.getRequestedUpdateFields().clear();
+        } else {
+            filing.setStatus(computeStatus(filing));
+        }
         
+        PatentFiling updatedFiling = filingRepository.save(filing);
         return mapToResponse(updatedFiling);
     }
 
@@ -243,12 +249,30 @@ public class PatentFilingServiceImpl implements PatentFilingService {
     }
     
     @Override
-    public PatentFilingResponse updateFilingFeedbackAdmin(Long id, String feedback) {
+    @Transactional
+    public PatentFilingResponse updateFilingFeedbackAdmin(Long id, String feedback, List<String> requestedFields) {
         PatentFiling filing = filingRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Filing not found"));
         filing.setAdminFeedback(feedback);
+        
+        if (requestedFields != null) {
+            filing.getRequestedUpdateFields().clear();
+            filing.getRequestedUpdateFields().addAll(requestedFields);
+            
+            // If fields are requested, move status to "Pending Response" if it's not already something else critical
+            if (!"GRANTED".equalsIgnoreCase(filing.getStatus()) && !"REJECTED".equalsIgnoreCase(filing.getStatus())) {
+                filing.setStatus("Pending Response");
+            }
+        }
+        
         filingRepository.save(filing);
         return mapToResponse(filing);
+    }
+
+    @Override
+    @Transactional
+    public PatentFilingResponse updateFilingFeedbackAdmin(Long id, String feedback) {
+        return updateFilingFeedbackAdmin(id, feedback, null);
     }
 
     @Override
@@ -410,6 +434,7 @@ public class PatentFilingServiceImpl implements PatentFilingService {
         response.setCreatedAt(filing.getCreatedAt());
         response.setUpdatedAt(filing.getUpdatedAt());
         response.setAdminFeedback(filing.getAdminFeedback());
+        response.setRequestedUpdateFields(new java.util.ArrayList<>(filing.getRequestedUpdateFields()));
         
         return response;
     }

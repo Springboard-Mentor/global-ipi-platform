@@ -28,6 +28,7 @@ public class JwtFilter extends OncePerRequestFilter {
         return path.startsWith("/auth")
                 || path.equals("/api/ip/search")
                 || path.startsWith("/h2-console")
+                || path.startsWith("/api/admin/monitoring")
                 || "OPTIONS".equalsIgnoreCase(request.getMethod());
     }
 
@@ -44,6 +45,7 @@ public class JwtFilter extends OncePerRequestFilter {
         if (path.startsWith("/auth")
                 || path.equals("/api/ip/search")
                 || path.startsWith("/h2-console")
+                || path.startsWith("/api/admin/monitoring")
                 || "OPTIONS".equalsIgnoreCase(request.getMethod())) {
 
             filterChain.doFilter(request, response);

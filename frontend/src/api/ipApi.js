@@ -107,7 +107,45 @@ export async function getIPDetails(id) {
 }
 
 /**
- * Get SerpAPI key status
+ * Subscribe/Watch an IP asset
+ */
+export async function subscribeToIP(ipAssetId) {
+  const token = localStorage.getItem('token');
+  const response = await fetch(`${BASE_URL}/api/subscriptions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    },
+    body: JSON.stringify({ ipAssetId }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to subscribe to IP asset");
+  }
+  return await response.json();
+}
+
+/**
+ * List user's IP subscriptions
+ */
+export async function listSubscriptions() {
+  const token = localStorage.getItem('token');
+  const response = await fetch(`${BASE_URL}/api/subscriptions`, {
+    method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token}`
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch subscriptions");
+  }
+  return await response.json();
+}
+
+/**
+ * Check SerpAPI key status
  * @returns {Promise<{valid: boolean, message: string}>}
  */
 export async function checkSerpAPIKey() {

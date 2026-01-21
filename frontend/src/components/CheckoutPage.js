@@ -29,12 +29,19 @@ const CheckoutPage = () => {
     e.preventDefault();
     setProcessing(true);
     
-    // Simulate payment processing
-    setTimeout(() => {
-      upgradePlan(planKey);
+    try {
+      const success = await upgradePlan(planKey);
       setProcessing(false);
-      navigate('/subscription-status?success=true');
-    }, 2000);
+      
+      if (success) {
+        navigate('/subscription-status?success=true');
+      } else {
+        alert("Payment processing failed. Please try again.");
+      }
+    } catch (error) {
+      setProcessing(false);
+      alert("An error occurred during checkout.");
+    }
   };
 
   if (!plan) {

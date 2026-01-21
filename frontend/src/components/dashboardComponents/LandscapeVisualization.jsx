@@ -70,7 +70,7 @@ const LandscapeVisualization = ({ data = [] }) => {
     "CA": "North America",
     "MX": "North America",
     // Europe
-    "GB": "Europe", "UK": "Europe", "DE": "Europe", "FR": "Europe", 
+    "GB": "Europe", "UK": "Europe", "DE": "Europe", "FR": "Europe",
     "IT": "Europe", "ES": "Europe", "NL": "Europe", "BE": "Europe",
     "CH": "Europe", "AT": "Europe", "SE": "Europe", "NO": "Europe",
     "DK": "Europe", "FI": "Europe", "PL": "Europe", "IE": "Europe",
@@ -93,16 +93,16 @@ const LandscapeVisualization = ({ data = [] }) => {
   // Function to extract patent field from title/abstract
   const extractPatentField = (title, abstract) => {
     if (!title && !abstract) return "Other";
-    
+
     const searchText = `${title || ""} ${abstract || ""}`.toLowerCase();
-    
+
     // Check each field's keywords
     for (const [field, keywords] of Object.entries(PATENT_FIELD_KEYWORDS)) {
       if (keywords.some(keyword => searchText.includes(keyword.toLowerCase()))) {
         return field;
       }
     }
-    
+
     return "Other";
   };
 
@@ -113,15 +113,41 @@ const LandscapeVisualization = ({ data = [] }) => {
     return COUNTRY_TO_REGION[upperCode] || "Other";
   };
 
+  // Helper function for grouping data by time
+  const getTimeKey = (date, period) => {
+    if (!date) return "Unknown";
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return "Unknown";
+
+    switch (period) {
+      case "weekly":
+        // Simple week of year calculation
+        const firstDayOfYear = new Date(d.getFullYear(), 0, 1);
+        const pastDaysOfYear = (d - firstDayOfYear) / 86400000;
+        const week = Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+        return `${d.getFullYear()}-W${String(week).padStart(2, "0")}`;
+      case "monthly":
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      case "quarterly":
+        const q = Math.ceil((d.getMonth() + 1) / 3);
+        return `${d.getFullYear()}-Q${q}`;
+      case "half-yearly":
+        const half = d.getMonth() < 6 ? "H1" : "H2";
+        return `${d.getFullYear()}-${half}`;
+      default: // yearly
+        return d.getFullYear().toString();
+    }
+  };
+
   //      DATA NORMALIZATION (FRONTEND)
-    const normalizedData = useMemo(() => {
+  const normalizedData = useMemo(() => {
     return data.map((item) => {
       // Extract patent field from title/abstract if not already present
       const patentField = item.patentField || extractPatentField(item.title, item.abstractText);
-      
+
       // Map country to region
       const region = item.region || getRegionFromCountry(item.country);
-      
+
       // Parse filing date safely
       let filingDate = null;
       if (item.filingDate) {
@@ -140,7 +166,7 @@ const LandscapeVisualization = ({ data = [] }) => {
           filingDate = null;
         }
       }
-      
+
       return {
         ...item,
         filingDate,
@@ -154,10 +180,8 @@ const LandscapeVisualization = ({ data = [] }) => {
   }, [data]);
 
   // Enhanced data processing with patent-specific analysis
-   const processedData = useMemo(() => {
+  const processedData = useMemo(() => {
     /* ---- TIME KEY ---- */
-    const getYear = (date) =>
-      date ? date.getFullYear().toString() : "Unknown";
 
     const filtered =
       patentField === "all"
@@ -169,7 +193,7 @@ const LandscapeVisualization = ({ data = [] }) => {
       filtered.reduce((acc, item) => {
         if (!item.filingDate) return acc;
 
-        const period = getYear(item.filingDate);
+        const period = getTimeKey(item.filingDate, timePeriod);
         acc[period] = acc[period] || {
           period,
           filings: 0,
@@ -183,165 +207,162 @@ const LandscapeVisualization = ({ data = [] }) => {
 
         return acc;
       }, {})
+    ).sort((a, b) => a.period.localeCompare(b.period));
+
+    /* ===============================
+       TYPE DISTRIBUTION
+    =============================== */
+    const typeDistribution = Object.values(
+      normalizedData.reduce((acc, item) => {
+        const type = item.assetType || "Unknown";
+        acc[type] = acc[type] || { type, count: 0 };
+        acc[type].count++;
+        return acc;
+      }, {})
     );
 
-  /* ===============================
-     TYPE DISTRIBUTION
-  =============================== */
-  const typeDistribution = Object.values(
-    normalizedData.reduce((acc, item) => {
-      const type = item.assetType || "Unknown";
-      acc[type] = acc[type] || { type, count: 0 };
-      acc[type].count++;
-      return acc;
-    }, {})
-  );
+    /* ===============================
+       FIELD DISTRIBUTION (ALL DATA)
+    =============================== */
+    const fieldDistribution = Object.values(
+      normalizedData.reduce((acc, item) => {
+        const field = item.patentField || "Other";
+        acc[field] = acc[field] || { field, count: 0 };
+        acc[field].count++;
+        return acc;
+      }, {})
+    ).sort((a, b) => b.count - a.count); // Sort by count descending
 
-  /* ===============================
-     FIELD DISTRIBUTION (ALL DATA)
-  =============================== */
-  const fieldDistribution = Object.values(
-    normalizedData.reduce((acc, item) => {
-      const field = item.patentField || "Other";
-      acc[field] = acc[field] || { field, count: 0 };
-      acc[field].count++;
-      return acc;
-    }, {})
-  ).sort((a, b) => b.count - a.count); // Sort by count descending
+    /* ===============================
+       PRIORITY ANALYSIS (ALL DATA)
+    =============================== */
+    const priorityAnalysis = Object.values(
+      normalizedData.reduce((acc, item) => {
+        const priority = item.priority || "Unknown";
+        acc[priority] = acc[priority] || {
+          priority,
+          count: 0,
+        };
+        acc[priority].count++;
+        return acc;
+      }, {})
+    );
 
-  /* ===============================
-     PRIORITY ANALYSIS (ALL DATA)
-  =============================== */
-  const priorityAnalysis = Object.values(
-    normalizedData.reduce((acc, item) => {
-      const priority = item.priority || "Unknown";
-      acc[priority] = acc[priority] || {
-        priority,
-        count: 0,
-      };
-      acc[priority].count++;
-      return acc;
-    }, {})
-  );
+    /* ===============================
+       REGIONAL DISTRIBUTION (ALL DATA)
+    =============================== */
+    const regionalDistribution = Object.values(
+      normalizedData.reduce((acc, item) => {
+        const region = item.region || "Other";
+        acc[region] = acc[region] || { region, count: 0 };
+        acc[region].count++;
+        return acc;
+      }, {})
+    ).sort((a, b) => b.count - a.count); // Sort by count descending
 
-  /* ===============================
-     REGIONAL DISTRIBUTION (ALL DATA)
-  =============================== */
-  const regionalDistribution = Object.values(
-    normalizedData.reduce((acc, item) => {
-      const region = item.region || "Other";
-      acc[region] = acc[region] || { region, count: 0 };
-      acc[region].count++;
-      return acc;
-    }, {})
-  ).sort((a, b) => b.count - a.count); // Sort by count descending
+    /* ===============================
+       COUNTRY DISTRIBUTION (DETAILED)
+    =============================== */
+    const countryDistribution = Object.values(
+      normalizedData.reduce((acc, item) => {
+        const country = item.country || "Unknown";
+        acc[country] = acc[country] || { country, count: 0 };
+        acc[country].count++;
+        return acc;
+      }, {})
+    ).sort((a, b) => b.count - a.count).slice(0, 10); // Top 10 countries
 
-  /* ===============================
-     COUNTRY DISTRIBUTION (DETAILED)
-  =============================== */
-  const countryDistribution = Object.values(
-    normalizedData.reduce((acc, item) => {
-      const country = item.country || "Unknown";
-      acc[country] = acc[country] || { country, count: 0 };
-      acc[country].count++;
-      return acc;
-    }, {})
-  ).sort((a, b) => b.count - a.count).slice(0, 10); // Top 10 countries
+    /* ===============================
+       MONTHLY ACTIVITY (SAFE)
+    =============================== */
+    const periodicActivity = Object.values(
+      normalizedData.reduce((acc, item) => {
+        if (!item.filingDate) return acc;
 
-  /* ===============================
-     MONTHLY ACTIVITY (SAFE)
-  =============================== */
-  const monthlyActivity = Object.values(
-    normalizedData.reduce((acc, item) => {
-      if (!item.filingDate) return acc;
+        const d = new Date(item.filingDate);
+        if (isNaN(d)) return acc;
 
-      const d = new Date(item.filingDate);
-      if (isNaN(d)) return acc;
+        const period = getTimeKey(item.filingDate, timePeriod);
 
-      const month = d.toLocaleString("default", {
-        month: "short",
-        year: "numeric",
-      });
+        acc[period] = acc[period] || { period, count: 0 };
+        acc[period].count++;
+        return acc;
+      }, {})
+    ).sort((a, b) => a.period.localeCompare(b.period));
 
-      acc[month] = acc[month] || { month, count: 0 };
-      acc[month].count++;
-      return acc;
-    }, {})
-  );
+    /* ===============================
+       RADAR DATA (SAFE + CLEAN)
+    =============================== */
+    const total = filtered.length;
 
-  /* ===============================
-     RADAR DATA (SAFE + CLEAN)
-  =============================== */
-  const total = filtered.length;
-
-  const radarData = [
-    {
-      metric: "Filing Volume",
-      value: total ? 100 : 0,
-    },
-    {
-      metric: "Granted Rate",
-      value: total
-        ? Math.round(
+    const radarData = [
+      {
+        metric: "Filing Volume",
+        value: total ? 100 : 0,
+      },
+      {
+        metric: "Granted Rate",
+        value: total
+          ? Math.round(
             (filtered.filter(
               (i) => i.legalStatus === "GRANTED"
             ).length /
               total) *
-              100
+            100
           )
-        : 0,
-    },
-    {
-      metric: "Patent Ratio",
-      value: total
-        ? Math.round(
+          : 0,
+      },
+      {
+        metric: "Patent Ratio",
+        value: total
+          ? Math.round(
             (filtered.filter(
-              (i) => i.assetType  === "PATENT"
+              (i) => i.assetType === "PATENT"
             ).length /
               total) *
-              100
+            100
           )
-        : 0,
-    },
-    {
-      metric: "High Priority",
-      value: normalizedData.length
-        ? Math.round(
+          : 0,
+      },
+      {
+        metric: "High Priority",
+        value: normalizedData.length
+          ? Math.round(
             (normalizedData.filter(
               (i) => i.priority === "High"
             ).length /
               normalizedData.length) *
-              100
+            100
           )
-        : 0,
-    },
-    {
-      metric: "Recent Activity",
-      value: total
-        ? Math.round(
+          : 0,
+      },
+      {
+        metric: "Recent Activity",
+        value: total
+          ? Math.round(
             (filtered.filter(
               (i) =>
                 new Date(i.filingDate).getFullYear() ===
                 new Date().getFullYear()
             ).length /
               total) *
-              100
+            100
           )
-        : 0,
-    },
-  ];
+          : 0,
+      },
+    ];
 
-  return {
-    filingTrend,
-    typeDistribution,
-    fieldDistribution,
-    priorityAnalysis,
-    regionalDistribution,
-    countryDistribution,
-    monthlyActivity,
-    radarData,
-  };
-}, [normalizedData, timePeriod, patentField]);
+    return {
+      filingTrend,
+      typeDistribution,
+      fieldDistribution,
+      priorityAnalysis,
+      regionalDistribution,
+      countryDistribution,
+      periodicActivity,
+      radarData,
+    };
+  }, [normalizedData, timePeriod, patentField]);
 
 
   return (
@@ -430,13 +451,12 @@ const LandscapeVisualization = ({ data = [] }) => {
           <button
             key={chart}
             onClick={() => setActiveChart(chart)}
-            className={`px-5 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
-              activeChart === chart
-                ? "bg-purple-500 text-white shadow-lg transform scale-105 border border-purple-400"
-                : "bg-white/15 text-white hover:bg-white/25 hover:scale-102 border border-white/30"
-            }`}
+            className={`px-5 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${activeChart === chart
+              ? "bg-purple-500 text-white shadow-lg transform scale-105 border border-purple-400"
+              : "bg-white/15 text-white hover:bg-white/25 hover:scale-102 border border-white/30"
+              }`}
           >
-          {chart.charAt(0).toUpperCase() + chart.slice(1)}
+            {chart.charAt(0).toUpperCase() + chart.slice(1)}
           </button>
         ))}
       </div>
@@ -728,7 +748,7 @@ const LandscapeVisualization = ({ data = [] }) => {
                           paddingAngle={3}
                           dataKey="count"
                           nameKey="region"
-                          label={({ region, percent }) => 
+                          label={({ region, percent }) =>
                             percent > 0.05 ? `${region}: ${(percent * 100).toFixed(1)}%` : ''
                           }
                           labelLine={false}
@@ -749,8 +769,8 @@ const LandscapeVisualization = ({ data = [] }) => {
                           }}
                           formatter={(value) => [`${value} patents`, "Count"]}
                         />
-                        <Legend 
-                          verticalAlign="bottom" 
+                        <Legend
+                          verticalAlign="bottom"
                           height={36}
                           formatter={(value) => <span style={{ color: "#FFFFFF" }}>{value}</span>}
                         />
@@ -760,7 +780,7 @@ const LandscapeVisualization = ({ data = [] }) => {
                   <div className="h-80">
                     <h5 className="text-white/90 mb-4 text-sm font-semibold">Top Countries</h5>
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart 
+                      <BarChart
                         data={processedData.countryDistribution}
                         layout="horizontal"
                       >
@@ -846,34 +866,37 @@ const LandscapeVisualization = ({ data = [] }) => {
 
         {activeChart === "activity" && (
           <div className="animate-fadeIn">
-            <h4 className="text-lg text-white mb-6 flex items-center gap-2 font-semibold">
-              Recent Filing Activity
+            <h4 className="text-lg text-white mb-6 flex items-center gap-2 font-semibold capitalize">
+              {timePeriod} Activity Analysis
             </h4>
             <div className="h-96">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={processedData.monthlyActivity}>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="rgba(255,255,255,0.2)"
-                  />
-                  <XAxis
-                    dataKey="month"
-                    tick={{ fill: "#FFFFFF", fontSize: 11 }}
-                  />
-                  <YAxis
-                    allowDecimals={false}
-                    tick={{ fill: "#FFFFFF", fontSize: 12 }}
-                  />
+                <AreaChart data={processedData.periodicActivity}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                  <XAxis dataKey="period" tick={{ fill: "#FFFFFF", fontSize: 11 }} />
+                  <YAxis allowDecimals={false} tick={{ fill: "#FFFFFF", fontSize: 12 }} />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: "rgba(30, 30, 30, 0.95)",
-                      border: "1px solid rgba(16, 185, 129, 0.5)",
+                      border: "1px solid rgba(139, 92, 246, 0.5)",
                       borderRadius: "12px",
                       color: "#fff",
                     }}
                   />
-                  <Bar dataKey="count" fill="#10B981" radius={[8, 8, 0, 0]} />
-                </BarChart>
+                  <Area
+                    type="monotone"
+                    dataKey="count"
+                    stroke="#8B5CF6"
+                    fill="url(#colorActivity)"
+                    fillOpacity={0.6}
+                  />
+                  <defs>
+                    <linearGradient id="colorActivity" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                </AreaChart>
               </ResponsiveContainer>
             </div>
           </div>
@@ -935,7 +958,7 @@ const LandscapeVisualization = ({ data = [] }) => {
             {
               data.filter(
                 (item) =>
-                  item.assetType  === "PATENT" &&
+                  item.assetType === "PATENT" &&
                   (item.legalStatus === "FILED")
               ).length
             }
@@ -954,8 +977,8 @@ const LandscapeVisualization = ({ data = [] }) => {
         </div>
         <div className="bg-gradient-to-br from-yellow-500/30 to-orange-600/30 p-6 rounded-2xl border border-yellow-400/40 shadow-lg">
           <div className="text-3xl font-bold text-white mb-2">
-            {data.filter((item) => 
-              item.assetType?.toUpperCase() === "TRADEMARK" || 
+            {data.filter((item) =>
+              item.assetType?.toUpperCase() === "TRADEMARK" ||
               item.assetType?.toUpperCase() === "TRADE MARK"
             ).length}
           </div>

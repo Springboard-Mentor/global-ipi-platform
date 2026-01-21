@@ -64,6 +64,7 @@ public class PatentFilingResponse {
     private Instant createdAt;
     private Instant updatedAt;
     private String adminFeedback;
+    private List<String> requestedUpdateFields;
 
     @Data
     public static class InventorResponse {

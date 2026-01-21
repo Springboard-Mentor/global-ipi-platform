@@ -24,6 +24,8 @@ public interface PatentFilingService {
     
     PatentFilingResponse updateFilingStatusAdmin(Long id, String status);
     
+    PatentFilingResponse updateFilingFeedbackAdmin(Long id, String feedback, List<String> requestedFields);
+
     PatentFilingResponse updateFilingFeedbackAdmin(Long id, String feedback);
     
     void performBulkAction(List<Long> ids, String action, String value);

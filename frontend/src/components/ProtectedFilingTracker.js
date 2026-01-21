@@ -14,7 +14,7 @@ const ProtectedFilingTracker = ({ children }) => {
             <div className="w-20 h-20 bg-purple-600/20 rounded-full flex items-center justify-center mx-auto mb-6">
               <span className="text-4xl">🔒</span>
             </div>
-            <h1 className="text-3xl font-bold mb-4">Premium Feature</h1>
+            <h1 className="text-3xl font-bold mb-4">Pro Feature</h1>
             <p className="text-white/70 text-lg mb-6">
               Filing Tracker is available in Pro and Enterprise plans
             </p>

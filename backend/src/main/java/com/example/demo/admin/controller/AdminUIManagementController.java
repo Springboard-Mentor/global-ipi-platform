@@ -15,7 +15,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/admin/ui")
-@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 public class AdminUIManagementController {
 
     private final AdminUIService service;
@@ -42,12 +42,19 @@ public class AdminUIManagementController {
     }
 
     @PostMapping("/upload")
-    public ResponseEntity<String> uploadFile(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<String> uploadFile(
+            @RequestParam("file") MultipartFile file,
+            jakarta.servlet.http.HttpServletRequest request) {
         try {
             String filename = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
             Path targetPath = uploadLocation.resolve(filename);
             Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-            return ResponseEntity.ok("/uploads/" + filename);
+            
+            // Build absolute URL
+            String baseUrl = request.getRequestURL().toString().replace(request.getRequestURI(), "");
+            String fileUrl = baseUrl + "/uploads/" + filename;
+            
+            return ResponseEntity.ok(fileUrl);
         } catch (IOException e) {
             return ResponseEntity.internalServerError().body("Failed to upload file: " + e.getMessage());
         }

@@ -15,7 +15,7 @@ const FilterBar = ({ search, setSearch, filterStatus, setFilterStatus }) => {
       <input
         type="text"
         placeholder="Search IP, patent, tracking ID..."
-        className="bg-white/5 border border-white/20 px-4 py-2 rounded-lg w-full md:w-1/3 text-sm placeholder:text-white/40"
+        className="bg-gray-800 border border-gray-600 px-4 py-2 rounded-lg w-full md:w-1/3 text-white text-sm placeholder:text-gray-400"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
@@ -23,7 +23,7 @@ const FilterBar = ({ search, setSearch, filterStatus, setFilterStatus }) => {
       <select
         value={filterStatus}
         onChange={(e) => setFilterStatus(e.target.value)}
-        className="bg-white/5 border border-white/20 px-4 py-2 rounded-lg text-sm"
+        className="bg-gray-800 border border-gray-600 px-4 py-2 rounded-lg text-white text-sm"
       >
         {statusOptions.map((option) => (
           <option key={option.value} value={option.value}>

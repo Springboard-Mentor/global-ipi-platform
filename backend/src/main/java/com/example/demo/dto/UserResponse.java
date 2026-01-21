@@ -12,5 +12,6 @@ public class UserResponse {
     private String phone;
     private String countryCode;
     private String status;
+    private String subscription;
     private java.time.Instant disabledAt;
 }
