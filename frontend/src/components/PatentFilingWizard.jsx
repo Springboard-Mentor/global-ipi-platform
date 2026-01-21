@@ -54,7 +54,7 @@ const initialForm = {
 
 const PatentFilingWizard = () => {
   const navigate = useNavigate();
-  
+
   // Check if user is logged in
   React.useEffect(() => {
     const token = localStorage.getItem('token');
@@ -62,7 +62,7 @@ const PatentFilingWizard = () => {
       navigate('/login', { state: { message: 'Please log in to file a patent application' } });
     }
   }, [navigate]);
-  
+
   const [step, setStep] = useState(0);
   const [formData, setFormData] = useState(() => {
     try {
@@ -117,7 +117,11 @@ const PatentFilingWizard = () => {
     const e = {};
     if (s === 0) {
       if (!formData.applicantName) e.applicantName = 'Applicant name is required';
-      if (!formData.email) e.email = 'Email is required';
+      if (!formData.email) {
+        e.email = 'Email is required';
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+        e.email = 'Invalid email address';
+      }
       if (!formData.nationality) e.nationality = 'Nationality is required';
       if (!formData.addressStreet) e.addressStreet = 'Street is required';
       if (!formData.addressCity) e.addressCity = 'City is required';
@@ -132,7 +136,7 @@ const PatentFilingWizard = () => {
       const invs = Array.isArray(formData.inventors) ? formData.inventors : (formData.inventors ? [formData.inventors] : []);
       if (!invs || invs.filter(i => i && i.name && i.name.trim()).length === 0) e.inventors = 'At least one inventor is required';
       if (!formData.technicalField) e.technicalField = 'Technical field is required';
-      if (!formData.abstract || formData.abstract.trim().length < 100) e.abstract = 'Abstract must be at least 100 characters';
+      if (!formData.abstract || formData.abstract.trim().length < 10) e.abstract = 'Abstract must be at least 10 characters';
     }
     if (s === 2) {
       // No required fields for mock payment, but ensure a method chosen before confirming
@@ -176,7 +180,7 @@ const PatentFilingWizard = () => {
       setLoading(false);
       const errorMessage = e.message || 'Failed to save filing. Please try again.';
       setPopup({ message: errorMessage, type: 'error' });
-      
+
       // If unauthorized, suggest logging in
       if (errorMessage.includes('session') || errorMessage.includes('log in') || errorMessage.includes('Authentication')) {
         setTimeout(() => {
@@ -200,7 +204,7 @@ const PatentFilingWizard = () => {
       const invs = Array.isArray(formData.inventors) ? formData.inventors : (formData.inventors ? [formData.inventors] : []);
       const hasInventor = invs.filter(i => i && i.name && i.name.trim()).length > 0;
       return !!(
-        formData.title && hasInventor && formData.technicalField && formData.abstract && formData.abstract.trim().length >= 100
+        formData.title && hasInventor && formData.technicalField && formData.abstract && formData.abstract.trim().length >= 10
       );
     }
     if (step === 2) {

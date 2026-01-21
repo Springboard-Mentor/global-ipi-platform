@@ -37,43 +37,43 @@ const SearchResults = () => {
           source,
         });
 
-    const normalized = Array.isArray(data)
-  ? data.map((item, index) => ({
-      id: item.id ?? `${item.number}-${index}`,
-      title: item.title,
-      number: item.applicationNumber || "N/A",
-      assignee: item.ownerName || "Unknown",
-      inventor: item.inventorName || null,
-      jurisdiction: item.country || "Unknown",
-      date: item.filingDate || "N/A",
-      status: item.legalStatus || "Unknown", 
-      abstract: item.abstractText || "",
-      // Add date fields for IPDetails
-      filingDate: item.filingDate,
-      publicationDate: item.publicationDate,
-      grantDate: item.grantDate,
-      priorityDate: item.priorityDate,
-      legalStatus: item.legalStatus,
-      assetType: item.assetType,
-      abstractText: item.abstractText,
-      ownerName: item.ownerName,
-      inventorName: item.inventorName,
-      referenceSource: item.referenceSource,
-      patentLink: item.patentLink,
-      pdfLink: item.pdfLink,
-      thumbnail: item.thumbnail,
-    }))
-  : [];
+        const normalized = Array.isArray(data)
+          ? data.map((item, index) => ({
+            id: item.id ?? `${item.number}-${index}`,
+            title: item.title,
+            number: item.applicationNumber || "N/A",
+            assignee: item.ownerName || "Unknown",
+            inventor: item.inventorName || null,
+            jurisdiction: item.country || "Unknown",
+            date: item.filingDate || "N/A",
+            status: item.legalStatus || "Unknown",
+            abstract: item.abstractText || "",
+            // Add date fields for IPDetails
+            filingDate: item.filingDate,
+            publicationDate: item.publicationDate,
+            grantDate: item.grantDate,
+            priorityDate: item.priorityDate,
+            legalStatus: item.legalStatus,
+            assetType: item.assetType,
+            abstractText: item.abstractText,
+            ownerName: item.ownerName,
+            inventorName: item.inventorName,
+            referenceSource: item.referenceSource,
+            patentLink: item.patentLink,
+            pdfLink: item.pdfLink,
+            thumbnail: item.thumbnail,
+          }))
+          : [];
 
-setResults(normalized);
-setTotalResults(normalized.length);
+        setResults(normalized);
+        setTotalResults(normalized.length);
 
-// 🔴 ADD THESE
-setCurrentPage(1);
-setFilterStatus("");
-setSortBy("relevance");
+        // 🔴 ADD THESE
+        setCurrentPage(1);
+        setFilterStatus("");
+        setSortBy("relevance");
 
-console.log("Normalized results:", normalized);
+        console.log("Normalized results:", normalized);
 
       } catch (err) {
         console.error(err);
@@ -100,7 +100,7 @@ console.log("Normalized results:", normalized);
 
     const inventorFilter = searchParams.get("inventor");
     if (inventorFilter && searchParams.get("type")?.toUpperCase() === "PATENT"
-) {
+    ) {
       filtered = filtered.filter(
         (r) =>
           r.inventor &&
@@ -134,8 +134,8 @@ console.log("Normalized results:", normalized);
   };
 
   const filteredResults = React.useMemo(() => {
-  return getFilteredResults();
-}, [results, sortBy, filterStatus, searchParams]);
+    return getFilteredResults();
+  }, [results, sortBy, filterStatus, searchParams]);
   const totalPages = Math.ceil(filteredResults.length / itemsPerPage);
   const paginatedResults = filteredResults.slice(
     (currentPage - 1) * itemsPerPage,
@@ -143,12 +143,12 @@ console.log("Normalized results:", normalized);
   );
 
   console.log("SEARCH PARAMS", {
-  keyword: searchParams.get("keyword"),
-  type: searchParams.get("type"),
-  source: searchParams.get("source"),
-});
+    keyword: searchParams.get("keyword"),
+    type: searchParams.get("type"),
+    source: searchParams.get("source"),
+  });
 
-console.log("filtered length", filteredResults.length);
+  console.log("filtered length", filteredResults.length);
 
 
   return (
@@ -182,11 +182,10 @@ console.log("filtered length", filteredResults.length);
             <div className="flex gap-2">
               <button
                 onClick={() => setViewMode("list")}
-                className={`p-2 rounded-lg transition-colors ${
-                  viewMode === "list"
+                className={`p-2 rounded-lg transition-colors ${viewMode === "list"
                     ? "bg-blue-600 text-white"
                     : "bg-white/10 text-gray-300"
-                }`}
+                  }`}
               >
                 <svg
                   className="h-5 w-5"
@@ -204,11 +203,10 @@ console.log("filtered length", filteredResults.length);
               </button>
               <button
                 onClick={() => setViewMode("map")}
-                className={`p-2 rounded-lg transition-colors ${
-                  viewMode === "map"
+                className={`p-2 rounded-lg transition-colors ${viewMode === "map"
                     ? "bg-blue-600 text-white"
                     : "bg-white/10 text-gray-300"
-                }`}
+                  }`}
               >
                 <svg
                   className="h-5 w-5"
@@ -348,14 +346,13 @@ console.log("filtered length", filteredResults.length);
                             {result.number}
                           </span>
                           <span
-                            className={`px-2 py-1 rounded text-xs ${
-                              result.status === "Granted" ||
-                              result.status === "Active"
+                            className={`px-2 py-1 rounded text-xs ${result.status === "Granted" ||
+                                result.status === "Active"
                                 ? "bg-green-500/20 text-green-300"
                                 : result.status === "Pending"
-                                ? "bg-yellow-500/20 text-yellow-300"
-                                : "bg-gray-500/20 text-gray-300"
-                            }`}
+                                  ? "bg-yellow-500/20 text-yellow-300"
+                                  : "bg-gray-500/20 text-gray-300"
+                              }`}
                           >
                             {result.status}
                           </span>
@@ -444,11 +441,10 @@ console.log("filtered length", filteredResults.length);
                     <button
                       key={pageNum}
                       onClick={() => setCurrentPage(pageNum)}
-                      className={`px-4 py-2 rounded-lg transition-colors ${
-                        currentPage === pageNum
+                      className={`px-4 py-2 rounded-lg transition-colors ${currentPage === pageNum
                           ? "bg-blue-600 text-white"
                           : "bg-white/10 text-white hover:bg-white/20"
-                      }`}
+                        }`}
                     >
                       {pageNum}
                     </button>
@@ -490,15 +486,35 @@ const MapView = ({ results, searchType }) => {
   // Map coordinates for different jurisdictions (real lat/lng used for markers)
   const jurisdictionCoordinates = {
     "United States": { lat: 37.0902, lng: -95.7129 },
+    US: { lat: 37.0902, lng: -95.7129 },
     "European Union": { lat: 50.1109, lng: 8.6821 },
+    EP: { lat: 50.1109, lng: 8.6821 },
+    EU: { lat: 50.1109, lng: 8.6821 },
     China: { lat: 35.8617, lng: 104.1954 },
+    CN: { lat: 35.8617, lng: 104.1954 },
     Japan: { lat: 36.2048, lng: 138.2529 },
+    JP: { lat: 36.2048, lng: 138.2529 },
     "South Korea": { lat: 36.5, lng: 127.5 },
+    KR: { lat: 36.5, lng: 127.5 },
     India: { lat: 20.5937, lng: 78.9629 },
+    IN: { lat: 20.5937, lng: 78.9629 },
     Canada: { lat: 56.1304, lng: -106.3468 },
+    CA: { lat: 56.1304, lng: -106.3468 },
     Australia: { lat: -25.2744, lng: 133.7751 },
+    AU: { lat: -25.2744, lng: 133.7751 },
     "United Kingdom": { lat: 55.3781, lng: -3.436 },
+    GB: { lat: 55.3781, lng: -3.436 },
+    UK: { lat: 55.3781, lng: -3.436 },
     Germany: { lat: 51.1657, lng: 10.4515 },
+    DE: { lat: 51.1657, lng: 10.4515 },
+    Switzerland: { lat: 46.8182, lng: 8.2275 },
+    CH: { lat: 46.8182, lng: 8.2275 },
+    France: { lat: 46.2276, lng: 2.2137 },
+    FR: { lat: 46.2276, lng: 2.2137 },
+    Russia: { lat: 61.5240, lng: 105.3188 },
+    RU: { lat: 61.5240, lng: 105.3188 },
+    WIPO: { lat: 46.2044, lng: 6.1432 },
+    WO: { lat: 46.2044, lng: 6.1432 },
   };
 
   // Build markers array for GoogleMap

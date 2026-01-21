@@ -52,10 +52,10 @@ const StepApplicantDetails = ({ formData, setFormData, errors }) => {
         <div>
           <label className="block text-sm font-medium text-white/80">Applicant Type</label>
           <select name="applicantType" value={formData.applicantType} onChange={handle} className="mt-1 w-full p-3 rounded-lg bg-white/5 border border-white/10 text-white">
-            <option>Individual</option>
-            <option>Startup</option>
-            <option>Company</option>
-            <option>University</option>
+            <option className="bg-slate-800 text-white">Individual</option>
+            <option className="bg-slate-800 text-white">Startup</option>
+            <option className="bg-slate-800 text-white">Company</option>
+            <option className="bg-slate-800 text-white">University</option>
           </select>
         </div>
 
@@ -92,10 +92,10 @@ const StepApplicantDetails = ({ formData, setFormData, errors }) => {
         <div className="md:col-span-2">
           <label className="block text-sm font-medium text-white/80">ID Type</label>
           <select name="idType" value={formData.idType} onChange={handle} className="mt-1 w-full p-3 rounded-lg bg-white/5 border border-white/10 text-white">
-            <option value="">Select ID</option>
-            <option>Aadhaar</option>
-            <option>Passport</option>
-            <option>Company Registration</option>
+            <option value="" className="bg-slate-800 text-white">Select ID</option>
+            <option className="bg-slate-800 text-white">Aadhaar</option>
+            <option className="bg-slate-800 text-white">Passport</option>
+            <option className="bg-slate-800 text-white">Company Registration</option>
           </select>
           {errors?.idType && <p className="text-xs text-red-400 mt-1">{errors.idType}</p>}
         </div>
@@ -145,9 +145,9 @@ const StepApplicantDetails = ({ formData, setFormData, errors }) => {
           <div>
             <label className="block text-sm font-medium text-white/80">Filing Role</label>
             <select name="filingRole" value={formData.filingRole} onChange={handle} className="mt-1 w-full p-2 rounded-lg bg-white/5 border border-white/10 text-white">
-              <option>Inventor</option>
-              <option>Assignee</option>
-              <option>Agent</option>
+              <option className="bg-slate-800 text-white">Inventor</option>
+              <option className="bg-slate-800 text-white">Assignee</option>
+              <option className="bg-slate-800 text-white">Agent</option>
             </select>
           </div>
         </div>

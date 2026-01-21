@@ -24,53 +24,57 @@ export async function createFiling(formData) {
     const jurisdictionMultiplier = (formData.jurisdiction || '').toLowerCase().includes('us') ? 1.5 : (formData.jurisdiction || '').toLowerCase().includes('wipo') ? 1.8 : 1;
     const total = Math.round(base * patentTypeMultiplier * applicantMultiplier * jurisdictionMultiplier);
 
-    // Map inventors array safely
+    // Map inventors array safely, filtering out empty names
     const inventors = Array.isArray(formData.inventors)
-      ? formData.inventors.map(inv => {
-        let nameVal = '';
-        if (typeof inv === 'string') nameVal = inv;
-        else if (inv && typeof inv === 'object' && inv.name) nameVal = inv.name;
-        return { name: String(nameVal) };
-      })
+      ? formData.inventors
+        .map(inv => {
+          let nameVal = '';
+          if (typeof inv === 'string') nameVal = inv;
+          else if (inv && typeof inv === 'object' && inv.name) nameVal = inv.name;
+          return { name: String(nameVal).trim() };
+        })
+        .filter(i => i.name.length > 0)
       : [];
 
     const requestBody = {
-      applicantName: formData.applicantName,
-      applicantType: formData.applicantType,
-      nationality: formData.nationality,
-      addressStreet: formData.addressStreet,
-      addressCity: formData.addressCity,
-      addressState: formData.addressState,
-      addressPostalCode: formData.addressPostalCode,
-      correspondenceSame: formData.correspondenceSame,
-      correspondenceStreet: formData.correspondenceStreet,
-      correspondenceCity: formData.correspondenceCity,
-      correspondenceState: formData.correspondenceState,
-      correspondencePostalCode: formData.correspondencePostalCode,
-      email: formData.email,
-      phone: formData.phone,
-      filingRole: formData.filingRole,
-      isInventor: formData.isInventor,
-      idType: formData.idType,
-      idNumber: formData.idNumber,
-      patentType: formData.patentType,
-      jurisdiction: formData.jurisdiction,
-      technicalField: formData.technicalField,
-      title: formData.title,
-      abstractText: formData.abstract,
-      problemStatement: formData.problemStatement,
-      novelty: formData.novelty,
+      applicantName: formData.applicantName || '',
+      applicantType: formData.applicantType || 'Individual',
+      nationality: formData.nationality || '',
+      addressStreet: formData.addressStreet || '',
+      addressCity: formData.addressCity || '',
+      addressState: formData.addressState || '',
+      addressPostalCode: formData.addressPostalCode || '',
+      correspondenceSame: !!formData.correspondenceSame,
+      correspondenceStreet: formData.correspondenceStreet || '',
+      correspondenceCity: formData.correspondenceCity || '',
+      correspondenceState: formData.correspondenceState || '',
+      correspondencePostalCode: formData.correspondencePostalCode || '',
+      email: formData.email || '',
+      phone: formData.phone || '',
+      filingRole: formData.filingRole || 'Inventor',
+      isInventor: !!formData.isInventor,
+      idType: formData.idType || '',
+      idNumber: formData.idNumber || '',
+      patentType: formData.patentType || 'Utility',
+      jurisdiction: formData.jurisdiction || 'India',
+      technicalField: formData.technicalField || '',
+      title: formData.title || '',
+      abstractText: formData.abstract || '',
+      problemStatement: formData.problemStatement || '',
+      novelty: formData.novelty || '',
       inventors: inventors,
-      priorityClaim: formData.priorityClaim,
-      priorityApplicationNumber: formData.priorityApplicationNumber,
-      priorityDate: formData.priorityDate,
+      priorityClaim: !!formData.priorityClaim,
+      priorityApplicationNumber: formData.priorityApplicationNumber || '',
+      priorityDate: formData.priorityDate || '',
       specificationFilePath: formData.specificationFile && formData.specificationFile.name ? String(formData.specificationFile.name) : null,
       claimsFilePath: formData.claimsFile && formData.claimsFile.name ? String(formData.claimsFile.name) : null,
       drawingsFilePaths: formData.drawingsFiles ? formData.drawingsFiles.filter(f => f && f.name).map(f => String(f.name)) : [],
-      paymentMethod: formData.paymentMethod,
-      paymentStatus: formData.paymentStatus,
+      paymentMethod: formData.paymentMethod || '',
+      paymentStatus: formData.paymentStatus || 'unpaid',
       totalFee: total,
     };
+
+    console.log('Sanitized Request Body:', JSON.stringify(requestBody, null, 2));
 
     const headers = getAuthHeaders();
 

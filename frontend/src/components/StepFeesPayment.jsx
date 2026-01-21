@@ -42,17 +42,17 @@ const StepFeesPayment = ({ formData, setFormData, errors, setErrors }) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <button onClick={() => { setSelected('card'); }} className={`p-4 rounded-lg ${selected==='card' ? 'ring-2 ring-cyan-400' : 'bg-white/5'}`}>
+        <button onClick={() => { setSelected('card'); }} className={`p-4 rounded-lg ${selected === 'card' ? 'ring-2 ring-cyan-400' : 'bg-white/5'}`}>
           <div className="font-medium">Credit / Debit Card</div>
           <div className="text-xs text-white/60 mt-1">Test mode - enter any card to proceed</div>
         </button>
 
-        <button onClick={() => { setSelected('upi'); }} className={`p-4 rounded-lg ${selected==='upi' ? 'ring-2 ring-cyan-400' : 'bg-white/5'}`}>
+        <button onClick={() => { setSelected('upi'); }} className={`p-4 rounded-lg ${selected === 'upi' ? 'ring-2 ring-cyan-400' : 'bg-white/5'}`}>
           <div className="font-medium">UPI QR</div>
           <div className="text-xs text-white/60 mt-1">Scan static test QR</div>
         </button>
 
-        <button onClick={() => { setSelected('netbank'); }} className={`p-4 rounded-lg ${selected==='netbank' ? 'ring-2 ring-cyan-400' : 'bg-white/5'}`}>
+        <button onClick={() => { setSelected('netbank'); }} className={`p-4 rounded-lg ${selected === 'netbank' ? 'ring-2 ring-cyan-400' : 'bg-white/5'}`}>
           <div className="font-medium">Net Banking</div>
           <div className="text-xs text-white/60 mt-1">Select bank and confirm</div>
         </button>
@@ -61,15 +61,15 @@ const StepFeesPayment = ({ formData, setFormData, errors, setErrors }) => {
       <div className="mt-4">
         {selected === 'card' && (
           <div className="bg-white/5 p-4 rounded-lg">
-            <input placeholder="Card number" value={card.number} onChange={(e)=>setCard({...card, number:e.target.value})} className="w-full p-3 rounded mb-2 bg-white/6 text-white" disabled={formData.paymentStatus==='paid'} />
+            <input placeholder="Card number" value={card.number} onChange={(e) => setCard({ ...card, number: e.target.value })} className="w-full p-3 rounded mb-2 bg-white/6 text-white" disabled={formData.paymentStatus === 'paid'} />
             <div className="grid grid-cols-2 gap-2">
-              <input placeholder="Name on card" value={card.name} onChange={(e)=>setCard({...card, name:e.target.value})} className="w-full p-3 rounded bg-white/6 text-white" disabled={formData.paymentStatus==='paid'} />
-              <input placeholder="MM/YY" value={card.exp} onChange={(e)=>setCard({...card, exp:e.target.value})} className="w-full p-3 rounded bg-white/6 text-white" disabled={formData.paymentStatus==='paid'} />
+              <input placeholder="Name on card" value={card.name} onChange={(e) => setCard({ ...card, name: e.target.value })} className="w-full p-3 rounded bg-white/6 text-white" disabled={formData.paymentStatus === 'paid'} />
+              <input placeholder="MM/YY" value={card.exp} onChange={(e) => setCard({ ...card, exp: e.target.value })} className="w-full p-3 rounded bg-white/6 text-white" disabled={formData.paymentStatus === 'paid'} />
             </div>
-            <input placeholder="CVV" value={card.cvv} onChange={(e)=>setCard({...card, cvv:e.target.value})} className="mt-2 w-32 p-3 rounded bg-white/6 text-white" disabled={formData.paymentStatus==='paid'} />
+            <input placeholder="CVV" value={card.cvv} onChange={(e) => setCard({ ...card, cvv: e.target.value })} className="mt-2 w-32 p-3 rounded bg-white/6 text-white" disabled={formData.paymentStatus === 'paid'} />
 
             <div className="mt-3 flex items-center gap-3">
-              <button onClick={()=>confirmPayment('card')} disabled={formData.paymentStatus==='paid'} className={`px-4 py-2 ${formData.paymentStatus==='paid' ? 'bg-white/10 text-white/60' : 'bg-gradient-to-r from-cyan-500 to-blue-600'} rounded`}>Pay ${total} (Test)</button>
+              <button onClick={() => confirmPayment('card')} disabled={formData.paymentStatus === 'paid'} className={`px-4 py-2 ${formData.paymentStatus === 'paid' ? 'bg-white/10 text-white/60' : 'bg-gradient-to-r from-cyan-500 to-blue-600'} rounded`}>Pay ${total} (Test)</button>
             </div>
             {formData.paymentStatus === 'paid' && (
               <div className="mt-4 flex items-center gap-3">
@@ -83,11 +83,11 @@ const StepFeesPayment = ({ formData, setFormData, errors, setErrors }) => {
         {selected === 'upi' && (
           <div className="bg-white/5 p-6 rounded-lg text-center">
             <div className="mx-auto w-48 h-48 bg-white/10 rounded-lg flex items-center justify-center">
-              <img src="/static/upi-placeholder.png" alt="UPI QR" className="w-40 h-40" />
+              <img src="https://qrcg-free-editor.qr-code-generator.com/latest/assets/images/websiteQRCode_noFrame.png" alt="UPI QR" className="w-40 h-40" />
             </div>
             <div className="mt-3 text-sm text-white/70">Scan with your UPI app and then click Confirm (test)</div>
             <div className="mt-3">
-              <button onClick={()=>confirmPayment('upi')} disabled={formData.paymentStatus==='paid'} className={`px-4 py-2 ${formData.paymentStatus==='paid' ? 'bg-white/10 text-white/60' : 'bg-gradient-to-r from-cyan-500 to-blue-600'} rounded`}>Confirm Payment (Test)</button>
+              <button onClick={() => confirmPayment('upi')} disabled={formData.paymentStatus === 'paid'} className={`px-4 py-2 ${formData.paymentStatus === 'paid' ? 'bg-white/10 text-white/60' : 'bg-gradient-to-r from-cyan-500 to-blue-600'} rounded`}>Confirm Payment (Test)</button>
             </div>
             {formData.paymentStatus === 'paid' && <div className="mt-3 text-green-300">Payment Successful (Test Mode)</div>}
           </div>
@@ -95,12 +95,12 @@ const StepFeesPayment = ({ formData, setFormData, errors, setErrors }) => {
 
         {selected === 'netbank' && (
           <div className="bg-white/5 p-4 rounded-lg">
-            <select onChange={(e)=>setFormData(prev=>({...prev, paymentMethod: e.target.value}))} defaultValue="" className="w-full p-3 rounded bg-white/6 text-white" disabled={formData.paymentStatus==='paid'}>
+            <select onChange={(e) => setFormData(prev => ({ ...prev, paymentMethod: e.target.value }))} defaultValue="" className="w-full p-3 rounded bg-white/6 text-white" disabled={formData.paymentStatus === 'paid'}>
               <option value="">Choose bank</option>
-              {mockNetBanks.map(b=> <option key={b} value={b}>{b}</option>)}
+              {mockNetBanks.map(b => <option key={b} value={b}>{b}</option>)}
             </select>
             <div className="mt-3">
-              <button onClick={()=>confirmPayment('netbank')} disabled={formData.paymentStatus==='paid'} className={`px-4 py-2 ${formData.paymentStatus==='paid' ? 'bg-white/10 text-white/60' : 'bg-gradient-to-r from-cyan-500 to-blue-600'} rounded`}>Proceed (Test)</button>
+              <button onClick={() => confirmPayment('netbank')} disabled={formData.paymentStatus === 'paid'} className={`px-4 py-2 ${formData.paymentStatus === 'paid' ? 'bg-white/10 text-white/60' : 'bg-gradient-to-r from-cyan-500 to-blue-600'} rounded`}>Proceed (Test)</button>
             </div>
             {formData.paymentStatus === 'paid' && <div className="mt-3 text-green-300">Payment Successful (Test Mode)</div>}
           </div>

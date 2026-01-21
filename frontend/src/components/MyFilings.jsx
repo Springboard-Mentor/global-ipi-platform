@@ -12,8 +12,8 @@ const STATUS_COLOR = {
 const EmptyState = () => (
   <div className="text-center py-20">
     <svg width="160" height="120" viewBox="0 0 160 120" className="mx-auto mb-4 opacity-80">
-      <rect x="8" y="20" width="144" height="88" rx="8" fill="#29243b" stroke="#3b3060"/>
-      <path d="M22 40h116v6H22zM22 58h116v6H22zM22 76h70v6H22z" fill="#3b2f57"/>
+      <rect x="8" y="20" width="144" height="88" rx="8" fill="#29243b" stroke="#3b3060" />
+      <path d="M22 40h116v6H22zM22 58h116v6H22zM22 76h70v6H22z" fill="#3b2f57" />
     </svg>
     <h3 className="text-xl font-semibold">No filings yet</h3>
     <p className="text-sm text-white/70 mt-2">Start a new filing to see it appear here. Drafts are auto-saved.</p>
@@ -67,7 +67,7 @@ const MyFilings = () => {
               {filings.map(f => {
                 const status = computeStatus(f);
                 return (
-                  <div key={f.id} className="bg-white/6 p-4 rounded-lg flex flex-col justify-between">
+                  <div key={f.id} className="bg-white/6 p-4 rounded-lg flex flex-col justify-between border border-white/20 hover:border-white/40 transition-colors">
                     <div>
                       <div className="flex items-start justify-between gap-4">
                         <div>
