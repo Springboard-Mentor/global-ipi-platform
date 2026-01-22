@@ -2857,24 +2857,6 @@ ORDER BY total_queries DESC;
 
 ---
 
-## 📞 Contact & Support
-
-### Team Contacts
-
-| Team Member | Role | Email | GitHub | Focus Area |
-|-------------|------|-------|--------|------------|
-| **Selvabarani K** | Backend Lead | selvabarani@infosys.com | @selvabarani-k | Data Persistence, Security |
-| **Bhuvaneswari N** | Full-Stack Dev | bhuvaneswari@infosys.com | @bhuvaneswari-n | External APIs, Analytics |
-| **Abhay Tripathi** | DevOps & AI | abhay@infosys.com | @abhay-tripathi | Auth, Monitoring, 🤖 AI |
-| **Sarvatha R** | Admin Dev | sarvatha@infosys.com | @sarvatha-r | User Management, Filings |
-
-### Project Links
-
-- **Repository:** [github.com/your-org/global-ip-platform](https://github.com/your-org/global-ip-platform)
-- **Main Branch:** `team-five`
-- **Live Demo:** [demo.globalip.com](https://demo.globalip.com)
-- **API Documentation:** [docs.globalip.com/api](https://docs.globalip.com/api)
-- **Issue Tracker:** [GitHub Issues](https://github.com/your-org/global-ip-platform/issues)
 
 ### Support Channels
 
@@ -3085,7 +3067,7 @@ Built with ❤️ using:
 - [📡 API Documentation](#-api-endpoints)
 - [🛠️ Troubleshooting](#-troubleshooting)
 - [🗺️ Future Roadmap](#-future-roadmap)
-- [📞 Contact](#-contact--support)
+
 
 ---
 
