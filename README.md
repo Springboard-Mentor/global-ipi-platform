@@ -2877,7 +2877,7 @@ Built with ❤️ using:
 
 ## 📋 Changelog
 
-### Version 2.0.0 (January 2025) - 🤖 AI Integration Release
+### Version 2.0.0 (January 2026) - 🤖 AI Integration Release
 
 **🌟 New Features:**
 - 🤖 **AI Analysis Engine** - Natural language queries with Google Gemini
@@ -2901,7 +2901,7 @@ Built with ❤️ using:
 - Resolved rate limit tracking edge cases
 - Fixed model selection fallback logic
 
-### Version 1.5.0 (December 2024) - Enterprise Features
+### Version 1.5.0 (December 2025) - Enterprise Features
 
 **New Features:**
 - Admin monitoring dashboard
