@@ -56,7 +56,7 @@ const DashboardWithRouter = ({ user, handleLogout, handleUpdateUser }) => {
     return path.split('/')[0] || 'dashboard';
   };
 
-  // ✅ ADMIN CHECK LOGIC ADDED HERE
+  // Admin check logic
   const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL;
   const isSuperAdmin = user?.role === 'ADMIN' || user?.email === ADMIN_EMAIL;
 
@@ -81,7 +81,7 @@ const DashboardWithRouter = ({ user, handleLogout, handleUpdateUser }) => {
         <Route path="filing-tracker" element={<FilingTrackerPage user={user} onNavigate={handleNavigate} />} />
         <Route path="pricing" element={<PricingPage onNavigate={handleNavigate} onUpdateUser={handleUpdateUser} />} />
         
-        {/* ✅ FIXED ROUTE GUARD */}
+        {/* Admin route with guard */}
         <Route path="admin-monitoring" element={
           isSuperAdmin ? (
             <AdminMonitoringDashboard />
@@ -194,6 +194,7 @@ const App = () => {
                 handleUpdateUser={handleUpdateUser} 
               />
             ) : (
+              // FIX: Redirect to login instead of register when not authenticated
               <Navigate to="/login" />
             )
           } 

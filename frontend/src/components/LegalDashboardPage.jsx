@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, 
   Tooltip, Legend, ResponsiveContainer, AreaChart, Area
@@ -18,12 +18,11 @@ const LegalDashboardPage = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
-  // Default to 'all'
   const [dateRange, setDateRange] = useState('all'); 
   const [selectedType, setSelectedType] = useState('all');
   const [selectedJurisdiction, setSelectedJurisdiction] = useState('all');
 
-  const [rawData, setRawData] = useState({
+  const [dashboardData, setDashboardData] = useState({
     summary: { totalFilings: 0, activePatents: 0, pendingApplications: 0, expiringSoon: 0 },
     statusDistribution: [],
     filingsTrend: [],
@@ -36,17 +35,16 @@ const LegalDashboardPage = () => {
   const [drillDownData, setDrillDownData] = useState([]);
   const [loadingModal, setLoadingModal] = useState(false);
 
-  // 1. Fetch Data (Always fetch 'all' to get full history for local filtering)
   const fetchDashboardData = async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true); else setLoading(true);
     setError(null);
     
     try {
       const params = { 
-        dateRange: 'all', 
+        dateRange: dateRange, 
         type: selectedType, 
         jurisdiction: selectedJurisdiction,
-        t: new Date().getTime()
+        t: new Date().getTime() 
       };
       
       const [summary, statusDist, filingsTrend, fieldTrends, jurisdictionData, timeline] = await Promise.all([
@@ -58,7 +56,7 @@ const LegalDashboardPage = () => {
         analyticsAPI.getStatusTimeline(params)
       ]);
       
-      setRawData({ 
+      setDashboardData({ 
         summary: summary || { totalFilings: 0, activePatents: 0, pendingApplications: 0, expiringSoon: 0 }, 
         statusDistribution: statusDist?.data || [], 
         filingsTrend: filingsTrend?.data || [], 
@@ -77,61 +75,13 @@ const LegalDashboardPage = () => {
 
   useEffect(() => { 
     fetchDashboardData(); 
-  }, []); 
 
-  // 2. CLIENT-SIDE FILTERING LOGIC (Ranges Added)
-  const filteredData = useMemo(() => {
-    const currentYear = new Date().getFullYear(); // 2026
-    let startYear = null;
-    let endYear = currentYear;
+    const interval = setInterval(() => {
+        fetchDashboardData(true);
+    }, 30000);
 
-    // Define Logic for Dropdown Options
-    if (dateRange === 'year') {
-        startYear = currentYear;
-    } 
-    else if (dateRange === 'last_year') {
-        startYear = currentYear - 1;
-        endYear = currentYear - 1;
-    }
-    else if (dateRange === 'last_3_years') {
-        startYear = currentYear - 2; // 2024, 2025, 2026
-    }
-    else if (dateRange === 'last_5_years') {
-        startYear = currentYear - 4; // 2022 to 2026
-    }
-    else if (dateRange === 'last_10_years') {
-        startYear = currentYear - 9; 
-    }
-
-    // If "All Time", return raw data
-    if (dateRange === 'all') return rawData;
-
-    // Filter the Graph Data
-    const visibleTrend = rawData.filingsTrend.filter(item => {
-        const itemYear = parseInt(item.year || item.month?.split('-')[0] || 0);
-        
-        // Safety check if date parsing failed
-        if (!itemYear) return false;
-
-        if (startYear && endYear) {
-            return itemYear >= startYear && itemYear <= endYear;
-        }
-        return true;
-    });
-
-    // Recalculate Total Filings count based on the filtered graph
-    const newTotalFilings = visibleTrend.reduce((acc, curr) => acc + (Number(curr.patents) || 0), 0);
-
-    return {
-      ...rawData,
-      summary: {
-        ...rawData.summary,
-        totalFilings: newTotalFilings 
-      },
-      filingsTrend: visibleTrend 
-    };
-
-  }, [dateRange, rawData]);
+    return () => clearInterval(interval);
+  }, [dateRange, selectedType, selectedJurisdiction]); 
 
   const handleCardClick = async (type, statusFilter) => {
     setModalTitle(type);
@@ -140,7 +90,10 @@ const LegalDashboardPage = () => {
 
     try {
       const response = await analyticsAPI.getAssetsByCategory(
-        statusFilter, dateRange === 'all' ? 'all' : 'year', selectedType, selectedJurisdiction
+        statusFilter, 
+        dateRange, 
+        selectedType, 
+        selectedJurisdiction
       );
       setDrillDownData(response?.data || []);
     } catch (error) {
@@ -165,7 +118,7 @@ const LegalDashboardPage = () => {
     </div>
   );
 
-  const { summary, statusDistribution, filingsTrend, jurisdictionBreakdown, statusTimeline } = filteredData;
+  const { summary, statusDistribution, filingsTrend, jurisdictionBreakdown, statusTimeline } = dashboardData;
 
   return (
     <div className="w-full min-h-screen bg-gray-50 p-6 md:p-10 font-sans text-gray-900">
@@ -173,14 +126,12 @@ const LegalDashboardPage = () => {
       <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
         <div>
            <h1 className="text-3xl font-bold text-gray-900">Legal Analytics</h1>
-           <p className="text-sm text-gray-500 mt-1">Real-time IP portfolio performance and status monitoring</p>
+           <p className="text-sm text-gray-500 mt-1">Real-time IP portfolio performance</p>
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm">
                 <Calendar className="w-4 h-4 text-gray-400" />
-                
-                {/* 🟢 NEW DROPDOWN OPTIONS ADDED HERE */}
                 <select 
                     value={dateRange} 
                     onChange={(e) => setDateRange(e.target.value)} 
@@ -191,11 +142,10 @@ const LegalDashboardPage = () => {
                     <option value="last_year">Last Year (2025)</option>
                     <option value="last_3_years">Last 3 Years</option>
                     <option value="last_5_years">Last 5 Years</option>
-                    <option value="last_10_years">Last 10 Years</option>
                 </select>
             </div>
 
-            <button onClick={() => exportToJSON(filteredData, 'legal_report')} className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-semibold flex items-center gap-2 transition-all shadow-sm">
+            <button onClick={() => exportToJSON(dashboardData, 'legal_report')} className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-semibold flex items-center gap-2 transition-all shadow-sm">
                 <Download className="w-4 h-4" /> Export
             </button>
             
@@ -275,10 +225,7 @@ const LegalDashboardPage = () => {
                     <Cell key={`cell-${index}`} fill={STATUS_COLORS[entry.name] || '#94a3b8'} strokeWidth={0} />
                     ))}
                 </Pie>
-                <Tooltip 
-                    contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                    itemStyle={{ color: '#1e293b', fontSize: '12px', fontWeight: '600' }}
-                />
+                <Tooltip />
                 <Legend verticalAlign="bottom" height={36} iconType="circle"/>
                 </PieChart>
             </ResponsiveContainer>
@@ -286,7 +233,7 @@ const LegalDashboardPage = () => {
 
         <div className="bg-white p-8 rounded-2xl border border-gray-200 shadow-sm">
            <div className="flex justify-between items-center mb-6">
-             <h3 className="font-bold text-gray-900">Filing Trends ({dateRange === 'all' ? 'All Time' : dateRange.replace(/_/g, ' ')})</h3>
+             <h3 className="font-bold text-gray-900">Filing Trends</h3>
              <TrendingUp className="text-green-500 w-5 h-5"/>
            </div>
             <ResponsiveContainer width="100%" height={300}>
@@ -298,16 +245,13 @@ const LegalDashboardPage = () => {
                     </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey={filingsTrend.length > 0 && filingsTrend[0].month ? "month" : "year"} axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} dy={10} />
+                <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} />
-                <Tooltip 
-                    contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                />
+                <Tooltip />
                 <Area type="monotone" dataKey="patents" stroke="#2563eb" strokeWidth={3} fillOpacity={1} fill="url(#colorPatents)" />
                 </AreaChart>
             </ResponsiveContainer>
         </div>
-
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -318,10 +262,7 @@ const LegalDashboardPage = () => {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="jurisdiction" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} />
-                <Tooltip 
-                    cursor={{ fill: '#f8fafc' }}
-                    contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                />
+                <Tooltip />
                 <Bar dataKey="patents" fill="#3b82f6" radius={[6, 6, 0, 0]} barSize={40} />
                 </BarChart>
             </ResponsiveContainer>
@@ -339,9 +280,7 @@ const LegalDashboardPage = () => {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="quarter" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} />
-                <Tooltip 
-                     contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                />
+                <Tooltip />
                 <Area type="monotone" dataKey="granted" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorGranted)" />
                 </AreaChart>
             </ResponsiveContainer>
@@ -351,12 +290,11 @@ const LegalDashboardPage = () => {
       {modalTitle && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden border border-gray-100">
-            
             <div className="flex justify-between items-center p-6 border-b border-gray-100 bg-white">
               <div>
                 <h2 className="text-xl font-bold text-gray-900">{modalTitle}</h2>
                 <p className="text-sm text-gray-500 mt-1">
-                  {loadingModal ? 'Syncing...' : `Showing ${drillDownData.length} records from live database`}
+                  {loadingModal ? 'Syncing...' : `Showing ${drillDownData.length} records`}
                 </p>
               </div>
               <button onClick={() => setModalTitle(null)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500">
@@ -372,47 +310,19 @@ const LegalDashboardPage = () => {
                 </div>
               ) : drillDownData.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-20 text-center">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                     <FileText className="w-8 h-8 text-gray-300" />
-                  </div>
-                  <h3 className="text-gray-900 font-bold mb-1">No Assets Found</h3>
-                  <p className="text-gray-500 text-sm">There are no records matching this category.</p>
+                  <FileText className="w-10 h-10 text-gray-300 mb-2" />
+                  <p className="text-gray-500 text-sm">No records found.</p>
                 </div>
               ) : (
                 <div className="grid gap-4">
                   {drillDownData.map((asset) => (
-                    <div key={asset.id} className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row justify-between items-start md:items-center group">
-                      <div className="flex-1">
+                    <div key={asset.id} className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center">
+                      <div>
                         <div className="flex items-center gap-3 mb-2">
-                          <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider ${
-                            asset.type === 'PATENT' ? 'bg-blue-50 text-blue-700' : 'bg-purple-50 text-purple-700'
-                          }`}>
-                            {asset.type}
-                          </span>
-                          <span className="text-xs text-gray-400 font-mono font-medium">{asset.assetNumber}</span>
+                            <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider ${asset.type === 'PATENT' ? 'bg-blue-50 text-blue-700' : 'bg-purple-50 text-purple-700'}`}>{asset.type}</span>
                         </div>
-                        <h4 className="font-bold text-base text-gray-900 group-hover:text-blue-600 transition-colors mb-1 line-clamp-1">
-                          {asset.title}
-                        </h4>
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
-                          <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5"/> {asset.assignee || 'Unknown Assignee'}</span>
-                          <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5"/> {asset.filingDate ? new Date(asset.filingDate).toLocaleDateString() : 'N/A'}</span>
-                        </div>
-                      </div>
-                      
-                      <div className="mt-4 md:mt-0 flex items-center gap-6 md:text-right pl-4 md:border-l border-gray-100">
-                        <div>
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${
-                            asset.status === 'ACTIVE' || asset.status === 'GRANTED' ? 'bg-green-100 text-green-700' : 
-                            asset.status === 'PENDING' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'
-                          }`}>
-                            {asset.status === 'ACTIVE' ? <CheckCircle className="w-3 h-3 mr-1.5"/> : <Clock className="w-3 h-3 mr-1.5"/>}
-                            {asset.status}
-                          </span>
-                          <div className="mt-1.5 text-xs font-bold text-gray-400 flex items-center justify-end gap-1.5">
-                            <Globe className="w-3.5 h-3.5"/> {asset.jurisdiction || 'Global'}
-                          </div>
-                        </div>
+                        <h4 className="font-bold text-base text-gray-900 mb-1">{asset.title}</h4>
+                        <p className="text-xs text-gray-500">Status: {asset.status}</p>
                       </div>
                     </div>
                   ))}

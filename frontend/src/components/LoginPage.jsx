@@ -6,56 +6,46 @@ import { signInWithPopup } from 'firebase/auth';
 
 const LoginPage = ({ onLogin, onNavigate }) => {
   
-  // ==========================================
-  // 1. CONFIGURATION
-  // ==========================================
+  // Configuration
   const API_BASE = `${import.meta.env.VITE_API_BASE_URL}/auth`;
 
-  // ==========================================
-  // 2. STATE MANAGEMENT
-  // ==========================================
-
+  // State management
   const [view, setView] = useState('login'); 
   
-  // Form Inputs - Initialized as empty strings
+  // Form inputs
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   
-  // Captcha State
+  // Captcha state
   const [mathCaptcha, setMathCaptcha] = useState({ num1: 0, num2: 0, userAnswer: '' });
   
-  // Token for Password Reset
+  // Reset token
   const [resetToken, setResetToken] = useState(null);
   
-  // UI Toggles
+  // UI toggles
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [successMsg, setSuccessMsg] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // ==========================================
-  // 3. EFFECTS & UTILS
-  // ==========================================
-
-  // Generate new Captcha numbers
+  // Generate new captcha numbers
   const generateCaptcha = () => {
-    const n1 = Math.floor(Math.random() * 10); // 0-9
-    const n2 = Math.floor(Math.random() * 10); // 0-9
+    const n1 = Math.floor(Math.random() * 10);
+    const n2 = Math.floor(Math.random() * 10);
     setMathCaptcha({ num1: n1, num2: n2, userAnswer: '' });
   };
 
-  // Initialization Effect
+  // Initialization effect
   useEffect(() => {
-    // 🔴 CRITICAL FIX: Forces Logout when visiting this page
-    // This stops the "Direct Move" issue you mentioned
+    // Force logout when visiting login page to prevent direct dashboard access
     localStorage.removeItem('token');
     localStorage.removeItem('user');
 
     // Generate initial captcha
     generateCaptcha();
 
-    // Check for Reset Token (if coming from email link)
+    // Check for password reset token in URL
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
     if (token) {
@@ -64,27 +54,23 @@ const LoginPage = ({ onLogin, onNavigate }) => {
     }
   }, []);
 
-  // ==========================================
-  // 4. HANDLERS
-  // ==========================================
-
-  // Helper to validate captcha
+  // Validate captcha helper
   const validateCaptcha = () => {
     const sum = mathCaptcha.num1 + mathCaptcha.num2;
     if (parseInt(mathCaptcha.userAnswer) !== sum) {
       setErrors({ submit: 'Incorrect Captcha. Please try again.' });
-      generateCaptcha(); // Reset numbers on failure to prevent spam
+      generateCaptcha();
       return false;
     }
     return true;
   };
 
-  // --- Login Handler ---
+  // Manual login handler
   const handleLogin = async (e) => {
     e.preventDefault();
     setErrors({});
 
-    // 1. Validate Captcha
+    // Validate captcha for manual login
     if (!validateCaptcha()) return;
 
     setIsLoading(true);
@@ -100,7 +86,7 @@ const LoginPage = ({ onLogin, onNavigate }) => {
 
       if (!response.ok) throw new Error(data.message || 'Login failed');
       
-      // Save new session
+      // Save session
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       
@@ -110,20 +96,17 @@ const LoginPage = ({ onLogin, onNavigate }) => {
     } catch (err) {
       console.error(err);
       setErrors({ submit: err.message || 'Invalid email or password.' });
-      generateCaptcha(); // Reset captcha on failed login
+      generateCaptcha();
     } finally {
       setIsLoading(false);
     }
   };
 
-  // --- Google Login Handler ---
+  // FIX: Google login handler WITHOUT captcha requirement
   const handleGoogleLogin = async () => {
     setErrors({});
-    
-    // 1. Validate Captcha (Required for Google too)
-    if (!validateCaptcha()) return;
-
     setIsLoading(true);
+    
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const idToken = await result.user.getIdToken();
@@ -137,6 +120,7 @@ const LoginPage = ({ onLogin, onNavigate }) => {
       if (!response.ok) throw new Error('Backend sync failed');
       const data = await response.json();
 
+      // Save session
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       
@@ -144,13 +128,12 @@ const LoginPage = ({ onLogin, onNavigate }) => {
       if (onNavigate) onNavigate('dashboard');
     } catch (err) {
       setErrors({ submit: 'Google sign-in failed.' });
-      generateCaptcha();
     } finally {
       setIsLoading(false);
     }
   };
 
-  // --- Forgot/Reset Handlers ---
+  // Forgot password handler
   const handleForgotPassword = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -173,14 +156,18 @@ const LoginPage = ({ onLogin, onNavigate }) => {
     }
   };
 
+  // Reset password handler
   const handleResetPassword = async (e) => {
     e.preventDefault();
     setErrors({});
+    
     if (password !== confirmPassword) {
         setErrors({ submit: "Passwords do not match!" });
         return;
     }
+    
     setIsLoading(true);
+    
     try {
       const response = await fetch(`${API_BASE}/reset-password`, {
         method: 'POST',
@@ -194,6 +181,7 @@ const LoginPage = ({ onLogin, onNavigate }) => {
       setSuccessMsg('Password changed successfully! Redirecting to login...');
       setPassword('');
       setConfirmPassword('');
+      
       setTimeout(() => {
         setSuccessMsg('');
         setView('login');
@@ -206,9 +194,7 @@ const LoginPage = ({ onLogin, onNavigate }) => {
     }
   };
 
-  // ==========================================
-  // 5. RENDER UI
-  // ==========================================
+  // Render UI
   return (
     <AuthLayout 
       title={view === 'reset' ? "Reset Password" : (view === 'forgot' ? "Forgot Password" : "Welcome Back")}
@@ -216,7 +202,7 @@ const LoginPage = ({ onLogin, onNavigate }) => {
     >
       <div className="mt-8">
         
-        {/* SUCCESS NOTIFICATION */}
+        {/* Success notification */}
         {successMsg && (
           <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3 text-green-700 animate-in fade-in">
             <CheckCircle className="w-5 h-5 flex-shrink-0" />
@@ -224,7 +210,7 @@ const LoginPage = ({ onLogin, onNavigate }) => {
           </div>
         )}
 
-        {/* ERROR NOTIFICATION */}
+        {/* Error notification */}
         {errors.submit && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3 text-red-700 animate-in fade-in">
             <XCircle className="w-5 h-5 flex-shrink-0" />
@@ -232,10 +218,10 @@ const LoginPage = ({ onLogin, onNavigate }) => {
           </div>
         )}
 
-        {/* --- VIEW: LOGIN FORM --- */}
+        {/* Login form view */}
         {view === 'login' && (
           <form onSubmit={handleLogin} className="space-y-5" autoComplete="off">
-            {/* Email */}
+            {/* Email input */}
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">Email address</label>
               <div className="relative group">
@@ -252,7 +238,7 @@ const LoginPage = ({ onLogin, onNavigate }) => {
               </div>
             </div>
 
-            {/* Password */}
+            {/* Password input */}
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">Password</label>
               <div className="relative group">
@@ -263,7 +249,6 @@ const LoginPage = ({ onLogin, onNavigate }) => {
                   onChange={e => setPassword(e.target.value)} 
                   className="block w-full pl-12 pr-12 py-3.5 rounded-xl bg-slate-50 border-2 border-transparent hover:border-slate-200 focus:border-indigo-500 outline-none font-medium" 
                   placeholder="Password" 
-                  // 🟢 FIX: This stops the browser from auto-filling the password
                   autoComplete="new-password"
                   required 
                 />
@@ -273,7 +258,7 @@ const LoginPage = ({ onLogin, onNavigate }) => {
               </div>
             </div>
 
-            {/* Math Captcha */}
+            {/* Math captcha for manual login */}
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">
                 Security Check: What is {mathCaptcha.num1} + {mathCaptcha.num2}?
@@ -302,7 +287,7 @@ const LoginPage = ({ onLogin, onNavigate }) => {
               </div>
             </div>
 
-            {/* Links */}
+            {/* Remember me and forgot password */}
             <div className="flex items-center justify-between">
               <label className="flex items-center cursor-pointer">
                 <input type="checkbox" className="w-4 h-4 rounded border-slate-300 text-indigo-600" />
@@ -313,26 +298,40 @@ const LoginPage = ({ onLogin, onNavigate }) => {
               </button>
             </div>
 
-            {/* Manual Login Button */}
+            {/* Manual login button */}
             <button type="submit" disabled={isLoading} className="w-full py-4 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
               {isLoading ? "Verifying..." : <>Sign In <ArrowRight className="w-5 h-5" /></>}
             </button>
 
-            <div className="relative my-6"><div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200"></div></div><div className="relative flex justify-center text-sm"><span className="px-4 bg-white/50 backdrop-blur-sm text-slate-500 font-medium">Or continue with</span></div></div>
+            {/* Divider */}
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-200"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-white/50 backdrop-blur-sm text-slate-500 font-medium">Or continue with</span>
+              </div>
+            </div>
 
-            {/* Google Login Button */}
-            <button type="button" onClick={handleGoogleLogin} disabled={isLoading} className="w-full flex items-center justify-center gap-3 px-4 py-3.5 border-2 border-slate-200 rounded-xl bg-white font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all">
+            {/* Google login button (NO CAPTCHA REQUIRED) */}
+            <button 
+              type="button" 
+              onClick={handleGoogleLogin} 
+              disabled={isLoading} 
+              className="w-full flex items-center justify-center gap-3 px-4 py-3.5 border-2 border-slate-200 rounded-xl bg-white font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all"
+            >
                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
                 Sign in with Google
             </button>
 
+            {/* Register link */}
             <div className="text-center pt-2">
                 <p className="text-sm text-slate-600">Don't have an account? <button type="button" onClick={() => onNavigate('register')} className="text-indigo-600 hover:text-indigo-700 font-bold hover:underline">Create account</button></p>
             </div>
           </form>
         )}
 
-        {/* --- VIEW: FORGOT PASSWORD FORM --- */}
+        {/* Forgot password form view */}
         {view === 'forgot' && (
           <form onSubmit={handleForgotPassword} className="space-y-5">
             <div>
@@ -351,7 +350,7 @@ const LoginPage = ({ onLogin, onNavigate }) => {
           </form>
         )}
 
-        {/* --- VIEW: RESET PASSWORD FORM --- */}
+        {/* Reset password form view */}
         {view === 'reset' && (
           <form onSubmit={handleResetPassword} className="space-y-5">
             <div>

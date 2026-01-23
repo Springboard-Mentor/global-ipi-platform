@@ -13,7 +13,6 @@ const LandingPage = ({ onNavigate }) => {
     setActiveFaq(activeFaq === index ? null : index);
   };
 
-  // --- Modal Component ---
   const ModalContent = () => {
     if (showModal === 'privacy') {
       return (
@@ -60,7 +59,6 @@ const LandingPage = ({ onNavigate }) => {
               </div>
               <div>
                 <h3 className="font-semibold text-slate-900 mb-1">Email Support</h3>
-                {/* 🟢 CLICKABLE EMAIL */}
                 <a href="mailto:bhuvananagarajan0728@gmail.com" className="text-indigo-600 font-medium hover:underline block break-all">
                   bhuvananagarajan0728@gmail.com
                 </a>
@@ -87,9 +85,8 @@ const LandingPage = ({ onNavigate }) => {
   return (
     <div className="min-h-screen bg-white font-sans selection:bg-indigo-100 selection:text-indigo-900">
       
-      {/* --- MODAL WRAPPER --- */}
       {showModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm transition-all animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
               <div className="flex items-center gap-2">
@@ -112,7 +109,6 @@ const LandingPage = ({ onNavigate }) => {
         </div>
       )}
 
-      {/* --- NAVIGATION --- */}
       <nav className="fixed w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
@@ -139,7 +135,6 @@ const LandingPage = ({ onNavigate }) => {
         </div>
       </nav>
 
-      {/* --- HERO SECTION --- */}
       <div className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 bg-white overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-indigo-50/80 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-purple-50/80 rounded-full blur-[100px] pointer-events-none" />
@@ -189,7 +184,6 @@ const LandingPage = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* --- FEATURES GRID --- */}
       <div id="features" className="py-24 bg-slate-50 border-t border-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -268,7 +262,6 @@ const LandingPage = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* --- HOW IT WORKS --- */}
       <div id="how-it-works" className="py-24 bg-white border-y border-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -297,7 +290,6 @@ const LandingPage = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* --- TESTIMONIALS --- */}
       <div id="testimonials" className="py-24 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -335,7 +327,6 @@ const LandingPage = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* --- FAQ SECTION --- */}
       <div className="py-24 bg-white">
         <div className="max-w-3xl mx-auto px-4">
           <h2 className="text-3xl font-bold text-center text-slate-900 mb-12">Frequently Asked Questions</h2>
@@ -365,7 +356,6 @@ const LandingPage = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* --- CTA SECTION (Light Theme) --- */}
       <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 py-24 px-4 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '40px 40px' }}></div>
         
@@ -389,9 +379,8 @@ const LandingPage = ({ onNavigate }) => {
         </div>
       </div>
 
-      {/* --- FOOTER (Standard Dark for Contrast) --- */}
       <footer className="bg-slate-950 text-slate-400 py-16 px-4">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 mb-12 border-b border-slate-900 pb-12">
           <div className="col-span-1 md:col-span-1">
             <div className="flex items-center gap-2 mb-6">
               <Globe className="h-6 w-6 text-indigo-500" />
@@ -401,7 +390,6 @@ const LandingPage = ({ onNavigate }) => {
               Empowering the world's innovators with intelligent, secure, and data-driven intellectual property management.
             </p>
             <div className="flex gap-4">
-              {/* 🟢 CLICKABLE EMAIL IN FOOTER */}
               <a href="mailto:bhuvananagarajan0728@gmail.com" className="w-8 h-8 bg-slate-900 rounded flex items-center justify-center hover:bg-indigo-600 transition-colors cursor-pointer group" title="Email Us">
                 <Mail size={16} className="text-slate-400 group-hover:text-white"/>
               </a>
@@ -432,18 +420,23 @@ const LandingPage = ({ onNavigate }) => {
           <div>
             <h4 className="text-white font-bold mb-6">Legal</h4>
             <ul className="space-y-3 text-sm">
-              <li><button onClick={() => setShowModal('privacy')} className="hover:text-indigo-400 transition-colors">Privacy Policy</button></li>
-              <li><button onClick={() => setShowModal('terms')} className="hover:text-indigo-400 transition-colors">Terms of Service</button></li>
-              <li><a href="#" className="hover:text-indigo-400 transition-colors">Security</a></li>
+              <li><button onClick={() => setShowModal('privacy')} className="hover:text-indigo-400 transition-colors text-left">Privacy Policy</button></li>
+              <li><button onClick={() => setShowModal('terms')} className="hover:text-indigo-400 transition-colors text-left">Terms of Service</button></li>
+              <li><a href="#" className="hover:text-indigo-400 transition-colors">Security Standards</a></li>
+              <li><a href="#" className="hover:text-indigo-400 transition-colors">Cookie Settings</a></li>
             </ul>
           </div>
         </div>
-        
-        <div className="max-w-7xl mx-auto pt-8 border-t border-slate-900 flex flex-col md:flex-row justify-between items-center gap-4">
+
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-xs">&copy; 2026 Global IP Intelligence Inc. All rights reserved.</p>
-          <div className="flex items-center gap-2 text-xs text-slate-600">
-            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-            All Systems Operational
+          <div className="flex items-center gap-4 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>Systems Operational</span>
+            </div>
+            <span className="text-slate-700">|</span>
+            <span>Version 2.4.0-stable</span>
           </div>
         </div>
       </footer>
@@ -451,4 +444,36 @@ const LandingPage = ({ onNavigate }) => {
   );
 };
 
-export default LandingPage;
+// Main App component to handle simple navigation
+const App = () => {
+  const [page, setPage] = useState('landing');
+
+  const handleNavigate = (target) => {
+    // In a real app, this would route to actual pages
+    console.log(`Navigating to: ${target}`);
+    setPage(target);
+  };
+
+  if (page === 'landing') {
+    return <LandingPage onNavigate={handleNavigate} />;
+  }
+
+  // Placeholder for other pages (Login/Register)
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-6">
+      <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center">
+        <Globe className="w-12 h-12 text-indigo-600 mx-auto mb-4" />
+        <h1 className="text-2xl font-bold mb-2">Welcome to {page.charAt(0).toUpperCase() + page.slice(1)}</h1>
+        <p className="text-slate-600 mb-6">This is a placeholder for the {page} page of Global IP Intelligence.</p>
+        <button 
+          onClick={() => setPage('landing')}
+          className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors"
+        >
+          Back to Home
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default App;
