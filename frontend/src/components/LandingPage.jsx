@@ -158,14 +158,17 @@ const LandingPage = ({ onNavigate }) => {
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-10 duration-700 delay-300">
+            {/* ✅ FIXED: Access Platform now goes to Login */}
             <button 
-              onClick={() => onNavigate('register')}
+              onClick={() => onNavigate('login')}
               className="w-full sm:w-auto px-8 py-4 bg-indigo-600 text-white font-bold rounded-xl shadow-xl shadow-indigo-600/20 hover:bg-indigo-700 hover:-translate-y-1 transition-all flex items-center justify-center gap-2"
             >
               Access Platform <ArrowRight className="w-5 h-5" />
             </button>
+            
+            {/* ✅ FIXED: Register Firm now goes to Register */}
             <button 
-              onClick={() => onNavigate('login')}
+              onClick={() => onNavigate('register')}
               className="w-full sm:w-auto px-8 py-4 bg-white text-indigo-600 font-bold rounded-xl border-2 border-indigo-100 hover:border-indigo-200 hover:bg-indigo-50 transition-all"
             >
               Register Firm
@@ -443,4 +446,5 @@ const LandingPage = ({ onNavigate }) => {
     </div>
   );
 };
+
 export default LandingPage;

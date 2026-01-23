@@ -17,8 +17,8 @@ import {
   Lock,
   Globe,
   Calendar,
-  MessageSquare, 
-  LifeBuoy,      
+  MessageSquare,
+  LifeBuoy,
   BookOpen,
   Video,
   ChevronLeft
@@ -26,16 +26,13 @@ import {
 
 const DashboardLayout = ({ user, onLogout, currentPage, onNavigate, children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isHelpOpen, setIsHelpOpen] = useState(false); 
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   
-  // NEW: Desktop sidebar collapse state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   
-  // FAQ expansion state
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
 
-  // Running time state
   const [currentTime, setCurrentTime] = useState(new Date());
 
   const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL;
@@ -73,7 +70,6 @@ const DashboardLayout = ({ user, onLogout, currentPage, onNavigate, children }) 
     }).format(date);
   };
 
-  // Help Center handlers
   const handleFeatureComingSoon = () => {
     alert("🚀 This resource will be added in the next update!");
   };
@@ -102,9 +98,8 @@ const DashboardLayout = ({ user, onLogout, currentPage, onNavigate, children }) 
   ];
 
   const navItems = [
-    // Main tools
     { id: 'overview', label: 'Overview', icon: LayoutDashboard, required: 'STARTUP' },
-    { id: 'patents', label: 'Total Patents', icon: FileText, required: 'STARTUP' }, // CHANGED: "My Patents" → "Total Patents"
+    { id: 'patents', label: 'Total Patents', icon: FileText, required: 'STARTUP' },
     { id: 'search', label: 'Search IP Analysis', icon: Search, required: 'STARTUP' },
     { id: 'filing-tracker', label: 'Filing Tracker', icon: Clock, required: 'PRO' },
     { id: 'new-filing', label: 'New Filing', icon: Shield, required: 'PRO' },
@@ -112,12 +107,10 @@ const DashboardLayout = ({ user, onLogout, currentPage, onNavigate, children }) 
     { id: 'landscape', label: 'Landscape View', icon: TrendingUp, required: 'ENTERPRISE' },
     { id: 'legal-dashboard', label: 'Legal Dashboard', icon: BarChart3, required: 'ENTERPRISE' },
     
-    // Admin section
     ...(isSuperAdmin ? [
       { id: 'admin-monitoring', label: 'Admin Dashboard', icon: Globe, required: 'STARTUP', isAdmin: true }
     ] : []),
 
-    // Utilities & Support
     { id: 'help', label: 'Help Center', icon: LifeBuoy, required: 'STARTUP' },
     { id: 'feedback', label: 'Give Feedback', icon: MessageSquare, required: 'STARTUP' },
     
@@ -125,13 +118,11 @@ const DashboardLayout = ({ user, onLogout, currentPage, onNavigate, children }) 
   ];
 
   const handleNavigation = (id, requiredPlan) => {
-    // Feedback logic: Mail to admin
     if (id === 'feedback') {
-        window.location.href = "mailto:tripathiabhinav042@gmail.com?subject=Platform Feedback - Global IP";
+        window.open("https://mail.google.com/mail/?view=cm&fs=1&to=tripathiabhinav042@gmail.com&su=Platform%20Feedback%20-%20Global%20IP", "_blank");
         return;
     }
 
-    // Help logic: Open modal
     if (id === 'help') {
         setIsHelpOpen(true);
         setIsSidebarOpen(false);
@@ -162,7 +153,6 @@ const DashboardLayout = ({ user, onLogout, currentPage, onNavigate, children }) 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex text-left font-sans selection:bg-indigo-100">
       
-      {/* Help Center Modal */}
       {isHelpOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95">
@@ -182,7 +172,6 @@ const DashboardLayout = ({ user, onLogout, currentPage, onNavigate, children }) 
             </div>
             
             <div className="p-6 space-y-6 max-h-[65vh] overflow-y-auto custom-scrollbar">
-              {/* Quick Links */}
               <div className="grid grid-cols-2 gap-4">
                 <button 
                     onClick={handleFeatureComingSoon}
@@ -202,7 +191,6 @@ const DashboardLayout = ({ user, onLogout, currentPage, onNavigate, children }) 
                 </button>
               </div>
 
-              {/* Interactive FAQs */}
               <div>
                 <h4 className="font-bold text-slate-900 mb-3 text-sm uppercase tracking-wide">Frequently Asked</h4>
                 <div className="space-y-2">
@@ -233,7 +221,6 @@ const DashboardLayout = ({ user, onLogout, currentPage, onNavigate, children }) 
         </div>
       )}
 
-      {/* Mobile overlay backdrop */}
       {isSidebarOpen && (
         <div 
           className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] md:hidden"
@@ -241,14 +228,13 @@ const DashboardLayout = ({ user, onLogout, currentPage, onNavigate, children }) 
         />
       )}
 
-      {/* Sidebar */}
       <aside className={`
         ${isSidebarCollapsed ? 'w-20' : 'w-72'} 
         bg-[#0F172A] text-white fixed h-full z-[70] transition-all duration-300 border-r border-white/5 shadow-2xl
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0
+        flex flex-col
       `}>
-        {/* Logo header */}
-        <div className="p-8 border-b border-white/5 flex items-center justify-between">
+        <div className="p-8 border-b border-white/5 flex items-center justify-between shrink-0">
           {!isSidebarCollapsed && (
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-600/20">
@@ -261,12 +247,10 @@ const DashboardLayout = ({ user, onLogout, currentPage, onNavigate, children }) 
             </div>
           )}
           
-          {/* Mobile close button */}
           <button className="md:hidden text-slate-400" onClick={() => setIsSidebarOpen(false)}>
             <X size={20} />
           </button>
           
-          {/* NEW: Desktop toggle button */}
           <button 
             className="hidden md:block text-slate-400 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/5"
             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
@@ -276,8 +260,7 @@ const DashboardLayout = ({ user, onLogout, currentPage, onNavigate, children }) 
           </button>
         </div>
 
-        {/* Navigation items */}
-        <nav className="p-6 space-y-1.5 flex-1 custom-scrollbar overflow-y-auto h-[calc(100vh-200px)]">
+        <nav className="p-4 space-y-1.5 flex-1 overflow-y-auto custom-scrollbar min-h-0">
           {navItems.map(item => {
             const isLocked = !hasAccess(item.required);
             const isActive = currentPage === item.id;
@@ -314,8 +297,7 @@ const DashboardLayout = ({ user, onLogout, currentPage, onNavigate, children }) 
           })}
         </nav>
 
-        {/* Logout button */}
-        <div className="absolute bottom-0 left-0 w-full p-6 border-t border-white/10 bg-slate-900/50">
+        <div className="p-6 border-t border-white/10 bg-slate-900/50 shrink-0">
           <button
             onClick={onLogout}
             className="w-full flex items-center gap-4 px-5 py-4 text-red-400 hover:bg-red-500/10 rounded-2xl transition-all group"
@@ -327,9 +309,7 @@ const DashboardLayout = ({ user, onLogout, currentPage, onNavigate, children }) 
         </div>
       </aside>
 
-      {/* Main content area */}
       <div className={`flex-1 ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-72'} transition-all duration-300 flex flex-col min-h-screen relative`}>
-        {/* Header */}
         <header className="h-20 px-6 md:px-10 flex justify-between items-center border-b border-slate-200 bg-white/70 backdrop-blur-xl sticky top-0 z-40">
           <div className="flex items-center gap-4 flex-1">
             <button className="md:hidden p-2 text-slate-600" onClick={() => setIsSidebarOpen(true)}>
@@ -346,7 +326,6 @@ const DashboardLayout = ({ user, onLogout, currentPage, onNavigate, children }) 
 
           <div className="flex items-center gap-4 md:gap-6">
             
-            {/* Running time & date widget */}
             <div className="hidden md:flex flex-col items-end mr-2">
               <div className="flex items-center gap-1.5 text-slate-500">
                 <Calendar size={12} />
@@ -357,7 +336,6 @@ const DashboardLayout = ({ user, onLogout, currentPage, onNavigate, children }) 
               </span>
             </div>
 
-            {/* User profile button */}
             <button onClick={() => onNavigate('profile')} className="flex items-center gap-3 md:gap-4 hover:bg-slate-50 p-1.5 rounded-2xl transition-all group">
               <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-violet-500 rounded-xl flex items-center justify-center text-white font-black shadow-md group-hover:scale-105 transition-transform">
                 {userNameDisplay.charAt(0).toUpperCase()}
@@ -372,13 +350,11 @@ const DashboardLayout = ({ user, onLogout, currentPage, onNavigate, children }) 
           </div>
         </header>
 
-        {/* Main content */}
         <main className="flex-1 p-6 md:p-10 bg-[#F8FAFC] animate-in fade-in slide-in-from-bottom-2 duration-700">
           {children}
         </main>
       </div>
       
-      {/* Custom scrollbar styles */}
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
