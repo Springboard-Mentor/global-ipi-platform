@@ -56,7 +56,6 @@ const DashboardWithRouter = ({ user, handleLogout, handleUpdateUser }) => {
     return path.split('/')[0] || 'dashboard';
   };
 
-  // Admin check logic
   const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL;
   const isSuperAdmin = user?.role === 'ADMIN' || user?.email === ADMIN_EMAIL;
 
@@ -81,7 +80,6 @@ const DashboardWithRouter = ({ user, handleLogout, handleUpdateUser }) => {
         <Route path="filing-tracker" element={<FilingTrackerPage user={user} onNavigate={handleNavigate} />} />
         <Route path="pricing" element={<PricingPage onNavigate={handleNavigate} onUpdateUser={handleUpdateUser} />} />
         
-        {/* Admin route with guard */}
         <Route path="admin-monitoring" element={
           isSuperAdmin ? (
             <AdminMonitoringDashboard />
@@ -134,7 +132,7 @@ const App = () => {
           setUser(userData);
           localStorage.setItem('user', JSON.stringify(userData));
         } catch (error) {
-          console.error('Session expired:', error);
+          console.error(error);
           handleLogout();
         }
         setLoading(false);
@@ -194,7 +192,6 @@ const App = () => {
                 handleUpdateUser={handleUpdateUser} 
               />
             ) : (
-              // FIX: Redirect to login instead of register when not authenticated
               <Navigate to="/login" />
             )
           } 
