@@ -443,37 +443,4 @@ const LandingPage = ({ onNavigate }) => {
     </div>
   );
 };
-
-// Main App component to handle simple navigation
-const App = () => {
-  const [page, setPage] = useState('landing');
-
-  const handleNavigate = (target) => {
-    // In a real app, this would route to actual pages
-    console.log(`Navigating to: ${target}`);
-    setPage(target);
-  };
-
-  if (page === 'landing') {
-    return <LandingPage onNavigate={handleNavigate} />;
-  }
-
-  // Placeholder for other pages (Login/Register)
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-6">
-      <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center">
-        <Globe className="w-12 h-12 text-indigo-600 mx-auto mb-4" />
-        <h1 className="text-2xl font-bold mb-2">Welcome to {page.charAt(0).toUpperCase() + page.slice(1)}</h1>
-        <p className="text-slate-600 mb-6">This is a placeholder for the {page} page of Global IP Intelligence.</p>
-        <button 
-          onClick={() => setPage('landing')}
-          className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors"
-        >
-          Back to Home
-        </button>
-      </div>
-    </div>
-  );
-};
-
-export default App;
+export default LandingPage;
